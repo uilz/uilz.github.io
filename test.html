@@ -2,13 +2,73 @@
 <html lang="en">
     <body background="file/bj.jpg">
 	</body>
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>测试</title>
+        <style>
+            body{
+                width: 100%;text-align: center;
+                 /* 上下外边距为0，左右外边距是自动，这样设置可以让div水平居中 */
+                 margin:0 auto;
+            }
+            .head{
+                position: fixed;
+                top: 0;
+                width: 100%;margin: 0 auto;
+                text-align: center;
+                font-family: 'Microsoft Yahei';
+            }
+            .footer{
+                height: 60px;
+                background-color: gray;
+                color: white;
+                text-align: center;
+                font-size: 12px;
+                font-family: 'Microsoft Yahei';
+                height:60px; line-height:60px;
+            }
+            .content{
+                display: flex;
+                margin-top: 60px;
+            }
+            ul {
+            width: 100%;
+            list-style-type: none;
+            margin: 0;
+            padding-left: 20%;
+            overflow: hidden;
+            background-color: gray;
+            float:left;
+            }
+    
+            li:hover {
+            background-color: rgb(104, 100, 100);
+            }
+    
+            li{
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            float:left;
+            }
+            .left{
+                background-color: azure;
+                width: 70%;
+                height: 700px;
+            }
+    
+            
+        </style>
+    </head>
     <body>
         <div class="head">
             <ul>
                 <li>首页</li>
-                <li>书籍</li>
-                <li>文章</li>
-                <li>随笔</li>
             </ul>
         </div>
         <div>
