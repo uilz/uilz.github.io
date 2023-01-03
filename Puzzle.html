@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Liuの拼图</title>
+<meta name="keywords" content="拼图">
+<meta name="description" content="LIU — 拼图 ">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #app {
+            box-sizing: border-box;
+            padding: 50px;
+            display: flex;
+        }
+
+        .main {
+            margin-right: 60px;
+        }
+
+        .set-up {
+            width: 200px;
+        }
+
+        .set-item {
+            margin-top: 10px;
+        }
+
+        .set-item input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0 3px;
+        }
+
+        .set-item input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .set-item>button {
+            width: 100%;
+        }
+
+        .radio {
+            width: 100%;
+            display: flex;
+        }
+
+        .radio-item {
+            margin-right: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="main">
+            <div id="preview"></div>
+        </div>
+        <div class="set-up">
+            <div class="set-item">
+                <p>容器宽度(数值):</p>
+                <input type="text" value="500" id="previewWidth">
+            </div>
+            <div class="set-item">
+                <p>拼图列数(数值)：</p>
+                <input type="text" value="4" id="cols">
+            </div>
+            <div class="set-item file">
+                <p>指定图片：</p>
+
+                <input type="text" id="backgroundImageUrl">
+                <input type="file" id="up-img"></input>
+
+            </div>
+            <div class="set-item">
+                <p>打乱顺序：</p>
+                <div class="radio">
+
+                    <div class="radio-item"> <input type="radio" name="order" value="0">true</div>
+                    <div class="radio-item"> <input type="radio" name="order" value="1" checked>false</div>
+
+                </div>
+
+            </div>
+            <div class="set-item">
+                <button id="run" onclick="run()">运行</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+
+
+<script>
+
+    class Preview {
+        previewWidth = 500;  // 默认容器宽度
+        cols = 3;   //默认列
+        backgroundImageUrl = "url('./0img/img.jpg')" // 默认图片
+        previewNode; // 父节点
+        order = true
+        onSuccess;
+        constructor({ el, cols, backgroundImageUrl, previewWidth, onSuccess, order }) {
+            this.previewNode = document.querySelector(`#${el}`)
+            this.cols = cols || this.cols
+            this.backgroundImageUrl = backgroundImageUrl ? `url('${backgroundImageUrl}')` : this.backgroundImageUrl
+            this.previewWidth = previewWidth || this.previewWidth
+            this.order = order || this.order
+            this.onSuccess = onSuccess
+            this.init()
+        }
+        // 初始化
+        init() {
+            // 父节点样式
+            this.previewNode.style.width = `${this.previewWidth}px`
+            this.previewNode.style.height = `${this.previewWidth}px`
+            this.previewNode.style.backgroundColor = "rgb(250, 250, 250)";
+            this.previewNode.style.display = "flex";
+            this.previewNode.style.flexWrap = "wrap";
+            this.previewNode.style.border = "1px solid black";
+            this.previewNode.style.borderBottom = "none";
+            this.previewNode.style.borderRight = "none";
+            Promise.all(this.createdNode()).then(res => {
+                const previewItem = this.previewNode.querySelectorAll(".preview-item");
+                // 容器事件
+                previewItem.forEach(v => {
+                    v.addEventListener("dragover", (ev) => {
+                        ev.preventDefault();
+                    })
+                    v.addEventListener("drop", (ev) => {
+                        ev.preventDefault();
+                        let { backgroundPositionX, backgroundPositionY } = ev.target.style
+                        let datakey = ev.target.getAttribute("key")
+                        ev.target.style.backgroundPositionX = ev.dataTransfer.getData("x")
+                        ev.target.style.backgroundPositionY = ev.dataTransfer.getData("y")
+                        ev.target.setAttribute("key", ev.dataTransfer.getData("datakey"))
+
+                        let atNode = document.querySelector(`#${ev.dataTransfer.getData("nodeKey")}`)
+                        atNode.style.backgroundPositionX = backgroundPositionX
+                        atNode.style.backgroundPositionY = backgroundPositionY
+                        atNode.setAttribute("key", datakey)
+                        // 检查
+                        setTimeout(() => {
+                            this.inspect()
+                        }, 200)
+
+                    })
+                })
+                previewItem.forEach(v => {
+                    v.addEventListener("dragstart", (ev) => {
+                        ev.dataTransfer.setData("x", ev.target.style.backgroundPositionX)
+                        ev.dataTransfer.setData("y", ev.target.style.backgroundPositionY)
+                        ev.dataTransfer.setData("nodeKey", ev.target.id)
+                        ev.dataTransfer.setData("datakey", ev.target.getAttribute("key"))
+                    })
+                })
+            })
+        }
+        //  创建拖放内容
+        createdNode() {
+            let atRow = 0  //当前行数
+            return Array.from(new Array(this.cols * this.cols)).map((v, k) => {
+                return new Promise((reslove, reject) => {
+                    if (k >= atRow) {
+                        atRow += this.cols
+                    }
+                    let width = this.previewWidth / this.cols
+                    let div = document.createElement("div")
+                    div.classList.add("preview-item")
+                    div.style.boxSizing = "border-box";
+                    div.style.borderBottom = "2px solid black";
+                    div.style.borderRight = "2px solid black";
+                    div.style.backgroundRepeat = "no-repeat";
+                    div.style.transition = "all 0.1s";
+
+
+                    // 私有
+                    div.style.width = `calc(${this.previewWidth}px / ${this.cols})`
+                    div.style.height = `calc(${this.previewWidth}px / ${this.cols})`
+                    div.style.backgroundImage = this.backgroundImageUrl
+                    div.style.backgroundSize = `${this.previewWidth}px ${this.previewWidth}px`
+                    div.style.backgroundPositionX = `-${k % this.cols * width}px`
+                    div.style.backgroundPositionY = `-${(atRow / this.cols - 1) * width}px`
+
+
+
+
+                    div.id = `preview_${k}`
+                    div.setAttribute("key", k)
+                    div.draggable = true
+                    setTimeout(() => {
+                        this.previewNode.appendChild(div)
+                        reslove(div)
+                    }, this.order ? 0 : Math.random() * 100)
+                })
+            })
+        }
+        // 检查拼图是否完成
+        inspect() {
+            Promise.all(Array.from(new Array(this.cols * this.cols)).map((v, k) => {
+                return new Promise((resolve, reject) => {
+                    const previewItem = this.previewNode.querySelectorAll(".preview-item");
+                    if (previewItem[k].getAttribute("key") == k) {
+                        resolve(true)
+                    }
+                    reject(false);
+                })
+            })).then(res => {
+                this.onSuccess()
+            }).catch((err) => {
+
+            })
+        }
+        // 重置
+        reset({ cols, backgroundImageUrl, previewWidth, order }) {
+            this.previewNode.innerHTML = ""
+            this.cols = cols || this.cols
+            this.backgroundImageUrl = backgroundImageUrl ? `url('${backgroundImageUrl}')` : this.backgroundImageUrl
+            this.previewWidth = previewWidth || this.previewWidth
+            this.order = order != null ? order : this.order
+            this.init()
+        }
+    }
+
+    let preview = new Preview({
+        el: "preview",
+        onSuccess: () => {
+            alert("成功！")
+        }
+    })
+
+
+
+    //运行  
+    function run() {
+        let previewWidth = parseInt(document.querySelector("#previewWidth").value)
+        let cols = parseInt(document.querySelector("#cols").value)
+        let backgroundImageUrl = document.querySelector("#backgroundImageUrl").value
+        let order = Boolean(parseInt(get_radio("order")))
+        preview.reset({ previewWidth, cols, backgroundImageUrl, order })
+    }
+
+
+
+
+
+    // 监听文件上传
+    document.querySelector("#up-img").addEventListener('change', (event) => {
+        ToBase64(event.target.files[0]).then(res => {
+            document.querySelector("#backgroundImageUrl").value = res
+        })
+    });
+
+
+    // -----------------------------工具-------------------------------------
+    // 文件转图片Base64
+    function ToBase64(file) {
+        return new Promise((resolve, reject) => {
+            let reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                resolve(e.target.result);
+            };
+        });
+
+    }
+
+    //获取单选项
+    function get_radio(obj_name) {
+        var obj = document.getElementsByName(obj_name);
+        for (i = 0; i < obj_name.length; i++) {
+
+            if (obj[i].checked) {
+                return obj[i].value;
+            }
+        }
+    }
+
+</script>
+
+</html>
