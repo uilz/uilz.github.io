@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>快乐の消方块</title>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>game_1</title>
+    <style>
+        .game {
+            box-sizing: border-box;
+            width: 440px;
+            border: 2px solid #333333;
+            border-radius: 2px;
+            user-select: none;
+        }
+
+        .game .game-info {
+            height: 60px;
+            background: rgb(238, 217, 219);
+            box-sizing: border-box;
+            border-bottom: 1px solid #333333;
+            display: flex;
+        }
+
+        .game .game-info .game-info-left {
+            flex: 1.6;
+
+        }
+
+        .game .game-info .game-info-right {
+            flex: 1;
+            font-weight: 700;
+            font-size: 28px;
+            line-height: 60px;
+            color: #fff;
+
+        }
+
+        .game .game-main {
+            position: relative;
+            overflow: hidden;
+            height: 500px;
+            display: flex;
+        }
+
+        .game .game-map {
+            flex: 1;
+            background: rgb(247, 239, 240);
+            perspective: 500;
+        }
+
+        .game .game-map .dot {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            background: pink;
+            transform: translate(0px, -41px);
+            animation-duration: 2s;
+            animation-fill-mode: forwards;
+            animation-timing-function: linear;
+            border: 1px solid #333;
+            box-sizing: border-box;
+            transition: all 0.4s;
+            opacity: 1;
+        }
+
+
+        .game .game-tool {
+            flex: none;
+            width: 120px;
+            background: rgb(238, 217, 219);
+            box-sizing: border-box;
+            border-left: 1px solid #333333;
+            padding: 5px;
+        }
+
+        .game .game-tool .tool-btn {
+            position: relative;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%;
+            text-align: center;
+            height: 28px;
+            line-height: 28px;
+            box-sizing: border-box;
+            background: rgb(255, 92, 119);
+            font-weight: 700;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .game .game-tool .tool-btn input {
+            border: none;
+            box-sizing: border-box;
+            width: 100%;
+            height: 110%;
+            outline: none;
+            font-size: 14px;
+            padding: 0 48px 0 8px;
+            border-radius: 5px;
+        }
+
+        .game .game-tool .tool-btn input::placeholder {
+            font-size: 12px;
+        }
+
+        .game .game-tool .tool-btn .unit {
+            display: inline-block;
+            width: 40px;
+            height: 100%;
+            font-size: 12px;
+            position: absolute;
+            right: 12px;
+            top: 2px;
+            text-align: right;
+            color: #333;
+        }
+
+        .game .game-tool div:nth-child(n+2) {
+            margin-top: 10px;
+        }
+
+        .score {
+            text-align: center;
+            font-weight: 700;
+            font-size: 16px;
+            animation-name: scoreMove;
+            animation-duration: 0.25s;
+            animation-fill-mode: forwards;
+            animation-timing-function: linear;
+        }
+
+        @keyframes scoreMove {
+            from {
+                transform: translateY(0);
+            }
+
+            to {
+                transform: translateY(-25px);
+            }
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="game">
+        <div class="game-info">
+            <div class="game-info-left"></div>
+            <div class="game-info-right">分数：<span id="totalScore">0</span></div>
+        </div>
+        <div class="game-main">
+            <div class="game-map">
+            </div>
+            <div class="game-tool">
+                <div class="tool-btn"><input type="text" maxlength="4" id="unit_ms" placeholder="创建速度"><span
+                        class="unit">MS</span></div>
+                <div>单位：毫秒</div>
+                <div class="tool-btn"><input type="text" maxlength="4" id="unit_s" placeholder="下降速度"><span
+                        class="unit">S</span></div>
+                <div>单位：秒</div>
+                <div class="tool-btn" id="gameStart">开始</div>
+                <div class="tool-btn" id="reset">重置</div>
+                <div class="tool-btn"><a style="text-decoration: none; color:rgb(255, 255, 255)" href="https://opliu.github.io">主页</a></div>
+                <div>玩法：点击下落方块加分，连续1秒不断连续加分</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameMap = document.querySelector(".game-map")
+        let gameStart = document.querySelector("#gameStart")
+        let reset = document.querySelector("#reset")
+        // 状态
+        let status = 0;
+        let totalScore = 0;
+        let addTotalScore = 0;
+        let addScoreTime = 0;
+        // --------------自定义---------------
+        // 创建间隔
+        let createdSpeed = 500
+        // 掉落速度(0:随机时间)
+        let downSpeed = 0
+
+        init();
+
+        // 创建点
+        function createdDot() {
+            let Xnum = random(0, gameMap.clientWidth - 40)
+            // 自定义掉落时间
+            let ranSpeed = downSpeed > 0 ? downSpeed : random(2, 7)
+            let div = document.createElement("div")
+            div.classList.add("dot")
+            div.style.backgroundColor = randomHexColor()
+            div.id = new Date().getTime()
+            div.setAttribute("num", random(1, 9))
+            createKeyframes(Xnum)
+            div.style.animationName = `dotMove${Xnum}`
+            div.style.animationDuration = `${ranSpeed}s`
+            gameMap.append(div)
+
+            div.addEventListener("animationend", () => {
+                div.remove()
+            })
+        }
+
+        //随机区间数 
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        // 创建动画Keyframes
+        function createKeyframes(x) {
+            document.styleSheets[0].insertRule(`
+          @-webkit-keyframes dotMove${x} { \n  0% { transform: translate(${x}px, -41px); }\n  100% { transform: translate(${x}px, 503px); }\n}
+        `, 0)
+            document.styleSheets[0].insertRule(`
+          @keyframes dotMove${x} { \n  0% { transform: translate(${x}px, -41px); }\n  100% { transform: translate(${x}px, 503px); }\n}
+        `, 0)
+        }
+
+        // 随机颜色
+        function randomHexColor() {
+            return '#' + ('00000' + (Math.random() * 0x1000000 << 0).toString(16)).substr(-6);
+        }
+
+        // 设置动画状态
+        function setAnimationPlayState(State) {
+            document.querySelectorAll('.dot').forEach(v => {
+                v.style.animationPlayState = State
+            })
+        }
+
+        // 点击点
+        function handClickDot(e) {
+            let atDom = document.getElementById(`${e.target.id}`)
+            if (e.target.className == "dot") {
+                addScore();//机制
+                atDom.style.animationPlayState = "paused"
+                // 创建得分
+                let score = document.createElement("div")
+                score.innerHTML = `+${addTotalScore}`
+                totalScore += addTotalScore
+                document.getElementById("totalScore").innerText = totalScore
+                score.classList.add("score")
+                atDom.append(score)
+                atDom.style.opacity = "0"
+
+            }
+        }
+
+        // 开始
+        function handGameStart() {
+            if (status == 0) {
+                status = setInterval(() => { createdDot(); }, createdSpeed)
+                gameMap.addEventListener("mousedown", handClickDot)
+                gameStart.innerHTML = "暂停"
+                setAnimationPlayState("running")
+            } else if (status > 0) {
+                gameStart.innerHTML = "开始"
+                gameMap.removeEventListener('mousedown', handClickDot)
+                setAnimationPlayState("paused")
+                clearInterval(status)
+                status = 0
+
+            }
+        }
+
+        // 重置
+        function handReset() {
+            window.location.reload()
+        }
+
+        // 加分机制
+        function addScore() {
+            let atTime = parseInt(new Date().getTime() / 1000)
+            // 是否首次
+            if (addScoreTime == 0) {
+                addTotalScore++
+            }
+
+            if ((atTime - addScoreTime) >= 2) {
+                addTotalScore = 1
+
+            } else {
+                addTotalScore++
+            }
+            addScoreTime = atTime
+        }
+
+        // 初始化
+        function init() {
+            gameStart.addEventListener("click", handGameStart)
+            reset.addEventListener("click", handReset)
+
+
+            document.getElementById("unit_ms").addEventListener("input", (e) => {
+
+                clearInterval(status)
+                if (e.target.value == "") {
+                    createdSpeed = 500
+                } else {
+                    createdSpeed = e.target.value * 1
+                }
+                if (status > 0) {
+                    status = setInterval(() => { createdDot(); }, createdSpeed)
+                }
+
+            })
+
+
+            document.getElementById("unit_s").addEventListener("input", (e) => {
+
+                if (e.target.value == "") {
+                    downSpeed = 0
+                } else {
+                    downSpeed = e.target.value * 1
+                }
+
+
+            })
+        }
+
+
+
+
+    </script>
+
+</body>
+
+</html>
