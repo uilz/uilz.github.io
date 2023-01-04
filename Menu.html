@@ -16,15 +16,16 @@
       display: inline-block;
       border-radius: 10px;
       background-color: #00ffb3;
-      border: none;
-      color: #808080;
+      border: 2px;
+      border-style: groove;
+      color: #ff8e8e;
       text-align: center;
       font-size: 28px;
       padding: 20px;
       width: 180px;
       transition: all 0.5s;
       cursor: pointer;
-      margin: 5px;
+      margin: 15px;
     }
 
     .button span {
@@ -53,13 +54,13 @@
     }
 
     .h1 {
-      width: 160px;
-      height: 65px;
+      width: 88%;
+      height: 115px;
       color: white;
       border: 3px;
-      border-radius: 100px;
-      border-style: double;
-      border-color: rgb(255, 255, 255);
+      border-radius: 10px;
+      border-style: solid;
+      border-color: rgb(255, 0, 179);
       background-color: rgb(255, 145, 0);
       text-align: center;
       line-height: 60px;
@@ -77,21 +78,30 @@
       width: 100%;
       text-align: center;
       line-height: 100%;
-      z-index: 1;
     }
 
     .a {
-      color: #555555;
+      color: #ff8e8e;
       text-decoration: none;
     }
 
     .caihong {
-      background-image: -webkit-linear-gradient(left, #ff3fff, #2bff00 25%, #ff3fff 50%, #2bff00 75%, #ff3fdf);
+      background-image: -webkit-linear-gradient(left, #00fff1, #2bff00 25%, #00fff1 50%, #2bff00 75%, #00fff1);
       -webkit-text-fill-color: transparent;
       -webkit-background-clip: text;
       -webkit-background-size: 200% 100%;
       -webkit-animation: maskedAnimation 4s infinite linear;
-      font-size: 18px;
+      font-size: 16px;
+      border: #808080;
+      border: 3px;
+      border-color: calc(1px);
+      border-radius: 9px;
+      border-style: ridge;
+      margin-left: auto;
+      margin-right: auto;
+      width: 360px;
+      text-align: center;
+      line-height: 25px;
     }
 
     @keyframes maskedAnimation {
@@ -106,11 +116,13 @@
   </style>
 </head>
 
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 <div class="bg">
   <div>
     <br>
-    <h1 class="h1">小 菜 单</h1>
-    <hr>
+    <br>
+    <h1 class="h1">Hi，风里雨里，终于等到你<br>Here is the website navigation made by Mr.Liu</h1>
+    <br>
     <button class="button"><span><a class="a" href=" https://opliu.github.io/index.html">主 页</a></span></button>
     <br>
     <button class="button"><span><a class="a" href=" https://opliu.github.io/Boom.html">扫 雷</a></span></button>
@@ -124,13 +136,9 @@
     <button class="button"><span><a class="a" href=" https://opliu.github.io/WoodFish.html">攒功德</a></span></button>
     <br>
     <button class="button"><span><a class="a" href=" https://space.bilibili.com/14229967">好康的</a></span></button>
-    <h5 class="caihong">建议保存本站，长期更新！</h5>
+    <h5 class="caihong">建 议 收 藏 本 站 ，长 期 更 新 ！</h5>
+    <span style="display:none" class="caihong" id="busuanzi_container_site_pv">您是第<span id="busuanzi_value_site_pv"></span>位访问本站的靓仔（靓女）！</span>
+    <br>
   </div>
 </div>
-<div style="text-align: center;">
-  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-  <span style="display:none" class="caihong" id="busuanzi_container_site_pv">您是第 <span
-      id="busuanzi_value_site_pv"></span> 位访问本站的用户！</span>
-</div>
-
 </html>
