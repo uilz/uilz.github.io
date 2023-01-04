@@ -1,15 +1,25 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="viewport"
+    content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
 <title>消方块~Happy~</title>
 <meta name="keywords" content="消方块">
 <meta name="description" content="快乐消方块,你可以在这里放松一下">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>game_1</title>
     <style>
+        .mid {
+            display: flex;
+            justify-content: center;
+            /*垂直居中*/
+            align-items: center;
+            /*水平居中*/
+        }
+
         .game {
             box-sizing: border-box;
             width: 440px;
@@ -150,7 +160,7 @@
 </head>
 
 
-<body>
+<body class="mid">
     <div class="game">
         <div class="game-info">
             <div class="game-info-left"></div>
@@ -168,7 +178,8 @@
                 <div>单位：秒</div>
                 <div class="tool-btn" id="gameStart">开始</div>
                 <div class="tool-btn" id="reset">重置</div>
-                <div class="tool-btn"><a style="text-decoration: none; color:rgb(255, 255, 255)" href="https://opliu.github.io">主页</a></div>
+                <div class="tool-btn"><a style="text-decoration: none; color:rgb(255, 255, 255)"
+                        href="https://opliu.github.io">主页</a></div>
                 <div>玩法：点击下落方块加分，连续1秒不断连续加分</div>
             </div>
         </div>
