@@ -25,6 +25,7 @@
 
         .mid {
             display: flex;
+            position: relative;
             justify-content: center;
             /*垂直居中*/
             align-items: center;
@@ -69,7 +70,7 @@
 </head>
 
 <body class="mid">
-    <div id="app">
+    <div class="mid" id="app">
         <div class="main">
             <div id="preview"></div>
         </div>
@@ -102,7 +103,7 @@
             <div class="set-item">
                 <button id="run" onclick="run()">运行</button>
                 <button id="run"><a style="text-decoration: none; color: black;"
-                        href="https://uilz.github.io/">主页</a></button>
+                        href="https://uilz.github.io/liu/menu">菜单</a></button>
             </div>
         </div>
     </div>
@@ -115,7 +116,7 @@
     class Preview {
         previewWidth = 500;  // 默认容器宽度
         cols = 3;   //默认列
-        backgroundImageUrl = "url('./0img/img.jpg')" // 默认图片
+        backgroundImageUrl = "url('assets/img/img.jpg')" // 默认图片
         previewNode; // 父节点
         order = true
         onSuccess;

@@ -23,7 +23,7 @@ function run() {
 
 function audio_play(i) {
     if(i == "default") {
-        var audio = new Audio("audio/default/muyu.mp3.mp3");
+        var audio = new Audio("assets/video/muyu.mp3");
         audio.play();
     } else {
         var audio = new Audio("audio/" + i);
@@ -49,7 +49,7 @@ function animation_text() {
     }, 15);
     setTimeout(() => {
         $("#text_tips_" + randomNum_1).remove();
-    }, 500);
+    }, 0);
 }
 
 if ($.cookie("Merit") == undefined) $.cookie("Merit", "0", { expires: 30 })
