@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Welcome to Liu&#39;s Blog</title>
+  
+  <subtitle>Studying</subtitle>
+  <link href="http://example.com/atom.xml" rel="self"/>
+  
+  <link href="http://example.com/"/>
+  <updated>2024-01-13T11:23:01.000Z</updated>
+  <id>http://example.com/</id>
+  
+  <author>
+    <name>Liu</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>第一篇文章</title>
+    <link href="http://example.com/2024/01/13/%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0/"/>
+    <id>http://example.com/2024/01/13/%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0/</id>
+    <published>2024-01-13T11:23:01.000Z</published>
+    <updated>2024-01-13T11:23:01.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="因为好玩"><a href="#因为好玩" class="headerlink" title="因为好玩"></a><strong>因为好玩</strong></h1><h6 id="咳咳"><a href="#咳咳" class="headerlink" title="咳咳"></a>咳咳</h6><p>其实是为了更好地整理知识点啦~~~</p>]]></content>
+    
+    
+    <summary type="html">写文章的原因</summary>
+    
+    
+    
+    
+  </entry>
+  
+</feed>
