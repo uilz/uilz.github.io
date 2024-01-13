@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2024-01-13T11:23:01.000Z</updated>
+  <updated>2024-01-13T13:20:22.000Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,33 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>信息传递</title>
+    <link href="http://example.com/2024/01/13/%E4%BF%A1%E6%81%AF%E4%BC%A0%E9%80%92/"/>
+    <id>http://example.com/2024/01/13/%E4%BF%A1%E6%81%AF%E4%BC%A0%E9%80%92/</id>
+    <published>2024-01-13T13:20:22.000Z</published>
+    <updated>2024-01-13T13:20:22.000Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>-生物</p><p>-生物与环境</p><p>-生态系统及其稳定性</p><p>-生态系统的信息传递</p></blockquote><p>未完待续…</p>]]></content>
+    
+    
+    <summary type="html">信息传递AND知识点</summary>
+    
+    
+    
+    <category term="生物" scheme="http://example.com/categories/%E7%94%9F%E7%89%A9/"/>
+    
+    <category term="生物与环境" scheme="http://example.com/categories/%E7%94%9F%E7%89%A9/%E7%94%9F%E7%89%A9%E4%B8%8E%E7%8E%AF%E5%A2%83/"/>
+    
+    <category term="生态系统及其稳定性" scheme="http://example.com/categories/%E7%94%9F%E7%89%A9/%E7%94%9F%E7%89%A9%E4%B8%8E%E7%8E%AF%E5%A2%83/%E7%94%9F%E6%80%81%E7%B3%BB%E7%BB%9F%E5%8F%8A%E5%85%B6%E7%A8%B3%E5%AE%9A%E6%80%A7/"/>
+    
+    <category term="生态系统的信息传递" scheme="http://example.com/categories/%E7%94%9F%E7%89%A9/%E7%94%9F%E7%89%A9%E4%B8%8E%E7%8E%AF%E5%A2%83/%E7%94%9F%E6%80%81%E7%B3%BB%E7%BB%9F%E5%8F%8A%E5%85%B6%E7%A8%B3%E5%AE%9A%E6%80%A7/%E7%94%9F%E6%80%81%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BF%A1%E6%81%AF%E4%BC%A0%E9%80%92/"/>
+    
+    
+    <category term="生物" scheme="http://example.com/tags/%E7%94%9F%E7%89%A9/"/>
+    
+  </entry>
   
   <entry>
     <title>第一篇文章</title>
