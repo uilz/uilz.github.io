@@ -199,8 +199,8 @@ body {
   border-bottom-style: solid;
   border-bottom-color: #f6f6f6;
   border-bottom-width: 0.5px;
-  height: 60px;
-  padding: 12px 20px;
+  height: 50px;
+  padding: 5px 20px;
   background: #fefefe;
   -ms-flex-direction: row;
       flex-direction: row;
@@ -208,7 +208,7 @@ body {
   display: flex;
   -ms-flex-pack: justify;
       justify-content: space-between;
-  overflow-y: visible;
+  overflow-y: scroll;
   max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
@@ -275,17 +275,15 @@ body {
   height: 18px;
 }
 .nav-container .home-menu .pure-menu-list .pure-menu-children {
-  border: 1px solid #f6f6f6;
+  border: 1px solid #999;
 }
 .nav-container .home-menu .pure-menu-list .pure-menu-link {
   padding: 4px 15px;
   color: inherit;
 }
-/*
 .nav-container .home-menu .pure-menu-list .pure-menu-link:after {
   content: ' ';
 }
-*/
 .nav-container .home-menu .pure-menu-list .pure-menu-link:focus {
   background-color: #fff;
 }
