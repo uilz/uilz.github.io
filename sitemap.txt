@@ -1,9 +1,0 @@
-http://example.com/2024/03/02/1/
-http://example.com/categories/index.html
-http://example.com/tags/index.html
-http://example.com/about/index.html
-http://example.com/
-http://example.com/tags/%E6%A0%87%E7%AD%BE1/
-http://example.com/tags/%E6%A0%87%E7%AD%BE2/
-http://example.com/categories/%E5%88%86%E7%B1%BB1/
-http://example.com/categories/%E5%88%86%E7%B1%BB1/%E5%88%86%E7%B1%BB2/
