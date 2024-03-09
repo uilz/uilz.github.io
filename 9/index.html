@@ -36,7 +36,7 @@
                         var name = randomName();
                         console.log(name);
                         displayBoard.innerHTML = name;
-                    }, 100);
+                    }, 1);
                 }
 
             } else if (text == "抽取幸运儿!") {
@@ -52,7 +52,7 @@
         }
 
         function randomName() {
-            var randomNum = Math.ceil(Math.random() * 4000) % length + 1;
+            var randomNum = Math.ceil(Math.random() * 54) % length + 1;
             return names[randomNum - 1];
         }
     </script>
@@ -70,10 +70,14 @@
         html,
         body {
             height: 100%;
-            font-family: 'Ma Shan Zheng', sans-serif;  
+            font-family: 'Ma Shan Zheng', sans-serif;
+            background-image: url('img_sky.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+            overflow: hidden; 
             overflow-x: hidden;
         }
-
 
         section {
             position: relative;
@@ -82,21 +86,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-image: url('img_sky.jpg');
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            background-size: cover;
-            overflow: hidden;
-        }
-
-        section:before {
-            animation: pulse 2ms infinite;
 
         }
 
-        section:after {
-            animation: pulse 2.1ms infinite;
-        }
 
         @keyframes pulse {
             50% {
@@ -113,23 +105,23 @@
         #interface {
             position: relative;
             z-index: 3;
-            width: 400px;
+            width: 800px;
             background-color: rgba(255, 255, 255, .1);
-            padding: 45px 30px;
-            border-radius: 8px;
+            padding: 30px 30px;
+            border-radius: 16px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
             border: 1px solid rgba(255, 255, 255, .2);
             border-right: 1px solid rgba(255, 255, 255, .1);
             border-bottom: 1px solid rgba(255, 255, 255, .1);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px);
         }
 
         #nameDisplay {
-            color: #fff;
+            color: #E6F1ED;
             display: block;
             text-align: center;
             line-height: 155px;
-            font-size: 70px;
+            font-size: 75px;
             margin: 0 0 30px 0;
             overflow: hidden;
         }
@@ -141,18 +133,18 @@
             background-image: linear-gradient(to right, #02AAB0 0%, #00CDAC 51%, #02AAB0 100%);
             background-size: 200% auto;
             border-radius: 8px;
-            color: #fff;
+            color: #E6F1ED;
             outline: none;
             cursor: pointer;
             box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
-            transition: ease .15s;
+            transition: ease .1s;
             font-size: 30px;
             justify-content: center;
         }
 
         button:hover {
             background-position: right center;
-            color: #fff;
+            color: #E6F1ED;
             text-decoration: none;
         }
 
