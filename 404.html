@@ -6,7 +6,7 @@
     <meta http-equiv="viewport" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>抽签,启动!</title>
-
+    <link rel="stylesheet" href="css.css">
 </head>
 
 <body>
@@ -18,77 +18,11 @@
         </div>
     </section>
 
-<script>
-    function goTo09() {
-        window.location.href="9/index.html"
-    }
-    function goTo10() {
-        window.location.href="index.html"
-    }
-</script>
-
-    <style>
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    <script>
+        function goTo09() {
+            window.location.href = "9/index.html"
         }
-
-        html,
-        body {
-            height: 100%;
-            overflow-x: hidden;
+        function goTo10() {
+            window.location.href = "index.html"
         }
-
-        section {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-image: url('9/img_sky.jpg');
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            background-size: cover;
-            overflow: hidden;
-        }
-
-
-        #interface {
-            position: relative;
-            z-index: 3;
-            width: 400px;
-            background-color: rgba(255, 255, 255, .1);
-            padding: 45px 30px;
-            border-radius: 8px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
-            border: 1px solid rgba(255, 255, 255, .2);
-            border-right: 1px solid rgba(255, 255, 255, .1);
-            border-bottom: 1px solid rgba(255, 255, 255, .1);
-            backdrop-filter: blur(20px);
-        }
-
-        button {
-            width: 100%;
-            height: 50px;
-            border: 0;
-            background-image: linear-gradient(to right, #02AAB0 0%, #00CDAC 51%, #02AAB0 100%);
-            background-size: 200% auto;
-            border-radius: 8px;
-            color: #fff;
-            outline: none;
-            cursor: pointer;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
-            transition: ease .15s;
-            font-size: 30px;
-            justify-content: center;
-        }
-
-        button:hover {
-            background-position: right center;
-            color: #fff;
-            text-decoration: none;
-        }
-    </style>
+    </script>
