@@ -1,0 +1,155 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: 'Ma Shan Zheng', sans-serif;
+    background-image: url('9/img_sky.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+}
+
+section {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+
+@keyframes pulse {
+    50% {
+        box-shadow: 0 0 0 50px rgba(255, 255, 255, 0);
+
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+
+    }
+}
+
+#interface {
+    position: relative;
+    bottom: auto;
+    margin: auto;
+    z-index: 3;
+    width: 400px;
+    background-color: rgba(255, 255, 255, .1);
+    padding: 30px 30px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-right: 1px solid rgba(255, 255, 255, .1);
+    border-bottom: 1px solid rgba(255, 255, 255, .1);
+    backdrop-filter: blur(25px);
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.rank-container {
+    width: 400px;
+    color: #2b2b2b;
+    font-size: 36px;
+    background-color: #ffffff33;
+    border-radius: 5px;
+    border-radius: 16px;
+    backdrop-filter: blur(25px);
+}
+
+.rank-title {
+    font-size: 99px;
+    padding: 20px 0;
+    text-align: center;    
+}
+.rank-body{
+    padding:0  30px 20px;
+}
+.item{
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.item .num{
+    font-size: 25px;
+    margin-right: 20px;
+}
+.item dl{
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+.avatar{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 46px;
+    height: 46px;
+    margin-right: 10px;
+    position: relative;
+}
+.avatar img{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+.avatar .img-bd{
+    width: 46px;
+    height: 54px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+}
+.rank-ability{
+    color: #ffd900;
+}
+.item:nth-child(1) .num{
+    color:#de5149;
+}
+.item:nth-child(2) .num{
+    color:#ef8634;
+}
+.item:nth-child(3) .num{
+    color:#f6cb46;
+}
+
+button {
+    width: 100%;
+    height: 50px;
+    border: 0;
+    background-image: linear-gradient(to right, #02AAB0 0%, #00CDAC 51%, #02AAB0 100%);
+    background-size: 200% auto;
+    border-radius: 8px;
+    color: #E6F1ED;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
+    transition: ease .1s;
+    font-size: 30px;
+    justify-content: center;
+}
+
+button:hover {
+    background-position: right center;
+    color: #E6F1ED;
+    text-decoration: none;
+}
+
+
