@@ -59,13 +59,13 @@ section {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 9px 0;
+    padding: 5px 0;
 }
 
 .rank-container {
     width: 500px;
     color: #1f1f1f;
-    font-size: 49px;
+    font-size: 41px;
     background-color: #ffffff33;
     border-radius: 5px;
     border-radius: 16px;
@@ -74,7 +74,7 @@ section {
 
 .rank-title {
     font-size: 117px;
-    padding: 10px 0;
+    padding: 1px 0;
     text-align: center;
 }
 
@@ -146,8 +146,8 @@ section {
     text-align: center;
     width: 400px;
     margin: auto;
-    padding: 12px 0;
-    font-size: 22px;
+    padding: 1px 0;
+    font-size: 16px;
 }
 
 button {
