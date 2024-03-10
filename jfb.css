@@ -43,6 +43,7 @@ section {
     position: relative;
     bottom: auto;
     margin: auto;
+    align-items: center;
     z-index: 3;
     width: 400px;
     background-color: rgba(255, 255, 255, .1);
@@ -53,6 +54,7 @@ section {
     border-right: 1px solid rgba(255, 255, 255, .1);
     border-bottom: 1px solid rgba(255, 255, 255, .1);
     backdrop-filter: blur(25px);
+    white-space: nowrap;
 }
 
 .container {
@@ -64,6 +66,7 @@ section {
 
 .rank-container {
     width: 500px;
+    margin: auto;
     color: #1f1f1f;
     font-size: 41px;
     background-color: #ffffff33;
@@ -148,6 +151,7 @@ section {
     margin: auto;
     padding: 1px 0;
     font-size: 16px;
+    white-space: nowrap;
 }
 
 button {
