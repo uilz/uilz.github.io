@@ -6,10 +6,25 @@
     <meta http-equiv="viewport" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>积分榜</title>
+    <script>
+        /* 载入动画 */
+        window.onload = function () {
+            setTimeout(function () {
+                var loader = document.getElementsByClassName("loader")[0];
+                loader.className = "loader fadeout";
+                setTimeout(function () { loader.style.display = "none" }, 1000)
+            }, 1000)
+        }
+    </script>
     <link rel="stylesheet" href="jfb.css">
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="bookmark" href="/favicon.ico" />
 </head>
 
 <body>
+    <!--loading page-->
+    <div class="loader"></div>
+    <!--content page-->
     <div class="container">
         <div class="rank-container">
             <div class="rank-title">封神榜</div>
@@ -93,6 +108,7 @@
     </div>
 </body>
 <script>
+    /* 抽取天选之子按钮 */
     function goTo00() {
         window.location.href = "index.html"
     }

@@ -6,10 +6,25 @@
     <meta http-equiv="viewport" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>抽签,启动!</title>
+    <script>
+        /* 载入动画 */
+        window.onload = function () {
+            setTimeout(function () {
+                var loader = document.getElementsByClassName("loader")[0];
+                loader.className = "loader fadeout";
+                setTimeout(function () { loader.style.display = "none" }, 1000)
+            }, 1000)
+        }
+    </script>
     <link rel="stylesheet" href="css.css">
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="bookmark" href="/favicon.ico" />
 </head>
 
 <body>
+    <!--loading page-->
+    <div class="loader"></div>
+    <!--content page-->
     <section>
         <div id="interface">
             <button onclick="goTo09()">九班の天选之子</button>

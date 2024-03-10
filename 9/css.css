@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
 
 * {
@@ -6,6 +5,44 @@
     padding: 0;
     box-sizing: border-box;
 }
+
+/* 加载动画 */
+.loader {
+    position: fixed;
+    z-index: 985211;
+    width: 100%;
+    height: 100%;
+    background-image: url(tx1.jpg);
+    background-size: 100% 100%;
+
+    /* loader页面消失采用渐隐的方式*/
+    -webkit-transition: opacity 1.5s ease;
+    -moz-transition: opacity 1.5s ease;
+    -o-transition: opacity 1.5s ease;
+    transition: opacity 1.5s ease;
+}
+
+.fadeout {
+    opacity: 0;
+    filter: alpha(opacity=0);
+}
+
+/* logo出现动画 */
+@-webkit-keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        -webkit-transform: translate3d(0, -100%, 0);
+        transform: translate3d(0, -100%, 0)
+    }
+
+    100% {
+        opacity: 1;
+        -webkit-transform: none;
+        transform: none
+    }
+}
+
+/* 分割线 */
 
 html,
 body {
@@ -15,7 +52,7 @@ body {
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
-    overflow: hidden; 
+    overflow: hidden;
     overflow-x: hidden;
 }
 
