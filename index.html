@@ -5,16 +5,29 @@
     <meta charset="UTF-8">
     <meta http-equiv="viewport" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>抽取十班の天选之子</title>
+    <title>抽签,启动!</title>
     <link rel="stylesheet" href="css.css">
 </head>
+
 <body>
     <section>
         <div id="interface">
-            <div id="nameDisplay">天选之子</div>
-            <button onclick="clickButton(this)">启动!</button>
+            <button onclick="goTo09()">九班の天选之子</button>
+            <hr>
+            <button onclick="goTo10()">十班の天选之子</button>
+            <hr>
+            <button onclick="goTo01()">积 分 榜</button>
         </div>
     </section>
-    <script src="10.js"></script>
-</body>
-</html>
+
+    <script>
+        function goTo09() {
+            window.location.href = "9/index.html"
+        }
+        function goTo10() {
+            window.location.href = "10/index.html"
+        }
+        function goTo01() {
+            window.location.href = "jfb.html"
+        }
+    </script>

@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
 
 * {
@@ -11,7 +10,7 @@ html,
 body {
     height: 100%;
     font-family: 'Ma Shan Zheng', sans-serif;
-    background-image: url('9/img_sky.jpg');
+    background-image: url('images/img_sky.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
@@ -76,26 +75,31 @@ section {
 .rank-title {
     font-size: 99px;
     padding: 20px 0;
-    text-align: center;    
+    text-align: center;
 }
-.rank-body{
-    padding:0  30px 20px;
+
+.rank-body {
+    padding: 0 30px 20px;
 }
-.item{
+
+.item {
     display: flex;
     align-items: center;
     margin-bottom: 20px;
 }
-.item .num{
+
+.item .num {
     font-size: 25px;
     margin-right: 20px;
 }
-.item dl{
+
+.item dl {
     display: flex;
     align-items: center;
     flex: 1;
 }
-.avatar{
+
+.avatar {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -104,12 +108,14 @@ section {
     margin-right: 10px;
     position: relative;
 }
-.avatar img{
+
+.avatar img {
     width: 40px;
     height: 40px;
     border-radius: 50%;
 }
-.avatar .img-bd{
+
+.avatar .img-bd {
     width: 46px;
     height: 54px;
     position: absolute;
@@ -117,23 +123,28 @@ section {
     left: 0;
     z-index: 1;
 }
-.rank-ability{
+
+.rank-ability {
     color: #ffd900;
 }
-.item:nth-child(1) .num{
-    color:#de5149;
+
+.item:nth-child(1) .num {
+    color: #de5149;
 }
-.item:nth-child(2) .num{
-    color:#ef8634;
+
+.item:nth-child(2) .num {
+    color: #ef8634;
 }
-.item:nth-child(3) .num{
-    color:#f6cb46;
+
+.item:nth-child(3) .num {
+    color: #f6cb46;
 }
 
 button {
     width: 100%;
     height: 50px;
     border: 0;
+    font-family: 'Ma Shan Zheng', sans-serif;
     background-image: linear-gradient(to right, #02AAB0 0%, #00CDAC 51%, #02AAB0 100%);
     background-size: 200% auto;
     border-radius: 8px;
@@ -151,5 +162,3 @@ button:hover {
     color: #E6F1ED;
     text-decoration: none;
 }
-
-
