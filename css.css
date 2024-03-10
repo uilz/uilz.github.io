@@ -79,7 +79,7 @@ button {
     cursor: pointer;
     box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
     transition: ease .1s;
-    font-size: 49px;
+    font-size: 42px;
     justify-content: center;
 }
 
