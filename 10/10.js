@@ -17,7 +17,7 @@ function clickButton(btn) {
                 var name = randomName();
                 console.log(name);
                 displayBoard.innerHTML = name;
-            }, 1);
+            }, 18);
         }
 
     } else if (text == "抽取幸运儿!") {
