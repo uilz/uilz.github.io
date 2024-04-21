@@ -126,7 +126,10 @@ function stopDrawing() {
     } else {
         // 如果没有名字可抽取，禁用开始抽取按钮并显示提示信息
         drawButton.disabled = true;
-        drawButton.innerHTML = "全员天选";
+        drawButton.innerHTML = "全员天选"; 
+        // 如果没有名字可抽取，隐藏开始抽取和重置按钮
+        drawButton.style.display = 'none';
+        resetButton.style.display = 'none';
         displayBoard.textContent = "请刷新页面";
         resetButton.disabled = false;
     }
