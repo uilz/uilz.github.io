@@ -187,6 +187,8 @@ function resetAll() {
     drawButton.innerHTML = "启动";
     // 设置重置按钮为不可用
     resetButton.disabled = true;
+    // 重置标记是否正在抽取
+    isDrawing = false;
 }
 
 // 为重置按钮添加点击事件监听器
