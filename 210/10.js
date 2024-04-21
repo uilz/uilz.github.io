@@ -177,8 +177,8 @@ function resetAll() {
     while (drawnListItems.firstChild) {
         drawnListItems.removeChild(drawnListItems.firstChild);
     }
-    // 将显示的名字设置为初始状态，例如 "天选之子"
-    displayBoard.textContent = "天选之子";
+    // 将显示的名字设置为初始状态，例如 "天✔选"
+    displayBoard.textContent = "天✔选";
     // 清除动画效果
     if (animationInterval !== null) {
         clearInterval(animationInterval);
