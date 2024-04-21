@@ -164,6 +164,8 @@ function getRandomName() {
 }
 // 重置所有功能函数
 function resetAll() {
+    // 停止抽取，确保动画和抽取标志位被正确处理
+    stopDrawing();
     // 重置names数组为原始名字列表
     names = [...originalNames]; // 使用扩展运算符创建originalNames的浅拷贝并赋值给names
     // 清空已抽取的名字列表
