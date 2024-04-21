@@ -108,7 +108,7 @@ button:hover {
 /* 记录板容器 */  
 .tech-board {  
     position: fixed;  
-    top: 60%
+    top: 65%
     right: 0;
     width: 100%;  
     z-index: 211;
