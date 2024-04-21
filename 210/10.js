@@ -178,8 +178,6 @@ function resetAll() {
     while (drawnListItems.firstChild) {
         drawnListItems.removeChild(drawnListItems.firstChild);
     }
-    // 重置标记是否正在抽取
-    isDrawing = false;
     // 将显示的名字设置为初始状态，例如 "天✔选"
     displayBoard.textContent = "天✔选";
     // 清除动画效果
