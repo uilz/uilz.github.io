@@ -127,7 +127,7 @@ function stopDrawing() {
         // 如果没有名字可抽取，禁用开始抽取按钮并显示提示信息
         drawButton.disabled = true;
         drawButton.innerHTML = "全员天选";
-        displayBoard.textContent = "！全员天选！";
+        displayBoard.textContent = "请刷新页面";
         resetButton.disabled = false;
     }
 
