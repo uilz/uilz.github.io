@@ -158,6 +158,8 @@ button:hover {
     font-size: 30px;
     overflow: hidden;
     white-space: nowrap;
+    transition: opacity 0.5s ease;
+    /* 添加渐显效果 */
     z-index: 985211;
     /* 确保通知显示在最上层 */
 }
