@@ -186,7 +186,7 @@ function resetAll() {
     // 设置重置按钮为不可用
     resetButton.disabled = true;
     // 由于重置操作可能在动画进行中触发，确保动画效果被清除
-    isDrawing = false;
+    var isDrawing = false;
 }
 
 // 为重置按钮添加点击事件监听器
