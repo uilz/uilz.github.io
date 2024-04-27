@@ -114,7 +114,7 @@ function stopDrawing() {
     isDrawing = false;
     clearInterval(animationInterval);
     animationInterval = null;
-    drawButton.innerHTML = "启动";
+    drawButton.innerHTML = "启动"; // 重置按钮文本
 
     // 执行实际的抽取并记录结果
     var randomName = getRandomName();
@@ -125,24 +125,19 @@ function stopDrawing() {
         var drawnCount = drawnNames.length;
         drawnCountDisplay.textContent = "天选: " + drawnCount + "人";
     } else {
-        // 如果没有名字可抽取，禁用开始抽取按钮并显示提示信息
-        drawButton.disabled = true;
-        drawButton.innerHTML = "全员天选"; 
-        // 如果没有名字可抽取，隐藏开始抽取和重置按钮
-        drawButton.style.display = 'none';
-        resetButton.style.display = 'none';
-        displayBoard.textContent = "请刷新页面";
-        resetButton.disabled = false;
+        // 如果没有名字可抽取，显示全员天选
+        displayBoard.textContent = "全员天选";
+        drawButton.disabled = true; // 禁用开始按钮
+        // drawButton.style.display = 'none'; // 不隐藏开始抽取按钮，根据需求保留或隐藏
+        resetButton.disabled = false; // 重置按钮可用，允许用户重置抽取过程
     }
 
-    // 仅当成功抽取名字后，才更新侧边栏列表
+    // 更新侧边栏列表
     if (randomName) {
         var drawnListItems = document.getElementById("drawnListItems");
         var drawnListItem = document.createElement("li");
         drawnListItem.textContent = randomName;
         drawnListItems.appendChild(drawnListItem);
-        // 停止抽取后，使重置按钮可用，以便可以清空历史记录
-        resetButton.disabled = false;
     }
 }
 
