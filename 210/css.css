@@ -131,7 +131,7 @@ button:hover {
     white-space: nowarp;
     text-align: center;  
     color: rgb(251, 255, 0);  
-    font-size: 5vw;
+    font-size: 15vw;
     background: linear-gradient(to right, #00ff80, #27bbff);  
     border-top-left-radius: 15px;  
     border-top-right-radius: 15px;  
@@ -141,6 +141,6 @@ button:hover {
 .tech-board .record-list {  
     padding: 3px;  
     color: #06eeff;
-    font-size: 2vw;
+    font-size: 12vw;
     list-style: none;  
 }  
