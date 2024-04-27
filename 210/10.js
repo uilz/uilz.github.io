@@ -87,7 +87,7 @@ var animationInterval = null;
 function startDrawing() {
     if (isDrawing) return;
     isDrawing = true;
-    drawButton.innerHTML = "天✔选";
+    drawButton.innerHTML = "天 选";
 
     // 开始动画效果，每隔一段时间更换显示的名字  
     animationInterval = setInterval(function () {
@@ -174,8 +174,8 @@ function resetAll() {
     while (drawnListItems.firstChild) {
         drawnListItems.removeChild(drawnListItems.firstChild);
     }
-    // 将显示的名字设置为初始状态，例如 "天✔选"
-    displayBoard.textContent = "天✔选";
+    // 将显示的名字设置为初始状态: "天 选"
+    displayBoard.textContent = "天 选";
     // 清除动画效果
     if (animationInterval !== null) {
         clearInterval(animationInterval);
