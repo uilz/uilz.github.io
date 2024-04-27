@@ -114,48 +114,32 @@ function stopDrawing() {
     isDrawing = false;
     clearInterval(animationInterval);
     animationInterval = null;
-    drawButton.innerHTML = "启动"; // 重置按钮文本
 
-    // 执行实际的抽取并记录结果
+    // 抽取一个人
     var randomName = getRandomName();
     if (randomName) {
         drawnNames.push(randomName);
-        displayBoard.textContent = randomName;
+        displayBoard.textContent = randomName; // 显示抽取的名字
         // 更新已抽取人数的显示
         var drawnCount = drawnNames.length;
         drawnCountDisplay.textContent = "天选: " + drawnCount + "人";
-    } else {
-        // 如果没有名字可抽取，显示全员天选
-        displayBoard.textContent = "💥";
-        drawButton.innerHTML = "全员天选"; // 设置按钮文本为"全员天选"
-        drawButton.disabled = true; // 禁用开始按钮
-        // drawButton.style.display = 'none'; // 不隐藏开始抽取按钮，根据需求保留或隐藏
-        resetButton.disabled = false; // 重置按钮可用，允许用户重置抽取过程
-    }
-
-    // 更新侧边栏列表
-    if (randomName) {
+        // 添加到已抽取列表
         var drawnListItems = document.getElementById("drawnListItems");
         var drawnListItem = document.createElement("li");
         drawnListItem.textContent = randomName;
         drawnListItems.appendChild(drawnListItem);
+    } else {
+        // 如果没有名字可抽取，显示💥
+        displayBoard.textContent = "💥";
+        drawButton.innerHTML = "全员天选"; // 设置按钮文本为"全员天选"
+        drawButton.disabled = true; // 禁用开始按钮
+        resetButton.disabled = false; // 重置按钮可用，允许用户重置抽取过程
     }
+
+    // 由于抽取结束，重置按钮应该可用，以允许用户重置抽取过程
+    resetButton.disabled = false;
 }
 
-
-// 从剩余名字中随机抽取一个名字  
-function getRandomName() {
-    if (names.length === 0) {
-        // 如果所有名字都已被抽取，则返回null
-        return null;
-    }
-    // 从未被抽取的名字中随机选择一个索引
-    var randomIndex = Math.floor(Math.random() * names.length);
-    // 从names数组中移除已被抽取的名字，并获取这个名字
-    var randomName = names.splice(randomIndex, 1)[0];
-    // 记录抽取的名字
-    return randomName; // 返回抽取到的名字
-}
 // 重置所有功能函数
 function resetAll() {
     // 如果正在抽取，先停止抽取
