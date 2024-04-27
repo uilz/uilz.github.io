@@ -131,7 +131,7 @@ function stopDrawing() {
         // 如果没有名字可抽取，隐藏开始抽取和重置按钮
         drawButton.style.display = 'none';
         resetButton.style.display = 'none';
-        displayBoard.textContent = "请刷新页面";
+        displayBoard.textContent = "💥";
         resetButton.disabled = false;
     }
 
