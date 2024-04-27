@@ -199,8 +199,11 @@ function displayNotification(message) {
 
     // 设置定时器，在3秒后移除通知
     setTimeout(function() {
-        document.body.removeChild(notification);
-    }, 3000);
+        notification.style.opacity = 0;
+        setTimeout(function() {
+            document.body.removeChild(notification);
+        }, 500); // 0.5秒后移除通知元素
+    }, 3000); // 3秒后开始渐隐通知
 }
 
 // 修改重置按钮的点击事件监听器，添加检查抽取状态的逻辑
