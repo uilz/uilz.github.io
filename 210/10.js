@@ -105,8 +105,8 @@ function startDrawing() {
         }
     }, { once: true });
 
-    // 开始抽取时，使重置按钮可用
-    resetButton.disabled = false;
+    // 开始抽取时，使重置按钮不可用
+    resetButton.disabled = true;
 }
 
 function stopDrawing() {
