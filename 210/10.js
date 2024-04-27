@@ -65,6 +65,7 @@ const originalNames = [
     "李光栩",
     "彭根裕",
     "谢宇",
+    "梁志武",
 ];
 names = [...originalNames];
 // 已抽取的名字列表  
