@@ -108,12 +108,12 @@ button:hover {
 /* 记录板容器 */  
 .tech-board {  
     position: fixed;  
-    top: 60%;
+    top: 55%;
     right: 0;
     width: 100%;  
     z-index: 211;
     max-width: 90px;  
-    max-height: 260px;
+    max-height: 250px;
     background-color: rgba(255, 255, 255, .1);
     border-radius: 15px;  
     box-shadow: 0 4px 8px 0 rgb(7, 202, 216), 0 6px 20px 0 rgba(0, 0, 0, 0.09);  
