@@ -183,7 +183,7 @@ function resetAll() {
     }
     // 重置按钮文本为 "启动"
     drawButton.innerHTML = "启动";
-    drawButton.disabled = true; // 启用开始按钮
+    drawButton.disabled = false; // 启用开始按钮
     // 设置重置按钮为可用
     resetButton.disabled = false;
     // 由于重置操作可能在动画进行中触发，确保动画效果被清除
