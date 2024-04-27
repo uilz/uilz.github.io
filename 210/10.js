@@ -187,8 +187,31 @@ function resetAll() {
     resetButton.disabled = true;
 }
 
-// 为重置按钮添加点击事件监听器
-resetButton.addEventListener("click", resetAll);
+// 修改重置按钮的点击事件监听器，添加检查抽取状态的逻辑
+resetButton.addEventListener("click", function() {
+    if (isDrawing) {
+        // 如果正在抽取，阻止重置操作并显示通知
+        displayNotification("请先停止抽取再点击重置");
+        return;
+    }
+    resetAll();
+});
+
+// 显示通知的函数
+function displayNotification(message) {
+    // 创建通知元素
+    var notification = document.createElement("div");
+    notification.className = "notification";
+    notification.textContent = message;
+
+    // 将通知添加到页面中
+    document.body.appendChild(notification);
+
+    // 设置定时器，在3秒后移除通知
+    setTimeout(function() {
+        document.body.removeChild(notification);
+    }, 3000);
+}
 
 // 最初，重置按钮应该是不可用的
 resetButton.disabled = true;
