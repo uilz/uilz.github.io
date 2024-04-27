@@ -126,7 +126,8 @@ function stopDrawing() {
         drawnCountDisplay.textContent = "天选: " + drawnCount + "人";
     } else {
         // 如果没有名字可抽取，显示全员天选
-        displayBoard.textContent = "全员天选";
+        displayBoard.textContent = "💥";
+        drawButton.innerHTML = "全员天选"; // 设置按钮文本为"全员天选"
         drawButton.disabled = true; // 禁用开始按钮
         // drawButton.style.display = 'none'; // 不隐藏开始抽取按钮，根据需求保留或隐藏
         resetButton.disabled = false; // 重置按钮可用，允许用户重置抽取过程
@@ -182,6 +183,7 @@ function resetAll() {
     }
     // 重置按钮文本为 "启动"
     drawButton.innerHTML = "启动";
+    drawButton.disabled = true; // 启用开始按钮
     // 设置重置按钮为可用
     resetButton.disabled = false;
     // 由于重置操作可能在动画进行中触发，确保动画效果被清除
