@@ -83,7 +83,7 @@ var isDrawing = false;
 // 动画效果的时间间隔ID  
 var animationInterval = null;
 
-// 修改开始抽取函数，以便在开始抽取时启用重置按钮
+// 开始抽取函数
 function startDrawing() {
     if (isDrawing) return;
     isDrawing = true;
@@ -105,8 +105,8 @@ function startDrawing() {
         }
     }, { once: true });
 
-    // 开始抽取时，使重置按钮可用
-    resetButton.disabled = false;
+    // 开始抽取时，使重置按钮禁用
+    resetButton.disabled = true;
 }
 
 function stopDrawing() {
