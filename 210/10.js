@@ -162,6 +162,10 @@ function getRandomName() {
 }
 // 重置所有功能函数
 function resetAll() {
+    // 如果正在抽取，先停止抽取
+    if (isDrawing) {
+        stopDrawing();
+    }
     // 重置names数组为原始名字列表
     names = [...originalNames]; // 使用扩展运算符创建originalNames的浅拷贝并赋值给names
     // 清空已抽取的名字列表
@@ -185,6 +189,8 @@ function resetAll() {
     drawButton.innerHTML = "启动";
     // 设置重置按钮为不可用
     resetButton.disabled = true;
+    // 由于重置操作可能在动画进行中触发，确保动画效果被清除
+    isDrawing = false;
 }
 
 // 为重置按钮添加点击事件监听器
