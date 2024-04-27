@@ -198,3 +198,11 @@ resetButton.disabled = false;
 
 // 为启动按钮添加点击事件监听器（首次绑定）
 drawButton.addEventListener("click", startDrawing);
+// 为开始抽取按钮添加事件监听器
+drawButton.addEventListener("click", function() {
+    if (isDrawing) {
+        stopDrawing();
+    } else {
+        startDrawing();
+    }
+})
