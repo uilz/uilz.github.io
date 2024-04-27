@@ -124,6 +124,8 @@ function stopDrawing() {
         // 更新已抽取人数的显示
         var drawnCount = drawnNames.length;
         drawnCountDisplay.textContent = "天选: " + drawnCount + "人";
+        resetButton.disabled = false; // 重置按钮可用，允许用户重置抽取过程
+    }
     } else {
         // 如果没有名字可抽取，显示全员天选
         displayBoard.textContent = "全员天选";
