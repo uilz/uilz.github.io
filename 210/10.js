@@ -105,8 +105,8 @@ function startDrawing() {
         }
     }, { once: true });
 
-    // 开始抽取时，使重置按钮不可用
-    resetButton.disabled = true;
+    // 开始抽取时，使重置按钮可用
+    resetButton.disabled = false;
 }
 
 function stopDrawing() {
@@ -114,7 +114,7 @@ function stopDrawing() {
     isDrawing = false;
     clearInterval(animationInterval);
     animationInterval = null;
-    drawButton.innerHTML = "启动"; // 重置按钮文本
+    drawButton.innerHTML = "启动";
 
     // 执行实际的抽取并记录结果
     var randomName = getRandomName();
@@ -124,22 +124,25 @@ function stopDrawing() {
         // 更新已抽取人数的显示
         var drawnCount = drawnNames.length;
         drawnCountDisplay.textContent = "天选: " + drawnCount + "人";
-        resetButton.disabled = false; // 重置按钮可用，允许用户重置抽取过程
-    }
     } else {
-        // 如果没有名字可抽取，显示全员天选
-        displayBoard.textContent = "全员天选";
-        drawButton.disabled = true; // 禁用开始按钮
-        // drawButton.style.display = 'none'; // 不隐藏开始抽取按钮，根据需求保留或隐藏
-        resetButton.disabled = false; // 重置按钮可用，允许用户重置抽取过程
+        // 如果没有名字可抽取，禁用开始抽取按钮并显示提示信息
+        drawButton.disabled = true;
+        drawButton.innerHTML = "全员天选"; 
+        // 如果没有名字可抽取，隐藏开始抽取和重置按钮
+        drawButton.style.display = 'none';
+        resetButton.style.display = 'none';
+        displayBoard.textContent = "请刷新页面";
+        resetButton.disabled = false;
     }
 
-    // 更新侧边栏列表
+    // 仅当成功抽取名字后，才更新侧边栏列表
     if (randomName) {
         var drawnListItems = document.getElementById("drawnListItems");
         var drawnListItem = document.createElement("li");
         drawnListItem.textContent = randomName;
         drawnListItems.appendChild(drawnListItem);
+        // 停止抽取后，使重置按钮可用，以便可以清空历史记录
+        resetButton.disabled = false;
     }
 }
 
@@ -159,10 +162,6 @@ function getRandomName() {
 }
 // 重置所有功能函数
 function resetAll() {
-    // 如果正在抽取，先停止抽取
-    if (isDrawing) {
-        stopDrawing();
-    }
     // 重置names数组为原始名字列表
     names = [...originalNames]; // 使用扩展运算符创建originalNames的浅拷贝并赋值给names
     // 清空已抽取的名字列表
@@ -184,11 +183,8 @@ function resetAll() {
     }
     // 重置按钮文本为 "启动"
     drawButton.innerHTML = "启动";
-    drawButton.disabled = false; // 启用开始按钮
     // 设置重置按钮为不可用
     resetButton.disabled = true;
-    // 由于重置操作可能在动画进行中触发，确保动画效果被清除
-    var isDrawing = false;
 }
 
 // 为重置按钮添加点击事件监听器
