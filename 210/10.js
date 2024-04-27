@@ -182,8 +182,8 @@ function resetAll() {
     }
     // 重置按钮文本为 "启动"
     drawButton.innerHTML = "启动";
-    // 设置重置按钮为不可用
-    resetButton.disabled = true;
+    // 设置重置按钮为可用
+    resetButton.disabled = false;
     // 由于重置操作可能在动画进行中触发，确保动画效果被清除
     isDrawing = false;
 }
@@ -191,8 +191,8 @@ function resetAll() {
 // 为重置按钮添加点击事件监听器
 resetButton.addEventListener("click", resetAll);
 
-// 最初，重置按钮应该是不可用的
-resetButton.disabled = true;
+// 最初，重置按钮应该是可用的
+resetButton.disabled = false;
 
 // 为启动按钮添加点击事件监听器（首次绑定）
 drawButton.addEventListener("click", startDrawing);
