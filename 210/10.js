@@ -187,16 +187,6 @@ function resetAll() {
     resetButton.disabled = true;
 }
 
-// 修改重置按钮的点击事件监听器，添加检查抽取状态的逻辑
-resetButton.addEventListener("click", function() {
-    if (isDrawing) {
-        // 如果正在抽取，阻止重置操作并显示通知
-        displayNotification("请先停止抽取再点击重置");
-        return;
-    }
-    resetAll();
-});
-
 // 显示通知的函数
 function displayNotification(message) {
     // 创建通知元素
@@ -212,6 +202,17 @@ function displayNotification(message) {
         document.body.removeChild(notification);
     }, 3000);
 }
+
+// 修改重置按钮的点击事件监听器，添加检查抽取状态的逻辑
+resetButton.addEventListener("click", function(event) {
+    event.preventDefault(); // 阻止默认行为，防止按钮做其他操作
+    if (isDrawing) {
+        // 如果正在抽取，阻止重置操作并显示通知
+        displayNotification("请先停止抽取再点击重置");
+    } else {
+        resetAll();
+    }
+});
 
 // 最初，重置按钮应该是不可用的
 resetButton.disabled = true;
