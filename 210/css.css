@@ -110,6 +110,36 @@ button:hover {
     background-position: right center;
 }
 
+/* 返回按钮样式 */
+.back-button {
+    top: 0;
+    left: 0;
+    z-index: 985;
+    position: fixed;
+    width: 12vw;
+    height: 9vh;
+    font-family: 'bxzlzt';
+    background-image: linear-gradient(to right, #ff9bab 0%, #FFC0CB 51%, #ff9bab 100%);
+    background-size: 200% auto;
+    border-radius: 60px;
+    color: #741081;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
+    transition: ease .1s;
+    font-size: 3vw;
+}
+
+.back-button:before {
+    content: '返回';
+    /* 添加返回文本 */
+}
+
+/* 按钮悬停样式 */
+button:hover {
+    background-position: right center;
+}
+
 /* 抽取历史展示 */
 
 /* 记录板容器 */
@@ -117,7 +147,7 @@ button:hover {
     position: fixed;
     top: 1%;
     max-height: 95%;
-    right: 0;
+    right: 1px;
     width: 19vw;
     z-index: 211;
     background-color: rgba(255, 255, 255, .1);
@@ -185,93 +215,4 @@ button:hover {
 .notification.show {
     opacity: 1;
     /* 改变透明度为1，使其可见 */
-}
-
-/* 返回按钮样式 */
-.back-button {
-    top: 0;
-    left: 0;
-    z-index: 985;
-    position: fixed;
-    width: 12vw;
-    height: 9vh;
-    font-family: 'bxzlzt';
-    background-image: linear-gradient(to right, #ff9bab 0%, #FFC0CB 51%, #ff9bab 100%);
-    background-size: 200% auto;
-    border-radius: 60px;
-    color: #741081;
-    outline: none;
-    cursor: pointer;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
-    transition: ease .1s;
-    font-size: 3vw;
-}
-
-.back-button:before {
-    content: '返回';
-    /* 添加返回文本 */
-}
-
-/* 按钮悬停样式 */
-button:hover {
-    background-position: right center;
-}
-
-/* 记录板容器 */
-.tech-board {
-    position: fixed;
-    top: 55%;
-    right: 0;
-    width: 100%;
-    z-index: 211;
-    max-width: 90px;
-    max-height: 250px;
-    background-color: rgba(255, 255, 255, .1);
-    border-radius: 15px;
-    box-shadow: 0 4px 8px 0 rgb(7, 202, 216), 0 6px 20px 0 rgba(0, 0, 0, 0.09);
-    backdrop-filter: blur(150px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-align: center;
-    /* 当内容超出时启用滚动条 */
-    overflow-y: auto;
-}
-
-/* 记录板标题 */
-.tech-board .title {
-    padding: 10px;
-    white-space: nowarp;
-    text-align: center;
-    color: rgb(251, 255, 0);
-    font-size: 20px;
-    background: linear-gradient(to right, #00ff80, #27bbff);
-    border-top-left-radius: 15px;
-    border-top-right-radius: 15px;
-}
-
-/* 记录列表 */
-.tech-board .record-list {
-    padding: 3px;
-    color: #06eeff;
-    font-size: 30px;
-    list-style: none;
-}
-
-/* 通知横幅样式 */
-.notification {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #fff;
-    text-align: center;
-    padding: 10px 0;
-    font-size: 30px;
-    overflow: hidden;
-    white-space: nowrap;
-    transition: opacity 0.5s ease;
-    /* 添加渐显效果 */
-    z-index: 985211;
-    /* 确保通知显示在最上层 */
 }

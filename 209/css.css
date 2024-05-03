@@ -3,6 +3,7 @@
     font-family: "yfjlxs";
     src: url("/fonts/云峰静龙行书.ttf");
 }
+
 @font-face {
     font-family: "bxzlzt";
     src: url("/fonts/标小智龙珠体.ttf");
@@ -35,6 +36,7 @@
     opacity: 0;
     /* 使用类名来添加渐隐效果 */
 }
+
 
 /* 页面基础样式 */
 html,
@@ -108,80 +110,6 @@ button:hover {
     background-position: right center;
 }
 
-/* 抽取历史展示 */
-
-/* 记录板容器 */  
-.tech-board {  
-    position: fixed;  
-    top: 1%;
-    max-height: 95%;
-    right: 0;
-    width: 19vw;  
-    z-index: 211;
-    background-color: rgba(255, 255, 255, .1);
-    border-radius: 15px; 
-    box-shadow: 0 4px 8px 0 rgb(7, 202, 216), 0 6px 20px 0 rgba(0, 0, 0, 0.09);  
-    backdrop-filter: blur(150px);
-    white-space: nowrap;
-    overflow: hidden; 
-    text-align: center;
-    /* 当内容超出时启用滚动条 */
-    overflow-y: auto;
-}  
-
-  /* 记录板标题 */  
-.tech-board .title {  
-    padding: 5px;  
-    color: rgb(251, 255, 0);  
-    font-size: 3vw;
-    font-family: 'bxzlzt';
-    background: linear-gradient(to right, #91fff6, #26c0fd);  
-    border-top-left-radius: 15px;  
-    border-top-right-radius: 15px;  
-}  
-
-  /* 记录板人数 */  
-  .tech-board .p { 
-    padding: 2px;  
-    color: #FFC0CB;  
-    font-size: 2.5vw;
-    font-family: 'bxzlzt';
-}  
-
-/* 记录列表 */  
-.tech-board .record-list {  
-    padding: 2px;  
-    color: #06eeff;
-    font-size: 4vw;
-    font-family: 'yfjlxs';
-    list-style: none;  
-}  
-
-
-/* 通知横幅样式 */
-.notification {
-    position: fixed;
-    top: 6px;
-    left: 50%;
-    width: 70%;
-    background-color: rgba(255, 223, 238, 0.9);
-    color: #19a8cc;
-    text-align: center;
-    transform: translateX(-50%);
-    font-size: 5vw;
-    overflow: hidden;
-    border-radius: 10px;
-    white-space: nowrap;
-    opacity: 0; /* 初始透明度为0，即不可见 */
-    transition: opacity 0.6s ease;
-    /* 添加渐显效果 */
-    z-index: 985211;
-    /* 确保通知显示在最上层 */
-}
-.notification.show {
-    opacity: 1; /* 改变透明度为1，使其可见 */
-}
-
 /* 返回按钮样式 */
 .back-button {
     top: 0;
@@ -201,10 +129,90 @@ button:hover {
     transition: ease .1s;
     font-size: 3vw;
 }
+
 .back-button:before {
-    content: '返回'; /* 添加返回文本 */
+    content: '返回';
+    /* 添加返回文本 */
 }
+
 /* 按钮悬停样式 */
 button:hover {
     background-position: right center;
+}
+
+/* 抽取历史展示 */
+
+/* 记录板容器 */
+.tech-board {
+    position: fixed;
+    top: 1%;
+    max-height: 95%;
+    right: 1px;
+    width: 19vw;
+    z-index: 211;
+    background-color: rgba(255, 255, 255, .1);
+    border-radius: 15px;
+    box-shadow: 0 4px 8px 0 rgb(7, 202, 216), 0 6px 20px 0 rgba(0, 0, 0, 0.09);
+    backdrop-filter: blur(150px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: center;
+    /* 当内容超出时启用滚动条 */
+    overflow-y: auto;
+}
+
+/* 记录板标题 */
+.tech-board .title {
+    padding: 5px;
+    color: rgb(251, 255, 0);
+    font-size: 3vw;
+    font-family: 'bxzlzt';
+    background: linear-gradient(to right, #91fff6, #26c0fd);
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+/* 记录板人数 */
+.tech-board .p {
+    padding: 2px;
+    color: #FFC0CB;
+    font-size: 2.5vw;
+    font-family: 'bxzlzt';
+}
+
+/* 记录列表 */
+.tech-board .record-list {
+    padding: 2px;
+    color: #06eeff;
+    font-size: 4vw;
+    font-family: 'yfjlxs';
+    list-style: none;
+}
+
+
+/* 通知横幅样式 */
+.notification {
+    position: fixed;
+    top: 6px;
+    left: 50%;
+    width: 70%;
+    background-color: rgba(255, 223, 238, 0.9);
+    color: #19a8cc;
+    text-align: center;
+    transform: translateX(-50%);
+    font-size: 5vw;
+    overflow: hidden;
+    border-radius: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    /* 初始透明度为0，即不可见 */
+    transition: opacity 0.6s ease;
+    /* 添加渐显效果 */
+    z-index: 985211;
+    /* 确保通知显示在最上层 */
+}
+
+.notification.show {
+    opacity: 1;
+    /* 改变透明度为1，使其可见 */
 }
