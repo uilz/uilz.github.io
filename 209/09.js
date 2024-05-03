@@ -1,6 +1,7 @@
 // 名字列表
 // 原始的名字列表，用于在重置时恢复names数组
-const originalNames = ["张海丰",
+const originalNames = [
+    "张海丰",
     "唐可儿",
     "陈海玉",
     "刘文珍",
