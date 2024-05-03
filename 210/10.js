@@ -1,4 +1,4 @@
-// 名字列表  
+// 名字列表
 // 原始的名字列表，用于在重置时恢复names数组
 const originalNames = [
     "刘健翔",
@@ -65,6 +65,7 @@ const originalNames = [
     "李光栩",
     "彭根裕",
     "谢宇",
+    "梁志武",
 ];
 names = [...originalNames];
 // 已抽取的名字列表  
@@ -82,36 +83,38 @@ var isDrawing = false;
 // 动画效果的时间间隔ID  
 var animationInterval = null;
 
-// 修改开始抽取函数，以便在开始抽取时启用重置按钮
+// 返回函数
+function back() {
+window.location.href = "/index.html"
+}
+
+// 开始抽取函数
 function startDrawing() {
     if (isDrawing) return;
     isDrawing = true;
-    drawButton.innerHTML = "天选";
-
-    // 开始动画效果，每隔一段时间更换显示的名字  
-    animationInterval = setInterval(function () {
-        var randomIndex = Math.floor(Math.random() * names.length);
-        var randomName = names[randomIndex];
-        displayBoard.textContent = randomName; // 更改显示的名字  
-    }, 24); // 每隔24毫秒更换一次  
-
-    // 为开始抽取按钮添加事件监听器，但只触发一次
-    drawButton.addEventListener("click", function () {
-        if (isDrawing) {
-            stopDrawing();
-        } else {
-            startDrawing();
-        }
-    }, { once: true });
-
-    // 开始抽取时，使重置按钮可用
-    resetButton.disabled = false;
-
+    drawButton.innerHTML = "天 选";
+    // 如果没有人可以被抽取
     if (names.length === 0) {
-        // 如果没有名字可抽取，禁用开始抽取按钮并显示提示信息
-        drawButton.disabled = true;
-        drawButton.innerHTML = "全员天选";
-        displayBoard.textContent = "！全员天选！";
+        // 如果没有名字可抽取，隐藏开始抽取
+        drawButton.style.display = 'none';
+        displayBoard.textContent = "💥";
+        isDrawing = false;
+    } else {
+        // 开始动画效果，每隔一段时间更换显示的名字  
+        animationInterval = setInterval(function () {
+            var randomIndex = Math.floor(Math.random() * names.length);
+            var randomName = names[randomIndex];
+            displayBoard.textContent = randomName; // 更改显示的名字  
+        }, 14); // 每隔14毫秒更换一次  
+
+        // 为开始抽取按钮添加事件监听器，但只触发一次
+        drawButton.addEventListener("click", function () {
+            if (isDrawing) {
+                stopDrawing();
+            } else {
+                startDrawing();
+            }
+        }, { once: true });
     }
 }
 
@@ -130,12 +133,6 @@ function stopDrawing() {
         // 更新已抽取人数的显示
         var drawnCount = drawnNames.length;
         drawnCountDisplay.textContent = "天选: " + drawnCount + "人";
-    } else {
-        // 如果没有名字可抽取，禁用开始抽取按钮并显示提示信息
-        drawButton.disabled = true;
-        drawButton.innerHTML = "全员天选";
-        displayBoard.textContent = "！全员天选！";
-        resetButton.disabled = false;
     }
 
     // 仅当成功抽取名字后，才更新侧边栏列表
@@ -144,8 +141,6 @@ function stopDrawing() {
         var drawnListItem = document.createElement("li");
         drawnListItem.textContent = randomName;
         drawnListItems.appendChild(drawnListItem);
-        // 停止抽取后，使重置按钮可用，以便可以清空历史记录
-        resetButton.disabled = false;
     }
 }
 
@@ -177,8 +172,8 @@ function resetAll() {
     while (drawnListItems.firstChild) {
         drawnListItems.removeChild(drawnListItems.firstChild);
     }
-    // 将显示的名字设置为初始状态，例如 "天选之子"
-    displayBoard.textContent = "天选之子";
+    // 将显示的名字设置为初始状态: "天 选"
+    displayBoard.textContent = "天 选";
     // 清除动画效果
     if (animationInterval !== null) {
         clearInterval(animationInterval);
@@ -186,15 +181,45 @@ function resetAll() {
     }
     // 重置按钮文本为 "启动"
     drawButton.innerHTML = "启动";
-    // 设置重置按钮为不可用
-    resetButton.disabled = true;
+    // 设置开始按钮可见
+    drawButton.style = 'button';
 }
 
-// 为重置按钮添加点击事件监听器
-resetButton.addEventListener("click", resetAll);
+// 显示通知的函数
+function displayNotification(message) {
+    // 创建通知元素
+    var notification = document.createElement("div");
+    notification.className = "notification";
+    notification.textContent = message;
+    // 将通知添加到页面中
+    document.body.appendChild(notification);
+    // 直接使用类来控制显示和隐藏
+    notification.classList.add("show");
 
-// 最初，重置按钮应该是不可用的
-resetButton.disabled = true;
+    // 设置定时器，在1秒后开始渐隐通知
+    setTimeout(function () {
+        notification.classList.remove("show"); // 移除类来触发CSS的渐隐效果
+        setTimeout(function () {
+            document.body.removeChild(notification); // 0.5秒后移除通知元素
+        }, 1500); // 1.5秒后完成移除
+    }, 900); // 0.9秒后开始渐隐通知
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var resetButton = document.getElementById('resetButton');
+    resetButton.addEventListener("click", function(event) {
+        event.preventDefault(); // 阻止默认行为
+        // 检查是否正在抽取
+        if (isDrawing) {
+            // 显示通知
+            displayNotification("请完成抽取再点重置");
+        } else{
+            resetAll();
+        }
+    });
+});
 
 // 为启动按钮添加点击事件监听器（首次绑定）
 drawButton.addEventListener("click", startDrawing);
+// 为返回按钮添加点击事件监听器（首次绑定）
+backButton.addEventListener("click", back);

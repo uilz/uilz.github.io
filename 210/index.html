@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="viewport" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>抽取十班の天选之子</title>
+    <title>抽取十班 天选之子</title>
     <script>
         /* 载入动画 */
         window.onload = function () {
             setTimeout(function () {
                 var loader = document.getElementsByClassName("loader")[0];
                 loader.className = "loader fadeout";
-                setTimeout(function () { loader.style.display = "none" }, 700)
-            }, 220)
+                setTimeout(function () { loader.style.display = "none" }, 1000)
+            }, 300)
         }
     </script>
     <link rel="stylesheet" href="css.css">
@@ -24,20 +24,24 @@
     <div class="loader"></div>
     <!--content page-->
     <section>
-        <!-- 抽奖区 -->
+        <!-- 抽奖区域 -->
         <div id="interface">
-            <div id="nameDisplay">天选之子</div>
+            <div id="nameDisplay">天 选</div>
             <button id="drawButton">启动</button>
+            <hr style="visibility: hidden;">
             <button id="resetButton">重开</button>
         </div>
         <!-- 记录板侧边栏，包含滚动条 -->
         <div class="tech-board">
-            <div class="title">天选之子</div>
+            <div class="title">天选<br>之子</div>
             <!-- 显示已抽取人数 -->
-            <p id="drawnCount">天选人数</p>
+            <p class="p" id="drawnCount">天选人数</p>
             <ul class="record-list" id="drawnListItems"></ul>
         </div>
     </section>
+    <div class="back">
+        <button class="back-button" id="backButton"></button>
+    </div>
     <script src="10.js"></script>
 </body>
 

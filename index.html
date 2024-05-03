@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -27,22 +27,18 @@
     <!--content page-->
     <section>
         <div id="interface">
-            <button onclick="goTo09()">九班の天选之子</button>
-            <hr>
-            <button onclick="goTo10()">十班の天选之子</button>
-            <hr>
-            <button onclick="goTo210()">新の十班の天选</button>
-            <hr>
+            <div id="nameDisplay">天选</div>
+            <button onclick="goTo209()">九班 天选</button>
+            <hr style="visibility: hidden;">
+            <button onclick="goTo210()">十班 天选</button>
+            <hr style="visibility: hidden;">
             <button onclick="goTo01()">积 分 榜</button>
         </div>
     </section>
 
     <script>
-        function goTo09() {
-            window.location.href = "9/index.html"
-        }
-        function goTo10() {
-            window.location.href = "10/index.html"
+        function goTo209() {
+            window.location.href = "209/index.html"
         }
         function goTo210() {
             window.location.href = "210/index.html"
