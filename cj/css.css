@@ -70,6 +70,7 @@ button {
     box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
     transition: ease .1s;
     font-size: 6vw;
+    -webkit-tap-highlight-color: transparent;
 }
 
 button:hover {
@@ -94,6 +95,7 @@ button:hover {
     box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
     transition: ease .1s;
     font-size: 3vw;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .back-button:before {

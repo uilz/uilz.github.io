@@ -14,6 +14,7 @@ body {
     background-attachment: fixed;
     background-size: cover;
     overflow-x: hidden;
+    user-select: none;
 }
 
 section {
@@ -167,6 +168,7 @@ button {
     box-shadow: 0 20px 40px rgba(6, 38, 80, .1);
     transition: ease .1s;
     font-family: 'bxzlzt';
+    -webkit-tap-highlight-color: transparent;
 }
 
 button:hover {
