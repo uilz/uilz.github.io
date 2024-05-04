@@ -80,6 +80,7 @@ p.yiyan-container span.cursor {
 }
 
 /* 加载动画 */
+/* 
 .txloader {
   position: fixed;
   z-index: 985211;
@@ -87,8 +88,6 @@ p.yiyan-container span.cursor {
   height: 100%;
   background-image: url(/images/tx1.jpg);
   background-size: 100% 100%;
-
-  /* loader页面消失采用渐隐的方式*/
   -webkit-transition: opacity 0.5s ease;
   -moz-transition: opacity 0.5s ease;
   -o-transition: opacity 0.5s ease;
@@ -98,7 +97,7 @@ p.yiyan-container span.cursor {
 .fadeout {
   opacity: 0;
   filter: alpha(opacity=0);
-}
+} */
 
 /* 加载动画结束 */
 

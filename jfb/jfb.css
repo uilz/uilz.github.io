@@ -9,10 +9,11 @@ body {
     height: 100%;
     width: 100%;
     font-family: 'bxzlzt';
-    background-image: url('/images/img_sky.jpg');
+    background-image: url('/images/tx1.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
+    background-position: center 30%;
     overflow-x: hidden;
     user-select: none;
 }
@@ -34,14 +35,14 @@ section {
     align-items: center;
     z-index: 3;
     width: 400px;
-    background-color: rgba(255, 255, 255, .1);
+    background-color: rgba(255, 255, 255, 0.1);
     padding: 30px 30px;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
     border: 1px solid rgba(255, 255, 255, .2);
     border-right: 1px solid rgba(255, 255, 255, .1);
     border-bottom: 1px solid rgba(255, 255, 255, .1);
-    backdrop-filter: blur(25px);
+    backdrop-filter: blur(2.5px);
     white-space: nowrap;
 }
 
@@ -60,10 +61,10 @@ section {
     margin: 0 auto;
     color: #1f1f1f;
     font-size: 41px;
-    background-color: #ffffff33;
+    background-color: hsla(187, 100%, 69%, 0.3);
     border-radius: 5px;
     border-radius: 16px;
-    backdrop-filter: blur(36px);
+    backdrop-filter: blur(3.6px);
     white-space: nowrap;
 }
 
