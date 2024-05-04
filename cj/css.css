@@ -110,9 +110,10 @@ button:hover {
     /* 添加返回文本 */
 }
 
-/* 按钮悬停样式 */
 button:hover {
     background-position: right center;
+    color: #E6F1ED;
+    text-decoration: none;
 }
 
 /* 抽取历史展示 */
@@ -238,7 +239,7 @@ button:hover {
     .back-button {
         top: 9.85vh;
         width: 12vw;
-        height: 12.11vh;
+        height: 19.85vh;
         font-size: 6.66vw;
     }
 }

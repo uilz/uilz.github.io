@@ -8,29 +8,54 @@ window.onload = function () {
         setTimeout(function () { txloader.style.display = "none" }, 300)
     }, 300)
     // 一言
-    getQuotesTxt('quotes', txtUrl); // 获取一言
-    window.setInterval(() => { getQuotesTxt('quotes', txtUrl); }, 98500); // 加个定时器自动刷新
+    let yiyanContent = document.querySelector(".yiyan-content");
+    getYiYan().then(yiyan => revealText(yiyanContent, yiyan, 100)); // 初始文本显示间隔100ms
+};
+// 一言文本文件位置
+var txtUrl = "/hitokoto-load/quotes.txt"; // 使用yiy-load.js中的变量
+
+// 异步函数获取一言
+async function getYiYan() {
+    try {
+        let response = await fetch(txtUrl);
+        if (!response.ok) {
+            throw new Error("网络响应不正确");
+        }
+        let text = await response.text();
+        let resultArr = text.split('\n');
+        let i = Math.floor(Math.random() * resultArr.length);
+        return resultArr[i];
+    } catch (error) {
+        console.error('获取一言时发生错误：', error);
+        return "出错了，请稍后再试。";
+    }
 }
 
-function getQuotesTxt(id, url) {
-    if (!url) {
-        return "TXT 文件路径未设置！";
-    }
+// 逐字显现动画
+function revealText(yiyanContent, str, interval) {
+    let currentIndex = 0;
+    let revealInterval = setInterval(() => {
+        if (currentIndex < str.length) {
+            yiyanContent.textContent += str[currentIndex++];
+        } else {
+            clearInterval(revealInterval);
+            // 当前一言显示完毕后，等待9.85秒进行消失动画
+            setTimeout(() => fadeOutText(yiyanContent, interval), 9850);
+        }
+    }, interval);
+}
 
-    fetch(url)
-        .then(function (response) {
-            if (!response.ok) {
-                throw new Error("网络响应不正确");
-            }
-            return response.text();
-        })
-        .then(function (text) {
-            var resultArr = text.split('\n');
-            var i = Math.floor(Math.random() * resultArr.length);
-            var resultTxt = resultArr[i];
-            document.getElementById(id).innerHTML = resultTxt;
-        })
-        .catch(function (error) {
-            console.error('获取一言时发生错误：', error);
-        });
+// 逐字消失动画
+function fadeOutText(yiyanContent, interval) {
+    let originalText = yiyanContent.textContent;
+    let fadeOutInterval = setInterval(() => {
+        if (yiyanContent.textContent.length > 0) {
+            yiyanContent.textContent = originalText.slice(0, -1);
+            originalText = yiyanContent.textContent;
+        } else {
+            clearInterval(fadeOutInterval);
+            // 一言消失完毕后，重新获取并显示新的一言
+            getYiYan().then(newYiyan => revealText(yiyanContent, newYiyan, interval));
+        }
+    }, interval);
 }
