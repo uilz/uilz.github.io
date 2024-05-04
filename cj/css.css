@@ -9,36 +9,12 @@
     src: url("/fonts/标小智龙珠体.ttf");
 }
 
-/* 重置全局样式 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* 加载动画背景 */
-.loader {
-    position: fixed;
-    z-index: 985211;
-    width: 100%;
-    height: 100%;
-    background-image: url(/images/tx1.jpg);
-    background-size: cover;
-    /* 使用 cover 确保背景图片完全覆盖容器 */
-    background-position-y: 26%;
-    background-repeat: no-repeat;
-    opacity: 1;
-    transition: opacity 1.5s ease;
-    /* 合并所有浏览器前缀 */
-}
-
-.loader.fadeout {
-    opacity: 0;
-    /* 使用类名来添加渐隐效果 */
-}
-
-
-/* 页面基础样式 */
 html,
 body {
     height: 100%;
@@ -47,14 +23,13 @@ body {
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
-    /* 确保背景图片完全覆盖 */
-    overflow: hidden;
-    /* 同时控制水平和垂直滚动 */
+    overflow: auto;
+    overflow-x: hidden;
 }
 
-/* 内容区块 */
 section {
     position: relative;
+    top: 0;
     width: 100%;
     height: 100%;
     display: flex;
@@ -63,11 +38,12 @@ section {
     justify-content: center;
 }
 
-/* 界面样式 */
+
 #interface {
     position: relative;
     text-align: center;
     z-index: 3;
+    height: 100%;
     width: 100%;
     background-color: rgba(255, 255, 255, .1);
     padding: 30px 30px;
@@ -96,7 +72,7 @@ button {
     font-family: 'bxzlzt';
     background-image: linear-gradient(to right, #ff9bab 0%, #FFC0CB 51%, #ff9bab 100%);
     background-size: 200% auto;
-    border-radius: 60px;
+    border-radius: 8px;
     color: #fbff21;
     outline: none;
     cursor: pointer;
@@ -105,7 +81,6 @@ button {
     font-size: 6vw;
 }
 
-/* 按钮悬停样式 */
 button:hover {
     background-position: right center;
 }
@@ -215,4 +190,55 @@ button:hover {
 .notification.show {
     opacity: 1;
     /* 改变透明度为1，使其可见 */
+}
+
+/* 针对竖屏幕设备的样式调整 */
+@media screen and (orientation: portrait) {
+
+    button {
+
+        width: 87vw;
+        height: 19.99vh;
+        font-size: 9.85vh;
+    }
+
+    #nameDisplay {
+        font-size: 26vw;
+    }
+
+    .notification {
+        top: 13vh;
+    }
+
+    /* 记录板容器 */
+    .tech-board {
+        top: 38vh;
+        width: 21.1vw;
+    }
+
+    /* 记录板标题 */
+    .tech-board .title {
+        font-size: 8vw;
+    }
+
+    /* 记录板人数 */
+    .tech-board .p {
+        padding: 1px;
+        font-size: 3.66vw;
+        color: #fff5ef;
+    }
+
+    /* 记录列表 */
+    .tech-board .record-list {
+        padding: 1px;
+        font-size: 5.21vw;
+    }
+
+    /* 返回按钮样式 */
+    .back-button {
+        top: 9.85vh;
+        width: 12vw;
+        height: 12.11vh;
+        font-size: 6.66vw;
+    }
 }

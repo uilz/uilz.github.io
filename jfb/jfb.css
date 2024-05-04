@@ -16,11 +16,13 @@
 html,
 body {
     height: 100%;
+    width: 100%;
     font-family: 'bxzlzt';
     background-image: url('/images/img_sky.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
+    overflow-x: hidden;
 }
 
 section {
@@ -31,62 +33,6 @@ section {
     align-items: center;
     justify-content: center;
 
-}
-
-/* 加载动画 */
-.loader {
-    position: fixed;
-    z-index: 985211;
-    width: 100%;
-    height: 100%;
-    background-image: url(/images/tx1.jpg);
-    background-size: 100% 100%;
-
-    /* loader页面消失采用渐隐的方式*/
-    -webkit-transition: opacity 1.5s ease;
-    -moz-transition: opacity 1.5s ease;
-    -o-transition: opacity 1.5s ease;
-    transition: opacity 1.5s ease;
-}
-
-.fadeout {
-    opacity: 0;
-    filter: alpha(opacity=0);
-}
-
-/* logo出现动画 */
-@-webkit-keyframes fadeInDown {
-    0% {
-        opacity: 0;
-        -webkit-transform: translate3d(0, -100%, 0);
-        transform: translate3d(0, -100%, 0)
-    }
-
-    100% {
-        opacity: 1;
-        -webkit-transform: none;
-        transform: none
-    }
-}
-
-/* 分割线 */
-@keyframes fadeInDown {
-    0% {
-        opacity: 0;
-        -webkit-transform: translate3d(0, -100%, 0);
-    }
-}
-
-@keyframes pulse {
-    50% {
-        box-shadow: 0 0 0 50px rgba(255, 255, 255, 0);
-
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-
-    }
 }
 
 #interface {
@@ -149,7 +95,7 @@ section {
 
 .item .num {
     font-family: 'yfjlxs';
-    font-size: 29px;
+    font-size: 9.85vh;
     margin-right: 15px;
 }
 
@@ -174,17 +120,20 @@ section {
 }
 
 .avatar .img-bd {
-    width: 68px;
+    width: 69px;
     height: 79px;
     position: absolute;
     bottom: 0;
-    left: 0;
+    left: -1px;
     z-index: 1;
 }
 
 .rank-ability {
     font-family: 'bxzlzt';
     color: #ffd900;
+    font-size: 6.66vw;
+    position: fixed;
+    right: 0;
 }
 
 .item:nth-child(1) .num {
@@ -202,10 +151,13 @@ section {
 .center {
     position: relative;
     text-align: center;
-    width: 350px;
+    display: flex;
     margin: 0 auto;
+    justify-content: center;
+    align-items: center;
+    width: 350px;
     padding: 1px 0;
-    font-size: 24px;
+    font-size: 3.3vw;
     padding: 1px 0;
     white-space: nowrap;
 }
@@ -223,13 +175,86 @@ button {
     cursor: pointer;
     box-shadow: 0 20px 40px rgba(6, 38, 80, .1);
     transition: ease .1s;
-    font-size: 36px;
     font-family: 'bxzlzt';
-    justify-content: center;
 }
 
 button:hover {
     background-position: right center;
     color: #E6F1ED;
     text-decoration: none;
+}
+
+/* 原始样式↑ */
+
+/* 针对横屏幕设备的样式调整 */
+@media screen and (orientation: landscape) {
+    .rank-container {
+        width: 78%; /* 使用百分比 */
+        font-size: 9.85vw; /* 根据视口宽度调整字体大小 */
+    }
+    .rank-title {
+        font-size: 21.1vw; /* 调整标题字体大小 */
+    }
+    .item .num {
+        font-size: 5.21vw; /* 调整数字字体大小 */
+    }
+    button {
+        font-size: 6.66vw; /* 调整按钮字体大小 */
+        height: 19.85vh; /* 调整按钮高度 */
+        font-size: 9.85vh;
+    }
+    .avatar {
+        width: 9.85vh;
+        height: 9.85vh;
+    }
+    .avatar img {
+        width: 9.85vh;
+        height: 9.85vh;
+    }
+    .avatar .img-bd {
+        width: 10.45vh;
+        height: 12.11vh;
+        position: absolute;
+        bottom: 0;
+        left: -1px;
+        z-index: 1;
+    }
+}
+
+
+/* 针对竖屏幕设备的样式调整 */
+@media screen and (orientation: portrait) {
+    .rank-container {
+        width: 96%; /* 使用百分比 */
+        font-size: 9.85vw; /* 根据视口宽度调整字体大小 */
+    }
+    .rank-title {
+        font-size: 26vw; /* 调整标题字体大小 */
+    }
+    .center {
+        font-size: 5.66vw;
+    }
+    .item .num {
+        font-size: 15.21vw; /* 调整数字字体大小 */
+    }
+    button {
+        height: 9.85vh; /* 调整按钮高度 */
+        font-size: 7.89vh;
+    }
+    .avatar {
+        width: 9.85vh;
+        height: 9.85vh;
+    }
+    .avatar img {
+        width: 9.85vh;
+        height: 9.85vh;
+    }
+    .avatar .img-bd {
+        width: 10.45vh;
+        height: 12.11vh;
+        position: absolute;
+        bottom: 0;
+        left: -1px;
+        z-index: 1;
+    }
 }

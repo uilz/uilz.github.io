@@ -1,0 +1,67 @@
+@keyframes background-fade {
+    0% {
+      background-color: hsla(351, 100%, 91%, 0.8);
+    }
+    50% {
+      background-color: rgba(255, 182, 194, 0.9);
+    }
+    100% {
+      background-color: hsla(351, 100%, 91%, 0.8);
+    }
+  }
+
+.section-hitokoto {
+    z-index: 985;
+    display: inline-block;
+    top: 0;
+    max-width: 56%;
+    height: auto;
+    background-size: 200% auto;
+    border-radius: 5px;
+    text-align: center;
+    padding: 3px;
+    left: 50%;
+    transform: translate(-50%);
+    animation: background-fade 6.6s infinite;
+}
+
+.hitokoto {
+    color: #211985;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: 'yfjlxs';
+    font-size: clamp(0.521rem, 2.5vw, 2.11rem);
+}
+
+/* 加载动画 */
+.txloader {
+  position: fixed;
+  z-index: 985211;
+  width: 100%;
+  height: 100%;
+  background-image: url(/images/tx1.jpg);
+  background-size: 100% 100%;
+
+  /* loader页面消失采用渐隐的方式*/
+  -webkit-transition: opacity 0.5s ease;
+  -moz-transition: opacity 0.5s ease;
+  -o-transition: opacity 0.5s ease;
+  transition: opacity 0.5s ease;
+}
+
+.fadeout {
+  opacity: 0;
+  filter: alpha(opacity=0);
+}
+/* 加载动画结束 */
+
+/* 针对竖屏幕设备的样式调整 */
+@media screen and (orientation: portrait) {
+  .section-hitokoto {
+      max-width: 96%;
+  }
+  .hitokoto {
+      font-size: 5.21vw;
+  }
+}

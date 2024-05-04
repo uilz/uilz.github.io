@@ -6,24 +6,20 @@
     <meta http-equiv="viewport" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>抽签,启动!</title>
-    <script>
-        /* 载入动画 */
-        window.onload = function () {
-            setTimeout(function () {
-                var loader = document.getElementsByClassName("loader")[0];
-                loader.className = "loader fadeout";
-                setTimeout(function () { loader.style.display = "none" }, 1000)
-            }, 300)
-        }
-    </script>
-    <link rel="stylesheet" href="css.css">
+    <script src="/hitokoto-load/yiy-load.js"></script>
+    <link rel="stylesheet" href="/hitokoto-load/hitokoto-load.css">
+    <link rel="stylesheet" href="/css.css">
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="bookmark" href="/favicon.ico" />
 </head>
 
 <body>
-    <!--loading page-->
-    <div class="loader"></div>
+    <!--加载动画-->
+    <div class="txloader"></div>
+    <!-- 一言 -->
+    <section class="section-hitokoto">
+        <div id="quotes" class="hitokoto"></div>
+    </section>
     <!--content page-->
     <section>
         <div id="interface">
@@ -35,15 +31,17 @@
             <button onclick="goTo01()">积 分 榜</button>
         </div>
     </section>
-
     <script>
         function goTo209() {
-            window.location.href = "209/index.html"
+            window.location.href = "/209/index.html"
         }
         function goTo210() {
-            window.location.href = "210/index.html"
+            window.location.href = "/210/index.html"
         }
         function goTo01() {
-            window.location.href = "jfb.html"
+            window.location.href = "/jfb/index.html"
         }
     </script>
+</body>
+
+</html>
