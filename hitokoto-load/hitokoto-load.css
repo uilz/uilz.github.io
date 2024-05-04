@@ -1,3 +1,14 @@
+/* 字体 */
+@font-face {
+  font-family: "yfjlxs";
+  src: url("/fonts/云峰静龙行书-小.ttf");
+}
+
+@font-face {
+  font-family: "bxzlzt";
+  src: url("/fonts/标小智龙珠体-小.ttf");
+}
+
 @keyframes background-fade {
   0% {
     background-color: hsla(351, 100%, 91%, 0.8);
@@ -44,7 +55,7 @@ p.yiyan-container {
   line-height: 6vh;
   font-weight: 6vw;
   text-align: center;
-  font-family: 'yfjlxs';
+  font-family: '宋体';
   color: #211985;
 }
 
@@ -101,7 +112,7 @@ p.yiyan-container span.cursor {
 
   .section-hitokoto {
     max-width: 96vw;
-    min-width: 2.11vw;
+    min-width: 12.11vw;
     min-height: 8.86vh;
     padding: 2px 5px;
   }

@@ -1,13 +1,3 @@
-/* 字体 */
-@font-face {
-    font-family: "yfjlxs";
-    src: url("/fonts/云峰静龙行书.ttf");
-}
-
-@font-face {
-    font-family: "bxzlzt";
-    src: url("/fonts/标小智龙珠体.ttf");
-}
 
 * {
     margin: 0;
