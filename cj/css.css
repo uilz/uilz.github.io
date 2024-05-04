@@ -215,6 +215,7 @@ button:hover {
     .tech-board {
         top: 38vh;
         width: 21.1vw;
+        max-height: 60vh;
     }
 
     /* 记录板标题 */
