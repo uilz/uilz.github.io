@@ -78,7 +78,7 @@ button {
     cursor: pointer;
     box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
     transition: ease .1s;
-    font-size: 10vh;
+    font-size: 10vw;
 }
 
 button:hover {
@@ -91,10 +91,10 @@ button:hover {
 @media screen and (orientation: portrait) {
 
     button {
-
+        border-radius: 666px;
         width: 87vw;
         height: 19.99vh;
-        font-size: 9.85vh;
+        font-size: 12.11vw;
     }
 
     #nameDisplay {
