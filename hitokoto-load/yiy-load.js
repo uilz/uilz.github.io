@@ -39,8 +39,8 @@ function revealText(yiyanContent, str, interval) {
             yiyanContent.textContent += str[currentIndex++];
         } else {
             clearInterval(revealInterval);
-            // 当前一言显示完毕后，等待9.85秒进行消失动画
-            setTimeout(() => fadeOutText(yiyanContent, interval), 9850);
+            // 当前一言显示完毕后，等待2.11秒进行消失动画
+            setTimeout(() => fadeOutText(yiyanContent, interval), 2110);
         }
     }, interval);
 }
