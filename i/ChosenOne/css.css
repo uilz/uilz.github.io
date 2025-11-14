@@ -9,7 +9,7 @@ html,
 body {
     height: 100%;
     font-family: 'bxzlzt';
-    background-image: url('/images/img_sky.jpg');
+    background-image: url('images/img_sky.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;

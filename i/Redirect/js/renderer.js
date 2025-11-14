@@ -65,23 +65,26 @@ export class Renderer {
 
     attachCanvasInteractions() {
         let panning = false;
+        let panPointerId = null;
         let last = { x: 0, y: 0 };
+        const pinch = {
+            active: false,
+            pointers: new Map(),
+            startDistance: 0,
+            startZoom: 1,
+            anchor: { x: 0, y: 0 }
+        };
 
-        this.svg.addEventListener("pointerdown", event => {
-            if (event.button !== 0) {
-                return;
-            }
-            if (event.target !== this.svg) {
-                return;
-            }
+        const beginPan = event => {
             panning = true;
+            panPointerId = event.pointerId;
             last = { x: event.clientX, y: event.clientY };
             this.svg.setPointerCapture(event.pointerId);
             this.svg.classList.add("dragging");
-        });
+        };
 
-        this.svg.addEventListener("pointermove", event => {
-            if (!panning) {
+        const updatePan = event => {
+            if (!panning || event.pointerId !== panPointerId) {
                 return;
             }
             const dx = event.clientX - last.x;
@@ -91,33 +94,108 @@ export class Renderer {
             this.view.pan.y += dy;
             this.applyViewTransform();
             this.state.setViewState(this.view);
-        });
+        };
 
-        const endPan = event => {
-            if (!panning) {
+        const stopPan = pointerId => {
+            if (!panning || pointerId !== panPointerId) {
                 return;
             }
             panning = false;
-            this.svg.releasePointerCapture(event.pointerId);
+            panPointerId = null;
+            this.svg.releasePointerCapture(pointerId);
             this.svg.classList.remove("dragging");
         };
 
-        this.svg.addEventListener("pointerup", endPan);
-        this.svg.addEventListener("pointercancel", endPan);
+        const startPinch = () => {
+            if (pinch.pointers.size !== 2) {
+                return;
+            }
+            pinch.active = true;
+            if (panning && panPointerId != null) {
+                stopPan(panPointerId);
+            }
+            const [a, b] = [...pinch.pointers.values()];
+            pinch.startDistance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+            pinch.startZoom = this.view.zoom;
+            const rect = this.svg.getBoundingClientRect();
+            pinch.anchor = {
+                x: ((a.x + b.x) / 2) - rect.left,
+                y: ((a.y + b.y) / 2) - rect.top
+            };
+        };
+
+        const updatePinch = () => {
+            if (!pinch.active || pinch.pointers.size < 2) {
+                return;
+            }
+            const [a, b] = [...pinch.pointers.values()];
+            const distance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+            const factor = distance / pinch.startDistance;
+            this.applyZoomAtPoint(pinch.startZoom * factor, pinch.anchor.x, pinch.anchor.y);
+        };
+
+        const endPinch = () => {
+            if (!pinch.active) {
+                return;
+            }
+            pinch.active = false;
+            pinch.startDistance = 0;
+        };
+
+        this.svg.addEventListener("pointerdown", event => {
+            const isTouch = event.pointerType === "touch";
+            if (isTouch) {
+                if (!pinch.pointers.has(event.pointerId) && pinch.pointers.size < 2) {
+                    pinch.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                    if (pinch.pointers.size === 2) {
+                        startPinch();
+                        return;
+                    }
+                }
+                if (pinch.active) {
+                    return;
+                }
+            }
+            if (event.button !== 0) {
+                return;
+            }
+            if (event.target !== this.svg) {
+                return;
+            }
+            beginPan(event);
+        });
+
+        this.svg.addEventListener("pointermove", event => {
+            if (event.pointerType === "touch" && pinch.pointers.has(event.pointerId)) {
+                pinch.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                if (pinch.active) {
+                    updatePinch();
+                    return;
+                }
+            }
+            updatePan(event);
+        });
+
+        const handlePointerEnd = event => {
+            if (event.pointerType === "touch" && pinch.pointers.has(event.pointerId)) {
+                pinch.pointers.delete(event.pointerId);
+                if (pinch.active && pinch.pointers.size < 2) {
+                    endPinch();
+                }
+            }
+            stopPan(event.pointerId);
+        };
+
+        this.svg.addEventListener("pointerup", handlePointerEnd);
+        this.svg.addEventListener("pointercancel", handlePointerEnd);
 
         this.svg.addEventListener("wheel", event => {
             event.preventDefault();
             const zoomFactor = event.deltaY > 0 ? 0.92 : 1.08;
-            const newZoom = Math.min(2.5, Math.max(0.4, this.view.zoom * zoomFactor));
             const rect = this.svg.getBoundingClientRect();
             const cx = event.clientX - rect.left;
             const cy = event.clientY - rect.top;
-            const scaleRatio = newZoom / this.view.zoom;
-            this.view.pan.x = cx - (cx - this.view.pan.x) * scaleRatio;
-            this.view.pan.y = cy - (cy - this.view.pan.y) * scaleRatio;
-            this.view.zoom = newZoom;
-            this.applyViewTransform();
-            this.state.setViewState(this.view);
+            this.applyZoomAtPoint(this.view.zoom * zoomFactor, cx, cy);
         }, { passive: false });
     }
 
@@ -146,6 +224,16 @@ export class Renderer {
         const { x, y } = this.view.pan;
         const scale = this.view.zoom;
         this.rootGroup.setAttribute("transform", `translate(${x},${y}) scale(${scale})`);
+    }
+
+    applyZoomAtPoint(targetZoom, cx, cy) {
+        const clamped = Math.min(2.5, Math.max(0.4, targetZoom));
+        const scaleRatio = clamped / this.view.zoom;
+        this.view.pan.x = cx - (cx - this.view.pan.x) * scaleRatio;
+        this.view.pan.y = cy - (cy - this.view.pan.y) * scaleRatio;
+        this.view.zoom = clamped;
+        this.applyViewTransform();
+        this.state.setViewState(this.view);
     }
 
     render(snapshot) {

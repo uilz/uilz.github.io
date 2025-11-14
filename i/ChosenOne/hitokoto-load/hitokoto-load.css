@@ -86,7 +86,7 @@ p.yiyan-container span.cursor {
   z-index: 985211;
   width: 100%;
   height: 100%;
-  background-image: url(/images/tx1.jpg);
+  background-image: url(../images/tx1.jpg);
   background-size: 100% 100%;
   -webkit-transition: opacity 0.5s ease;
   -moz-transition: opacity 0.5s ease;

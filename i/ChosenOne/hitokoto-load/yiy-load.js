@@ -12,7 +12,7 @@ window.onload = function () {
     getYiYan().then(yiyan => revealText(yiyanContent, yiyan, 100)); // 初始文本显示间隔100ms
 };
 // 一言文本文件位置
-var txtUrl = "/hitokoto-load/quotes.txt"; // 使用yiy-load.js中的变量
+var txtUrl = "hitokoto-load/quotes.txt"; // 使用yiy-load.js中的变量
 
 // 异步函数获取一言
 async function getYiYan() {

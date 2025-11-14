@@ -9,7 +9,7 @@ body {
     height: 100%;
     width: 100%;
     font-family: 'bxzlzt';
-    background-image: url('/images/tx1.jpg');
+    background-image: url('../images/tx1.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;

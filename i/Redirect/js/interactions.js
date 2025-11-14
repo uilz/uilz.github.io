@@ -105,7 +105,7 @@ export class InteractionHandler {
         });
 
         this.svg.addEventListener("pointerdown", event => {
-            if (event.pointerType !== "touch") {
+            if (event.pointerType !== "touch" || event.isPrimary === false) {
                 return;
             }
             if (event.target.closest?.(".graph-node")) {
@@ -157,6 +157,9 @@ export class InteractionHandler {
 
             const pointerHandler = event => {
                 if (event.button !== 0 && event.pointerType !== "touch") {
+                    return;
+                }
+                if (event.pointerType === "touch" && event.isPrimary === false) {
                     return;
                 }
                 event.stopPropagation();
