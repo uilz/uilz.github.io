@@ -1,4 +1,7 @@
-var txtUrl = "/hitokoto-load/quotes.txt"; // 一言文本文件位置
+const scriptElement = document.currentScript;
+const txtUrl = scriptElement && scriptElement.src
+    ? new URL('quotes.txt', scriptElement.src).href
+    : "/hitokoto-load/quotes.txt"; // 一言文本文件位置
 
 window.onload = function () {
     // // 加载动画
@@ -11,9 +14,6 @@ window.onload = function () {
     let yiyanContent = document.querySelector(".yiyan-content");
     getYiYan().then(yiyan => revealText(yiyanContent, yiyan, 100)); // 初始文本显示间隔100ms
 };
-// 一言文本文件位置
-var txtUrl = "hitokoto-load/quotes.txt"; // 使用yiy-load.js中的变量
-
 // 异步函数获取一言
 async function getYiYan() {
     try {
