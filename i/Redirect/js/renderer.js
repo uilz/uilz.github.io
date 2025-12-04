@@ -335,6 +335,7 @@ export class Renderer {
             foreign.setAttribute("height", "70");
 
             const container = document.createElement("div");
+            container.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
             container.textContent = node.content;
             container.className = "node-content";
             container.style.fontSize = "0.9rem";
@@ -474,6 +475,33 @@ export class Renderer {
     createNodeToPointPath(nodePos, point) {
         const start = this.anchorFromCenter(nodePos, point);
         return this.createCurvePath(start, point);
+    }
+
+    getContentBounds() {
+        const nodes = this.state.getState().graph.nodes;
+        if (nodes.length === 0) {
+            return { x: 0, y: 0, width: 1200, height: 800 };
+        }
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        const halfW = 110;
+        const halfH = 40;
+
+        nodes.forEach(node => {
+            minX = Math.min(minX, node.position.x - halfW);
+            maxX = Math.max(maxX, node.position.x + halfW);
+            minY = Math.min(minY, node.position.y - halfH);
+            maxY = Math.max(maxY, node.position.y + halfH);
+        });
+
+        // Add some padding
+        const padding = 50;
+        return {
+            x: minX - padding,
+            y: minY - padding,
+            width: (maxX - minX) + (padding * 2),
+            height: (maxY - minY) + (padding * 2)
+        };
     }
 
     clientPointToGraph(clientX, clientY) {

@@ -1,9 +1,98 @@
 import { graphState } from "./state.js";
 
 export class IOHandler {
-    constructor(state = graphState) {
+    constructor(state = graphState, renderer = null) {
         this.state = state;
+        this.renderer = renderer;
         this.fileInput = null;
+    }
+
+    async exportImage() {
+        if (!this.renderer) {
+            console.warn("Renderer not available for export");
+            return;
+        }
+
+        const bounds = this.renderer.getContentBounds();
+        const scale = 2; // HD scale
+        const width = bounds.width * scale;
+        const height = bounds.height * scale;
+
+        const clone = this.renderer.svg.cloneNode(true);
+        
+        // Remove transform from root group to reset view
+        const rootGroup = clone.querySelector("g");
+        if (rootGroup) {
+             rootGroup.removeAttribute("transform");
+        }
+
+        clone.setAttribute("viewBox", `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`);
+        clone.setAttribute("width", width);
+        clone.setAttribute("height", height);
+        clone.style.backgroundColor = "#ffffff";
+
+        // Embed styles
+        const styleElement = document.createElement("style");
+        let cssText = "";
+        for (const sheet of document.styleSheets) {
+            try {
+                if (sheet.href && sheet.href.includes("style.css")) {
+                     for (const rule of sheet.cssRules) {
+                        cssText += rule.cssText + "\n";
+                     }
+                }
+            } catch (e) {
+                console.warn("Access to stylesheet blocked", e);
+            }
+        }
+        styleElement.textContent = cssText;
+        clone.insertBefore(styleElement, clone.firstChild);
+
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(clone);
+        
+        // Use Base64 Data URI to avoid tainted canvas issues with foreignObject
+        const base64 = btoa(unescape(encodeURIComponent(svgString)));
+        const url = `data:image/svg+xml;base64,${base64}`;
+
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            try {
+                const pngUrl = canvas.toDataURL("image/png");
+                const link = document.createElement("a");
+                link.href = pngUrl;
+                link.download = `genesis-mind-export-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                console.error("Export PNG failed, falling back to SVG", e);
+                alert("由于浏览器安全限制，无法导出 PNG。将为您下载 SVG 文件。");
+                
+                const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = blobUrl;
+                link.download = `genesis-mind-export-${Date.now()}.svg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+            }
+        };
+        img.onerror = (e) => {
+             console.error("Failed to load SVG image for export", e);
+             alert("导出图片失败。");
+        };
+        img.src = url;
     }
 
     save(typeLabel = "daily") {

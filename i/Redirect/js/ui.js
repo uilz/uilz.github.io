@@ -27,6 +27,7 @@ export class UIControls {
         this.buttons = [
             this.createButton("Load", () => this.io.load(), { className: "button-load" }),
             this.createButton("Save", () => this.io.save(this.currentType), { className: "button-save" }),
+            this.createButton("Export PNG", () => this.io.exportImage(), { className: "button-export" }),
             this.createButton("Reset", () => {
                 if (confirm("Reset to default roots?")) {
                     this.interactions?.cancelLinking?.();

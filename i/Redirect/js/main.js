@@ -12,7 +12,7 @@ class GenesisMindApp {
         this.uiLayer = document.getElementById("ui-layer");
 
         this.renderer = new Renderer(this.svg, this.state);
-        this.io = new IOHandler(this.state);
+        this.io = new IOHandler(this.state, this.renderer);
         this.interactions = new InteractionHandler(this.renderer, {
             state: this.state,
             contextMenu: this.contextMenu
