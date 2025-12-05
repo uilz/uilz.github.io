@@ -1237,20 +1237,33 @@
         }
 
         // 自动检测本地模型文件完整性
-        // 如果是移动端且本地缺少 Lite 模型，自动切换到在线 CDN
+        // 优先使用本地模型；若移动端缺少 Lite，则回退到 Full，本地都缺再切换 CDN
         if (this.currentCdnIndex === 0) {
-            const requiredModel = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
-            try {
-                console.log(`Checking local model availability: ${requiredModel}...`);
-                const response = await fetch(`hands/${requiredModel}`, { method: 'HEAD' });
-                if (!response.ok) {
-                    console.warn(`Local model file ${requiredModel} missing (Status ${response.status}). Switching to Online CDN.`);
-                    this.currentCdnIndex = 1; // Switch to JSDelivr
+            const prefer = this.isMobile ? ['hand_landmark_lite.tflite', 'hand_landmark_full.tflite'] : ['hand_landmark_full.tflite'];
+            let foundLocal = false;
+
+            for (const candidate of prefer) {
+                try {
+                    console.log(`Checking local model availability: ${candidate}...`);
+                    const response = await fetch(`hands/${candidate}`, { method: 'HEAD' });
+                    if (response.ok) {
+                        this.modelFile = candidate;
+                        foundLocal = true;
+                        break;
+                    }
+                } catch (e) {
+                    console.warn(`Failed to check local model file ${candidate}.`, e);
                 }
-            } catch (e) {
-                console.warn(`Failed to check local model file. Switching to Online CDN.`, e);
-                this.currentCdnIndex = 1;
             }
+
+            if (!foundLocal) {
+                console.warn(`Local model file missing. Switching to Online CDN.`);
+                this.currentCdnIndex = 1; // Switch to JSDelivr
+                this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
+            }
+        } else {
+            // 非本地模式直接按平台偏好
+            this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
         }
 
         const cdn = this.cdnList[this.currentCdnIndex];
@@ -1268,9 +1281,10 @@
                     }
                 });
 
+                const modelComplexity = (this.modelFile && this.modelFile.includes('lite')) ? 0 : 1;
                 hands.setOptions({
                     maxNumHands: 2,
-                    modelComplexity: this.isMobile ? 0 : 1, // 移动端使用 Lite 模型 (0)，PC 使用 Full (1)
+                    modelComplexity,
                     minDetectionConfidence: 0.5,
                     minTrackingConfidence: 0.5
                 });
