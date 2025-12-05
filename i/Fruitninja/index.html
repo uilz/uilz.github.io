@@ -609,12 +609,12 @@
 
                 // CDN 配置
                 this.cdnList = [
-                    { name: 'Local (本地 ./hands/)', url: 'hands/' },
                     { name: 'JSDelivr (推荐)', url: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' },
                     { name: 'Unpkg (备用)', url: 'https://unpkg.com/@mediapipe/hands/' },
-                    { name: 'JSDelivr Fastly', url: 'https://fastly.jsdelivr.net/npm/@mediapipe/hands/' }
+                    { name: 'JSDelivr Fastly', url: 'https://fastly.jsdelivr.net/npm/@mediapipe/hands/' },
+                    { name: 'Local (本地 ./hands/)', url: 'hands/' }
                 ];
-                this.currentCdnIndex = 0; // 优先使用本地文件 (需确保 hands 文件夹存在且完整)
+                this.currentCdnIndex = 2; // 默认使用 JSDelivr Fastly，末位保留本地兜底
 
                 // 绑定UI元素
                 this.ui = {
