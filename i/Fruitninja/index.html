@@ -648,8 +648,8 @@
                 // 性能优化：检测移动设备
                 this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 this.lastDetectionTime = 0;
-                // 移动端检测帧率优化：从 60ms(15fps) 提升至 30ms(33fps) 以改善手感，同时保持一定性能限制
-                this.detectionInterval = this.isMobile ? 30 : 0; 
+                // 移动端检测帧率优化：从 60ms(15fps) 提升至 20ms(50fps) 以改善手感，同时保持一定性能限制
+                this.detectionInterval = this.isMobile ? 20 : 0; 
 
                 this.initAudio();
                 this.initMediaPipe();
