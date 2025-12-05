@@ -609,12 +609,12 @@
 
                 // CDN 配置
                 this.cdnList = [
+                    { name: 'Local (本地 ./hands/)', url: 'hands/' },
                     { name: 'JSDelivr (推荐)', url: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' },
                     { name: 'Unpkg (备用)', url: 'https://unpkg.com/@mediapipe/hands/' },
-                    { name: 'JSDelivr Fastly', url: 'https://fastly.jsdelivr.net/npm/@mediapipe/hands/' },
-                    { name: 'Local (本地 ./hands/)', url: 'hands/' }
+                    { name: 'JSDelivr Fastly', url: 'https://fastly.jsdelivr.net/npm/@mediapipe/hands/' }
                 ];
-                this.currentCdnIndex = 2; // 默认使用 JSDelivr Fastly，末位保留本地兜底
+                this.currentCdnIndex = 0; // 默认先用本地，后续可切换 CDN
 
                 // 绑定UI元素
                 this.ui = {
@@ -1267,19 +1267,79 @@
         }
 
         const cdn = this.cdnList[this.currentCdnIndex];
-        const updateStatus = (msg) => {
-            this.ui.status.innerText = msg;
-            // 同步更新加载屏幕的文字
+        const statusLines = {};
+        const renderStatus = () => {
+            const text = Object.values(statusLines).join('\n') || '...';
+            this.ui.status.innerText = text;
             const p = this.ui.loadingMsg.querySelector('p');
-            if (p) p.innerText = msg;
-        };                updateStatus(`初始化 MediaPipe (${cdn.name})...`);
-                console.log(`Using CDN: ${cdn.url}`);
+            if (p) p.innerText = text;
+        };
+        const updateStatus = (msg, key = null) => {
+            if (key) {
+                statusLines[key] = msg;
+                renderStatus();
+            } else {
+                statusLines['_global'] = msg;
+                renderStatus();
+            }
+        };
 
-                const hands = new Hands({
-                    locateFile: (file) => {
-                        return `${cdn.url}${file}`;
-                    }
-                });
+        // 预取模型/wasm并显示百分比进度（并行下载）
+        const blobUrlMap = {};
+        const prefetchWithProgress = async (file, label) => {
+            const url = `${cdn.url}${file}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`${label} 获取失败 (${res.status})`);
+            const total = Number(res.headers.get('content-length')) || 0;
+            const reader = res.body.getReader();
+            let loaded = 0;
+            const chunks = [];
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                loaded += value.byteLength;
+                const loadedMB = (loaded / 1048576).toFixed(2);
+                if (total) {
+                    const pct = (loaded / total * 100).toFixed(1);
+                    updateStatus(`${label}: ${pct}% (${loadedMB}MB/${(total/1048576).toFixed(2)}MB)`, file);
+                } else {
+                    updateStatus(`${label}: ${loadedMB}MB`, file);
+                }
+            }
+            const blob = new Blob(chunks);
+            blobUrlMap[file] = URL.createObjectURL(blob);
+            updateStatus(`${label}: 完成`, file);
+        };
+
+        // 需要显示进度的核心文件（可按需扩展）
+        const assetFiles = [
+            this.modelFile || 'hand_landmark_full.tflite',
+            'hand_landmark_lite.tflite',
+            'hands_solution_packed_assets_loader.js',
+            'hands_solution_simd_wasm_bin.wasm',
+            'hands.binarypb'
+        ];
+
+        updateStatus(`初始化 MediaPipe (${cdn.name})...`);
+        console.log(`Using CDN: ${cdn.url}`);
+
+        // 并行预取；失败则回退为直接加载
+        try {
+            const tasks = assetFiles.map((f) => prefetchWithProgress(f, `加载 ${f}`));
+            await Promise.all(tasks);
+        } catch (e) {
+            console.warn('预取模型/wasm 失败，改用直接加载', e);
+            Object.keys(blobUrlMap).forEach(k => URL.revokeObjectURL(blobUrlMap[k]));
+            Object.keys(blobUrlMap).forEach(k => delete blobUrlMap[k]);
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => {
+                if (blobUrlMap[file]) return blobUrlMap[file];
+                return `${cdn.url}${file}`;
+            }
+        });
 
                 const modelComplexity = (this.modelFile && this.modelFile.includes('lite')) ? 0 : 1;
                 hands.setOptions({
@@ -1295,12 +1355,21 @@
                 try {
                     updateStatus("正在加载模型文件(请耐心等待)...");
 
-                    // 添加超时控制 (延长至 60秒)
+                    // 添加超时控制 (延长至 9 分钟) 并显示加载计时
                     const loadPromise = hands.initialize();
+                    const timeoutMs = 540000; // 9 分钟
+                    const startTime = Date.now();
+                    const progressTimer = setInterval(() => {
+                        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                        updateStatus(`正在加载模型... ${elapsedSec}s`);
+                    }, 1000);
+
                     const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("模型加载超时 (60s)")), 60000)
+                        setTimeout(() => reject(new Error(`模型加载超时 (${timeoutMs / 1000}s)`)), timeoutMs)
                     );
+
                     await Promise.race([loadPromise, timeoutPromise]);
+                    clearInterval(progressTimer);
 
                     updateStatus("请求摄像头权限...");
                     const stream = await navigator.mediaDevices.getUserMedia({
