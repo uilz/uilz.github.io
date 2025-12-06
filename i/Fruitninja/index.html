@@ -1261,7 +1261,7 @@
         // 移动端优先 Lite，桌面使用 Full；缺失则切换 CDN
         if (this.currentCdnIndex === 0) {
             const prefer = this.isMobile
-                ? ['hand_landmark_lite.tflite', 'hand_landmark_full.tflite']
+                ? ['hand_landmark_lite.tflite']
                 : ['hand_landmark_full.tflite'];
             let foundLocal = false;
 
@@ -1342,15 +1342,21 @@
         };
 
         // 需要显示进度的核心文件（可按需扩展）
-        const assetFiles = [
-            { file: this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite', label: 'model', required: true },
-            { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite', required: !this.isMobile },
-            { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: this.isMobile },
-            { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
-            { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
-            { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
-            { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
-        ];
+        const assetFiles = this.isMobile
+            ? [
+                { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: true },
+                { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+                { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
+            ]
+            : [
+                { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite (~5.2MB)', required: true },
+                { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+                { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
+            ];
 
         updateStatus(`初始化 MediaPipe (${cdn.name})...`);
         console.log(`Using CDN: ${cdn.url}`);
