@@ -604,6 +604,8 @@
                 this.gestureTimer = 0;
                 this.lastActionTime = 0; // 上次触发动作的时间 (冷却用)
                 this.lastCooldownSec = 0; // 冷却倒计时音效记录
+                this.pauseStartTime = null; // 记录暂停开始时间，用于修正计时
+                this.lastDisplayedTime = -1; // 上次渲染的秒数，用于防抖显示
 
                 this.spawnTimer = 0;
                 this.difficultyMultiplier = 0.3;
@@ -1309,6 +1311,17 @@
 
         // 预取模型/wasm并显示百分比进度（并行下载）
         const blobUrlMap = {};
+        // 预期大小表，用于展示更接近实际的体积（部分 CDN 会压缩传输导致 Content-Length 偏小）
+        const expectedSizes = {
+            'hand_landmark_full.tflite': 5.22,
+            'hand_landmark_lite.tflite': 1.98,
+            'hands_solution_packed_assets_loader.js': 0.01,
+            'hands_solution_packed_assets.data': 4.13,
+            'hands_solution_simd_wasm_bin.js': 0.26,
+            'hands_solution_simd_wasm_bin.wasm': 5.75,
+            'hands.binarypb': 0.01
+        };
+
         const prefetchWithProgress = async (file, label, required = true) => {
             const url = `${cdn.url}${file}`;
             const res = await fetch(url);
@@ -1329,16 +1342,22 @@
                 chunks.push(value);
                 loaded += value.byteLength;
                 const loadedMB = (loaded / 1048576).toFixed(2);
+                const expectedMB = expectedSizes[file];
                 if (total) {
                     const pct = (loaded / total * 100).toFixed(1);
-                    updateStatus(`${label}: ${pct}% (${loadedMB}MB/${(total/1048576).toFixed(2)}MB)`, file);
+                    const totalMB = (total / 1048576).toFixed(2);
+                    updateStatus(`${label}: ${pct}% (${loadedMB}MB/${totalMB}MB)`, file);
+                } else if (expectedMB) {
+                    updateStatus(`${label}: ${loadedMB}MB / ~${expectedMB.toFixed(2)}MB`, file);
                 } else {
                     updateStatus(`${label}: ${loadedMB}MB`, file);
                 }
             }
             const blob = new Blob(chunks);
             blobUrlMap[file] = URL.createObjectURL(blob);
-            updateStatus(`${label}: 完成`, file);
+            const finalMB = (loaded / 1048576).toFixed(2);
+            const suffix = expectedSizes[file] ? ` (~${expectedSizes[file].toFixed(2)}MB)` : '';
+            updateStatus(`${label}: 完成 (${finalMB}MB${suffix})`, file);
         };
 
         // 需要显示进度的核心文件（可按需扩展）
@@ -1365,6 +1384,7 @@
         try {
             const tasks = assetFiles.map(({ file, label, required }) => prefetchWithProgress(file, `加载 ${label}`, required));
             await Promise.all(tasks);
+            updateStatus('模型文件已缓存，正在初始化...');
         } catch (e) {
             console.warn('预取模型/wasm 失败，改用直接加载', e);
             Object.keys(blobUrlMap).forEach(k => URL.revokeObjectURL(blobUrlMap[k]));
@@ -1400,6 +1420,9 @@
                         const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
                         updateStatus(`正在加载模型... ${elapsedSec}s`);
                     }, 1000);
+                    const hangWarn = setTimeout(() => {
+                        updateStatus('初始化耗时较长，可能被网络或浏览器阻塞，建议尝试切换线路或刷新');
+                    }, 45000);
 
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error(`模型加载超时 (${timeoutMs / 1000}s)`)), timeoutMs)
@@ -1407,6 +1430,7 @@
 
                     await Promise.race([loadPromise, timeoutPromise]);
                     clearInterval(progressTimer);
+                    clearTimeout(hangWarn);
 
                     updateStatus("请求摄像头权限...");
                     const stream = await navigator.mediaDevices.getUserMedia({
@@ -1686,11 +1710,13 @@
                 this.score = 0;
                 this.lives = 3;
                 this.gameTime = 0;
+                this.lastDisplayedTime = -1;
                 this.fruits = [];
                 this.particles = [];
                 this.applyDifficultyRamp(0);
                 this.difficultyMultiplier = this.difficultyBase;
                 this.startTime = Date.now();
+                this.pauseStartTime = null;
                 this.missedFruits = 0;
                 this.slicedFruitsTotal = 0;
                 this.doubleScoreTimer = 0;
@@ -1703,6 +1729,7 @@
                     this.state = 'PAUSED';
                     this.ui.menuOverlay.classList.remove('hidden');
                     this.ui.pauseMenu.classList.remove('hidden');
+                    this.pauseStartTime = Date.now();
                 } else if (this.state === 'PAUSED') {
                     this.resumeGame();
                 }
@@ -1710,6 +1737,11 @@
 
             resumeGame() {
                 this.lastActionTime = Date.now(); // 重置冷却时间
+                if (this.pauseStartTime) {
+                    // 将暂停耗时从游戏计时中扣除
+                    this.startTime += (Date.now() - this.pauseStartTime);
+                    this.pauseStartTime = null;
+                }
                 this.state = 'PLAYING';
                 this.ui.menuOverlay.classList.add('hidden');
                 this.ui.pauseMenu.classList.add('hidden');
@@ -1840,6 +1872,9 @@
                 // 随时间提升难度：先更新各项参数，再累积难度系数
                 this.applyDifficultyRamp(this.gameTime);
                 this.difficultyMultiplier = this.difficultyBase + Math.min(1.5, (this.gameTime / 60) * 0.3);
+
+                // 更新时间显示（仅当秒数变化时刷新）
+                this.refreshTimeDisplay();
 
                 // 生成水果
                 this.spawnTimer++;
@@ -2250,11 +2285,7 @@
                 }
                 
                 // 更新时间显示 (MM:SS)
-                if (this.ui.time) {
-                    const minutes = Math.floor(this.gameTime / 60).toString().padStart(2, '0');
-                    const seconds = (this.gameTime % 60).toString().padStart(2, '0');
-                    this.ui.time.innerText = `${minutes}:${seconds}`;
-                }
+                this.refreshTimeDisplay(true);
 
                 // 更新生命值显示 (使用爱心图标)
                 const maxLives = 3;
@@ -2276,6 +2307,16 @@
                     }
                     this.ui.livesContainer.appendChild(heartIcon);
                 }
+            }
+
+            // 只在秒数变化时更新时间显示，减少跳变与卡顿
+            refreshTimeDisplay(force = false) {
+                if (!this.ui.time) return;
+                if (!force && this.gameTime === this.lastDisplayedTime) return;
+                this.lastDisplayedTime = this.gameTime;
+                const minutes = Math.floor(this.gameTime / 60).toString().padStart(2, '0');
+                const seconds = (this.gameTime % 60).toString().padStart(2, '0');
+                this.ui.time.innerText = `${minutes}:${seconds}`;
             }
 
             draw() {
