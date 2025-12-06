@@ -13,6 +13,11 @@
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -27,7 +32,7 @@
         #game-container {
             position: relative;
             width: 100vw;
-            height: 100vh;
+            height: 100dvh; /* 避免移动端地址栏挤占 */
             /* background-image: url('...'); 移除错误的 base64 */
         }
 
@@ -542,9 +547,9 @@
         /**
          * 游戏配置与常量
          */
-        const CONFIG = {
-            GRAVITY: 0.15,
-            SPAWN_RATE_INITIAL: 15, // 帧数间隔 (极速刷新)
+            const CONFIG = {
+                GRAVITY: 0.5,
+                SPAWN_RATE_INITIAL: 28, // 初始更慢，降低开局压力
             MAX_FRUITS: 25, // 增加同屏上限
             BLADE_LIFETIME: 10, // 刀光轨迹保留帧数
             GESTURE_HOLD_TIME: 3000, // 毫秒
@@ -574,8 +579,9 @@
                 this.ctx = this.canvas.getContext('2d');
                 this.video = document.getElementById('input-video');
 
-                this.width = window.innerWidth;
-                this.height = window.innerHeight;
+                const vv = window.visualViewport;
+                this.width = vv ? vv.width : window.innerWidth;
+                this.height = vv ? vv.height : window.innerHeight;
                 this.canvas.width = this.width;
                 this.canvas.height = this.height;
 
@@ -600,12 +606,33 @@
                 this.lastCooldownSec = 0; // 冷却倒计时音效记录
 
                 this.spawnTimer = 0;
-                this.difficultyMultiplier = 1;
+                this.difficultyMultiplier = 0.3;
                 this.timeSlowFactor = 1;
                 this.timeSlowTimer = 0;
 
                 this.comboCount = 0;
                 this.lastSliceTime = 0;
+
+                // 难度渐进设置（随时间自动从简单->困难，不再需要手动选择）
+                this.difficultyRamp = {
+                    duration: 120, // 120秒内线性拉满难度
+                    spawnEasy: 42,
+                    spawnHard: 22,
+                    floorEasy: 30,
+                    floorHard: 18,
+                    maxEasy: 12,
+                    maxHard: 20,
+                    apexMinEasy: 0.55,
+                    apexMinHard: 0.78,
+                    apexMaxEasy: 0.68,
+                    apexMaxHard: 0.9,
+                    specialScaleEasy: 0.7,
+                    specialScaleHard: 1.3,
+                    burstScaleEasy: 0.7,
+                    burstScaleHard: 1.3,
+                    difficultyBaseEasy: 0.2,
+                    difficultyBaseHard: 0.35
+                };
 
                 // CDN 配置
                 this.cdnList = [
@@ -618,12 +645,12 @@
 
                 // 绑定UI元素
                 this.ui = {
+                    menuOverlay: document.getElementById('menu-overlay'),
                     score: document.getElementById('score'),
                     highScore: document.getElementById('high-score'),
                     livesContainer: document.getElementById('lives-container'),
                     status: document.getElementById('gesture-status'),
                     time: document.getElementById('game-time'),
-                    menuOverlay: document.getElementById('menu-overlay'),
                     loadingMsg: document.getElementById('loading-message'),
                     startMenu: document.getElementById('start-menu'),
                     gameOverMenu: document.getElementById('game-over-menu'),
@@ -643,13 +670,18 @@
                 // 菜单交互状态
                 this.menuHoverTimer = 0;
                 this.menuHoverTarget = null;
-                this.menuHoverMaxTime = 60; // 约1秒悬停触发
+                this.menuHoverMaxTime = 30; // 约0.5秒悬停触发
 
                 // 性能优化：检测移动设备
                 this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 this.lastDetectionTime = 0;
-                // 移动端检测帧率优化：从 60ms(15fps) 提升至 20ms(50fps) 以改善手感，同时保持一定性能限制
-                this.detectionInterval = this.isMobile ? 20 : 0; 
+                this.detectionInterval = 0; // 全平台尽量实时检测，减少手势延迟
+
+                // 移动端降载参数
+                this.particleCount = this.isMobile ? 5 : 8;
+
+                // 初始应用简单难度（后续自动渐进）
+                this.applyDifficultyRamp(0);
 
                 this.initAudio();
                 this.initMediaPipe();
@@ -1192,8 +1224,9 @@
             }
 
             resize() {
-                this.width = window.innerWidth;
-                this.height = window.innerHeight;
+                const vv = window.visualViewport;
+                this.width = vv ? vv.width : window.innerWidth;
+                this.height = vv ? vv.height : window.innerHeight;
                 this.canvas.width = this.width;
                 this.canvas.height = this.height;
                 this.updateVideoLayout();
@@ -1204,29 +1237,17 @@
 
                 const vw = this.video.videoWidth;
                 const vh = this.video.videoHeight;
+                this.videoDims = { vw, vh };
                 const cw = this.width;
                 const ch = this.height;
+                // Cover 适配：填满屏幕，必要时裁剪；识别仍基于原始视频尺寸
+                const scale = Math.max(cw / vw, ch / vh);
+                const drawW = vw * scale;
+                const drawH = vh * scale;
+                const offsetX = (cw - drawW) / 2;
+                const offsetY = (ch - drawH) / 2;
 
-                const vr = vw / vh;
-                const cr = cw / ch;
-
-                let sx, sy, sw, sh;
-
-                if (cr > vr) {
-                    // Canvas is wider. Keep full video width, crop height.
-                    sw = vw;
-                    sh = vw / cr;
-                    sx = 0;
-                    sy = (vh - sh) / 2;
-                } else {
-                    // Canvas is taller. Keep full video height, crop width.
-                    sh = vh;
-                    sw = vh * cr;
-                    sx = (vw - sw) / 2;
-                    sy = 0;
-                }
-
-                this.videoSource = { x: sx, y: sy, w: sw, h: sh };
+                this.videoMapping = { scale, offsetX, offsetY, drawW, drawH };
             }
 
     async initMediaPipe() {
@@ -1237,9 +1258,11 @@
         }
 
         // 自动检测本地模型文件完整性
-        // 优先使用本地模型；若移动端缺少 Lite，则回退到 Full，本地都缺再切换 CDN
+        // 移动端优先 Lite，桌面使用 Full；缺失则切换 CDN
         if (this.currentCdnIndex === 0) {
-            const prefer = this.isMobile ? ['hand_landmark_lite.tflite', 'hand_landmark_full.tflite'] : ['hand_landmark_full.tflite'];
+            const prefer = this.isMobile
+                ? ['hand_landmark_lite.tflite', 'hand_landmark_full.tflite']
+                : ['hand_landmark_full.tflite'];
             let foundLocal = false;
 
             for (const candidate of prefer) {
@@ -1262,7 +1285,7 @@
                 this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
             }
         } else {
-            // 非本地模式直接按平台偏好
+            // 非本地模式按平台优先级
             this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
         }
 
@@ -1286,10 +1309,16 @@
 
         // 预取模型/wasm并显示百分比进度（并行下载）
         const blobUrlMap = {};
-        const prefetchWithProgress = async (file, label) => {
+        const prefetchWithProgress = async (file, label, required = true) => {
             const url = `${cdn.url}${file}`;
             const res = await fetch(url);
-            if (!res.ok) throw new Error(`${label} 获取失败 (${res.status})`);
+            if (!res.ok) {
+                if (!required) {
+                    updateStatus(`${label}: 跳过 (${res.status})`, file);
+                    return;
+                }
+                throw new Error(`${label} 获取失败 (${res.status})`);
+            }
             const total = Number(res.headers.get('content-length')) || 0;
             const reader = res.body.getReader();
             let loaded = 0;
@@ -1314,11 +1343,13 @@
 
         // 需要显示进度的核心文件（可按需扩展）
         const assetFiles = [
-            this.modelFile || 'hand_landmark_full.tflite',
-            'hand_landmark_lite.tflite',
-            'hands_solution_packed_assets_loader.js',
-            'hands_solution_simd_wasm_bin.wasm',
-            'hands.binarypb'
+            { file: this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite', label: 'model', required: true },
+            { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite', required: !this.isMobile },
+            { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: this.isMobile },
+            { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+            { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+            { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+            { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
         ];
 
         updateStatus(`初始化 MediaPipe (${cdn.name})...`);
@@ -1326,7 +1357,7 @@
 
         // 并行预取；失败则回退为直接加载
         try {
-            const tasks = assetFiles.map((f) => prefetchWithProgress(f, `加载 ${f}`));
+            const tasks = assetFiles.map(({ file, label, required }) => prefetchWithProgress(file, `加载 ${label}`, required));
             await Promise.all(tasks);
         } catch (e) {
             console.warn('预取模型/wasm 失败，改用直接加载', e);
@@ -1373,7 +1404,9 @@
 
                     updateStatus("请求摄像头权限...");
                     const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { width: 1280, height: 720, facingMode: "user" }
+                        video: this.isMobile
+                            ? { width: 960, height: 540, facingMode: "user" }
+                            : { width: 1280, height: 720, facingMode: "user" }
                     });
 
                     updateStatus("等待摄像头画面...");
@@ -1463,6 +1496,14 @@
 
             detectGestures(landmarksList, handedness) {
                 const now = Date.now();
+
+                // 倒计时阶段不处理手势，避免误触重置/暂停导致回到开始界面
+                if (this.state === 'COUNTDOWN') {
+                    this.gestureState = 'NONE';
+                    this.gestureStartTime = null;
+                    this.ui.status.innerText = '倒计时中...';
+                    return;
+                }
 
                 // 冷却时间检查 (防止连续触发) - 3秒倒计时
                 const cooldownDuration = 3000;
@@ -1584,6 +1625,26 @@
                 }
             }
 
+            applyDifficultyRamp(tSec) {
+                const r = this.difficultyRamp;
+                const p = Math.min(1, Math.max(0, tSec / r.duration));
+                const lerp = (a, b) => a + (b - a) * p;
+
+                this.difficultyBase = lerp(r.difficultyBaseEasy, r.difficultyBaseHard);
+                this.apexMinFactor = lerp(r.apexMinEasy, r.apexMinHard);
+                this.apexMaxFactor = lerp(r.apexMaxEasy, r.apexMaxHard);
+                this.specialScale = lerp(r.specialScaleEasy, r.specialScaleHard);
+                this.burstScale = lerp(r.burstScaleEasy, r.burstScaleHard);
+
+                const spawnRate = lerp(r.spawnEasy, r.spawnHard);
+                const spawnFloor = lerp(r.floorEasy, r.floorHard);
+                const maxFruits = lerp(r.maxEasy, r.maxHard);
+
+                this.spawnRateInitial = this.isMobile ? spawnRate + 10 : spawnRate;
+                this.spawnRateFloor = this.isMobile ? Math.max(18, spawnFloor) : Math.max(22, spawnFloor);
+                this.maxFruits = this.isMobile ? Math.min(maxFruits, 14) : Math.round(maxFruits);
+            }
+
             startGame() {
                 this.lastActionTime = Date.now(); // 重置冷却时间
                 if (this.audioCtx && this.audioCtx.state === 'suspended') {
@@ -1621,7 +1682,8 @@
                 this.gameTime = 0;
                 this.fruits = [];
                 this.particles = [];
-                this.difficultyMultiplier = 1;
+                this.applyDifficultyRamp(0);
+                this.difficultyMultiplier = this.difficultyBase;
                 this.startTime = Date.now();
                 this.missedFruits = 0;
                 this.slicedFruitsTotal = 0;
@@ -1680,7 +1742,9 @@
             }
 
             spawnFruit() {
-                const isSpecial = Math.random() < 0.15; // 15% 概率特殊物品
+                // 特殊物品概率随时间略升，开局更宽松
+                const specialBase = 0.10 * this.specialScale;
+                const isSpecial = Math.random() < Math.min(0.18 * this.specialScale, specialBase + this.difficultyMultiplier * 0.03 * this.specialScale);
                 let item;
 
                 if (isSpecial) {
@@ -1703,10 +1767,14 @@
                 const finalSize = item.size * sizeVariation;
 
                 // 随机速度变化
-                const vx = (centerX - x) * 0.015 + (Math.random() - 0.5) * 6; // 水平速度变化更大
-                // 垂直速度基础值 + 随机波动 + 难度加成
-                const speedVar = Math.random() * 8;
-                const vy = -(13 + speedVar + (this.difficultyMultiplier * 2));
+                const vx = (centerX - x) * 0.012 + (Math.random() - 0.5) * 5; // 降低水平速度
+                // 计算希望上升到画布 (apexMin~apexMax) 高度，再落下，便于初始更低速度
+                const apexMin = this.apexMinFactor || 0.7;
+                const apexMax = this.apexMaxFactor || 0.82;
+                const desiredApex = Math.max(260, this.height * (apexMin + Math.random() * (apexMax - apexMin)));
+                const baseVy = -Math.sqrt(2 * CONFIG.GRAVITY * desiredApex);
+                const vyJitter = 0.9 + Math.random() * 0.25; // 0.9x ~ 1.15x
+                const vy = baseVy * vyJitter - this.difficultyMultiplier * 0.6;
 
                 this.fruits.push({
                     x, y, vx, vy,
@@ -1721,8 +1789,9 @@
                     active: true
                 });
 
-                // 30% 概率额外生成一个伴随水果 (Burst Spawn)
-                if (Math.random() < 0.3) {
+                // 附带水果概率随难度提升，开局更低
+                const burstProb = Math.min(0.30 * this.burstScale, (0.12 + this.difficultyMultiplier * 0.05) * this.burstScale);
+                if (Math.random() < burstProb) {
                     setTimeout(() => {
                         // 简单的递归调用，但要防止无限递归，这里手动添加一个
                         // 实际项目中最好把 spawnFruit 拆分为 createFruit 和 scheduleSpawn
@@ -1762,12 +1831,14 @@
 
                 // 难度增加
                 this.gameTime = Math.floor((Date.now() - this.startTime) / 1000);
-                this.difficultyMultiplier = 1 + Math.floor(this.gameTime / 30) * 0.2;
+                // 随时间提升难度：先更新各项参数，再累积难度系数
+                this.applyDifficultyRamp(this.gameTime);
+                this.difficultyMultiplier = this.difficultyBase + Math.min(1.5, (this.gameTime / 60) * 0.3);
 
                 // 生成水果
                 this.spawnTimer++;
-                const currentSpawnRate = Math.max(20, CONFIG.SPAWN_RATE_INITIAL - (this.difficultyMultiplier * 10));
-                if (this.spawnTimer > currentSpawnRate && this.fruits.length < CONFIG.MAX_FRUITS) {
+                const currentSpawnRate = Math.max(this.spawnRateFloor, this.spawnRateInitial - (this.difficultyMultiplier * 6));
+                if (this.spawnTimer > currentSpawnRate && this.fruits.length < this.maxFruits) {
                     this.spawnFruit();
                     this.spawnTimer = 0;
                 }
@@ -1862,14 +1933,14 @@
                     const indexTip = hand[8];
 
                     // 1. 转换归一化坐标到视频原始像素坐标
-                    const vw = this.video.videoWidth;
-                    const vh = this.video.videoHeight;
-                    const videoX = indexTip.x * vw;
-                    const videoY = indexTip.y * vh;
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const videoX = indexTip.x * dims.vw;
+                    const videoY = indexTip.y * dims.vh;
 
-                    // 2. 映射到 Canvas 坐标
-                    const canvasX = (videoX - this.videoSource.x) / this.videoSource.w * this.width;
-                    const canvasY = (videoY - this.videoSource.y) / this.videoSource.h * this.height;
+                    // 2. 映射到 Canvas 坐标（基于 letterbox 缩放，不裁剪输入）
+                    const mapping = this.videoMapping || { scale: 1, offsetX: 0, offsetY: 0 };
+                    const canvasX = videoX * mapping.scale + mapping.offsetX;
+                    const canvasY = videoY * mapping.scale + mapping.offsetY;
 
                     // 3. 应用镜像翻转
                     const tipX = this.width - canvasX;
@@ -2038,23 +2109,22 @@
                             maxLife: 120,
                             rotation: Math.random() * Math.PI * 2,
                             style: style,
-                            blobs: [], // 用于 BLOB 样式的多个子圆
+                            outline: [], // 用于 BLOB 样式的多边不规则外形
+                            blobs: [], // 旧数据结构保留兼容
                             points: [], // 用于 SPLASH 样式的多边形
                             droplets: [] // 用于 MIST 样式的液滴
                         };
 
                         // 预计算形状数据 (避免每帧抖动)
                         if (style === 'BLOB') {
-                            // 不再是单一多边形，而是多个重叠的圆形 (Metaballs 模拟)
-                            // 生成 3-6 个子圆
-                            const numBlobs = 3 + Math.floor(Math.random() * 4);
-                            for (let j = 0; j < numBlobs; j++) {
-                                const angle = Math.random() * Math.PI * 2;
-                                const dist = Math.random() * splatter.size * 0.4; // 分布在中心周围
-                                splatter.blobs.push({
-                                    x: Math.cos(angle) * dist,
-                                    y: Math.sin(angle) * dist,
-                                    r: splatter.size * (0.3 + Math.random() * 0.4) // 子圆半径
+                            // 生成无规则外形：环绕一圈的不等距顶点
+                            const pointCount = 24 + Math.floor(Math.random() * 14); // 24-37 点
+                            for (let j = 0; j < pointCount; j++) {
+                                const angle = (j / pointCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.12;
+                                const radius = splatter.size * (0.55 + Math.random() * 0.55);
+                                splatter.outline.push({
+                                    x: Math.cos(angle) * radius,
+                                    y: Math.sin(angle) * radius
                                 });
                             }
                         } else if (style === 'SPLASH') {
@@ -2087,10 +2157,19 @@
                     }
                 }
 
-                // 2. 爆炸粒子 (Particles)
-                // 性能优化：减少粒子数量 (10 -> 8)
-                const particleCount = 8;
+                // 2. 爆炸粒子 (Particles) — 全部不规则，并限制块状大小
+                const particleCount = this.particleCount;
                 for (let i = 0; i < particleCount; i++) {
+                    const verts = [];
+                    const vertCount = 6 + Math.floor(Math.random() * 6); // 6-11 边
+                    const baseR = 2 + Math.random() * 3; // 控制块大小更小
+                    for (let v = 0; v < vertCount; v++) {
+                        // 不规则角度与半径
+                        const ang = Math.random() * Math.PI * 2;
+                        const r = baseR * (0.5 + Math.random());
+                        verts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
+                    }
+
                     this.particles.push({
                         x: fruit.x,
                         y: fruit.y,
@@ -2098,7 +2177,7 @@
                         vy: (Math.random() - 0.5) * 10,
                         life: 30 + Math.random() * 20,
                         color: fruit.color,
-                        size: Math.random() * 5 + 2
+                        verts
                     });
                 }
 
@@ -2201,14 +2280,14 @@
                 this.ctx.save();
                 this.ctx.scale(-1, 1);
                 this.ctx.translate(-this.width, 0);
-                if (this.video.readyState === 4) {
-                    // 使用计算好的布局绘制，保持比例 (object-fit: cover)
-                    // 使用 source cropping (9参数) 提高性能
+                if (this.video.readyState === 4 && this.videoMapping) {
+                    const map = this.videoMapping;
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const destX = this.width - map.offsetX - map.drawW; // 镜像后从右往左放置
                     this.ctx.drawImage(
                         this.video,
-                        this.videoSource.x, this.videoSource.y,
-                        this.videoSource.w, this.videoSource.h,
-                        0, 0, this.width, this.height
+                        0, 0, dims.vw, dims.vh,
+                        destX, map.offsetY, map.drawW, map.drawH
                     );
                 } else {
                     // 备用背景
@@ -2237,19 +2316,25 @@
                             this.ctx.fill();
                         }
                     } else if (s.style === 'BLOB') {
-                        // 绘制多个重叠的圆形 (Metaballs 效果)
-                        for (let b of s.blobs) {
+                        // 使用预计算的不规则外形，避免出现规则圆形
+                        if (s.outline && s.outline.length > 2) {
                             this.ctx.beginPath();
-                            this.ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                            this.ctx.moveTo(s.outline[0].x, s.outline[0].y);
+                            for (let i = 1; i < s.outline.length; i++) {
+                                this.ctx.lineTo(s.outline[i].x, s.outline[i].y);
+                            }
+                            this.ctx.closePath();
                             this.ctx.fill();
 
-                            // 每个子圆的高光
                             if (!this.isMobile) {
                                 this.ctx.save();
-                                this.ctx.globalAlpha *= 0.3;
+                                this.ctx.globalAlpha *= 0.25;
                                 this.ctx.fillStyle = '#ffffff';
+                                // 在外形内随机放置一个小高光，保持不规则感
+                                const pick = s.outline[Math.floor(Math.random() * s.outline.length)];
+                                const hiSize = s.size * 0.15;
                                 this.ctx.beginPath();
-                                this.ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.2, 0, Math.PI * 2);
+                                this.ctx.ellipse(pick.x * 0.3, pick.y * 0.3, hiSize, hiSize * 0.6, Math.PI / 3, 0, Math.PI * 2);
                                 this.ctx.fill();
                                 this.ctx.restore();
                             }
@@ -2326,9 +2411,17 @@
                 // 3. 绘制粒子
                 for (let p of this.particles) {
                     this.ctx.fillStyle = p.color;
-                    this.ctx.globalAlpha = p.life / 50;
+                    this.ctx.globalAlpha = Math.max(0, p.life / 50);
                     this.ctx.beginPath();
-                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    if (p.verts && p.verts.length) {
+                        this.ctx.moveTo(p.x + p.verts[0].x, p.y + p.verts[0].y);
+                        for (let k = 1; k < p.verts.length; k++) {
+                            this.ctx.lineTo(p.x + p.verts[k].x, p.y + p.verts[k].y);
+                        }
+                        this.ctx.closePath();
+                    } else {
+                        this.ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+                    }
                     this.ctx.fill();
                 }
                 this.ctx.globalAlpha = 1;
@@ -2379,21 +2472,17 @@
 
                 // 5. 绘制手势识别点 (调试用)
                 if (this.handLandmarks && this.video.readyState >= 2) {
-                    const vw = this.video.videoWidth;
-                    const vh = this.video.videoHeight;
-                    const sx = this.videoSource.x;
-                    const sy = this.videoSource.y;
-                    const sw = this.videoSource.w;
-                    const sh = this.videoSource.h;
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const map = this.videoMapping || { scale: 1, offsetX: 0, offsetY: 0 };
 
                     this.ctx.fillStyle = '#00ff00';
                     for (const landmarks of this.handLandmarks) {
-                        // Helper to map coordinates
+                        // Helper to map coordinates using letterbox mapping
                         const mapCoord = (p) => {
-                            const vx = p.x * vw;
-                            const vy = p.y * vh;
-                            const cx = (vx - sx) / sw * this.width;
-                            const cy = (vy - sy) / sh * this.height;
+                            const vx = p.x * dims.vw;
+                            const vy = p.y * dims.vh;
+                            const cx = vx * map.scale + map.offsetX;
+                            const cy = vy * map.scale + map.offsetY;
                             return { x: this.width - cx, y: cy };
                         };
 
@@ -2502,13 +2591,13 @@
                 for (const hand of this.handLandmarks) {
                     const indexTip = hand[8];
 
-                    // 映射坐标 (复用 checkCollisions 的逻辑)
-                    const vw = this.video.videoWidth;
-                    const vh = this.video.videoHeight;
-                    const videoX = indexTip.x * vw;
-                    const videoY = indexTip.y * vh;
-                    const canvasX = (videoX - this.videoSource.x) / this.videoSource.w * this.width;
-                    const canvasY = (videoY - this.videoSource.y) / this.videoSource.h * this.height;
+                    // 映射坐标 (复用 letterbox 映射)
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const videoX = indexTip.x * dims.vw;
+                    const videoY = indexTip.y * dims.vh;
+                    const map = this.videoMapping || { scale: 1, offsetX: 0, offsetY: 0 };
+                    const canvasX = videoX * map.scale + map.offsetX;
+                    const canvasY = videoY * map.scale + map.offsetY;
                     const tipX = this.width - canvasX;
                     const tipY = canvasY;
 
