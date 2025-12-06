@@ -1364,6 +1364,7 @@
         const assetFiles = this.isMobile
             ? [
                 { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: true },
+                { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
                 { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
                 { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
                 { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
@@ -1371,6 +1372,7 @@
             ]
             : [
                 { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite (~5.2MB)', required: true },
+                { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
                 { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
                 { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
                 { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
