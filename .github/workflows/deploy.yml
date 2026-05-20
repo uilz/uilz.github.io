@@ -7,8 +7,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # 消除 Node.js 20 弃用警告
     steps:
       - uses: actions/checkout@v4
 
@@ -17,19 +15,15 @@ jobs:
           node-version: 18
 
       - name: Build Timer
-        working-directory: ./i/Timer
+        working-directory: ./i/Timer          # 源码所在目录
         run: |
           npm ci
           npm run build
-
-      - name: Copy output to i/Timer
-        run: |
-          rm -rf i/Timer
-          cp -r timer/out i/Timer
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          keep_files: true
+          publish_dir: ./i/Timer/out          # 构建输出目录
+          destination_dir: i/Timer            # 部署到仓库的 i/Timer/ 路径
+          keep_files: true                    # 保留 i/ 下的其他项目文件
