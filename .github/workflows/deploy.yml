@@ -2,16 +2,17 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]   # 如果默认分支是 master，改为 master
+    branches: [main]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # 消除 Node.js 20 弃用警告
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
 
