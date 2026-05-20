@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesis Mind</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <div class="mode-switcher" role="tablist" aria-label="模式选择">
+            <button class="mode-button" data-mode="free" aria-pressed="true">模式1 · 自由模式</button>
+            <button class="mode-button" data-mode="compare" aria-pressed="false">模式2 · 对比回顾</button>
+        </div>
+
+        <div id="workspace" class="workspace workspace--free">
+            <section class="workspace-left" aria-label="交互画布">
+                <div id="app">
+                    <div id="ui-layer"></div>
+                    <svg id="graph-canvas" tabindex="0" role="application" aria-label="Genesis Mind Graph"></svg>
+                    <div id="context-menu" class="context-menu" hidden></div>
+                </div>
+            </section>
+            <aside id="comparison-panel" class="comparison-panel" aria-label="历史对比加载面板" data-collapsed="false">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <h2>对比回顾</h2>
+                    <p>批量导入历史 JSON，查看摘要并随时加载到左侧画布。</p>
+                </div>
+                <button id="comparison-collapse-toggle" class="panel-toggle" aria-expanded="true" aria-controls="comparison-panel-body">
+                    收起面板
+                </button>
+            </div>
+            <div id="comparison-panel-body" class="panel-body">
+                <div class="panel-actions">
+                    <button id="comparison-import-button" class="ui-button">批量导入</button>
+                    <input id="comparison-file-input" type="file" accept="application/json" multiple hidden>
+                </div>
+                <div id="comparison-list" class="comparison-list" aria-live="polite">
+                    <div class="empty-state">
+                        <p>暂无导入记录。</p>
+                        <small>点击“批量导入”选择多个 *.json 文件。</small>
+                    </div>
+                </div>
+            </div>
+            </aside>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

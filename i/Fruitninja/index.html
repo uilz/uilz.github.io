@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 手势切水果 (MediaPipe)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Shojumaru&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: radial-gradient(circle, #5d4037 0%, #3e2723 100%);
+            /* 深色木纹背景基调 */
+            font-family: 'Shojumaru', cursive, 'Segoe UI', sans-serif;
+            user-select: none;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100dvh; /* 避免移动端地址栏挤占 */
+            /* background-image: url('...'); 移除错误的 base64 */
+        }
+
+        /* 视频元素隐藏，我们画在Canvas上 */
+        #input-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI 层 */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh; /* 适配移动端动态视口高度 */
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* 确保 hud-bottom 位于底部 */
+        }
+
+        .hud-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            padding: 0;
+        }
+
+        .score-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 180px;
+            height: 80px;
+            /* 模拟木牌效果 */
+            background: linear-gradient(to bottom, #8d6e63, #5d4037);
+            border: 4px solid #4e342e;
+            border-radius: 10px;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 70px;
+            /* 留出图标位置 */
+            transform: rotate(-2deg);
+        }
+
+        .score-icon {
+            position: absolute;
+            left: -15px;
+            top: 10px;
+            font-size: 50px;
+            filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: #d7ccc8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 36px;
+            color: #ffeb3b;
+            text-shadow: 2px 2px 0 #3e2723;
+            line-height: 1;
+        }
+
+        .high-score-value {
+            font-size: 12px;
+            color: #a1887f;
+            margin-top: 2px;
+            font-weight: bold;
+        }
+
+        .lives-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .life-icon {
+            font-size: 40px;
+            color: #ff0000;
+            filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+            transition: transform 0.2s;
+        }
+
+        .life-lost {
+            color: #555;
+            transform: scale(0.8);
+            opacity: 0.5;
+        }
+
+        .gesture-status-container {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            text-align: right;
+            max-width: 300px;
+            /* 限制最大宽度防止溢出 */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .gesture-status {
+            font-size: 24px;
+            color: #aaffaa;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .time-display {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-family: monospace;
+            z-index: 5;
+        }
+
+        .hud-bottom {
+            padding: 20px;
+            padding-bottom: max(20px, env(safe-area-inset-bottom)); /* 适配全面屏底部安全区 */
+            background: linear-gradient(to top, rgba(62, 39, 35, 0.9), transparent);
+            color: #ffd700;
+            text-align: center;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .gesture-guide {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 10px;
+        }
+
+        .guide-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .guide-icon {
+            font-size: 32px;
+            margin-bottom: 5px;
+            filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+        }
+
+        /* 菜单覆盖层 */
+        #menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            pointer-events: auto;
+        }
+
+        .menu-content {
+            text-align: center;
+            /* 仿木板效果 */
+            background: #8d6e63;
+            background: linear-gradient(135deg, #8d6e63 0%, #5d4037 100%);
+            padding: 50px;
+            border-radius: 10px;
+            border: 8px solid #4e342e;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 80%;
+        }
+
+        h1 {
+            margin: 0 0 30px 0;
+            font-size: 64px;
+            color: #ffeb3b;
+            text-shadow: 4px 4px 0 #bf360c, 6px 6px 10px rgba(0, 0, 0, 0.5);
+            transform: rotate(-5deg);
+        }
+
+        button {
+            background: linear-gradient(to bottom, #8bc34a 0%, #558b2f 100%);
+            border: 2px solid #33691e;
+            padding: 15px 50px;
+            color: white;
+            font-family: 'Shojumaru', cursive;
+            font-size: 28px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 15px;
+            text-shadow: 1px 1px 0 #33691e;
+            box-shadow: 0 5px 0 #33691e, 0 10px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 #33691e, 0 5px 10px rgba(0, 0, 0, 0.3);
+            filter: brightness(1.1);
+        }
+
+        button:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 加载动画 */
+        .loader {
+            border: 6px solid #d7ccc8;
+            border-top: 6px solid #ff5722;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 浮动得分动画 */
+        .floating-score {
+            /* 已废弃，改用 Canvas 绘制 */
+            display: none;
+        }
+
+        /* 响应式适配 (Responsive Design) */
+
+        /* 平板/小屏幕笔记本 (宽度小于 1024px) */
+        @media (max-width: 1024px) {
+            .score-container {
+                transform: scale(0.85);
+                top: 15px;
+                left: 15px;
+                transform-origin: top left;
+            }
+
+            .lives-container {
+                transform: scale(0.85);
+                top: 15px;
+                right: 15px;
+                transform-origin: top right;
+            }
+        }
+
+        /* 手机竖屏 (宽度小于 600px) */
+        @media (max-width: 600px) {
+            .score-container {
+                transform: scale(0.6);
+                top: 10px;
+                left: 10px;
+                transform-origin: top left;
+                max-width: 45%;
+                /* 防止与右侧重叠 */
+            }
+
+            .lives-container {
+                transform: scale(0.6);
+                top: 10px;
+                right: 10px;
+                transform-origin: top right;
+                max-width: 45%;
+            }
+
+            /* 状态提示移到底部中央 */
+            .gesture-status-container {
+                bottom: 160px; /* 提高位置，避免被底部操作指南遮挡 (适配全面屏) */
+                /* 位于操作指南上方 */
+                right: auto;
+                left: 50%;
+                width: 100%;
+                transform: translateX(-50%) scale(0.7);
+                transform-origin: bottom center;
+                text-align: center;
+                white-space: nowrap;
+                /* 防止换行 */
+            }
+
+            .hud-bottom {
+                padding: 10px;
+                padding-bottom: 20px;
+                /* 增加底部留白 */
+            }
+
+            .guide-item {
+                font-size: 10px;
+            }
+
+            .guide-icon {
+                font-size: 20px;
+                margin-bottom: 2px;
+            }
+
+            .gesture-guide {
+                gap: 15px;
+            }
+
+            /* 菜单适配 */
+            .menu-content {
+                padding: 20px;
+                width: 90%;
+                max-width: 350px;
+            }
+
+            h1 {
+                font-size: 32px;
+                margin-bottom: 15px;
+            }
+
+            button {
+                padding: 10px 30px;
+                font-size: 18px;
+                margin: 10px;
+            }
+        }
+
+        /* 手机横屏 (高度小于 500px) - 游戏通常横屏玩 */
+        @media (max-height: 500px) {
+            .score-container {
+                transform: scale(0.55);
+                top: 5px;
+                left: 5px;
+                transform-origin: top left;
+            }
+
+            .lives-container {
+                transform: scale(0.55);
+                top: 5px;
+                right: 5px;
+                transform-origin: top right;
+            }
+
+            .gesture-status-container {
+                bottom: 40px; /* 避开底部极简指南 */
+                right: 10px;
+                transform: scale(0.5);
+                transform-origin: bottom right;
+            }
+
+            .hud-bottom {
+                padding: 5px;
+            }
+
+            .guide-icon {
+                font-size: 16px;
+            }
+
+            .guide-item span:last-child {
+                display: none;
+                /* 横屏空间不足时隐藏文字说明 */
+            }
+
+            .menu-content {
+                padding: 15px;
+                width: 60%;
+                max-width: 400px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            h1 {
+                font-size: 28px;
+                margin-bottom: 10px;
+            }
+
+            button {
+                padding: 8px 20px;
+                font-size: 16px;
+                margin: 5px;
+            }
+
+            .loader {
+                width: 40px;
+                height: 40px;
+                margin: 10px auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <video id="input-video" autoplay playsinline></video>
+        <canvas id="game-canvas"></canvas>
+
+        <div id="ui-layer">
+            <div class="hud-top">
+                <!-- 左上角分数板 -->
+                <div class="score-container">
+                    <div class="score-icon">🍉</div>
+                    <div class="score-label">Score</div>
+                    <div class="score-value" id="score">0</div>
+                    <div class="high-score-value">Best: <span id="high-score">0</span></div>
+                </div>
+
+                <!-- 右上角生命值 -->
+                <div class="lives-container" id="lives-container">
+                    <div class="life-icon">❤️</div>
+                    <div class="life-icon">❤️</div>
+                    <div class="life-icon">❤️</div>
+                </div>
+
+                <!-- 右下角状态 -->
+                <div class="gesture-status-container">
+                    <div class="gesture-status" id="gesture-status">等待摄像头...</div>
+                </div>
+                
+                <!-- 顶部时间显示 -->
+                <div class="time-display" id="game-time">00:00</div>
+            </div>
+
+            <div class="hud-bottom">
+                <div class="gesture-guide">
+                    <div class="guide-item">
+                        <span class="guide-icon">☝️</span>
+                        <span>食指切水果</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">✊</span>
+                        <span>握拳避炸弹</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">🖐️</span>
+                        <span>张手暂停</span>
+                    </div>
+                    <div class="guide-item">
+                        <span class="guide-icon">👐</span>
+                        <span>双手重开</span>
+                    </div>
+                </div>
+                <div>保持距离摄像头 0.5 - 1 米以获得最佳效果</div>
+            </div>
+        </div>
+
+        <div id="menu-overlay">
+            <div class="menu-content">
+                <h1>AI 切水果</h1>
+                <div id="loading-message">
+                    <div class="loader"></div>
+                    <p>正在初始化摄像头和模型...</p>
+                </div>
+                <div id="start-menu" class="hidden">
+                    <p>使用食指作为刀刃，切碎水果！</p>
+                    <p>小心炸弹 💣</p>
+                    <button onclick="game.startGame()">开始游戏</button>
+                </div>
+                <div id="game-over-menu" class="hidden">
+                    <h2>游戏结束</h2>
+                    <p>最终得分: <span id="final-score">0</span></p>
+                    <button onclick="game.restartGame()">再玩一次</button>
+                </div>
+                <div id="pause-menu" class="hidden">
+                    <h2>已暂停</h2>
+                    <button onclick="game.resumeGame()">继续</button>
+                </div>
+                <div id="countdown-display" class="hidden"
+                    style="font-size: 120px; font-weight: bold; color: #fff; text-shadow: 0 0 30px #ff0000;">3</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 游戏配置与常量
+         */
+            const CONFIG = {
+                GRAVITY: 0.5,
+                SPAWN_RATE_INITIAL: 28, // 初始更慢，降低开局压力
+            MAX_FRUITS: 25, // 增加同屏上限
+            BLADE_LIFETIME: 10, // 刀光轨迹保留帧数
+            GESTURE_HOLD_TIME: 3000, // 毫秒
+            BOMB_PENALTY: 10,
+            COMBO_TIME_WINDOW: 300, // 毫秒
+        };
+
+        const FRUIT_TYPES = [
+            { type: 'watermelon', icon: '🍉', score: 5, color: '#ff5555', size: 100 },
+            { type: 'orange', icon: '🍊', score: 3, color: '#ffaa00', size: 80 },
+            { type: 'apple', icon: '🍎', score: 3, color: '#ff4444', size: 80 },
+            { type: 'banana', icon: '🍌', score: 2, color: '#ffee00', size: 90 },
+            { type: 'coconut', icon: '🥥', score: 4, color: '#eeeeee', size: 85 },
+        ];
+
+        const SPECIAL_ITEMS = [
+            { type: 'bomb', icon: '💣', score: -10, color: '#000000', size: 100, weight: 0.1 },
+            { type: 'ice', icon: '🧊', score: 0, color: '#aaddff', size: 80, weight: 0.05 } // 冰冻草莓/冰块
+        ];
+
+        /**
+         * 游戏主类
+         */
+        class FruitNinjaGame {
+            constructor() {
+                this.canvas = document.getElementById('game-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.video = document.getElementById('input-video');
+
+                const vv = window.visualViewport;
+                this.width = vv ? vv.width : window.innerWidth;
+                this.height = vv ? vv.height : window.innerHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+
+                this.state = 'LOADING';
+                this.score = 0;
+                this.highScore = localStorage.getItem('fruit_ninja_highscore') || 0;
+                this.lives = 3;
+                this.gameTime = 0;
+                this.lastFrameTime = 0;
+
+                this.fruits = [];
+                this.particles = [];
+                this.splatters = []; // 背景果汁溅射
+                this.bladeTrails = [[], []]; // 支持双手轨迹
+                this.floatingTexts = [];
+
+                this.handLandmarks = null;
+                this.handStates = ['NONE', 'NONE']; // 双手状态
+                this.gestureState = 'NONE'; // 全局状态 (用于暂停/重开)
+                this.gestureTimer = 0;
+                this.lastActionTime = 0; // 上次触发动作的时间 (冷却用)
+                this.lastCooldownSec = 0; // 冷却倒计时音效记录
+                this.pauseStartTime = null; // 记录暂停开始时间，用于修正计时
+                this.lastDisplayedTime = -1; // 上次渲染的秒数，用于防抖显示
+
+                this.spawnTimer = 0;
+                this.difficultyMultiplier = 0.3;
+                this.timeSlowFactor = 1;
+                this.timeSlowTimer = 0;
+
+                this.comboCount = 0;
+                this.lastSliceTime = 0;
+
+                // 难度渐进设置（随时间自动从简单->困难，不再需要手动选择）
+                this.difficultyRamp = {
+                    duration: 120, // 120秒内线性拉满难度
+                    spawnEasy: 42,
+                    spawnHard: 22,
+                    floorEasy: 30,
+                    floorHard: 18,
+                    maxEasy: 12,
+                    maxHard: 20,
+                    apexMinEasy: 0.55,
+                    apexMinHard: 0.78,
+                    apexMaxEasy: 0.68,
+                    apexMaxHard: 0.9,
+                    specialScaleEasy: 0.7,
+                    specialScaleHard: 1.3,
+                    burstScaleEasy: 0.7,
+                    burstScaleHard: 1.3,
+                    difficultyBaseEasy: 0.2,
+                    difficultyBaseHard: 0.35
+                };
+
+                // CDN 配置
+                this.cdnList = [
+                    { name: 'Local (本地 ./hands/)', url: 'hands/' },
+                    { name: 'JSDelivr (推荐)', url: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' },
+                    { name: 'Unpkg (备用)', url: 'https://unpkg.com/@mediapipe/hands/' },
+                    { name: 'JSDelivr Fastly', url: 'https://fastly.jsdelivr.net/npm/@mediapipe/hands/' }
+                ];
+                this.currentCdnIndex = 0; // 默认先用本地，后续可切换 CDN
+
+                // 绑定UI元素
+                this.ui = {
+                    menuOverlay: document.getElementById('menu-overlay'),
+                    score: document.getElementById('score'),
+                    highScore: document.getElementById('high-score'),
+                    livesContainer: document.getElementById('lives-container'),
+                    status: document.getElementById('gesture-status'),
+                    time: document.getElementById('game-time'),
+                    loadingMsg: document.getElementById('loading-message'),
+                    startMenu: document.getElementById('start-menu'),
+                    gameOverMenu: document.getElementById('game-over-menu'),
+                    pauseMenu: document.getElementById('pause-menu'),
+                    finalScore: document.getElementById('final-score'),
+                    countdownDisplay: document.getElementById('countdown-display'),
+                    // 按钮引用
+                    startBtn: document.querySelector('#start-menu button'),
+                    restartBtn: document.querySelector('#game-over-menu button'),
+                    resumeBtn: document.querySelector('#pause-menu button')
+                };
+
+                this.ui.highScore.innerText = this.highScore;
+
+                this.videoSource = { x: 0, y: 0, w: 0, h: 0 };
+
+                // 菜单交互状态
+                this.menuHoverTimer = 0;
+                this.menuHoverTarget = null;
+                this.menuHoverMaxTime = 30; // 约0.5秒悬停触发
+
+                // 性能优化：检测移动设备
+                this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                this.lastDetectionTime = 0;
+                this.detectionInterval = 0; // 全平台尽量实时检测，减少手势延迟
+
+                // 移动端降载参数
+                this.particleCount = this.isMobile ? 5 : 8;
+
+                // 初始应用简单难度（后续自动渐进）
+                this.applyDifficultyRamp(0);
+
+                this.initAudio();
+                this.initMediaPipe();
+
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            initAudio() {
+                try {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // 生成多种质感的噪声缓存
+                    this.buffers = {
+                        white: this.createNoiseBuffer('white'),
+                        pink: this.createNoiseBuffer('pink'),
+                        brown: this.createNoiseBuffer('brown'),
+                        crunch: this.createNoiseBuffer('crunch'), // 新增：脆裂纹理
+                        wet: this.createNoiseBuffer('wet')        // 新增：粘稠纹理
+                    };
+
+                    // 预计算失真曲线 (用于增加声音的"脏"感和冲击力)
+                    this.distortionCurve = this.makeDistortionCurve(400);
+
+                    // --- 新增：生成混响脉冲 (Impulse Response) ---
+                    // 这会模拟一个中等大小的房间/道场
+                    this.reverbBuffer = this.createReverbBuffer(1.5); // 1.5秒混响尾音
+                    
+                    // 创建主混响节点 (Send Effect)
+                    this.convolver = this.audioCtx.createConvolver();
+                    this.convolver.buffer = this.reverbBuffer;
+                    this.convolverGain = this.audioCtx.createGain();
+                    this.convolverGain.gain.value = 0.3; // 混响湿声比例 (30%)
+                    
+                    this.convolver.connect(this.convolverGain);
+                    this.convolverGain.connect(this.audioCtx.destination);
+
+                } catch (e) {
+                    console.warn("AudioContext not supported");
+                }
+            }
+
+            // 辅助：生成失真曲线
+            makeDistortionCurve(amount) {
+                const k = typeof amount === 'number' ? amount : 50;
+                const n_samples = 44100;
+                const curve = new Float32Array(n_samples);
+                const deg = Math.PI / 180;
+                for (let i = 0; i < n_samples; ++i) {
+                    const x = i * 2 / n_samples - 1;
+                    curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+                }
+                return curve;
+            }
+
+            // 新增：生成混响脉冲的辅助函数
+            createReverbBuffer(duration) {
+                const sampleRate = this.audioCtx.sampleRate;
+                const length = sampleRate * duration;
+                const impulse = this.audioCtx.createBuffer(2, length, sampleRate);
+                const left = impulse.getChannelData(0);
+                const right = impulse.getChannelData(1);
+
+                for (let i = 0; i < length; i++) {
+                    const decay = Math.pow(1 - i / length, 2); // 线性衰减
+                    // 左右声道独立的随机噪声，产生宽广的立体声场
+                    left[i] = (Math.random() * 2 - 1) * decay;
+                    right[i] = (Math.random() * 2 - 1) * decay;
+                }
+                return impulse;
+            }
+
+            // 新增：延迟播放函数（核心用于音效时序分层）
+            playDelayed(fn, delayMs, ...args) {
+                if (!this.audioCtx) return;
+                setTimeout(() => fn.apply(this, args), delayMs);
+            }
+
+            createNoiseBuffer(type) {
+                const bufferSize = this.audioCtx.sampleRate * 2.0; // 2秒缓存
+                const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                if (type === 'white') {
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                } else if (type === 'pink') {
+                    // 粉红噪声 (1/f) - 听起来更均衡、自然
+                    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                    for (let i = 0; i < bufferSize; i++) {
+                        const white = Math.random() * 2 - 1;
+                        b0 = 0.99886 * b0 + white * 0.0555179;
+                        b1 = 0.99332 * b1 + white * 0.0750759;
+                        b2 = 0.96900 * b2 + white * 0.1538520;
+                        b3 = 0.86650 * b3 + white * 0.3104856;
+                        b4 = 0.55000 * b4 + white * 0.5329522;
+                        b5 = -0.7616 * b5 - white * 0.0168980;
+                        data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                        data[i] *= 0.11; 
+                        b6 = white * 0.115926;
+                    }
+                } else if (type === 'brown') {
+                    // 布朗噪声 (1/f^2) - 听起来深沉、浑厚
+                    let lastOut = 0;
+                    for (let i = 0; i < bufferSize; i++) {
+                        const white = Math.random() * 2 - 1;
+                        data[i] = (lastOut + (0.02 * white)) / 1.02;
+                        lastOut = data[i];
+                        data[i] *= 3.5; 
+                    }
+                } else if (type === 'crunch') {
+                    // 脆裂纹理：稀疏的高振幅脉冲，模拟物体断裂的微观结构
+                    // 听起来像：噼里啪啦
+                    for (let i = 0; i < bufferSize; i++) {
+                        // 密度 15% 的随机脉冲
+                        if (Math.random() > 0.85) {
+                            data[i] = (Math.random() * 2 - 1);
+                        } else {
+                            data[i] = 0;
+                        }
+                    }
+                } else if (type === 'wet') {
+                    // 粘稠纹理：被低频混沌信号调制的噪声
+                    // 听起来像：咕滋咕滋
+                    for (let i = 0; i < bufferSize; i++) {
+                        const white = Math.random() * 2 - 1;
+                        // 复杂的幅度调制 (AM)
+                        const mod = Math.sin(i * 0.01) * Math.cos(i * 0.003) * 0.5 + 0.5;
+                        data[i] = white * mod;
+                    }
+                }
+                return buffer;
+            }
+
+            playCountdownSound(num) {
+                if (!this.audioCtx) return;
+                const t = this.audioCtx.currentTime;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+
+                // 3→2→1→GO 音调递增，且添加轻微频率抖动
+                const baseFreq = 400 + (3 - num) * 200;
+                const jitterFreq = baseFreq * (0.95 + Math.random() * 0.1); // ±5%抖动
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(jitterFreq, t);
+
+                // 音量随数字减小递增（3→1音量变大）
+                const volume = 0.1 + (3 - num) * 0.05;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(volume, t + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+
+                osc.start(t);
+                osc.stop(t + 0.3);
+            }
+
+            playMissSound() {
+                if (!this.audioCtx) return;
+                const t = this.audioCtx.currentTime;
+                
+                // 分层：短促下降音 + 轻微低频闷响
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, t);
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
+                
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                
+                osc.start(t);
+                osc.stop(t + 0.3);
+
+                // 叠加低频闷响，强化挫败感
+                const src = this.audioCtx.createBufferSource();
+                src.buffer = this.buffers.brown;
+                const filter = this.audioCtx.createBiquadFilter();
+                const nGain = this.audioCtx.createGain();
+
+                filter.type = 'lowpass';
+                filter.frequency.value = 150;
+                nGain.gain.setValueAtTime(0, t + 0.1);
+                nGain.gain.linearRampToValueAtTime(0.08, t + 0.15);
+                nGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+
+                src.connect(filter);
+                filter.connect(nGain);
+                nGain.connect(this.audioCtx.destination);
+                src.start(t + 0.1);
+                src.stop(t + 0.35);
+            }
+
+            playSliceSound(fruit, cutSpeed = 0) {
+                if (!this.audioCtx) return;
+
+                const t = this.audioCtx.currentTime;
+                const rand = (min, max) => Math.random() * (max - min) + min;
+                
+                // 基础参数计算
+                const panX = Math.max(-0.8, Math.min(0.8, (fruit.x / this.width) * 2 - 1));
+                const speedScale = Math.min(cutSpeed * 0.1, 1.0); 
+                const volMod = 1.0 + speedScale * 0.4; 
+                const tightMod = 1.0 - speedScale * 0.2; 
+                
+                // 辅助函数：创建音频链路
+                const createChain = (distortionAmount = 0) => {
+                    const panner = this.audioCtx.createStereoPanner();
+                    panner.pan.value = panX;
+
+                    if (distortionAmount > 0 && this.distortionCurve) {
+                        const shaper = this.audioCtx.createWaveShaper();
+                        shaper.curve = this.distortionCurve;
+                        shaper.oversample = '4x';
+                        const postGain = this.audioCtx.createGain();
+                        postGain.gain.value = 0.8; 
+                        shaper.connect(postGain);
+                        postGain.connect(panner);
+                        panner.connect(this.audioCtx.destination);
+                        if (this.convolver) {
+                            const send = this.audioCtx.createGain();
+                            send.gain.value = 0.3; 
+                            panner.connect(send);
+                            send.connect(this.convolver);
+                        }
+                        return shaper; 
+                    } else {
+                        panner.connect(this.audioCtx.destination);
+                        if (this.convolver) {
+                            const send = this.audioCtx.createGain();
+                            send.gain.value = 0.3; 
+                            panner.connect(send);
+                            send.connect(this.convolver);
+                        }
+                        return panner;
+                    }
+                };
+
+                // 全局层：空气切割声 (Air Whoosh) - 增加真实感
+                // 模拟刀刃快速穿过空气并接触物体瞬间的气流扰动
+                const playAir = () => {
+                    const air = this.audioCtx.createBufferSource();
+                    air.buffer = this.buffers.white;
+                    const aFilter = this.audioCtx.createBiquadFilter();
+                    const aGain = this.audioCtx.createGain();
+
+                    aFilter.type = 'bandpass';
+                    aFilter.frequency.setValueAtTime(4000, t);
+                    aFilter.frequency.linearRampToValueAtTime(8000, t + 0.1); // 快速上扫
+
+                    aGain.gain.setValueAtTime(0.15 * volMod, t); // 音量很小，作为点缀
+                    aGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+
+                    air.connect(aFilter); aFilter.connect(aGain); aGain.connect(createChain(0));
+                    air.start(t); air.stop(t + 0.15);
+                };
+                playAir(); // 每次切割都播放
+
+                // --- 针对不同水果的独立合成配方 (Sound Recipes V6: Hyper-Realism) ---
+
+                // 1. 西瓜 (Watermelon): 湿润爆裂 + 低频冲击
+                const playWatermelon = () => {
+                    // Layer A: 湿润纹理 (Wet Texture)
+                    const wet = this.audioCtx.createBufferSource();
+                    wet.buffer = this.buffers.wet;
+                    const wFilter = this.audioCtx.createBiquadFilter();
+                    const wGain = this.audioCtx.createGain();
+
+                    wFilter.type = 'lowpass';
+                    wFilter.frequency.setValueAtTime(rand(500, 700), t); 
+                    // 增加动态：频率随时间下降，模拟刀刃切入后的闷声
+                    wFilter.frequency.linearRampToValueAtTime(200, t + 0.3 * tightMod);
+
+                    wGain.gain.setValueAtTime(0, t);
+                    wGain.gain.linearRampToValueAtTime(1.3 * volMod, t + 0.01); // 更猛烈的起音
+                    wGain.gain.exponentialRampToValueAtTime(0.01, t + 0.35 * tightMod);
+
+                    const chain = createChain(0.25); 
+                    wet.connect(wFilter); wFilter.connect(wGain); wGain.connect(chain);
+                    wet.start(t); wet.stop(t + 0.4);
+
+                    // Layer B: 低频冲击 (Thud)
+                    const thud = this.audioCtx.createBufferSource();
+                    thud.buffer = this.buffers.brown;
+                    const tFilter = this.audioCtx.createBiquadFilter();
+                    const tGain = this.audioCtx.createGain();
+
+                    tFilter.type = 'lowpass';
+                    tFilter.frequency.value = 100; // 更低沉
+                    
+                    tGain.gain.setValueAtTime(1.2 * volMod, t);
+                    tGain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+
+                    thud.connect(tFilter); tFilter.connect(tGain); tGain.connect(createChain(0.1)); // 稍微加点失真
+                    thud.start(t); thud.stop(t + 0.3);
+                };
+
+                // 2. 苹果/梨 (Apple/Pear): 极度清脆 + 瞬间断裂
+                const playApple = () => {
+                    // Layer A: 脆裂纹理 (Crunch Texture)
+                    const crunch = this.audioCtx.createBufferSource();
+                    crunch.buffer = this.buffers.crunch;
+                    const cFilter = this.audioCtx.createBiquadFilter();
+                    const cGain = this.audioCtx.createGain();
+
+                    cFilter.type = 'highpass';
+                    cFilter.frequency.value = rand(2000, 3000); 
+                    
+                    cGain.gain.setValueAtTime(0, t);
+                    cGain.gain.linearRampToValueAtTime(1.8 * volMod, t + 0.002); // 2ms 极速起音
+                    cGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1 * tightMod); // 极短
+
+                    // 高失真！
+                    const chain = createChain(0.9); 
+                    crunch.connect(cFilter); cFilter.connect(cGain); cGain.connect(chain);
+                    crunch.start(t); crunch.stop(t + 0.15);
+
+                    // Layer B: 刀锋 (Swish) - 增强高频
+                    const swish = this.audioCtx.createBufferSource();
+                    swish.buffer = this.buffers.white;
+                    const sFilter = this.audioCtx.createBiquadFilter();
+                    const sGain = this.audioCtx.createGain();
+                    
+                    sFilter.type = 'highpass';
+                    sFilter.frequency.setValueAtTime(4000, t);
+                    
+                    sGain.gain.setValueAtTime(0.4 * volMod, t);
+                    sGain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+
+                    swish.connect(sFilter); sFilter.connect(sGain); sGain.connect(createChain(0));
+                    swish.start(t); swish.stop(t + 0.2);
+                };
+
+                // 3. 椰子 (Coconut): 硬壳共振 + 内部空腔
+                const playCoconut = () => {
+                    // Layer A: 壳体撞击 (Shell Knock)
+                    const knock = this.audioCtx.createBufferSource();
+                    knock.buffer = this.buffers.crunch; 
+                    const kFilter = this.audioCtx.createBiquadFilter();
+                    const kGain = this.audioCtx.createGain();
+
+                    kFilter.type = 'bandpass';
+                    kFilter.frequency.value = rand(800, 1200);
+                    kFilter.Q.value = 3.0;
+
+                    kGain.gain.setValueAtTime(0, t);
+                    kGain.gain.linearRampToValueAtTime(1.2 * volMod, t + 0.01);
+                    kGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15 * tightMod);
+
+                    const chain = createChain(0.6);
+                    knock.connect(kFilter); kFilter.connect(kGain); kGain.connect(chain);
+                    knock.start(t); knock.stop(t + 0.2);
+
+                    // Layer B: 沉闷低频 (Thud)
+                    const thud = this.audioCtx.createBufferSource();
+                    thud.buffer = this.buffers.brown;
+                    const tGain = this.audioCtx.createGain();
+                    tGain.gain.setValueAtTime(0.9 * volMod, t);
+                    tGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                    
+                    const tFilter = this.audioCtx.createBiquadFilter();
+                    tFilter.type = 'lowpass';
+                    tFilter.frequency.value = 160;
+
+                    thud.connect(tFilter); tFilter.connect(tGain); tGain.connect(createChain(0));
+                    thud.start(t); thud.stop(t + 0.25);
+                };
+
+                // 4. 橙子 (Orange): 汁水四溅
+                const playOrange = () => {
+                    // Layer A: 汁水喷溅 (Spray)
+                    const wet = this.audioCtx.createBufferSource();
+                    wet.buffer = this.buffers.wet;
+                    const wFilter = this.audioCtx.createBiquadFilter();
+                    const wGain = this.audioCtx.createGain();
+
+                    wFilter.type = 'highpass'; 
+                    wFilter.frequency.setValueAtTime(1000, t);
+                    wFilter.frequency.linearRampToValueAtTime(3000, t + 0.15); 
+
+                    wGain.gain.setValueAtTime(0, t);
+                    wGain.gain.linearRampToValueAtTime(0.9 * volMod, t + 0.02);
+                    wGain.gain.exponentialRampToValueAtTime(0.01, t + 0.25 * tightMod);
+
+                    const chain = createChain(0.35);
+                    wet.connect(wFilter); wFilter.connect(wGain); wGain.connect(chain);
+                    wet.start(t); wet.stop(t + 0.3);
+                };
+
+                // 5. 香蕉 (Banana): 软糯、致密、无汁水
+                const playBanana = () => {
+                    // Layer A: 果肉切断 (Soft Slice)
+                    const flesh = this.audioCtx.createBufferSource();
+                    flesh.buffer = this.buffers.pink;
+                    const fFilter = this.audioCtx.createBiquadFilter();
+                    const fGain = this.audioCtx.createGain();
+
+                    fFilter.type = 'lowpass';
+                    fFilter.frequency.setValueAtTime(600, t); 
+                    
+                    fGain.gain.setValueAtTime(0, t);
+                    fGain.gain.linearRampToValueAtTime(1.0 * volMod, t + 0.01);
+                    fGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15 * tightMod); 
+
+                    const chain = createChain(0.65); 
+                    flesh.connect(fFilter); fFilter.connect(fGain); fGain.connect(chain);
+                    flesh.start(t); flesh.stop(t + 0.2);
+
+                    // Layer B: 极短的高频 (Skin Snap)
+                    const skin = this.audioCtx.createBufferSource();
+                    skin.buffer = this.buffers.white;
+                    const sFilter = this.audioCtx.createBiquadFilter();
+                    const sGain = this.audioCtx.createGain();
+
+                    sFilter.type = 'highpass';
+                    sFilter.frequency.value = 3000;
+
+                    sGain.gain.setValueAtTime(0.4 * volMod, t);
+                    sGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05); 
+
+                    skin.connect(sFilter); sFilter.connect(sGain); sGain.connect(createChain(0));
+                    skin.start(t); skin.stop(t + 0.1);
+                };
+
+                // 调度器：根据水果类型选择不同的合成配方
+                switch (fruit.type) {
+                    case 'watermelon': playWatermelon(); break;
+                    case 'apple': 
+                    case 'pear': playApple(); break;
+                    case 'coconut': playCoconut(); break;
+                    case 'orange': playOrange(); break;
+                    case 'banana': playBanana(); break;
+                    default: playApple();
+                }
+            }
+
+            playBombSound() {
+                if (!this.audioCtx) return;
+                const t = this.audioCtx.currentTime;
+
+                // 炸弹音效 V2: 极度炸裂 (Hyper-Explosive)
+                // 核心思路：多层叠加 + 强力失真 + 动态滤波
+
+                // 辅助：创建失真链路
+                const createDistortionChain = (amount) => {
+                    if (!this.distortionCurve) return this.audioCtx.destination;
+                    const shaper = this.audioCtx.createWaveShaper();
+                    shaper.curve = this.distortionCurve;
+                    shaper.oversample = '4x';
+                    const gain = this.audioCtx.createGain();
+                    gain.gain.value = amount; // 失真后的音量补偿
+                    shaper.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+                    return shaper;
+                };
+
+                const distChain = createDistortionChain(0.6); // 60% 失真混合
+                const cleanChain = this.audioCtx.destination;
+
+                // 1. 冲击波 (Shockwave) - 极速下潜的三角波
+                // 模拟爆炸瞬间的空气压缩
+                const osc = this.audioCtx.createOscillator();
+                const oscGain = this.audioCtx.createGain();
+                osc.type = 'triangle'; // 三角波泛音更丰富，失真后更凶猛
+                osc.frequency.setValueAtTime(800, t); 
+                osc.frequency.exponentialRampToValueAtTime(40, t + 0.15); // 极速下潜
+                osc.frequency.linearRampToValueAtTime(10, t + 0.8); // 缓慢余震
+
+                oscGain.gain.setValueAtTime(1.2, t); // 超大音量
+                oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+
+                osc.connect(oscGain);
+                oscGain.connect(distChain); // 进失真
+                osc.start(t); osc.stop(t + 0.8);
+
+                // 2. 爆炸火光 (Fireball) - 动态低通白噪
+                // 模拟火焰膨胀的声音
+                const noise = this.audioCtx.createBufferSource();
+                noise.buffer = this.buffers.white;
+                const nFilter = this.audioCtx.createBiquadFilter();
+                const nGain = this.audioCtx.createGain();
+
+                nFilter.type = 'lowpass';
+                nFilter.frequency.setValueAtTime(4000, t); // 初始高频
+                nFilter.frequency.exponentialRampToValueAtTime(100, t + 0.5); // 迅速变闷
+
+                nGain.gain.setValueAtTime(1.0, t);
+                nGain.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+
+                noise.connect(nFilter); nFilter.connect(nGain); nGain.connect(distChain); // 进失真
+                noise.start(t); noise.stop(t + 0.6);
+
+                // 3. 碎片飞溅 (Debris) - 高通 Crunch
+                // 模拟外壳炸碎的声音，不进失真以保持清脆
+                const debris = this.audioCtx.createBufferSource();
+                debris.buffer = this.buffers.crunch;
+                const dFilter = this.audioCtx.createBiquadFilter();
+                const dGain = this.audioCtx.createGain();
+
+                dFilter.type = 'highpass';
+                dFilter.frequency.value = 2000;
+
+                dGain.gain.setValueAtTime(0, t);
+                dGain.gain.linearRampToValueAtTime(0.8, t + 0.05); // 稍晚一点出现
+                dGain.gain.exponentialRampToValueAtTime(0.01, t + 0.7);
+
+                debris.connect(dFilter); dFilter.connect(dGain); dGain.connect(cleanChain); 
+                debris.start(t); debris.stop(t + 0.7);
+            }
+
+            playGameOverSound() {
+                if (!this.audioCtx) return;
+                const t = this.audioCtx.currentTime;
+                
+                // 游戏结束：深沉的打击声 (Gong-like)
+                const src = this.audioCtx.createBufferSource();
+                src.buffer = this.buffers.brown;
+                const filter = this.audioCtx.createBiquadFilter();
+                const gain = this.audioCtx.createGain();
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(300, t);
+                filter.frequency.exponentialRampToValueAtTime(50, t + 1.5);
+                
+                gain.gain.setValueAtTime(0.8, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+                
+                src.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                
+                src.start(t);
+                src.stop(t + 2.0);
+            }
+
+            resize() {
+                const vv = window.visualViewport;
+                this.width = vv ? vv.width : window.innerWidth;
+                this.height = vv ? vv.height : window.innerHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+                this.updateVideoLayout();
+            }
+
+            updateVideoLayout() {
+                if (this.video.readyState < 2) return;
+
+                const vw = this.video.videoWidth;
+                const vh = this.video.videoHeight;
+                this.videoDims = { vw, vh };
+                const cw = this.width;
+                const ch = this.height;
+                // Cover 适配：填满屏幕，必要时裁剪；识别仍基于原始视频尺寸
+                const scale = Math.max(cw / vw, ch / vh);
+                const drawW = vw * scale;
+                const drawH = vh * scale;
+                const offsetX = (cw - drawW) / 2;
+                const offsetY = (ch - drawH) / 2;
+
+                this.videoMapping = { scale, offsetX, offsetY, drawW, drawH };
+            }
+
+    async initMediaPipe() {
+        if (typeof Hands === 'undefined') {
+            this.ui.status.innerText = "MediaPipe 库加载失败";
+            this.ui.loadingMsg.innerHTML = `<p style="color:red">无法加载 MediaPipe 核心库。<br>请检查网络连接或刷新页面。</p>`;
+            return;
+        }
+
+        // 自动检测本地模型文件完整性
+        // 移动端优先 Lite，桌面使用 Full；缺失则切换 CDN
+        if (this.currentCdnIndex === 0) {
+            const prefer = this.isMobile
+                ? ['hand_landmark_lite.tflite']
+                : ['hand_landmark_full.tflite'];
+            let foundLocal = false;
+
+            for (const candidate of prefer) {
+                try {
+                    console.log(`Checking local model availability: ${candidate}...`);
+                    const response = await fetch(`hands/${candidate}`, { method: 'HEAD' });
+                    if (response.ok) {
+                        this.modelFile = candidate;
+                        foundLocal = true;
+                        break;
+                    }
+                } catch (e) {
+                    console.warn(`Failed to check local model file ${candidate}.`, e);
+                }
+            }
+
+            if (!foundLocal) {
+                console.warn(`Local model file missing. Switching to Online CDN.`);
+                this.currentCdnIndex = 1; // Switch to JSDelivr
+                this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
+            }
+        } else {
+            // 非本地模式按平台优先级
+            this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
+        }
+
+        const cdn = this.cdnList[this.currentCdnIndex];
+        const statusLines = {};
+        const renderStatus = () => {
+            const text = Object.values(statusLines).join('\n') || '...';
+            this.ui.status.innerText = text;
+            const p = this.ui.loadingMsg.querySelector('p');
+            if (p) p.innerText = text;
+        };
+        const updateStatus = (msg, key = null) => {
+            if (key) {
+                statusLines[key] = msg;
+                renderStatus();
+            } else {
+                statusLines['_global'] = msg;
+                renderStatus();
+            }
+        };
+
+        // 预取模型/wasm并显示百分比进度（并行下载）
+        const blobUrlMap = {};
+        // 预期大小表，用于展示更接近实际的体积（部分 CDN 会压缩传输导致 Content-Length 偏小）
+        const expectedSizes = {
+            'hand_landmark_full.tflite': 5.22,
+            'hand_landmark_lite.tflite': 1.98,
+            'hands_solution_packed_assets_loader.js': 0.01,
+            'hands_solution_packed_assets.data': 4.13,
+            'hands_solution_simd_wasm_bin.js': 0.26,
+            'hands_solution_simd_wasm_bin.wasm': 5.75,
+            'hands.binarypb': 0.01
+        };
+
+        const prefetchWithProgress = async (file, label, required = true) => {
+            const url = `${cdn.url}${file}`;
+            const res = await fetch(url);
+            if (!res.ok) {
+                if (!required) {
+                    updateStatus(`${label}: 跳过 (${res.status})`, file);
+                    return;
+                }
+                throw new Error(`${label} 获取失败 (${res.status})`);
+            }
+            const total = Number(res.headers.get('content-length')) || 0;
+            const reader = res.body.getReader();
+            let loaded = 0;
+            const chunks = [];
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                loaded += value.byteLength;
+                const loadedMB = (loaded / 1048576).toFixed(2);
+                const expectedMB = expectedSizes[file];
+                if (total) {
+                    const pct = (loaded / total * 100).toFixed(1);
+                    const totalMB = (total / 1048576).toFixed(2);
+                    updateStatus(`${label}: ${pct}% (${loadedMB}MB/${totalMB}MB)`, file);
+                } else if (expectedMB) {
+                    updateStatus(`${label}: ${loadedMB}MB / ~${expectedMB.toFixed(2)}MB`, file);
+                } else {
+                    updateStatus(`${label}: ${loadedMB}MB`, file);
+                }
+            }
+            const blob = new Blob(chunks);
+            blobUrlMap[file] = URL.createObjectURL(blob);
+            const finalMB = (loaded / 1048576).toFixed(2);
+            const suffix = expectedSizes[file] ? ` (~${expectedSizes[file].toFixed(2)}MB)` : '';
+            updateStatus(`${label}: 完成 (${finalMB}MB${suffix})`, file);
+        };
+
+        // 需要显示进度的核心文件（可按需扩展）
+        const assetFiles = this.isMobile
+            ? [
+                { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: true },
+                { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
+                { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+                { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
+            ]
+            : [
+                { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite (~5.2MB)', required: true },
+                { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
+                { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+                { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+                { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
+            ];
+
+        updateStatus(`初始化 MediaPipe (${cdn.name})...`);
+        console.log(`Using CDN: ${cdn.url}`);
+
+        // 并行预取；失败则回退为直接加载
+        try {
+            const tasks = assetFiles.map(({ file, label, required }) => prefetchWithProgress(file, `加载 ${label}`, required));
+            await Promise.all(tasks);
+            updateStatus('模型文件已缓存，正在初始化...');
+        } catch (e) {
+            console.warn('预取模型/wasm 失败，改用直接加载', e);
+            Object.keys(blobUrlMap).forEach(k => URL.revokeObjectURL(blobUrlMap[k]));
+            Object.keys(blobUrlMap).forEach(k => delete blobUrlMap[k]);
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => {
+                if (blobUrlMap[file]) return blobUrlMap[file];
+                return `${cdn.url}${file}`;
+            }
+        });
+
+                const modelComplexity = (this.modelFile && this.modelFile.includes('lite')) ? 0 : 1;
+                hands.setOptions({
+                    maxNumHands: 2,
+                    modelComplexity,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                hands.onResults((results) => this.onHandsResults(results));
+                this.hands = hands;
+
+                try {
+                    updateStatus("正在加载模型文件(请耐心等待)...");
+
+                    // 添加超时控制 (延长至 9 分钟) 并显示加载计时
+                    const loadPromise = hands.initialize();
+                    const timeoutMs = 540000; // 9 分钟
+                    const startTime = Date.now();
+                    const progressTimer = setInterval(() => {
+                        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                        updateStatus(`正在加载模型... ${elapsedSec}s`);
+                    }, 1000);
+                    const hangWarn = setTimeout(() => {
+                        updateStatus('初始化耗时较长，可能被网络或浏览器阻塞，建议尝试切换线路或刷新');
+                    }, 45000);
+
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error(`模型加载超时 (${timeoutMs / 1000}s)`)), timeoutMs)
+                    );
+
+                    await Promise.race([loadPromise, timeoutPromise]);
+                    clearInterval(progressTimer);
+                    clearTimeout(hangWarn);
+
+                    updateStatus("请求摄像头权限...");
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: this.isMobile
+                            ? { width: 960, height: 540, facingMode: "user" }
+                            : { width: 1280, height: 720, facingMode: "user" }
+                    });
+
+                    updateStatus("等待摄像头画面...");
+                    this.video.srcObject = stream;
+                    await new Promise((resolve) => {
+                        this.video.onloadedmetadata = () => {
+                            this.updateVideoLayout();
+                            this.video.play();
+                            resolve();
+                        };
+                    });
+
+                    this.ui.loadingMsg.classList.add('hidden');
+                    this.ui.startMenu.classList.remove('hidden');
+                    this.state = 'MENU';
+                    updateStatus("系统就绪");
+
+                    // Start processing loop
+                    this.processVideo();
+                    this.loop();
+                } catch (e) {
+                    console.error("Init error:", e);
+                    updateStatus("初始化失败");
+
+                    // 构建重试按钮
+                    let nextCdnIndex = (this.currentCdnIndex + 1) % this.cdnList.length;
+                    let nextCdnName = this.cdnList[nextCdnIndex].name;
+
+                    // 自动重试逻辑：如果不是最后一条线路，且是超时错误，尝试自动切换
+                    // 但为了避免死循环，这里还是让用户手动点比较安全，或者倒计时自动点
+
+                    this.ui.loadingMsg.innerHTML = `
+                <p style="color:red; font-size: 18px;">初始化失败: ${e.message}</p>
+                <p style="font-size: 14px; color: #aaa;">当前线路: ${cdn.name}</p>
+                <button onclick="game.switchCdnAndRetry()" style="font-size: 16px; padding: 10px 20px; margin-top: 10px;">
+                    切换到 ${nextCdnName} 重试
+                </button>
+                <div style="margin-top: 15px; font-size: 12px; text-align: left; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">
+                    <strong>解决方案：</strong><br>
+                    1. 点击上方按钮切换线路重试。<br>
+                    2. 检查网络连接 (可能需要科学上网)。<br>
+                    3. 如果一直失败，请尝试手动下载模型文件到本地 <code>hands</code> 文件夹。
+                </div>
+            `;
+                }
+            }
+
+            switchCdnAndRetry() {
+                this.currentCdnIndex = (this.currentCdnIndex + 1) % this.cdnList.length;
+                this.ui.loadingMsg.innerHTML = `<div class="loader"></div><p>正在切换线路重试...</p>`;
+                // 清理旧的 hands 实例 (虽然 JS 无法完全强制销毁，但我们可以重新赋值)
+                if (this.hands) {
+                    try { this.hands.close(); } catch (e) { }
+                }
+                this.initMediaPipe();
+            }
+
+            async processVideo() {
+                if (this.video.readyState >= 2) {
+                    const now = Date.now();
+                    // 帧率限制 (Throttling)
+                    if (now - this.lastDetectionTime >= this.detectionInterval) {
+                        this.lastDetectionTime = now;
+                        try {
+                            await this.hands.send({ image: this.video });
+                        } catch (e) {
+                            console.error("MediaPipe processing error:", e);
+                            this.ui.status.innerText = "模型处理出错";
+                        }
+                    }
+                }
+                requestAnimationFrame(() => this.processVideo());
+            }
+
+            onHandsResults(results) {
+                // 镜像处理：MediaPipe输出的坐标是归一化的，且通常是镜像的
+                // 我们在绘制时会翻转Canvas，所以这里直接保存数据
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    this.handLandmarks = results.multiHandLandmarks;
+                    this.detectGestures(results.multiHandLandmarks, results.multiHandedness);
+                } else {
+                    this.handLandmarks = null;
+                    this.gestureState = 'NONE';
+                    this.ui.status.innerText = "未检测到手";
+                }
+            }
+
+            detectGestures(landmarksList, handedness) {
+                const now = Date.now();
+
+                // 倒计时阶段不处理手势，避免误触重置/暂停导致回到开始界面
+                if (this.state === 'COUNTDOWN') {
+                    this.gestureState = 'NONE';
+                    this.gestureStartTime = null;
+                    this.ui.status.innerText = '倒计时中...';
+                    return;
+                }
+
+                // 冷却时间检查 (防止连续触发) - 3秒倒计时
+                const cooldownDuration = 3000;
+                const timeSinceLastAction = now - this.lastActionTime;
+
+                if (timeSinceLastAction < cooldownDuration) {
+                    const remainingSeconds = Math.ceil((cooldownDuration - timeSinceLastAction) / 1000);
+
+                    this.gestureState = 'COOLDOWN';
+                    this.gestureStartTime = null;
+
+                    // 仅在非 COUNTDOWN 状态下显示倒计时 (避免与开始游戏倒计时冲突)
+                    if (this.state !== 'COUNTDOWN') {
+                        this.ui.countdownDisplay.classList.remove('hidden');
+                        this.ui.countdownDisplay.innerText = remainingSeconds;
+                        this.ui.countdownDisplay.style.color = '#ffeb3b'; // 黄色警告色
+                        this.ui.status.innerText = `⏳ 冷却中... ${remainingSeconds}`;
+
+                        // 播放倒计时音效
+                        if (this.lastCooldownSec !== remainingSeconds) {
+                            this.playCountdownSound(remainingSeconds);
+                            this.lastCooldownSec = remainingSeconds;
+                        }
+                    }
+                    return;
+                } else {
+                    // 冷却结束，隐藏倒计时
+                    if (this.state !== 'COUNTDOWN' && !this.ui.countdownDisplay.classList.contains('hidden')) {
+                        this.ui.countdownDisplay.classList.add('hidden');
+                        this.ui.countdownDisplay.style.color = ''; // 重置颜色
+                    }
+                    this.lastCooldownSec = 0;
+                }
+
+                // 1. 分析每一只手的状态
+                this.handStates = landmarksList.map(hand => this.analyzeHandPose(hand));
+
+                // 2. 全局手势判定 (暂停/重开)
+                let globalState = 'PLAYING';
+                let statusText = '';
+
+                // 检查是否双手张开 (重置)
+                if (this.handStates.length === 2 && this.handStates[0] === 'OPEN_PALM' && this.handStates[1] === 'OPEN_PALM') {
+                    globalState = 'TWO_HANDS_OPEN';
+                    statusText = '👐 保持双手张开以重置...';
+                }
+                // 检查是否有手张开 (暂停)
+                else if (this.handStates.includes('OPEN_PALM')) {
+                    // 只有在游戏进行中或暂停时才允许触发暂停/继续
+                    if (this.state === 'PLAYING' || this.state === 'PAUSED') {
+                        globalState = 'OPEN_PALM';
+                        statusText = this.state === 'PLAYING' ? '🖐️ 保持张手以暂停...' : '🖐️ 保持张手以继续...';
+                    } else {
+                        // 在 GAMEOVER 或 COUNTDOWN 状态下，单手张开视为普通状态
+                        statusText = '🔪 切割模式';
+                    }
+                }
+                else if (this.handStates.includes('FIST')) {
+                    statusText = '✊ 防御模式';
+                }
+                else {
+                    statusText = '🔪 切割模式';
+                }
+
+                // 状态切换时重置计时器 (防止从暂停手势滑向重置手势时继承时间)
+                if (globalState !== this.gestureState) {
+                    this.gestureStartTime = null;
+                }
+
+                this.gestureState = globalState;
+                this.ui.status.innerText = statusText;
+
+                // 处理手势持续时间触发的事件
+
+                // 重置逻辑：必须是双手张开
+                if (globalState === 'TWO_HANDS_OPEN') {
+                    if (!this.gestureStartTime) this.gestureStartTime = now;
+                    // 增加到 1.5 秒 (1500ms)
+                    if (now - this.gestureStartTime > 1500) {
+                        this.restartGame();
+                        this.gestureStartTime = null;
+                        this.lastActionTime = now; // 设置冷却
+                    }
+                }
+                // 暂停逻辑：单手张开即可，但如果正在进行双手重置，则不触发暂停
+                else if (globalState === 'OPEN_PALM') {
+                    if (!this.gestureStartTime) this.gestureStartTime = now;
+                    if (now - this.gestureStartTime > 2000) { // 2秒触发
+                        this.togglePause();
+                        this.gestureStartTime = null; // 重置防止重复触发
+                        this.lastActionTime = now; // 设置冷却
+                    }
+                } else {
+                    this.gestureStartTime = null;
+                }
+            }
+
+            analyzeHandPose(landmarks) {
+                const isFingerExtended = (lm, fingerTipIdx, fingerPipIdx) => {
+                    const wrist = lm[0];
+                    const tip = lm[fingerTipIdx];
+                    const pip = lm[fingerPipIdx];
+                    return Math.hypot(tip.x - wrist.x, tip.y - wrist.y) >
+                        Math.hypot(pip.x - wrist.x, pip.y - wrist.y) * 1.1;
+                };
+
+                const indexExtended = isFingerExtended(landmarks, 8, 6);
+                const middleExtended = isFingerExtended(landmarks, 12, 10);
+                const ringExtended = isFingerExtended(landmarks, 16, 14);
+                const pinkyExtended = isFingerExtended(landmarks, 20, 18);
+                const thumbExtended = isFingerExtended(landmarks, 4, 2);
+
+                if (indexExtended && middleExtended && ringExtended && pinkyExtended && thumbExtended) {
+                    return 'OPEN_PALM';
+                } else if (!indexExtended && !middleExtended && !ringExtended && !pinkyExtended) {
+                    return 'FIST';
+                } else {
+                    return 'SLICE';
+                }
+            }
+
+            applyDifficultyRamp(tSec) {
+                const r = this.difficultyRamp;
+                const p = Math.min(1, Math.max(0, tSec / r.duration));
+                const lerp = (a, b) => a + (b - a) * p;
+
+                this.difficultyBase = lerp(r.difficultyBaseEasy, r.difficultyBaseHard);
+                this.apexMinFactor = lerp(r.apexMinEasy, r.apexMinHard);
+                this.apexMaxFactor = lerp(r.apexMaxEasy, r.apexMaxHard);
+                this.specialScale = lerp(r.specialScaleEasy, r.specialScaleHard);
+                this.burstScale = lerp(r.burstScaleEasy, r.burstScaleHard);
+
+                const spawnRate = lerp(r.spawnEasy, r.spawnHard);
+                const spawnFloor = lerp(r.floorEasy, r.floorHard);
+                const maxFruits = lerp(r.maxEasy, r.maxHard);
+
+                this.spawnRateInitial = this.isMobile ? spawnRate + 10 : spawnRate;
+                this.spawnRateFloor = this.isMobile ? Math.max(18, spawnFloor) : Math.max(22, spawnFloor);
+                this.maxFruits = this.isMobile ? Math.min(maxFruits, 14) : Math.round(maxFruits);
+            }
+
+            startGame() {
+                this.lastActionTime = Date.now(); // 重置冷却时间
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+                this.ui.menuOverlay.classList.add('hidden');
+                this.ui.startMenu.classList.add('hidden');
+                this.ui.gameOverMenu.classList.add('hidden');
+                this.ui.pauseMenu.classList.add('hidden');
+
+                this.state = 'COUNTDOWN';
+                this.ui.countdownDisplay.classList.remove('hidden');
+
+                let count = 3;
+                this.ui.countdownDisplay.innerText = count;
+
+                const timer = setInterval(() => {
+                    count--;
+                    if (count > 0) {
+                        this.ui.countdownDisplay.innerText = count;
+                    } else if (count === 0) {
+                        this.ui.countdownDisplay.innerText = 'GO!';
+                    } else {
+                        clearInterval(timer);
+                        this.ui.countdownDisplay.classList.add('hidden');
+                        this.startPlaying();
+                    }
+                }, 1000);
+            }
+
+            startPlaying() {
+                this.state = 'PLAYING';
+                this.score = 0;
+                this.lives = 3;
+                this.gameTime = 0;
+                this.lastDisplayedTime = -1;
+                this.fruits = [];
+                this.particles = [];
+                this.applyDifficultyRamp(0);
+                this.difficultyMultiplier = this.difficultyBase;
+                this.startTime = Date.now();
+                this.pauseStartTime = null;
+                this.missedFruits = 0;
+                this.slicedFruitsTotal = 0;
+                this.doubleScoreTimer = 0;
+                this.updateHUD();
+            }
+
+            togglePause() {
+                this.lastActionTime = Date.now(); // 重置冷却时间
+                if (this.state === 'PLAYING') {
+                    this.state = 'PAUSED';
+                    this.ui.menuOverlay.classList.remove('hidden');
+                    this.ui.pauseMenu.classList.remove('hidden');
+                    this.pauseStartTime = Date.now();
+                } else if (this.state === 'PAUSED') {
+                    this.resumeGame();
+                }
+            }
+
+            resumeGame() {
+                this.lastActionTime = Date.now(); // 重置冷却时间
+                if (this.pauseStartTime) {
+                    // 将暂停耗时从游戏计时中扣除
+                    this.startTime += (Date.now() - this.pauseStartTime);
+                    this.pauseStartTime = null;
+                }
+                this.state = 'PLAYING';
+                this.ui.menuOverlay.classList.add('hidden');
+                this.ui.pauseMenu.classList.add('hidden');
+            }
+
+            restartGame() {
+                this.startGame();
+            }
+
+            gameOver(reason = "生命值耗尽") {
+                this.playGameOverSound();
+                this.state = 'GAMEOVER';
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    localStorage.setItem('fruit_ninja_highscore', this.highScore);
+                }
+                this.ui.finalScore.innerText = this.score;
+                
+                // 显示结束原因
+                let reasonEl = document.getElementById('game-over-reason');
+                if (!reasonEl) {
+                    reasonEl = document.createElement('p');
+                    reasonEl.id = 'game-over-reason';
+                    reasonEl.style.color = '#ff5252';
+                    reasonEl.style.fontSize = '24px';
+                    reasonEl.style.fontWeight = 'bold';
+                    reasonEl.style.margin = '10px 0';
+                    // 插入到分数下方
+                    const scoreP = this.ui.gameOverMenu.querySelector('p');
+                    if(scoreP) scoreP.after(reasonEl);
+                }
+                reasonEl.innerText = reason;
+
+                this.ui.menuOverlay.classList.remove('hidden');
+                this.ui.gameOverMenu.classList.remove('hidden');
+            }
+
+            spawnFruit() {
+                // 特殊物品概率随时间略升，开局更宽松
+                const specialBase = 0.10 * this.specialScale;
+                const isSpecial = Math.random() < Math.min(0.18 * this.specialScale, specialBase + this.difficultyMultiplier * 0.03 * this.specialScale);
+                let item;
+
+                if (isSpecial) {
+                    const rand = Math.random();
+                    let cumulativeWeight = 0;
+                    // 简单的权重选择
+                    if (rand < 0.7) item = SPECIAL_ITEMS[0]; // Bomb
+                    else item = SPECIAL_ITEMS[1]; // Ice
+                } else {
+                    item = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
+                }
+
+                const x = Math.random() * (this.width - 100) + 50;
+                const y = this.height + 50;
+                // 稍微向屏幕中心抛射
+                const centerX = this.width / 2;
+
+                // 随机大小变化 (0.8 ~ 1.3倍)
+                const sizeVariation = 0.8 + Math.random() * 0.5;
+                const finalSize = item.size * sizeVariation;
+
+                // 随机速度变化
+                const vx = (centerX - x) * 0.012 + (Math.random() - 0.5) * 5; // 降低水平速度
+                // 计算希望上升到画布 (apexMin~apexMax) 高度，再落下，便于初始更低速度
+                const apexMin = this.apexMinFactor || 0.7;
+                const apexMax = this.apexMaxFactor || 0.82;
+                const desiredApex = Math.max(260, this.height * (apexMin + Math.random() * (apexMax - apexMin)));
+                const baseVy = -Math.sqrt(2 * CONFIG.GRAVITY * desiredApex);
+                const vyJitter = 0.9 + Math.random() * 0.25; // 0.9x ~ 1.15x
+                const vy = baseVy * vyJitter - this.difficultyMultiplier * 0.6;
+
+                this.fruits.push({
+                    x, y, vx, vy,
+                    type: item.type,
+                    icon: item.icon,
+                    score: item.score,
+                    color: item.color,
+                    size: finalSize,
+                    rotation: 0,
+                    rotationSpeed: (Math.random() - 0.5) * 0.3,
+                    isSliced: false,
+                    active: true
+                });
+
+                // 附带水果概率随难度提升，开局更低
+                const burstProb = Math.min(0.30 * this.burstScale, (0.12 + this.difficultyMultiplier * 0.05) * this.burstScale);
+                if (Math.random() < burstProb) {
+                    setTimeout(() => {
+                        // 简单的递归调用，但要防止无限递归，这里手动添加一个
+                        // 实际项目中最好把 spawnFruit 拆分为 createFruit 和 scheduleSpawn
+                        // 这里简单处理：直接再推一个水果进数组，不走 spawnFruit 逻辑避免死循环
+                        const item2 = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
+                        this.fruits.push({
+                            x: x + (Math.random() - 0.5) * 50,
+                            y: y + 50,
+                            vx: vx + (Math.random() - 0.5) * 2,
+                            vy: vy * (0.9 + Math.random() * 0.2),
+                            type: item2.type,
+                            icon: item2.icon,
+                            score: item2.score,
+                            color: item2.color,
+                            size: item2.size * (0.8 + Math.random() * 0.5),
+                            rotation: 0,
+                            rotationSpeed: (Math.random() - 0.5) * 0.3,
+                            isSliced: false,
+                            active: true
+                        });
+                    }, 100);
+                }
+            }
+
+            updatePhysics() {
+                // 时间流逝
+                if (this.timeSlowTimer > 0) {
+                    this.timeSlowTimer--;
+                    this.timeSlowFactor = 0.5;
+                } else {
+                    this.timeSlowFactor = 1;
+                }
+
+                if (this.doubleScoreTimer > 0) {
+                    this.doubleScoreTimer--;
+                }
+
+                // 难度增加
+                this.gameTime = Math.floor((Date.now() - this.startTime) / 1000);
+                // 随时间提升难度：先更新各项参数，再累积难度系数
+                this.applyDifficultyRamp(this.gameTime);
+                this.difficultyMultiplier = this.difficultyBase + Math.min(1.5, (this.gameTime / 60) * 0.3);
+
+                // 更新时间显示（仅当秒数变化时刷新）
+                this.refreshTimeDisplay();
+
+                // 生成水果
+                this.spawnTimer++;
+                const currentSpawnRate = Math.max(this.spawnRateFloor, this.spawnRateInitial - (this.difficultyMultiplier * 6));
+                if (this.spawnTimer > currentSpawnRate && this.fruits.length < this.maxFruits) {
+                    this.spawnFruit();
+                    this.spawnTimer = 0;
+                }
+
+                // 更新水果位置
+                for (let i = this.fruits.length - 1; i >= 0; i--) {
+                    let f = this.fruits[i];
+                    f.x += f.vx * this.timeSlowFactor;
+                    f.y += f.vy * this.timeSlowFactor;
+                    f.vy += CONFIG.GRAVITY * this.timeSlowFactor;
+                    f.rotation += f.rotationSpeed * this.timeSlowFactor;
+
+                    // 移除出界水果
+                    if (f.y > this.height + 100) {
+                        if (!f.isSliced && f.type !== 'bomb' && f.type !== 'ice') {
+                            // 漏掉水果直接扣命
+                            this.lives--;
+                            this.flashScreen('red'); // 红色闪烁警示
+                            this.playMissSound(); // 播放漏掉音效
+                            this.createFloatingText(f.x, this.height - 100, "Missed!", "#ff0000"); // 提示文字
+                            this.createFloatingText(this.width / 2, this.height / 2, "-1 ❤️", "#ff0000"); // 屏幕中央提示扣血
+                            this.updateHUD();
+                            if (this.lives <= 0) {
+                                this.gameOver("漏掉太多水果!");
+                            }
+                        }
+                        this.fruits.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                // 更新粒子
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.x += p.vx * this.timeSlowFactor;
+                    p.y += p.vy * this.timeSlowFactor;
+                    p.vy += CONFIG.GRAVITY * 0.5 * this.timeSlowFactor;
+                    p.life--;
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                }
+
+                // 更新背景溅射
+                for (let i = this.splatters.length - 1; i >= 0; i--) {
+                    let s = this.splatters[i];
+                    s.life--;
+                    // 模拟重力流淌效果 (Dripping effect)
+                    if (s.style === 'BLOB' || s.style === 'SPLASH') {
+                        s.y += 0.2 * (s.size / 50); // 大的流得快
+                    }
+                    if (s.life <= 0) this.splatters.splice(i, 1);
+                }
+
+                // 更新浮动文字
+                for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+                    let t = this.floatingTexts[i];
+                    t.y += t.vy * this.timeSlowFactor;
+                    t.life--;
+                    t.scale += 0.01; // 稍微变大
+                    if (t.life <= 0) this.floatingTexts.splice(i, 1);
+                }
+
+                // 更新刀光 (遍历所有轨迹)
+                for (let i = 0; i < this.bladeTrails.length; i++) {
+                    if (this.bladeTrails[i].length > CONFIG.BLADE_LIFETIME) {
+                        this.bladeTrails[i].shift();
+                    }
+                }
+            }
+
+            checkCollisions() {
+                // 修复多手识别异常导致的残留虚影
+                // 如果检测到的手数量少于之前的轨迹数量，清除多余的轨迹
+                const detectedHandCount = this.handLandmarks ? this.handLandmarks.length : 0;
+                for (let i = detectedHandCount; i < 2; i++) {
+                    this.bladeTrails[i] = []; // 立即清除未检测到的手的轨迹
+                }
+
+                if (!this.handLandmarks) return;
+
+                // 遍历每一只手
+                for (let i = 0; i < this.handLandmarks.length; i++) {
+                    const hand = this.handLandmarks[i];
+                    const state = this.handStates[i];
+
+                    // 如果是张手(暂停手势)，不产生刀光
+                    if (state === 'OPEN_PALM') {
+                        this.bladeTrails[i] = []; // 清空该手的轨迹
+                        continue;
+                    }
+
+                    // 获取食指指尖坐标
+                    const indexTip = hand[8];
+
+                    // 1. 转换归一化坐标到视频原始像素坐标
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const videoX = indexTip.x * dims.vw;
+                    const videoY = indexTip.y * dims.vh;
+
+                    // 2. 映射到 Canvas 坐标（基于 letterbox 缩放，不裁剪输入）
+                    const mapping = this.videoMapping || { scale: 1, offsetX: 0, offsetY: 0 };
+                    const canvasX = videoX * mapping.scale + mapping.offsetX;
+                    const canvasY = videoY * mapping.scale + mapping.offsetY;
+
+                    // 3. 应用镜像翻转
+                    const tipX = this.width - canvasX;
+                    const tipY = canvasY;
+
+                    // 确保该手的轨迹数组存在
+                    if (!this.bladeTrails[i]) this.bladeTrails[i] = [];
+
+                    // 添加到轨迹
+                    this.bladeTrails[i].push({ x: tipX, y: tipY, time: Date.now() }); // 记录时间戳
+
+                    // 碰撞检测
+                    if (this.bladeTrails[i].length < 2) continue;
+
+                    const prev = this.bladeTrails[i][this.bladeTrails[i].length - 2];
+                    const curr = { x: tipX, y: tipY };
+
+                    // 计算切割速度（像素/毫秒）
+                    const timeDiff = Date.now() - (prev.time || Date.now());
+                    const distDiff = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+                    const cutSpeed = timeDiff > 0 ? distDiff / timeDiff : 0;
+
+                    for (let f of this.fruits) {
+                        if (f.isSliced || !f.active) continue;
+
+                        const dist = this.lineDist(prev, curr, { x: f.x, y: f.y });
+
+                        // 判定范围优化：修正判定范围过大的问题
+                        // f.size 是字体大小(近似直径)，视觉半径约为 f.size/2
+                        // PC: 0.6 (即 1.2倍半径), Mobile: 0.8 (即 1.6倍半径)
+                        const hitboxScale = this.isMobile ? 0.8 : 0.6;
+                        
+                        if (dist < f.size * hitboxScale) {
+                            // 传入当前手的状态，用于判断是否防御炸弹
+                            this.sliceFruit(f, state, cutSpeed);
+                        }
+                    }
+                }
+            }
+
+            lineDist(p1, p2, p) {
+                const l2 = (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2;
+                if (l2 === 0) return Math.hypot(p.x - p1.x, p.y - p1.y);
+                let t = ((p.x - p1.x) * (p2.x - p1.x) + (p.y - p1.y) * (p2.y - p1.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+                return Math.hypot(p.x - (p1.x + t * (p2.x - p1.x)), p.y - (p1.y + t * (p2.y - p1.y)));
+            }
+
+            sliceFruit(fruit, handState, cutSpeed = 0) {
+                // 防止重复切割 (Double Slice Guard)
+                if (fruit.isSliced) return;
+                
+                fruit.isSliced = true;
+                fruit.active = false; // 标记为非活跃，稍后移除或替换为碎片
+
+                // 特殊效果
+                if (fruit.type === 'bomb') {
+                    if (handState === 'FIST') {
+                        // 防御成功，不扣分
+                        this.createFloatingText(fruit.x, fruit.y, "Blocked!", "#fff");
+                    } else {
+                        this.lives--;
+                        this.flashScreen('red'); // 红色闪烁警示
+                        this.playBombSound();
+                        this.createFloatingText(fruit.x, fruit.y, "BOOM!", "#f00");
+                        // 屏幕震动效果
+                        this.canvas.style.transform = `translate(${Math.random() * 10 - 5}px, ${Math.random() * 10 - 5}px)`;
+                        setTimeout(() => this.canvas.style.transform = 'none', 200);
+                    }
+                } else if (fruit.type === 'ice') {
+                    this.playSliceSound(fruit, cutSpeed);
+                    this.timeSlowTimer = 300; // 5秒慢动作
+                    this.createFloatingText(fruit.x, fruit.y, "Freeze!", "#0ff");
+                } else {
+                    this.playSliceSound(fruit, cutSpeed);
+                    // 普通水果
+                    let points = fruit.score;
+                    if (this.doubleScoreTimer > 0) {
+                        points *= 2;
+                    }
+                    this.score += points;
+
+                    // 奖励机制：每获得 100 分奖励 1 条生命 (最多 3 条)
+                    if (Math.floor(this.score / 100) > Math.floor((this.score - points) / 100)) {
+                        if (this.lives < 3) {
+                            this.lives++;
+                            this.createFloatingText(this.width / 2, this.height / 2, "Extra Life! +1 ❤️", "#00ff00");
+                        }
+                    }
+
+                    // 连击判定
+                    const now = Date.now();
+                    if (now - this.lastSliceTime < CONFIG.COMBO_TIME_WINDOW) {
+                        this.comboCount++;
+                        if (this.comboCount > 1) {
+                            this.score += this.comboCount; // 连击加分
+                            this.createFloatingText(fruit.x, fruit.y - 30, `${this.comboCount} COMBO!`, "#ff00ff");
+                        }
+                    } else {
+                        this.comboCount = 1;
+                    }
+                    this.lastSliceTime = now;
+
+                    this.createFloatingText(fruit.x, fruit.y, `+${points}`, "#ff0");
+
+                    this.slicedFruitsTotal++;
+                    if (this.slicedFruitsTotal % 10 === 0) {
+                        const effectType = Math.random() > 0.5 ? 'SLOW' : 'DOUBLE';
+                        if (effectType === 'SLOW') {
+                            this.timeSlowTimer = 300; // 5 seconds
+                            this.createFloatingText(this.width / 2, this.height / 3, "BONUS: TIME SLOW!", "#00ffff");
+                        } else {
+                            this.doubleScoreTimer = 300; // 5 seconds
+                            this.createFloatingText(this.width / 2, this.height / 3, "BONUS: DOUBLE SCORE!", "#ffd700");
+                        }
+                    }
+                }
+
+                this.createParticles(fruit);
+                this.updateHUD();
+
+                if (this.lives <= 0) {
+                    this.gameOver("切到炸弹!");
+                }
+            }
+
+            flashScreen(color) {
+                const flash = document.createElement('div');
+                flash.style.position = 'absolute';
+                flash.style.top = '0';
+                flash.style.left = '0';
+                flash.style.width = '100%';
+                flash.style.height = '100%';
+                flash.style.backgroundColor = color;
+                flash.style.opacity = '0.5';
+                flash.style.pointerEvents = 'none';
+                flash.style.zIndex = '100';
+                flash.style.transition = 'opacity 0.2s';
+                document.body.appendChild(flash);
+                
+                requestAnimationFrame(() => {
+                    flash.style.opacity = '0';
+                });
+                setTimeout(() => flash.remove(), 200);
+            }
+
+            createParticles(fruit) {
+                // 1. 背景溅射 (Splatter) - 增强版：多种样式、大小和密度
+                if (fruit.type !== 'bomb' && fruit.type !== 'coconut') {
+                    // 随机生成 1-3 个溅射层，增加密度感 (移动端限制为1层)
+                    const splatterCount = this.isMobile ? 1 : (1 + Math.floor(Math.random() * 3));
+
+                    for (let i = 0; i < splatterCount; i++) {
+                        const rand = Math.random();
+                        let style = 'BLOB'; // 默认墨点
+                        if (rand > 0.7) style = 'SPLASH'; // 放射状
+                        else if (rand > 0.4) style = 'MIST'; // 喷雾状
+
+                        const splatter = {
+                            x: fruit.x + (Math.random() - 0.5) * 60,
+                            y: fruit.y + (Math.random() - 0.5) * 60,
+                            color: fruit.color,
+                            // 调整大小范围：0.7倍 - 1.3倍 (减小尺寸)
+                            size: fruit.size * (0.7 + Math.random() * 0.6),
+                            life: 120, // 持续2秒
+                            maxLife: 120,
+                            rotation: Math.random() * Math.PI * 2,
+                            style: style,
+                            outline: [], // 用于 BLOB 样式的多边不规则外形
+                            blobs: [], // 旧数据结构保留兼容
+                            points: [], // 用于 SPLASH 样式的多边形
+                            droplets: [] // 用于 MIST 样式的液滴
+                        };
+
+                        // 预计算形状数据 (避免每帧抖动)
+                        if (style === 'BLOB') {
+                            // 生成无规则外形：环绕一圈的不等距顶点
+                            const pointCount = 24 + Math.floor(Math.random() * 14); // 24-37 点
+                            for (let j = 0; j < pointCount; j++) {
+                                const angle = (j / pointCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.12;
+                                const radius = splatter.size * (0.55 + Math.random() * 0.55);
+                                splatter.outline.push({
+                                    x: Math.cos(angle) * radius,
+                                    y: Math.sin(angle) * radius
+                                });
+                            }
+                        } else if (style === 'SPLASH') {
+                            // 尖锐的放射状 - 增加点数
+                            const numPoints = 20 + Math.floor(Math.random() * 15);
+                            for (let j = 0; j < numPoints; j++) {
+                                const angle = (j / numPoints) * Math.PI * 2;
+                                // 半径剧烈波动
+                                const r = splatter.size * (0.2 + Math.random() * 1.4);
+                                splatter.points.push({
+                                    x: Math.cos(angle) * r,
+                                    y: Math.sin(angle) * r
+                                });
+                            }
+                        } else if (style === 'MIST') {
+                            // 散落的小液滴 - 增加数量
+                            const numDroplets = 12 + Math.floor(Math.random() * 10);
+                            for (let j = 0; j < numDroplets; j++) {
+                                const dist = Math.random() * splatter.size;
+                                const angle = Math.random() * Math.PI * 2;
+                                splatter.droplets.push({
+                                    x: Math.cos(angle) * dist,
+                                    y: Math.sin(angle) * dist,
+                                    r: (Math.random() * 0.1 + 0.05) * splatter.size
+                                });
+                            }
+                        }
+
+                        this.splatters.push(splatter);
+                    }
+                }
+
+                // 2. 爆炸粒子 (Particles) — 全部不规则，并限制块状大小
+                const particleCount = this.particleCount;
+                for (let i = 0; i < particleCount; i++) {
+                    const verts = [];
+                    const vertCount = 6 + Math.floor(Math.random() * 6); // 6-11 边
+                    const baseR = 2 + Math.random() * 3; // 控制块大小更小
+                    for (let v = 0; v < vertCount; v++) {
+                        // 不规则角度与半径
+                        const ang = Math.random() * Math.PI * 2;
+                        const r = baseR * (0.5 + Math.random());
+                        verts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
+                    }
+
+                    this.particles.push({
+                        x: fruit.x,
+                        y: fruit.y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 30 + Math.random() * 20,
+                        color: fruit.color,
+                        verts
+                    });
+                }
+
+                // 性能优化：限制最大粒子数，防止卡顿
+                if (this.particles.length > 100) {
+                    this.particles.splice(0, this.particles.length - 100);
+                }
+
+                // 如果不是炸弹，生成两半水果 (使用 Clip 裁剪模拟切开效果)
+                if (fruit.type !== 'bomb') {
+                    const sliceAngle = (Math.random() - 0.5) * Math.PI; // 随机切分角度
+                    const sepSpeed = 4; // 分离力度
+
+                    // 垂直于切面的分离向量
+                    const sepVx = Math.cos(sliceAngle + Math.PI / 2) * sepSpeed;
+                    const sepVy = Math.sin(sliceAngle + Math.PI / 2) * sepSpeed;
+
+                    // 第一半
+                    this.fruits.push({
+                        ...fruit,
+                        vx: fruit.vx + sepVx,
+                        vy: fruit.vy + sepVy,
+                        isSliced: true,
+                        active: false,
+                        rotationSpeed: fruit.rotationSpeed - 0.15,
+                        sliceAngle: sliceAngle,
+                        halfIndex: 1
+                    });
+                    // 第二半
+                    this.fruits.push({
+                        ...fruit,
+                        vx: fruit.vx - sepVx,
+                        vy: fruit.vy - sepVy,
+                        isSliced: true,
+                        active: false,
+                        rotationSpeed: fruit.rotationSpeed + 0.15,
+                        sliceAngle: sliceAngle,
+                        halfIndex: 2
+                    });
+                }
+
+                // 移除原始水果
+                const idx = this.fruits.indexOf(fruit);
+                if (idx > -1) this.fruits.splice(idx, 1);
+            }
+
+            createFloatingText(x, y, text, color) {
+                // 性能优化：使用 Canvas 绘制文字代替 DOM 操作
+                this.floatingTexts.push({
+                    x: x,
+                    y: y,
+                    text: text,
+                    color: color,
+                    life: 60, // 60帧 (约1秒)
+                    vy: -2, // 向上飘
+                    scale: 1
+                });
+            }
+
+            updateHUD() {
+                this.ui.score.innerText = this.score;
+                if (this.ui.highScore) {
+                    this.ui.highScore.innerText = this.highScore;
+                }
+                
+                // 更新时间显示 (MM:SS)
+                this.refreshTimeDisplay(true);
+
+                // 更新生命值显示 (使用爱心图标)
+                const maxLives = 3;
+                // 剩余生命值
+                const currentLives = Math.max(0, this.lives);
+
+                // 清空并重新生成
+                this.ui.livesContainer.innerHTML = '';
+                for (let i = 0; i < maxLives; i++) {
+                    const heartIcon = document.createElement('div');
+                    heartIcon.className = 'life-icon';
+                    heartIcon.innerText = '❤️';
+
+                    // 如果当前索引 >= 剩余生命值，说明这个心丢了
+                    // 例如 lives=2, i=0(ok), i=1(ok), i=2(lost)
+                    if (i >= currentLives) {
+                        heartIcon.classList.add('life-lost');
+                        heartIcon.innerText = '🤍'; // 丢失变成白心或空心
+                    }
+                    this.ui.livesContainer.appendChild(heartIcon);
+                }
+            }
+
+            // 只在秒数变化时更新时间显示，减少跳变与卡顿
+            refreshTimeDisplay(force = false) {
+                if (!this.ui.time) return;
+                if (!force && this.gameTime === this.lastDisplayedTime) return;
+                this.lastDisplayedTime = this.gameTime;
+                const minutes = Math.floor(this.gameTime / 60).toString().padStart(2, '0');
+                const seconds = (this.gameTime % 60).toString().padStart(2, '0');
+                this.ui.time.innerText = `${minutes}:${seconds}`;
+            }
+
+            draw() {
+                // 清空画布
+                this.ctx.clearRect(0, 0, this.width, this.height);
+
+                // 1. 绘制摄像头背景 (镜像)
+                this.ctx.save();
+                this.ctx.scale(-1, 1);
+                this.ctx.translate(-this.width, 0);
+                if (this.video.readyState === 4 && this.videoMapping) {
+                    const map = this.videoMapping;
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const destX = this.width - map.offsetX - map.drawW; // 镜像后从右往左放置
+                    this.ctx.drawImage(
+                        this.video,
+                        0, 0, dims.vw, dims.vh,
+                        destX, map.offsetY, map.drawW, map.drawH
+                    );
+                } else {
+                    // 备用背景
+                    const gradient = this.ctx.createLinearGradient(0, 0, this.width, this.height);
+                    gradient.addColorStop(0, '#2c3e50');
+                    gradient.addColorStop(1, '#3498db');
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(0, 0, this.width, this.height);
+                }
+                this.ctx.restore();
+
+                // 1.5 绘制背景果汁溅射 (Splatters)
+                for (let s of this.splatters) {
+                    this.ctx.save();
+                    this.ctx.translate(s.x, s.y);
+                    this.ctx.rotate(s.rotation);
+                    // 增加透明度，让它看起来像液体附着在表面
+                    this.ctx.globalAlpha = Math.min(0.85, s.life / 60);
+                    this.ctx.fillStyle = s.color;
+
+                    if (s.style === 'MIST') {
+                        // 绘制散落液滴
+                        for (let d of s.droplets) {
+                            this.ctx.beginPath();
+                            this.ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                    } else if (s.style === 'BLOB') {
+                        // 使用预计算的不规则外形，避免出现规则圆形
+                        if (s.outline && s.outline.length > 2) {
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(s.outline[0].x, s.outline[0].y);
+                            for (let i = 1; i < s.outline.length; i++) {
+                                this.ctx.lineTo(s.outline[i].x, s.outline[i].y);
+                            }
+                            this.ctx.closePath();
+                            this.ctx.fill();
+
+                            if (!this.isMobile) {
+                                this.ctx.save();
+                                this.ctx.globalAlpha *= 0.25;
+                                this.ctx.fillStyle = '#ffffff';
+                                // 在外形内随机放置一个小高光，保持不规则感
+                                const pick = s.outline[Math.floor(Math.random() * s.outline.length)];
+                                const hiSize = s.size * 0.15;
+                                this.ctx.beginPath();
+                                this.ctx.ellipse(pick.x * 0.3, pick.y * 0.3, hiSize, hiSize * 0.6, Math.PI / 3, 0, Math.PI * 2);
+                                this.ctx.fill();
+                                this.ctx.restore();
+                            }
+                        }
+                    } else {
+                        // SPLASH 使用预计算的多边形
+                        if (s.points && s.points.length > 0) {
+                            this.ctx.beginPath();
+
+                            // SPLASH 保持尖锐
+                            this.ctx.moveTo(s.points[0].x, s.points[0].y);
+                            for (let i = 1; i < s.points.length; i++) {
+                                this.ctx.lineTo(s.points[i].x, s.points[i].y);
+                            }
+
+                            this.ctx.closePath();
+                            this.ctx.fill();
+
+                            // 添加液体高光 (Wet Highlight) - 简单高效的模拟
+                            if (!this.isMobile) {
+                                this.ctx.globalAlpha *= 0.4; // 高光透明度
+                                this.ctx.fillStyle = '#ffffff';
+                                // 在左上角绘制一个模糊的反射光斑
+                                this.ctx.beginPath();
+                                // 根据形状大小调整高光
+                                const highlightSize = s.size * 0.25;
+                                const highlightOffset = s.size * 0.2;
+                                // 绘制一个月牙形或椭圆
+                                this.ctx.ellipse(-highlightOffset, -highlightOffset, highlightSize, highlightSize * 0.6, Math.PI / 4, 0, Math.PI * 2);
+                                this.ctx.fill();
+                            }
+                        }
+                    }
+                    this.ctx.restore();
+                }
+                this.ctx.globalAlpha = 1;
+
+                // 2. 绘制水果
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                for (let f of this.fruits) {
+                    this.ctx.save();
+                    this.ctx.translate(f.x, f.y);
+                    this.ctx.rotate(f.rotation);
+                    this.ctx.font = `${f.size}px "Segoe UI Emoji", "Segoe UI Symbol", Arial`;
+
+                    if (f.isSliced && f.halfIndex) {
+                        // 绘制切开的半个水果
+                        this.ctx.save();
+
+                        // 旋转到切分角度进行裁剪
+                        this.ctx.rotate(f.sliceAngle);
+                        this.ctx.beginPath();
+                        if (f.halfIndex === 1) {
+                            // 上半部分 (相对于切分线)
+                            this.ctx.rect(-f.size, -f.size, f.size * 2, f.size);
+                        } else {
+                            // 下半部分
+                            this.ctx.rect(-f.size, 0, f.size * 2, f.size);
+                        }
+                        this.ctx.clip();
+
+                        // 旋转回来绘制 Emoji，保持纹理方向一致
+                        this.ctx.rotate(-f.sliceAngle);
+                        this.ctx.fillText(f.icon, 0, 0);
+
+                        this.ctx.restore();
+                    } else {
+                        this.ctx.fillText(f.icon, 0, 0);
+                    }
+                    this.ctx.restore();
+                }
+
+                // 3. 绘制粒子
+                for (let p of this.particles) {
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.globalAlpha = Math.max(0, p.life / 50);
+                    this.ctx.beginPath();
+                    if (p.verts && p.verts.length) {
+                        this.ctx.moveTo(p.x + p.verts[0].x, p.y + p.verts[0].y);
+                        for (let k = 1; k < p.verts.length; k++) {
+                            this.ctx.lineTo(p.x + p.verts[k].x, p.y + p.verts[k].y);
+                        }
+                        this.ctx.closePath();
+                    } else {
+                        this.ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+                    }
+                    this.ctx.fill();
+                }
+                this.ctx.globalAlpha = 1;
+
+                // 3.1 绘制浮动文字
+                this.ctx.save();
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.shadowColor = 'black';
+                this.ctx.shadowBlur = 2;
+                this.ctx.shadowOffsetX = 2;
+                this.ctx.shadowOffsetY = 2;
+
+                for (let t of this.floatingTexts) {
+                    this.ctx.fillStyle = t.color;
+                    this.ctx.font = `bold ${30 * t.scale}px Arial`;
+                    this.ctx.globalAlpha = Math.min(1, t.life / 20); // 最后20帧渐隐
+                    this.ctx.fillText(t.text, t.x, t.y);
+                }
+                this.ctx.restore();
+
+                // 4. 绘制刀光轨迹 (支持多手)
+                this.ctx.lineWidth = 5;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+
+                const colors = ['#00ffff', '#ff00ff']; // 不同手不同颜色
+
+                for (let i = 0; i < this.bladeTrails.length; i++) {
+                    const trail = this.bladeTrails[i];
+                    if (!trail || trail.length < 2) continue;
+
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+
+                    this.ctx.moveTo(trail[0].x, trail[0].y);
+                    for (let j = 1; j < trail.length; j++) {
+                        this.ctx.lineTo(trail[j].x, trail[j].y);
+                    }
+                    this.ctx.stroke();
+
+                    // 刀光发光效果
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = colors[i % colors.length];
+                    this.ctx.stroke();
+                    this.ctx.shadowBlur = 0;
+                }
+
+                // 5. 绘制手势识别点 (调试用)
+                if (this.handLandmarks && this.video.readyState >= 2) {
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const map = this.videoMapping || { scale: 1, offsetX: 0, offsetY: 0 };
+
+                    this.ctx.fillStyle = '#00ff00';
+                    for (const landmarks of this.handLandmarks) {
+                        // Helper to map coordinates using letterbox mapping
+                        const mapCoord = (p) => {
+                            const vx = p.x * dims.vw;
+                            const vy = p.y * dims.vh;
+                            const cx = vx * map.scale + map.offsetX;
+                            const cy = vy * map.scale + map.offsetY;
+                            return { x: this.width - cx, y: cy };
+                        };
+
+                        // 绘制食指指尖
+                        const tip = landmarks[8];
+                        const tipPos = mapCoord(tip);
+
+                        this.ctx.beginPath();
+                        this.ctx.arc(tipPos.x, tipPos.y, 10, 0, Math.PI * 2);
+                        this.ctx.fill();
+
+                        // 绘制手腕作为参考
+                        const wrist = landmarks[0];
+                        const wristPos = mapCoord(wrist);
+
+                        this.ctx.fillStyle = '#ffff00';
+                        this.ctx.beginPath();
+                        this.ctx.arc(wristPos.x, wristPos.y, 5, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.fillStyle = '#00ff00';
+                    }
+                }
+
+                // 6. 绘制菜单交互进度 (悬停光圈)
+                if (this.menuHoverTarget && this.menuHoverTimer > 0) {
+                    const progress = this.menuHoverTimer / this.menuHoverMaxTime;
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.menuHoverTarget.x, this.menuHoverTarget.y, 30, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+                    this.ctx.strokeStyle = '#00ff00';
+                    this.ctx.lineWidth = 5;
+                    this.ctx.stroke();
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.menuHoverTarget.x, this.menuHoverTarget.y, 30, 0, Math.PI * 2);
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    this.ctx.lineWidth = 5;
+                    this.ctx.stroke();
+                }
+
+                // 7. 绘制手势长按进度 (重置/暂停)
+                if (this.gestureState === 'TWO_HANDS_OPEN' && this.gestureStartTime) {
+                    const elapsed = Date.now() - this.gestureStartTime;
+                    const progress = Math.min(1, elapsed / 1500);
+
+                    this.ctx.save();
+                    this.ctx.translate(this.width / 2, this.height / 2);
+
+                    // 背景圈
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, 60, 0, Math.PI * 2);
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    this.ctx.fill();
+
+                    // 进度圈
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, 60, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+                    this.ctx.strokeStyle = '#ff4444'; // 红色警告色
+                    this.ctx.lineWidth = 10;
+                    this.ctx.stroke();
+
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = '20px Arial';
+                    this.ctx.fillText("重置中...", 0, 5);
+
+                    this.ctx.restore();
+                } else if (this.gestureState === 'OPEN_PALM' && this.gestureStartTime) {
+                    const elapsed = Date.now() - this.gestureStartTime;
+                    const progress = Math.min(1, elapsed / 2000);
+
+                    this.ctx.save();
+                    this.ctx.translate(this.width / 2, this.height / 2);
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, 50, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+                    this.ctx.strokeStyle = '#ffff00'; // 黄色
+                    this.ctx.lineWidth = 8;
+                    this.ctx.stroke();
+
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = '16px Arial';
+                    this.ctx.fillText("暂停...", 0, 5);
+
+                    this.ctx.restore();
+                }
+            }
+
+            checkMenuInteraction() {
+                if (!this.handLandmarks || this.handLandmarks.length === 0) {
+                    this.menuHoverTimer = 0;
+                    this.menuHoverTarget = null;
+                    return;
+                }
+
+                // 确定当前应该检测哪个按钮
+                let targetBtn = null;
+                if (this.state === 'MENU') targetBtn = this.ui.startBtn;
+                else if (this.state === 'GAMEOVER') targetBtn = this.ui.restartBtn;
+                else if (this.state === 'PAUSED') targetBtn = this.ui.resumeBtn;
+
+                if (!targetBtn) return;
+
+                const rect = targetBtn.getBoundingClientRect();
+                let isHovering = false;
+
+                // 检查任意一只手的食指是否在按钮区域内
+                for (const hand of this.handLandmarks) {
+                    const indexTip = hand[8];
+
+                    // 映射坐标 (复用 letterbox 映射)
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    const videoX = indexTip.x * dims.vw;
+                    const videoY = indexTip.y * dims.vh;
+                    const map = this.videoMapping || { scale: 1, offsetX: 0, offsetY: 0 };
+                    const canvasX = videoX * map.scale + map.offsetX;
+                    const canvasY = videoY * map.scale + map.offsetY;
+                    const tipX = this.width - canvasX;
+                    const tipY = canvasY;
+
+                    // 简单的矩形碰撞检测
+                    if (tipX >= rect.left && tipX <= rect.right &&
+                        tipY >= rect.top && tipY <= rect.bottom) {
+                        isHovering = true;
+                        this.menuHoverTarget = { x: tipX, y: tipY }; // 记录悬停位置用于绘制进度
+                        break;
+                    }
+                }
+
+                if (isHovering) {
+                    this.menuHoverTimer++;
+                    // 视觉反馈：按钮轻微缩放
+                    targetBtn.style.transform = `scale(${1 + this.menuHoverTimer / this.menuHoverMaxTime * 0.1})`;
+
+                    if (this.menuHoverTimer >= this.menuHoverMaxTime) {
+                        targetBtn.click();
+                        this.menuHoverTimer = 0;
+                        this.menuHoverTarget = null;
+                        targetBtn.style.transform = '';
+                    }
+                } else {
+                    this.menuHoverTimer = Math.max(0, this.menuHoverTimer - 5); // 快速衰减
+                    if (this.menuHoverTimer === 0) {
+                        this.menuHoverTarget = null;
+                        targetBtn.style.transform = '';
+                    }
+                }
+            }
+
+            loop() {
+                if (this.state === 'PLAYING') {
+                    this.updatePhysics();
+                    this.checkCollisions();
+                } else if (['MENU', 'GAMEOVER', 'PAUSED'].includes(this.state)) {
+                    this.checkMenuInteraction();
+                }
+
+                this.draw();
+                requestAnimationFrame(() => this.loop());
+            }
+        }
+
+        // 启动游戏
+        const game = new FruitNinjaGame();
+
+    </script>
+</body>
+
+</html>

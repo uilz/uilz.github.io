@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="viewport" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>积分榜</title>
+    <script src="../hitokoto-load/yiy-load.js"></script>
+    <link rel="stylesheet" href="../hitokoto-load/hitokoto-load.css">
+    <link rel="stylesheet" href="jfb.css">
+    <link rel="shortcut icon" href="../favicon.ico" />
+    <link rel="bookmark" href="../favicon.ico" />
+</head>
+
+<body>
+    <!--加载动画-->
+    <div class="txloader"></div>
+    <!-- 一言 -->
+    <div class="hitokoto"><section class="section-hitokoto"><p class="yiyan-container"><span class="yiyan-content"></span><span class="cursor"></span></p></div>
+
+    <!--content page-->
+    <div class="container">
+        <div class="rank-container">
+            <div class="rank-title">天选榜</div>
+            <div class="center">(缺作业1次→天选券+1→名字+1)</div>
+            <div class="rank-body">
+                <div class="item">
+                    <div class="num">1</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/1.png" class="img-bd" alt="">
+                            <img src="../images/1.jpg" alt="">
+                        </dt>
+                        <dd>廖涛</dd>
+                    </dl>
+                    <div class="rank-ability">3天选券</div>
+                </div>
+                <!-- item end -->
+                <div class="item">
+                    <div class="num">2</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/2.png" class="img-bd" alt="">
+                            <img src="../images/2.jpg" alt="">
+                        </dt>
+                        <dd>陈栎轩</dd>
+                    </dl>
+                    <div class="rank-ability">3天选券</div>
+                </div>
+                <!-- item end -->
+                <div class="item">
+                    <div class="num">3</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/3.png" class="img-bd" alt="">
+                            <img src="../images/3.jpg" alt="">
+                        </dt>
+                        <dd>胡浩群</dd>
+                    </dl>
+                    <div class="rank-ability">2天选券</div>
+                </div>
+                <!-- item end -->
+                <div class="item">
+                    <div class="num">4</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/4.jpg" alt="">
+                        </dt>
+                        <dd>李光栩</dd>
+                    </dl>
+                    <div class="rank-ability">2天选券</div>
+                </div>
+                <!-- item end -->
+                <div class="item">
+                    <div class="num">5</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/5.jpg" alt="">
+                        </dt>
+                        <dd>周丹阳</dd>
+                    </dl>
+                    <div class="rank-ability">2天选券</div>
+                </div>
+                <!-- item end -->
+                <div class="item">
+                    <div class="num">6</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/1.jpg" alt="">
+                        </dt>
+                        <dd>朱奕濠</dd>
+                    </dl>
+                    <div class="rank-ability">2天选券</div>
+                </div>
+                <!-- item end -->
+                <div class="item">
+                    <div class="num">7</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/2.jpg" alt="">
+                        </dt>
+                        <dd>郭广圣</dd>
+                    </dl>
+                    <div class="rank-ability">2天选券</div>
+                </div>
+                <!-- item end -->
+                <div class="item">
+                    <div class="num">8</div>
+                    <dl class="author">
+                        <dt class="avatar">
+                            <img src="../images/3.jpg" alt="">
+                        </dt>
+                        <dd>梁志武</dd>
+                    </dl>
+                    <div class="rank-ability">2天选券</div>
+                </div>
+                <!-- item end -->
+            </div>
+            <div class="center">每人初始有①天选券</div>
+        </div>
+    </div>
+    <div class="center">
+        <button onclick="goTo00()">天选</button>
+    </div>
+    <canvas id="Snow" style="position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 1;background: rgba(125,137,95,0.1);pointer-events: none;"></canvas>
+    <script>
+        if(true){
+            (function() {
+                var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame ||
+                function(callback) {
+                    window.setTimeout(callback, 1000 / 60);
+                };
+                window.requestAnimationFrame = requestAnimationFrame;
+            })();
+    
+            (function() {
+                var flakes = [],
+                    canvas = document.getElementById("Snow"),
+                    ctx = canvas.getContext("2d"),
+                    flakeCount = 200,
+                    mX = -100,
+                    mY = -100;
+    
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+    
+                function snow() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+                    for (var i = 0; i < flakeCount; i++) {
+                        var flake = flakes[i],
+                            x = mX,
+                            y = mY,
+                            minDist = 150,
+                            x2 = flake.x,
+                            y2 = flake.y;
+    
+                        var dist = Math.sqrt((x2 - x) * (x2 - x) + (y2 - y) * (y2 - y)),
+                            dx = x2 - x,
+                            dy = y2 - y;
+    
+                        if (dist < minDist) {
+                            var force = minDist / (dist * dist),
+                                xcomp = (x - x2) / dist,
+                                ycomp = (y - y2) / dist,
+                                deltaV = force / 2;
+    
+                            flake.velX -= deltaV * xcomp;
+                            flake.velY -= deltaV * ycomp;
+    
+                        } else {
+                            flake.velX *= .98;
+                            if (flake.velY <= flake.speed) {
+                                flake.velY = flake.speed                        }
+                            flake.velX += Math.cos(flake.step += .05) * flake.stepSize;
+                        }
+    
+                        ctx.fillStyle = "rgba(255,255,255," + flake.opacity + ")";
+                        flake.y += flake.velY;
+                        flake.x += flake.velX;
+    
+                        if (flake.y >= canvas.height || flake.y <= 0) {
+                            reset(flake);
+                        }
+    
+                        if (flake.x >= canvas.width || flake.x <= 0) {
+                            reset(flake);
+                        }
+    
+                        ctx.beginPath();
+                        ctx.arc(flake.x, flake.y, flake.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    requestAnimationFrame(snow);
+                };
+    
+                function reset(flake) {
+                    flake.x = Math.floor(Math.random() * canvas.width);
+                    flake.y = 0;
+                    flake.size = (Math.random() * 3) + 2;
+                    flake.speed = (Math.random() * 1) + 0.5;
+                    flake.velY = flake.speed;
+                    flake.velX = 0;
+                    flake.opacity = (Math.random() * 0.5) + 0.3;
+                }
+    
+                function init() {
+                    for (var i = 0; i < flakeCount; i++) {
+                        var x = Math.floor(Math.random() * canvas.width),
+                            y = Math.floor(Math.random() * canvas.height),
+                            size = (Math.random() * 3) + 2,
+                            speed = (Math.random() * 1) + 0.5,
+                            opacity = (Math.random() * 0.5) + 0.3;
+    
+                        flakes.push({
+                            speed: speed,
+                            velY: speed,
+                            velX: 0,
+                            x: x,
+                            y: y,
+                            size: size,
+                            stepSize: (Math.random()) / 30 * 1,
+                            step: 0,
+                            angle: 180,
+                            opacity: opacity                    });
+                    }
+    
+                    snow();
+                };
+    
+                document.addEventListener("mousemove", function(e) {
+                    mX = e.clientX,
+                    mY = e.clientY            });
+                window.addEventListener("resize", function() {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                });
+                init();
+            })();
+        }
+    </script>
+</body>
+<script>
+    /* 抽取天选之子按钮 */
+    function goTo00() {
+        window.location.href = "../index.html"
+    }
+</script>
+
+</html>
