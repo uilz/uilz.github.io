@@ -19,13 +19,29 @@ jobs:
         run: |
           npm ci
           npm run build
-          # 调试：确认 out 目录是否生成
-          ls -la out
+
+      # 关键：手动组装要部署的所有文件到一个临时目录
+      - name: Assemble deploy files
+        run: |
+          rm -rf deploy
+          mkdir -p deploy/i
+
+          # 复制导航页根目录文件
+          cp index.html deploy/
+
+          # 复制 i/ 下其他项目（排除 i/Timer 源码目录，我们只要它的 out 构建产物）
+          for dir in Redirect ChosenOne Fruitninja; do
+            if [ -d "i/$dir" ]; then
+              cp -r i/$dir deploy/i/
+            fi
+          done
+
+          # 复制 Timer 的构建结果
+          cp -r i/Timer/out deploy/i/Timer
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./i/Timer/out          # 只取构建产物
-          destination_dir: i/Timer            # 部署到 gh-pages 根下的 i/Timer/
-          keep_files: true                    # 保留 i/ 下的其他项目
+          publish_dir: ./deploy
+          # 不需要 destination_dir，直接整体推送
