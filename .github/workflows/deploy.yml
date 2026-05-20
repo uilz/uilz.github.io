@@ -15,15 +15,20 @@ jobs:
           node-version: 18
 
       - name: Build Timer
-        working-directory: ./i/Timer          # 源码所在目录
+        working-directory: ./i/Timer
         run: |
           npm ci
           npm run build
+
+      # 关键：将构建产物复制到 i/Timer 目录，覆盖旧文件
+      - name: Prepare deploy directory
+        run: |
+          rm -rf i/Timer
+          cp -r i/Timer/out i/Timer
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./i/Timer/out          # 构建输出目录
-          destination_dir: i/Timer            # 部署到仓库的 i/Timer/ 路径
-          keep_files: true                    # 保留 i/ 下的其他项目文件
+          publish_dir: ./               # 部署整个仓库（因为已把 out 内容复制到 i/Timer）
+          keep_files: true              # 保留其他项目文件
