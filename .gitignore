@@ -1,0 +1,20 @@
+# Timer 项目依赖和构建产物
+i/timer/node_modules/
+i/timer/.next/
+i/timer/out/
+
+# Node 日志
+*.log
+
+# 操作系统生成的文件
+Thumbs.db
+.DS_Store
+
+# 编辑器配置（可根据你使用的编辑器选择）
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 其他项目可能残留的临时文件
+*.tmp
