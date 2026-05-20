@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import dynamic from 'next/dynamic'
+
 
 // ==================== 常量定义 ====================
 const DEFAULT_MINUTES = 25           // 默认倒计时分钟数
@@ -710,9 +710,33 @@ function Timer() {
   )
 }
 
-// 用 dynamic 包装 Timer，禁用 SSR
-const TimerNoSSR = dynamic(() => Promise.resolve({ default: Timer }), {
-  ssr: false,
-})
 
-export default TimerNoSSR
+
+// 新增一个客户端包装组件，只在客户端挂载后才渲染 Timer
+function ClientTimer() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
+  if (!mounted) {
+    // 服务端渲染时输出这个占位符（会被水合替换）
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontFamily: 'system-ui, sans-serif',
+        color: '#888',
+      }}>
+        加载中…
+      </div>
+    )
+  }
+
+  // 客户端挂载后，渲染真正的 Timer 组件
+  // Timer 内的 localStorage 惰性初始化会在这里正常执行
+  return <Timer />
+}
+
+export default ClientTimer
+
