@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>极简番茄 · 统一偏移量版</title>
+    <style>
+        :root {
+            --bg: #F5F5F5;
+            --text: #333;
+            --line: #d1d5db;
+            --divider: #e5e5e5;
+            --btn-bg: #e5e7eb;
+            --btn-hover: #d1d5db;
+            --active: #3b82f6;
+        }
+
+        body.dark {
+            --bg: #000;
+            --text: #ccc;
+            --line: #666;
+            --divider: #444;
+            --btn-bg: rgba(255, 255, 255, 0.1);
+            --btn-hover: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: background-color 0.5s, color 0.5s;
+            height: 100dvh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 100dvh;
+        }
+
+        .title {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            color: var(--text);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .controls-top {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+
+        .controls-top.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: var(--btn-bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-size: 1rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            transform: scale(0.9);
+        }
+
+        .btn:hover {
+            background: var(--btn-hover);
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            pointer-events: none;
+        }
+
+        .main-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1rem;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            transition: transform 0.3s ease;
+            transform-origin: center;
+        }
+
+        .main-area.rotated {
+            transform: rotate(90deg);
+        }
+
+        .timer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 28rem;
+        }
+
+        .clock {
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: font-size 0.3s, color 0.3s, transform 0.1s;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .clock:active {
+            transform: scale(0.95);
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        .slider-divider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--divider);
+            pointer-events: none;
+        }
+
+        .slider {
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            padding-top: 1.5rem;
+            padding-bottom: 2rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+            cursor: grab;
+            position: relative;
+            scroll-behavior: auto;
+            touch-action: pan-x;
+        }
+
+        .slider::-webkit-scrollbar {
+            display: none;
+        }
+
+        .slider:active {
+            cursor: grabbing;
+        }
+
+        .slider-inner {
+            display: flex;
+            align-items: flex-end;
+            height: 40px;
+            padding-left: 250px;
+            padding-right: 250px;
+            width: fit-content;
+        }
+
+        .tick {
+            flex-shrink: 0;
+            width: 25px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .tick-bar {
+            width: 4px;
+            border-radius: 4px;
+            background: var(--line);
+            opacity: 0.5;
+            height: 20px;
+            transition: height 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+        }
+
+        .tick-bar.active {
+            opacity: 1;
+            background: var(--active);
+            height: 36px;
+        }
+
+        .tick-bar.five {
+            opacity: 0.85;
+            height: 28px;
+        }
+
+        .indicator {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 56px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid #333;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        body.dark .indicator {
+            border-bottom-color: #ccc;
+        }
+
+        .start-btn-area {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+
+        .start-btn-area.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn-start {
+            padding: 0.75rem 1.5rem;
+            background: var(--active);
+            color: white;
+            border: none;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-start:active {
+            transform: scale(0.95);
+        }
+
+        .btn-start:hover {
+            filter: brightness(1.1);
+        }
+
+        .bottom-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 1rem 1rem;
+            transition: opacity 0.3s;
+        }
+
+        .bottom-controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.375rem;
+        }
+
+        .settings-panel {
+            position: absolute;
+            bottom: 4rem;
+            right: 1rem;
+            background: white;
+            color: #333;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 0.75rem;
+            width: 14rem;
+            z-index: 20;
+            font-size: 0.75rem;
+        }
+
+        body.dark .settings-panel {
+            background: #1f2937;
+            color: #ccc;
+        }
+
+        .settings-panel label {
+            font-size: 0.7rem;
+            color: #6b7280;
+            margin-bottom: 0.375rem;
+            display: block;
+        }
+
+        .tone-btns {
+            display: flex;
+            gap: 0.375rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .tone-btn {
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            border: none;
+            background: #e5e7eb;
+            color: #374151;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        .tone-btn.active {
+            background: var(--active);
+            color: white;
+        }
+
+        .quick-btns {
+            display: flex;
+            gap: 0.375rem;
+        }
+
+        .quick-btn {
+            flex: 1;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            border: none;
+            background: var(--active);
+            color: white;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="app">
+        <div class="title" aria-hidden="true">极简番茄</div>
+        <div class="controls-top hidden" id="topControls">
+            <button class="btn" id="darkBtn" aria-label="切换暗色模式">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+            </button>
+            <button class="btn" id="landBtn" aria-label="旋转屏幕">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="6" width="18" height="12" rx="2" />
+                    <line x1="12" y1="6" x2="12" y2="18" />
+                </svg>
+            </button>
+            <button class="btn" id="fullBtn" aria-label="切换全屏">
+                <svg id="fullIconEnter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path
+                        d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                </svg>
+                <svg id="fullIconExit" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.5">
+                    <path
+                        d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+                </svg>
+            </button>
+        </div>
+        <div class="main-area" id="mainArea">
+            <div class="timer-content">
+                <div class="clock" id="clockDisplay" aria-label="开始倒计时">25:00</div>
+                <div class="slider-container" id="sliderContainer">
+                    <div class="slider-divider"></div>
+                    <div class="slider" id="slider">
+                        <div class="slider-inner" id="sliderInner"></div>
+                    </div>
+                    <div class="indicator" id="indicator"></div>
+                </div>
+                <div class="start-btn-area hidden" id="startBtnArea">
+                    <button class="btn-start" id="startBtn">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                        </svg>
+                        <span id="startBtnText">开始</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="bottom-controls hidden" id="bottomControls">
+            <div class="btn-group">
+                <button class="btn" id="scaleDown" aria-label="缩小字体">－</button>
+                <button class="btn" id="scaleUp" aria-label="放大字体">＋</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="pauseBtn" style="display:none" aria-label="暂停">⏸</button>
+                <button class="btn" id="resetBtn" aria-label="重置">↺</button>
+                <button class="btn" id="settingsBtn" aria-label="设置">⚙</button>
+            </div>
+        </div>
+    </div>
+    <div class="settings-panel" id="settingsPanel" style="display:none">
+        <label>时钟铃声</label>
+        <div class="tone-btns">
+            <button class="tone-btn active" data-tone="0">铃声1</button>
+            <button class="tone-btn" data-tone="1">铃声2</button>
+            <button class="tone-btn" data-tone="2">静音</button>
+        </div>
+        <label>快速开始</label>
+        <div class="quick-btns">
+            <button class="quick-btn" data-quick="5">5分钟</button>
+            <button class="quick-btn" data-quick="25">25分钟</button>
+        </div>
+    </div>
+
+<script>
+(function () {
+    // ---------- 常量 ----------
+    const DEFAULT_MIN = 25;
+    const MAX_MIN = 59;
+    const TICK_WIDTH = 25;
+    const PADDING = 250;
+
+    // ---------- 全局交互状态 ----------
+    const Interact = {
+        mouseDown: false,
+        clickStartTime: 0,
+        longPress: false,
+        mouseX: 0,
+        mouseY: 0,
+        startX: 0,
+        startY: 0,
+        lastMoveTime: 0,
+        lastMoveX: 0,
+        lastMoveY: 0,
+        lastScrollLeft: 0,        // 新增：记录滑块上一帧位置
+        startScrollLeft: 0,
+        wheelActive: false,
+        wheelDelta: 0,
+        wheelTimer: null,
+        lastWheelTime: 0,
+        lastWheelDelta: 0,
+    };
+
+    // ---------- 应用状态 ----------
+    const state = {
+        min: DEFAULT_MIN,
+        rem: DEFAULT_MIN * 60,
+        run: false,
+        dark: false,
+        tone: 0,
+        land: false,
+        scale: 1,
+        hover: false,
+        full: false,
+        settingsOpen: false,
+    };
+
+    // ---------- DOM ----------
+    const $ = (id) => document.getElementById(id);
+    const app = $('app');
+    const topControls = $('topControls');
+    const bottomControls = $('bottomControls');
+    const startBtnArea = $('startBtnArea');
+    const clockDisplay = $('clockDisplay');
+    const slider = $('slider');
+    const sliderInner = $('sliderInner');
+    const mainArea = $('mainArea');
+    const darkBtn = $('darkBtn');
+    const landBtn = $('landBtn');
+    const fullBtn = $('fullBtn');
+    const fullIconEnter = $('fullIconEnter');
+    const fullIconExit = $('fullIconExit');
+    const startBtn = $('startBtn');
+    const startBtnText = $('startBtnText');
+    const pauseBtn = $('pauseBtn');
+    const resetBtn = $('resetBtn');
+    const settingsBtn = $('settingsBtn');
+    const settingsPanel = $('settingsPanel');
+    const scaleDownBtn = $('scaleDown');
+    const scaleUpBtn = $('scaleUp');
+
+    const tickEls = [];
+    let lastActiveIdx = DEFAULT_MIN - 1;
+    let programmaticScroll = false;
+
+    // ---------- 辅助函数 ----------
+    const getScrollForMinute = (minute, cw) =>
+        PADDING + (minute - 1) * TICK_WIDTH + TICK_WIDTH / 2 - cw / 2;
+
+    const getMinuteFromScroll = (scrollLeft, cw) => {
+        const x = scrollLeft + cw / 2 - PADDING;
+        const p = Math.max(0, Math.min(1, x / (MAX_MIN * TICK_WIDTH)));
+        return Math.round(p * (MAX_MIN - 1)) + 1;
+    };
+
+    const formatTime = sec =>
+        `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+
+    const updateClock = () => clockDisplay.textContent = formatTime(state.rem);
+
+    const highlightTick = (idx) => {
+        const prev = tickEls[lastActiveIdx]?.firstChild;
+        const cur = tickEls[idx]?.firstChild;
+        if (prev) {
+            prev.classList.remove('active');
+            const is5 = (lastActiveIdx + 1) % 5 === 0;
+            prev.style.height = is5 ? '28px' : '20px';
+            prev.style.backgroundColor = '';
+            prev.style.opacity = '';
+        }
+        if (cur) {
+            cur.classList.add('active');
+            cur.style.height = '36px';
+            cur.style.backgroundColor = '#3b82f6';
+            cur.style.opacity = '1';
+        }
+        lastActiveIdx = idx;
+    };
+
+    const scrollToMinute = (minute, behavior = 'smooth') => {
+        const cw = slider.offsetWidth;
+        const maxScroll = PADDING + MAX_MIN * TICK_WIDTH + PADDING - cw;
+        const target = Math.max(0, Math.min(getScrollForMinute(minute, cw), maxScroll));
+        programmaticScroll = true;
+        slider.scrollTo({ left: target, behavior });
+        if (behavior === 'auto') programmaticScroll = false;
+    };
+
+    const snapToNearest = () => {
+        if (programmaticScroll || Interact.mouseDown || Interact.wheelActive) return;
+        const cw = slider.offsetWidth;
+        const min = getMinuteFromScroll(slider.scrollLeft, cw);
+        const target = getScrollForMinute(min, cw);
+        const maxScroll = PADDING + MAX_MIN * TICK_WIDTH + PADDING - cw;
+        const clamped = Math.max(0, Math.min(target, maxScroll));
+        const diff = Math.abs(slider.scrollLeft - clamped);
+        state.min = min;
+        if (!state.run) { state.rem = min * 60; updateClock(); }
+        if (diff < 1.5) {
+            highlightTick(min - 1);
+        } else {
+            programmaticScroll = true;
+            slider.scrollTo({ left: clamped, behavior: 'smooth' });
+        }
+    };
+
+    const onScroll = () => {
+        if (programmaticScroll) return;
+        const cw = slider.offsetWidth;
+        const curMin = getMinuteFromScroll(slider.scrollLeft, cw);
+        const curIdx = curMin - 1;
+        if (curIdx !== lastActiveIdx) {
+            highlightTick(curIdx);
+            if (!state.run) {
+                state.min = curMin;
+                state.rem = curMin * 60;
+                updateClock();
+            }
+        }
+    };
+
+    // ---------- 音频 ----------
+    let audioCtx = null;
+    const playTone = (type) => {
+        if (state.tone === 2) return;
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        if (type === 1) { osc.frequency.value = 800; osc.type = 'sine'; }
+        else if (type === 2) { osc.frequency.value = 600; osc.type = 'triangle'; }
+        else { osc.frequency.value = 1000; osc.type = 'square'; }
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
+    };
+    const vibrate = (ms = 10) => navigator.vibrate?.(ms);
+
+    // ---------- Worker 计时 ----------
+    let worker;
+    const createWorker = () => {
+        const blob = new Blob([`
+            let id;
+            onmessage = e => {
+                if (e.data === 'start') { clearInterval(id); id = setInterval(() => postMessage('tick'), 1000); }
+                else if (e.data === 'stop') clearInterval(id);
+            };
+        `], { type: 'application/javascript' });
+        worker = new Worker(URL.createObjectURL(blob));
+        worker.onmessage = (e) => { if (e.data === 'tick') handleTick(); };
+    };
+    const handleTick = () => {
+        if (!state.run || state.rem <= 0) return;
+        state.rem--;
+        updateClock();
+        const curMin = Math.ceil(state.rem / 60);
+        if (curMin !== state.min && curMin > 0) {
+            state.min = curMin;
+            programmaticScroll = false;
+            scrollToMinute(curMin, 'smooth');
+        }
+        if (state.rem === 0) {
+            state.run = false;
+            worker.postMessage('stop');
+            startBtnText.textContent = '开始';
+            pauseBtn.style.display = 'none';
+            updateStartBtnVisibility();
+            playTone(state.tone + 1);
+            vibrate(200);
+        }
+    };
+    const startTimer = () => worker.postMessage('start');
+    const stopTimer = () => worker.postMessage('stop');
+
+    const toggleRun = () => {
+        if (!state.run && state.rem === 0) { state.rem = state.min * 60; updateClock(); }
+        state.run = !state.run;
+        if (state.run) {
+            startBtnText.textContent = '暂停';
+            pauseBtn.style.display = '';
+            startTimer();
+            showControls();
+        } else {
+            startBtnText.textContent = '开始';
+            pauseBtn.style.display = 'none';
+            stopTimer();
+        }
+        updateStartBtnVisibility();
+        vibrate();
+    };
+
+    const resetTimer = () => {
+        state.run = false;
+        stopTimer();
+        state.min = DEFAULT_MIN;
+        state.rem = DEFAULT_MIN * 60;
+        updateClock();
+        scrollToMinute(DEFAULT_MIN, 'auto');
+        highlightTick(DEFAULT_MIN - 1);
+        startBtnText.textContent = '开始';
+        pauseBtn.style.display = 'none';
+        updateStartBtnVisibility();
+        vibrate();
+    };
+
+    const setMinute = (min) => {
+        state.min = min;
+        if (!state.run) { state.rem = min * 60; updateClock(); }
+        scrollToMinute(min, 'smooth');
+        highlightTick(min - 1);
+        vibrate();
+    };
+
+    // 控制栏显隐
+    let hoverTimeout;
+    const showControls = () => {
+        clearTimeout(hoverTimeout);
+        state.hover = true;
+        topControls.classList.remove('hidden');
+        bottomControls.classList.remove('hidden');
+        if (!state.run) startBtnArea.classList.remove('hidden');
+    };
+    const hideControls = () => {
+        hoverTimeout = setTimeout(() => {
+            state.hover = false;
+            topControls.classList.add('hidden');
+            bottomControls.classList.add('hidden');
+            startBtnArea.classList.add('hidden');
+        }, 3000);
+    };
+    const updateStartBtnVisibility = () => {
+        startBtnArea.classList.toggle('hidden', !state.run && !state.hover);
+    };
+
+    const setDark = (dark) => {
+        state.dark = dark;
+        document.body.classList.toggle('dark', dark);
+        localStorage.setItem('timer-isDark', dark);
+    };
+
+    const buildTicks = () => {
+        sliderInner.innerHTML = '';
+        tickEls.length = 0;
+        for (let i = 0; i < MAX_MIN; i++) {
+            const tick = document.createElement('div');
+            tick.className = 'tick';
+            const bar = document.createElement('div');
+            bar.className = 'tick-bar';
+            if ((i + 1) % 5 === 0) bar.classList.add('five');
+            tick.appendChild(bar);
+            sliderInner.appendChild(tick);
+            tickEls[i] = tick;
+        }
+    };
+
+    const applyScale = () => {
+        const vw = window.innerWidth;
+        const base = Math.min(96, vw * 0.45);
+        clockDisplay.style.fontSize = (base * state.scale) + 'px';
+    };
+
+    // ========== 核心交互（统一偏移量 + 惯性修正） ==========
+    // 鼠标按下
+    slider.addEventListener('mousedown', (e) => {
+        Interact.mouseDown = true;
+        Interact.clickStartTime = Date.now();
+        Interact.longPress = false;
+        Interact.startX = e.clientX;
+        Interact.startY = e.clientY;
+        Interact.mouseX = e.clientX;
+        Interact.mouseY = e.clientY;
+        Interact.startScrollLeft = slider.scrollLeft;
+        Interact.lastScrollLeft = slider.scrollLeft;   // 初始化上一帧位置
+        programmaticScroll = false;
+        e.preventDefault();
+    });
+
+    // 鼠标移动
+    document.addEventListener('mousemove', (e) => {
+        Interact.mouseX = e.clientX;
+        Interact.mouseY = e.clientY;
+        if (!Interact.mouseDown) return;
+
+        const dx = e.clientX - Interact.startX;
+        const dy = e.clientY - Interact.startY;
+        const scrollDelta = state.land ? -dy : dx;
+
+        if (!Interact.longPress && Date.now() - Interact.clickStartTime > 300 && Math.abs(scrollDelta) < 5) {
+            Interact.longPress = true;
+        }
+
+        const target = Interact.startScrollLeft - scrollDelta;
+        const current = slider.scrollLeft;
+        slider.scrollLeft = current + (target - current) * 0.6;
+
+        // 记录帧数据（用于惯性计算）
+        Interact.lastMoveTime = e.timeStamp;
+        Interact.lastMoveX = e.clientX;
+        Interact.lastMoveY = e.clientY;
+        Interact.lastScrollLeft = slider.scrollLeft;   // 保存滑块真实位置
+    });
+
+    // 鼠标抬起（传入事件对象 e）
+    document.addEventListener('mouseup', (e) => {
+        if (!Interact.mouseDown) return;
+        Interact.mouseDown = false;
+
+        const dxEnd = Interact.mouseX - Interact.startX;
+        const dyEnd = Interact.mouseY - Interact.startY;
+        const scrollDeltaEnd = state.land ? -dyEnd : dxEnd;
+
+        if (!Interact.longPress && Math.abs(scrollDeltaEnd) < 5 && Date.now() - Interact.clickStartTime < 300) {
+            // 单击逻辑
+        }
+
+        if (!Interact.wheelActive) {
+            const dt = e.timeStamp - Interact.lastMoveTime;
+            // 用滑块实际位移计算瞬时速度
+            const scrollMoveInstant = slider.scrollLeft - Interact.lastScrollLeft;
+            if (dt > 0 && dt < 200 && Math.abs(scrollMoveInstant) > 1) {
+                const instantVelocity = scrollMoveInstant / dt;          // px/ms
+                const inertiaDistance = instantVelocity * 80;            // 惯性时长系数
+                if (Math.abs(inertiaDistance) > 3) {
+                    programmaticScroll = true;
+                    slider.scrollBy({ left: inertiaDistance, behavior: 'smooth' });
+                    clearTimeout(Interact.wheelTimer);
+                    Interact.wheelTimer = setTimeout(() => {
+                        programmaticScroll = false;
+                        snapToNearest();
+                    }, 300);
+                    return;
+                }
+            }
+            snapToNearest();
+        }
+    });
+
+    // 滚轮事件
+    slider.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        Interact.lastWheelTime = performance.now();
+        Interact.lastWheelDelta = e.deltaY;
+        Interact.wheelActive = true;
+        clearTimeout(Interact.wheelTimer);
+
+        const scrollDelta = e.deltaY * 1.5;  // 灵敏度调低一点更跟手
+        // programmaticScroll = true;
+        slider.scrollBy({ left: scrollDelta, behavior: 'smooth' });
+
+        Interact.wheelTimer = setTimeout(() => {
+            Interact.wheelActive = false;
+            const now = performance.now();
+            // 限制最小时间间隔，防止瞬时速度爆炸
+            const dt = Math.max(now - Interact.lastWheelTime, 16);
+            if (dt < 300) {
+                const velocity = Interact.lastWheelDelta / dt;
+                let inertia = velocity * 20;
+                // 限制最大惯性距离，防止飞出去
+                inertia = Math.max(-500, Math.min(500, inertia));
+                if (Math.abs(inertia) > 60) {
+                    programmaticScroll = true;
+                    slider.scrollBy({ left: inertia, behavior: 'smooth' });
+                    clearTimeout(Interact.wheelTimer);
+                    Interact.wheelTimer = setTimeout(() => {
+                        programmaticScroll = false;
+                        snapToNearest();
+                    }, 300);
+                    return;
+                }
+            }
+            programmaticScroll = false;
+            snapToNearest();
+        }, 200);
+    }, { passive: false });
+
+    // 触摸事件：只重置标志，让原生惯性滚动工作（touch-action: pan-x 保证）
+    slider.addEventListener('touchstart', () => {
+        programmaticScroll = false;
+    }, { passive: true });
+
+    // 滚动监听
+    slider.addEventListener('scroll', onScroll, { passive: true });
+    if ('onscrollend' in slider) {
+        slider.addEventListener('scrollend', () => {
+            programmaticScroll = false;
+            if (!Interact.mouseDown && !Interact.wheelActive) snapToNearest();
+        });
+    }
+
+    // 时钟交互
+    clockDisplay.addEventListener('click', toggleRun);
+    clockDisplay.addEventListener('dblclick', (e) => { e.preventDefault(); resetTimer(); });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.code === 'Space') { e.preventDefault(); toggleRun(); }
+        if (e.code === 'KeyR') resetTimer();
+    });
+    slider.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            const d = e.key === 'ArrowRight' ? 1 : -1;
+            setMinute(Math.max(1, Math.min(MAX_MIN, state.min + d)));
+        }
+    });
+    slider.setAttribute('tabindex', '0');
+
+    // 控制栏自动隐藏
+    app.addEventListener('mouseenter', showControls);
+    app.addEventListener('mouseleave', hideControls);
+    app.addEventListener('touchstart', showControls, { passive: true });
+    app.addEventListener('touchend', () => hideControls());
+    app.addEventListener('touchmove', showControls, { passive: true });
+
+    // 顶部按钮
+    darkBtn.addEventListener('click', () => setDark(!state.dark));
+    landBtn.addEventListener('click', () => {
+        state.land = !state.land;
+        mainArea.classList.toggle('rotated', state.land);
+        localStorage.setItem('timer-isLandscape', state.land);
+        setTimeout(() => scrollToMinute(state.min, 'auto'), 350);
+    });
+    fullBtn.addEventListener('click', () => {
+        document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    });
+    document.addEventListener('fullscreenchange', () => {
+        state.full = !!document.fullscreenElement;
+        fullIconEnter.style.display = state.full ? 'none' : '';
+        fullIconExit.style.display = state.full ? '' : 'none';
+    });
+
+    // 开始/暂停/重置
+    startBtn.addEventListener('click', toggleRun);
+    pauseBtn.addEventListener('click', () => {
+        state.run = false;
+        stopTimer();
+        pauseBtn.style.display = 'none';
+        startBtnText.textContent = '开始';
+        updateStartBtnVisibility();
+    });
+    resetBtn.addEventListener('click', resetTimer);
+
+    // 设置面板
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.settingsOpen = !state.settingsOpen;
+        settingsPanel.style.display = state.settingsOpen ? 'block' : 'none';
+    });
+    document.addEventListener('click', (e) => {
+        if (state.settingsOpen && !settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+            state.settingsOpen = false;
+            settingsPanel.style.display = 'none';
+        }
+    });
+
+    scaleDownBtn.addEventListener('click', () => { state.scale = Math.max(0.5, state.scale - 0.25); applyScale(); });
+    scaleUpBtn.addEventListener('click', () => { state.scale = Math.min(3, state.scale + 0.25); applyScale(); });
+
+    // 铃声与快捷按钮
+    settingsPanel.querySelectorAll('.tone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tone = +btn.dataset.tone;
+            state.tone = tone;
+            localStorage.setItem('timer-selectedRingtone', tone);
+            settingsPanel.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (tone !== 2) playTone(tone + 1);
+        });
+    });
+    settingsPanel.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mins = +btn.dataset.quick;
+            state.run = false; stopTimer();
+            setMinute(mins);
+            state.run = true; state.rem = mins * 60; updateClock();
+            startBtnText.textContent = '暂停'; pauseBtn.style.display = '';
+            startBtnArea.classList.remove('hidden');
+            state.settingsOpen = false; settingsPanel.style.display = 'none';
+            updateStartBtnVisibility();
+            startTimer();
+        });
+    });
+
+    // 初始化
+    const init = () => {
+        createWorker();
+        if (localStorage.getItem('timer-isDark') === 'true') setDark(true);
+        state.tone = +localStorage.getItem('timer-selectedRingtone') || 0;
+        state.land = localStorage.getItem('timer-isLandscape') === 'true';
+        if (state.land) mainArea.classList.add('rotated');
+        buildTicks();
+        highlightTick(DEFAULT_MIN - 1);
+        scrollToMinute(DEFAULT_MIN, 'auto');
+        updateClock();
+        applyScale();
+        updateStartBtnVisibility();
+        window.addEventListener('resize', () => { applyScale(); scrollToMinute(state.min, 'auto'); });
+    };
+    init();
+})();
+</script>
+</body>
+
+</html>
