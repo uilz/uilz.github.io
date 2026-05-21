@@ -13,7 +13,8 @@
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <style>
-        html, body {
+        html,
+        body {
             width: 100%;
             height: 100%;
         }
@@ -32,7 +33,8 @@
         #game-container {
             position: relative;
             width: 100vw;
-            height: 100dvh; /* 避免移动端地址栏挤占 */
+            height: 100dvh;
+            /* 避免移动端地址栏挤占 */
             /* background-image: url('...'); 移除错误的 base64 */
         }
 
@@ -64,12 +66,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            height: 100dvh; /* 适配移动端动态视口高度 */
+            height: 100dvh;
+            /* 适配移动端动态视口高度 */
             z-index: 2;
             pointer-events: none;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end; /* 确保 hud-bottom 位于底部 */
+            justify-content: flex-end;
+            /* 确保 hud-bottom 位于底部 */
         }
 
         .hud-top {
@@ -176,14 +180,15 @@
             transform: translateX(-50%);
             font-size: 32px;
             color: #fff;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             font-family: monospace;
             z-index: 5;
         }
 
         .hud-bottom {
             padding: 20px;
-            padding-bottom: max(20px, env(safe-area-inset-bottom)); /* 适配全面屏底部安全区 */
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            /* 适配全面屏底部安全区 */
             background: linear-gradient(to top, rgba(62, 39, 35, 0.9), transparent);
             color: #ffd700;
             text-align: center;
@@ -346,7 +351,8 @@
 
             /* 状态提示移到底部中央 */
             .gesture-status-container {
-                bottom: 160px; /* 提高位置，避免被底部操作指南遮挡 (适配全面屏) */
+                bottom: 160px;
+                /* 提高位置，避免被底部操作指南遮挡 (适配全面屏) */
                 /* 位于操作指南上方 */
                 right: auto;
                 left: 50%;
@@ -413,7 +419,8 @@
             }
 
             .gesture-status-container {
-                bottom: 40px; /* 避开底部极简指南 */
+                bottom: 40px;
+                /* 避开底部极简指南 */
                 right: 10px;
                 transform: scale(0.5);
                 transform-origin: bottom right;
@@ -488,7 +495,7 @@
                 <div class="gesture-status-container">
                     <div class="gesture-status" id="gesture-status">等待摄像头...</div>
                 </div>
-                
+
                 <!-- 顶部时间显示 -->
                 <div class="time-display" id="game-time">00:00</div>
             </div>
@@ -547,9 +554,9 @@
         /**
          * 游戏配置与常量
          */
-            const CONFIG = {
-                GRAVITY: 0.5,
-                SPAWN_RATE_INITIAL: 28, // 初始更慢，降低开局压力
+        const CONFIG = {
+            GRAVITY: 0.5,
+            SPAWN_RATE_INITIAL: 28, // 初始更慢，降低开局压力
             MAX_FRUITS: 25, // 增加同屏上限
             BLADE_LIFETIME: 10, // 刀光轨迹保留帧数
             GESTURE_HOLD_TIME: 3000, // 毫秒
@@ -694,7 +701,7 @@
             initAudio() {
                 try {
                     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    
+
                     // 生成多种质感的噪声缓存
                     this.buffers = {
                         white: this.createNoiseBuffer('white'),
@@ -710,13 +717,13 @@
                     // --- 新增：生成混响脉冲 (Impulse Response) ---
                     // 这会模拟一个中等大小的房间/道场
                     this.reverbBuffer = this.createReverbBuffer(1.5); // 1.5秒混响尾音
-                    
+
                     // 创建主混响节点 (Send Effect)
                     this.convolver = this.audioCtx.createConvolver();
                     this.convolver.buffer = this.reverbBuffer;
                     this.convolverGain = this.audioCtx.createGain();
                     this.convolverGain.gain.value = 0.3; // 混响湿声比例 (30%)
-                    
+
                     this.convolver.connect(this.convolverGain);
                     this.convolverGain.connect(this.audioCtx.destination);
 
@@ -765,7 +772,7 @@
                 const bufferSize = this.audioCtx.sampleRate * 2.0; // 2秒缓存
                 const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
-                
+
                 if (type === 'white') {
                     for (let i = 0; i < bufferSize; i++) {
                         data[i] = Math.random() * 2 - 1;
@@ -782,7 +789,7 @@
                         b4 = 0.55000 * b4 + white * 0.5329522;
                         b5 = -0.7616 * b5 - white * 0.0168980;
                         data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-                        data[i] *= 0.11; 
+                        data[i] *= 0.11;
                         b6 = white * 0.115926;
                     }
                 } else if (type === 'brown') {
@@ -792,7 +799,7 @@
                         const white = Math.random() * 2 - 1;
                         data[i] = (lastOut + (0.02 * white)) / 1.02;
                         lastOut = data[i];
-                        data[i] *= 3.5; 
+                        data[i] *= 3.5;
                     }
                 } else if (type === 'crunch') {
                     // 脆裂纹理：稀疏的高振幅脉冲，模拟物体断裂的微观结构
@@ -846,21 +853,21 @@
             playMissSound() {
                 if (!this.audioCtx) return;
                 const t = this.audioCtx.currentTime;
-                
+
                 // 分层：短促下降音 + 轻微低频闷响
                 const osc = this.audioCtx.createOscillator();
                 const gain = this.audioCtx.createGain();
-                
+
                 osc.connect(gain);
                 gain.connect(this.audioCtx.destination);
-                
+
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(200, t);
                 osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
-                
+
                 gain.gain.setValueAtTime(0.1, t);
                 gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-                
+
                 osc.start(t);
                 osc.stop(t + 0.3);
 
@@ -888,13 +895,13 @@
 
                 const t = this.audioCtx.currentTime;
                 const rand = (min, max) => Math.random() * (max - min) + min;
-                
+
                 // 基础参数计算
                 const panX = Math.max(-0.8, Math.min(0.8, (fruit.x / this.width) * 2 - 1));
-                const speedScale = Math.min(cutSpeed * 0.1, 1.0); 
-                const volMod = 1.0 + speedScale * 0.4; 
-                const tightMod = 1.0 - speedScale * 0.2; 
-                
+                const speedScale = Math.min(cutSpeed * 0.1, 1.0);
+                const volMod = 1.0 + speedScale * 0.4;
+                const tightMod = 1.0 - speedScale * 0.2;
+
                 // 辅助函数：创建音频链路
                 const createChain = (distortionAmount = 0) => {
                     const panner = this.audioCtx.createStereoPanner();
@@ -905,22 +912,22 @@
                         shaper.curve = this.distortionCurve;
                         shaper.oversample = '4x';
                         const postGain = this.audioCtx.createGain();
-                        postGain.gain.value = 0.8; 
+                        postGain.gain.value = 0.8;
                         shaper.connect(postGain);
                         postGain.connect(panner);
                         panner.connect(this.audioCtx.destination);
                         if (this.convolver) {
                             const send = this.audioCtx.createGain();
-                            send.gain.value = 0.3; 
+                            send.gain.value = 0.3;
                             panner.connect(send);
                             send.connect(this.convolver);
                         }
-                        return shaper; 
+                        return shaper;
                     } else {
                         panner.connect(this.audioCtx.destination);
                         if (this.convolver) {
                             const send = this.audioCtx.createGain();
-                            send.gain.value = 0.3; 
+                            send.gain.value = 0.3;
                             panner.connect(send);
                             send.connect(this.convolver);
                         }
@@ -959,7 +966,7 @@
                     const wGain = this.audioCtx.createGain();
 
                     wFilter.type = 'lowpass';
-                    wFilter.frequency.setValueAtTime(rand(500, 700), t); 
+                    wFilter.frequency.setValueAtTime(rand(500, 700), t);
                     // 增加动态：频率随时间下降，模拟刀刃切入后的闷声
                     wFilter.frequency.linearRampToValueAtTime(200, t + 0.3 * tightMod);
 
@@ -967,7 +974,7 @@
                     wGain.gain.linearRampToValueAtTime(1.3 * volMod, t + 0.01); // 更猛烈的起音
                     wGain.gain.exponentialRampToValueAtTime(0.01, t + 0.35 * tightMod);
 
-                    const chain = createChain(0.25); 
+                    const chain = createChain(0.25);
                     wet.connect(wFilter); wFilter.connect(wGain); wGain.connect(chain);
                     wet.start(t); wet.stop(t + 0.4);
 
@@ -979,7 +986,7 @@
 
                     tFilter.type = 'lowpass';
                     tFilter.frequency.value = 100; // 更低沉
-                    
+
                     tGain.gain.setValueAtTime(1.2 * volMod, t);
                     tGain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
 
@@ -996,14 +1003,14 @@
                     const cGain = this.audioCtx.createGain();
 
                     cFilter.type = 'highpass';
-                    cFilter.frequency.value = rand(2000, 3000); 
-                    
+                    cFilter.frequency.value = rand(2000, 3000);
+
                     cGain.gain.setValueAtTime(0, t);
                     cGain.gain.linearRampToValueAtTime(1.8 * volMod, t + 0.002); // 2ms 极速起音
                     cGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1 * tightMod); // 极短
 
                     // 高失真！
-                    const chain = createChain(0.9); 
+                    const chain = createChain(0.9);
                     crunch.connect(cFilter); cFilter.connect(cGain); cGain.connect(chain);
                     crunch.start(t); crunch.stop(t + 0.15);
 
@@ -1012,10 +1019,10 @@
                     swish.buffer = this.buffers.white;
                     const sFilter = this.audioCtx.createBiquadFilter();
                     const sGain = this.audioCtx.createGain();
-                    
+
                     sFilter.type = 'highpass';
                     sFilter.frequency.setValueAtTime(4000, t);
-                    
+
                     sGain.gain.setValueAtTime(0.4 * volMod, t);
                     sGain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
 
@@ -1027,7 +1034,7 @@
                 const playCoconut = () => {
                     // Layer A: 壳体撞击 (Shell Knock)
                     const knock = this.audioCtx.createBufferSource();
-                    knock.buffer = this.buffers.crunch; 
+                    knock.buffer = this.buffers.crunch;
                     const kFilter = this.audioCtx.createBiquadFilter();
                     const kGain = this.audioCtx.createGain();
 
@@ -1049,7 +1056,7 @@
                     const tGain = this.audioCtx.createGain();
                     tGain.gain.setValueAtTime(0.9 * volMod, t);
                     tGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-                    
+
                     const tFilter = this.audioCtx.createBiquadFilter();
                     tFilter.type = 'lowpass';
                     tFilter.frequency.value = 160;
@@ -1066,9 +1073,9 @@
                     const wFilter = this.audioCtx.createBiquadFilter();
                     const wGain = this.audioCtx.createGain();
 
-                    wFilter.type = 'highpass'; 
+                    wFilter.type = 'highpass';
                     wFilter.frequency.setValueAtTime(1000, t);
-                    wFilter.frequency.linearRampToValueAtTime(3000, t + 0.15); 
+                    wFilter.frequency.linearRampToValueAtTime(3000, t + 0.15);
 
                     wGain.gain.setValueAtTime(0, t);
                     wGain.gain.linearRampToValueAtTime(0.9 * volMod, t + 0.02);
@@ -1088,13 +1095,13 @@
                     const fGain = this.audioCtx.createGain();
 
                     fFilter.type = 'lowpass';
-                    fFilter.frequency.setValueAtTime(600, t); 
-                    
+                    fFilter.frequency.setValueAtTime(600, t);
+
                     fGain.gain.setValueAtTime(0, t);
                     fGain.gain.linearRampToValueAtTime(1.0 * volMod, t + 0.01);
-                    fGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15 * tightMod); 
+                    fGain.gain.exponentialRampToValueAtTime(0.01, t + 0.15 * tightMod);
 
-                    const chain = createChain(0.65); 
+                    const chain = createChain(0.65);
                     flesh.connect(fFilter); fFilter.connect(fGain); fGain.connect(chain);
                     flesh.start(t); flesh.stop(t + 0.2);
 
@@ -1108,7 +1115,7 @@
                     sFilter.frequency.value = 3000;
 
                     sGain.gain.setValueAtTime(0.4 * volMod, t);
-                    sGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05); 
+                    sGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
 
                     skin.connect(sFilter); sFilter.connect(sGain); sGain.connect(createChain(0));
                     skin.start(t); skin.stop(t + 0.1);
@@ -1117,7 +1124,7 @@
                 // 调度器：根据水果类型选择不同的合成配方
                 switch (fruit.type) {
                     case 'watermelon': playWatermelon(); break;
-                    case 'apple': 
+                    case 'apple':
                     case 'pear': playApple(); break;
                     case 'coconut': playCoconut(); break;
                     case 'orange': playOrange(); break;
@@ -1154,7 +1161,7 @@
                 const osc = this.audioCtx.createOscillator();
                 const oscGain = this.audioCtx.createGain();
                 osc.type = 'triangle'; // 三角波泛音更丰富，失真后更凶猛
-                osc.frequency.setValueAtTime(800, t); 
+                osc.frequency.setValueAtTime(800, t);
                 osc.frequency.exponentialRampToValueAtTime(40, t + 0.15); // 极速下潜
                 osc.frequency.linearRampToValueAtTime(10, t + 0.8); // 缓慢余震
 
@@ -1196,31 +1203,31 @@
                 dGain.gain.linearRampToValueAtTime(0.8, t + 0.05); // 稍晚一点出现
                 dGain.gain.exponentialRampToValueAtTime(0.01, t + 0.7);
 
-                debris.connect(dFilter); dFilter.connect(dGain); dGain.connect(cleanChain); 
+                debris.connect(dFilter); dFilter.connect(dGain); dGain.connect(cleanChain);
                 debris.start(t); debris.stop(t + 0.7);
             }
 
             playGameOverSound() {
                 if (!this.audioCtx) return;
                 const t = this.audioCtx.currentTime;
-                
+
                 // 游戏结束：深沉的打击声 (Gong-like)
                 const src = this.audioCtx.createBufferSource();
                 src.buffer = this.buffers.brown;
                 const filter = this.audioCtx.createBiquadFilter();
                 const gain = this.audioCtx.createGain();
-                
+
                 filter.type = 'lowpass';
                 filter.frequency.setValueAtTime(300, t);
                 filter.frequency.exponentialRampToValueAtTime(50, t + 1.5);
-                
+
                 gain.gain.setValueAtTime(0.8, t);
                 gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
-                
+
                 src.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.audioCtx.destination);
-                
+
                 src.start(t);
                 src.stop(t + 2.0);
             }
@@ -1252,153 +1259,153 @@
                 this.videoMapping = { scale, offsetX, offsetY, drawW, drawH };
             }
 
-    async initMediaPipe() {
-        if (typeof Hands === 'undefined') {
-            this.ui.status.innerText = "MediaPipe 库加载失败";
-            this.ui.loadingMsg.innerHTML = `<p style="color:red">无法加载 MediaPipe 核心库。<br>请检查网络连接或刷新页面。</p>`;
-            return;
-        }
-
-        // 自动检测本地模型文件完整性
-        // 移动端优先 Lite，桌面使用 Full；缺失则切换 CDN
-        if (this.currentCdnIndex === 0) {
-            const prefer = this.isMobile
-                ? ['hand_landmark_lite.tflite']
-                : ['hand_landmark_full.tflite'];
-            let foundLocal = false;
-
-            for (const candidate of prefer) {
-                try {
-                    console.log(`Checking local model availability: ${candidate}...`);
-                    const response = await fetch(`hands/${candidate}`, { method: 'HEAD' });
-                    if (response.ok) {
-                        this.modelFile = candidate;
-                        foundLocal = true;
-                        break;
-                    }
-                } catch (e) {
-                    console.warn(`Failed to check local model file ${candidate}.`, e);
-                }
-            }
-
-            if (!foundLocal) {
-                console.warn(`Local model file missing. Switching to Online CDN.`);
-                this.currentCdnIndex = 1; // Switch to JSDelivr
-                this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
-            }
-        } else {
-            // 非本地模式按平台优先级
-            this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
-        }
-
-        const cdn = this.cdnList[this.currentCdnIndex];
-        const statusLines = {};
-        const renderStatus = () => {
-            const text = Object.values(statusLines).join('\n') || '...';
-            this.ui.status.innerText = text;
-            const p = this.ui.loadingMsg.querySelector('p');
-            if (p) p.innerText = text;
-        };
-        const updateStatus = (msg, key = null) => {
-            if (key) {
-                statusLines[key] = msg;
-                renderStatus();
-            } else {
-                statusLines['_global'] = msg;
-                renderStatus();
-            }
-        };
-
-        // 预取模型/wasm并显示百分比进度（并行下载）
-        const blobUrlMap = {};
-        // 预期大小表，用于展示更接近实际的体积（部分 CDN 会压缩传输导致 Content-Length 偏小）
-        const expectedSizes = {
-            'hand_landmark_full.tflite': 5.22,
-            'hand_landmark_lite.tflite': 1.98,
-            'hands_solution_packed_assets_loader.js': 0.01,
-            'hands_solution_packed_assets.data': 4.13,
-            'hands_solution_simd_wasm_bin.js': 0.26,
-            'hands_solution_simd_wasm_bin.wasm': 5.75,
-            'hands.binarypb': 0.01
-        };
-
-        const prefetchWithProgress = async (file, label, required = true) => {
-            const url = `${cdn.url}${file}`;
-            const res = await fetch(url);
-            if (!res.ok) {
-                if (!required) {
-                    updateStatus(`${label}: 跳过 (${res.status})`, file);
+            async initMediaPipe() {
+                if (typeof Hands === 'undefined') {
+                    this.ui.status.innerText = "MediaPipe 库加载失败";
+                    this.ui.loadingMsg.innerHTML = `<p style="color:red">无法加载 MediaPipe 核心库。<br>请检查网络连接或刷新页面。</p>`;
                     return;
                 }
-                throw new Error(`${label} 获取失败 (${res.status})`);
-            }
-            const total = Number(res.headers.get('content-length')) || 0;
-            const reader = res.body.getReader();
-            let loaded = 0;
-            const chunks = [];
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                chunks.push(value);
-                loaded += value.byteLength;
-                const loadedMB = (loaded / 1048576).toFixed(2);
-                const expectedMB = expectedSizes[file];
-                if (total) {
-                    const pct = (loaded / total * 100).toFixed(1);
-                    const totalMB = (total / 1048576).toFixed(2);
-                    updateStatus(`${label}: ${pct}% (${loadedMB}MB/${totalMB}MB)`, file);
-                } else if (expectedMB) {
-                    updateStatus(`${label}: ${loadedMB}MB / ~${expectedMB.toFixed(2)}MB`, file);
+
+                // 自动检测本地模型文件完整性
+                // 移动端优先 Lite，桌面使用 Full；缺失则切换 CDN
+                if (this.currentCdnIndex === 0) {
+                    const prefer = this.isMobile
+                        ? ['hand_landmark_lite.tflite']
+                        : ['hand_landmark_full.tflite'];
+                    let foundLocal = false;
+
+                    for (const candidate of prefer) {
+                        try {
+                            console.log(`Checking local model availability: ${candidate}...`);
+                            const response = await fetch(`hands/${candidate}`, { method: 'HEAD' });
+                            if (response.ok) {
+                                this.modelFile = candidate;
+                                foundLocal = true;
+                                break;
+                            }
+                        } catch (e) {
+                            console.warn(`Failed to check local model file ${candidate}.`, e);
+                        }
+                    }
+
+                    if (!foundLocal) {
+                        console.warn(`Local model file missing. Switching to Online CDN.`);
+                        this.currentCdnIndex = 1; // Switch to JSDelivr
+                        this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
+                    }
                 } else {
-                    updateStatus(`${label}: ${loadedMB}MB`, file);
+                    // 非本地模式按平台优先级
+                    this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
                 }
-            }
-            const blob = new Blob(chunks);
-            blobUrlMap[file] = URL.createObjectURL(blob);
-            const finalMB = (loaded / 1048576).toFixed(2);
-            const suffix = expectedSizes[file] ? ` (~${expectedSizes[file].toFixed(2)}MB)` : '';
-            updateStatus(`${label}: 完成 (${finalMB}MB${suffix})`, file);
-        };
 
-        // 需要显示进度的核心文件（可按需扩展）
-        const assetFiles = this.isMobile
-            ? [
-                { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: true },
-                { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
-                { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
-                { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
-                { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
-                { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
-            ]
-            : [
-                { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite (~5.2MB)', required: true },
-                { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
-                { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
-                { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
-                { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
-                { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
-            ];
+                const cdn = this.cdnList[this.currentCdnIndex];
+                const statusLines = {};
+                const renderStatus = () => {
+                    const text = Object.values(statusLines).join('\n') || '...';
+                    this.ui.status.innerText = text;
+                    const p = this.ui.loadingMsg.querySelector('p');
+                    if (p) p.innerText = text;
+                };
+                const updateStatus = (msg, key = null) => {
+                    if (key) {
+                        statusLines[key] = msg;
+                        renderStatus();
+                    } else {
+                        statusLines['_global'] = msg;
+                        renderStatus();
+                    }
+                };
 
-        updateStatus(`初始化 MediaPipe (${cdn.name})...`);
-        console.log(`Using CDN: ${cdn.url}`);
+                // 预取模型/wasm并显示百分比进度（并行下载）
+                const blobUrlMap = {};
+                // 预期大小表，用于展示更接近实际的体积（部分 CDN 会压缩传输导致 Content-Length 偏小）
+                const expectedSizes = {
+                    'hand_landmark_full.tflite': 5.22,
+                    'hand_landmark_lite.tflite': 1.98,
+                    'hands.binarypb': 0.01,
+                    'hands_solution_packed_assets.data': 4.12,
+                    'hands_solution_packed_assets_loader.js': 0.01,
+                    'hands_solution_simd_wasm_bin.js': 0.26,
+                    'hands_solution_simd_wasm_bin.wasm': 5.75
+                };
 
-        // 并行预取；失败则回退为直接加载
-        try {
-            const tasks = assetFiles.map(({ file, label, required }) => prefetchWithProgress(file, `加载 ${label}`, required));
-            await Promise.all(tasks);
-            updateStatus('模型文件已缓存，正在初始化...');
-        } catch (e) {
-            console.warn('预取模型/wasm 失败，改用直接加载', e);
-            Object.keys(blobUrlMap).forEach(k => URL.revokeObjectURL(blobUrlMap[k]));
-            Object.keys(blobUrlMap).forEach(k => delete blobUrlMap[k]);
-        }
+                const prefetchWithProgress = async (file, label, required = true) => {
+                    const url = `${cdn.url}${file}`;
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        if (!required) {
+                            updateStatus(`${label}: 跳过 (${res.status})`, file);
+                            return;
+                        }
+                        throw new Error(`${label} 获取失败 (${res.status})`);
+                    }
+                    const total = Number(res.headers.get('content-length')) || 0;
+                    const reader = res.body.getReader();
+                    let loaded = 0;
+                    const chunks = [];
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        chunks.push(value);
+                        loaded += value.byteLength;
+                        const loadedMB = (loaded / 1048576).toFixed(2);
+                        const expectedMB = expectedSizes[file];
+                        if (total) {
+                            const pct = (loaded / total * 100).toFixed(1);
+                            const totalMB = (total / 1048576).toFixed(2);
+                            updateStatus(`${label}: ${pct}% (${loadedMB}MB/${totalMB}MB)`, file);
+                        } else if (expectedMB) {
+                            updateStatus(`${label}: ${loadedMB}MB / ~${expectedMB.toFixed(2)}MB`, file);
+                        } else {
+                            updateStatus(`${label}: ${loadedMB}MB`, file);
+                        }
+                    }
+                    const blob = new Blob(chunks);
+                    blobUrlMap[file] = URL.createObjectURL(blob);
+                    const finalMB = (loaded / 1048576).toFixed(2);
+                    const suffix = expectedSizes[file] ? ` (~${expectedSizes[file].toFixed(2)}MB)` : '';
+                    updateStatus(`${label}: 完成 (${finalMB}MB${suffix})`, file);
+                };
 
-        const hands = new Hands({
-            locateFile: (file) => {
-                if (blobUrlMap[file]) return blobUrlMap[file];
-                return `${cdn.url}${file}`;
-            }
-        });
+                // 需要显示进度的核心文件（可按需扩展）
+                const assetFiles = this.isMobile
+                    ? [
+                        { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: true },
+                        { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
+                        { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+                        { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+                        { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+                        { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
+                    ]
+                    : [
+                        { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite (~5.2MB)', required: true },
+                        { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
+                        { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+                        { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+                        { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+                        { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
+                    ];
+
+                updateStatus(`初始化 MediaPipe (${cdn.name})...`);
+                console.log(`Using CDN: ${cdn.url}`);
+
+                // 并行预取；失败则回退为直接加载
+                try {
+                    const tasks = assetFiles.map(({ file, label, required }) => prefetchWithProgress(file, `加载 ${label}`, required));
+                    await Promise.all(tasks);
+                    updateStatus('模型文件已缓存，正在初始化...');
+                } catch (e) {
+                    console.warn('预取模型/wasm 失败，改用直接加载', e);
+                    Object.keys(blobUrlMap).forEach(k => URL.revokeObjectURL(blobUrlMap[k]));
+                    Object.keys(blobUrlMap).forEach(k => delete blobUrlMap[k]);
+                }
+
+                const hands = new Hands({
+                    locateFile: (file) => {
+                        if (blobUrlMap[file]) return blobUrlMap[file];
+                        return `${cdn.url}${file}`;
+                    }
+                });
 
                 const modelComplexity = (this.modelFile && this.modelFile.includes('lite')) ? 0 : 1;
                 hands.setOptions({
@@ -1761,7 +1768,7 @@
                     localStorage.setItem('fruit_ninja_highscore', this.highScore);
                 }
                 this.ui.finalScore.innerText = this.score;
-                
+
                 // 显示结束原因
                 let reasonEl = document.getElementById('game-over-reason');
                 if (!reasonEl) {
@@ -1773,7 +1780,7 @@
                     reasonEl.style.margin = '10px 0';
                     // 插入到分数下方
                     const scoreP = this.ui.gameOverMenu.querySelector('p');
-                    if(scoreP) scoreP.after(reasonEl);
+                    if (scoreP) scoreP.after(reasonEl);
                 }
                 reasonEl.innerText = reason;
 
@@ -2015,7 +2022,7 @@
                         // f.size 是字体大小(近似直径)，视觉半径约为 f.size/2
                         // PC: 0.6 (即 1.2倍半径), Mobile: 0.8 (即 1.6倍半径)
                         const hitboxScale = this.isMobile ? 0.8 : 0.6;
-                        
+
                         if (dist < f.size * hitboxScale) {
                             // 传入当前手的状态，用于判断是否防御炸弹
                             this.sliceFruit(f, state, cutSpeed);
@@ -2035,7 +2042,7 @@
             sliceFruit(fruit, handState, cutSpeed = 0) {
                 // 防止重复切割 (Double Slice Guard)
                 if (fruit.isSliced) return;
-                
+
                 fruit.isSliced = true;
                 fruit.active = false; // 标记为非活跃，稍后移除或替换为碎片
 
@@ -2123,7 +2130,7 @@
                 flash.style.zIndex = '100';
                 flash.style.transition = 'opacity 0.2s';
                 document.body.appendChild(flash);
-                
+
                 requestAnimationFrame(() => {
                     flash.style.opacity = '0';
                 });
@@ -2285,7 +2292,7 @@
                 if (this.ui.highScore) {
                     this.ui.highScore.innerText = this.highScore;
                 }
-                
+
                 // 更新时间显示 (MM:SS)
                 this.refreshTimeDisplay(true);
 
