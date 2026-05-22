@@ -623,29 +623,31 @@
                 this.difficultyMultiplier = 0.3;
                 this.timeSlowFactor = 1;
                 this.timeSlowTimer = 0;
+                this.lastTimestamp = 0;
+                this.lastFrameTime = 0;
 
                 this.comboCount = 0;
                 this.lastSliceTime = 0;
 
                 // 难度渐进设置（随时间自动从简单->困难，不再需要手动选择）
                 this.difficultyRamp = {
-                    duration: 120, // 120秒内线性拉满难度
-                    spawnEasy: 42,
-                    spawnHard: 22,
-                    floorEasy: 30,
-                    floorHard: 18,
-                    maxEasy: 12,
-                    maxHard: 20,
-                    apexMinEasy: 0.55,
-                    apexMinHard: 0.78,
-                    apexMaxEasy: 0.68,
-                    apexMaxHard: 0.9,
-                    specialScaleEasy: 0.7,
-                    specialScaleHard: 1.3,
-                    burstScaleEasy: 0.7,
-                    burstScaleHard: 1.3,
-                    difficultyBaseEasy: 0.2,
-                    difficultyBaseHard: 0.35
+                    duration: 180, // 180秒内平滑拉满难度
+                    spawnEasy: 65,    // 开始：约1.1秒/水果（轻松）
+                    spawnHard: 25,    // 结束：约0.4秒/水果（有挑战但不疯狂）
+                    floorEasy: 55,    // 开始下限：约0.9秒/水果
+                    floorHard: 18,    // 结束下限：约0.3秒/水果
+                    maxEasy: 4,       // 开始：4个水果同时存在
+                    maxHard: 10,      // 结束：10个水果（需要技巧）
+                    apexMinEasy: 0.45,  // 水果初始速度因子（低 = 慢）
+                    apexMinHard: 0.65,  // 水果速度因子上限
+                    apexMaxEasy: 0.55,
+                    apexMaxHard: 0.85,
+                    specialScaleEasy: 0.5,  // 特殊水果概率因子
+                    specialScaleHard: 1.2,
+                    burstScaleEasy: 0.5,    // 爆发生成概率因子
+                    burstScaleHard: 1.1,
+                    difficultyBaseEasy: 0.15, // 基础难度系数
+                    difficultyBaseHard: 0.45
                 };
 
                 // CDN 配置
@@ -689,10 +691,38 @@
                 // 性能优化：检测移动设备
                 this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 this.lastDetectionTime = 0;
-                this.detectionInterval = 0; // 全平台尽量实时检测，减少手势延迟
+                this.detectionInterval = this.isMobile ? 200 : 0; // 移动端每200ms检测一次，约5FPS
+
+                // 性能监控
+                this.frameCount = 0;
+                this.fps = 0;
+                this.lastFpsUpdate = Date.now();
+                this.targetFps = this.isMobile ? 30 : 60;
 
                 // 移动端降载参数
-                this.particleCount = this.isMobile ? 5 : 8;
+                this.particleCount = this.isMobile ? 2 : 8;
+                this.maxParticlesPerFruit = this.isMobile ? 6 : 15;
+                this.bladeTrailLength = this.isMobile ? 6 : 10;
+
+                // 动态降载开关
+                this.performanceMode = this.isMobile;
+                this.minFpsThreshold = this.isMobile ? 18 : 40;
+
+                // 渲染优化
+                this.maxSplatters = this.isMobile ? 10 : 30;
+                this.needsRedraw = true;
+
+                // 离屏 Canvas：视频绘制在独立低频循环，主循环直接 copy
+                this.videoCanvas = document.createElement('canvas');
+                this.videoCanvas.width = this.width;
+                this.videoCanvas.height = this.height;
+                this.videoCtx = this.videoCanvas.getContext('2d');
+                this.lastVideoDrawTime = 0;
+                this.videoDrawInterval = this.isMobile ? 100 : 33; // 移动端10fps，桌面30fps
+
+                // Emoji 预渲染缓存：解决移动端 fillText Emoji 极慢的问题
+                this.emojiCache = {};
+                this.initEmojiCache();
 
                 // 初始应用简单难度（后续自动渐进）
                 this.applyDifficultyRamp(0);
@@ -1237,24 +1267,54 @@
                 src.stop(t + 2.0);
             }
 
+            initEmojiCache() {
+                this.emojiCache = {};
+                this.emojiCacheReady = false;
+            }
+
+            ensureEmojiCached(type) {
+                if (this.emojiCache[type]) return;
+                const fruit = [...FRUIT_TYPES, ...SPECIAL_ITEMS].find(f => f.type === type);
+                if (!fruit) return;
+
+                const cacheSize = this.isMobile ? 80 : 100;
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = cacheSize;
+                offCanvas.height = cacheSize;
+                const offCtx = offCanvas.getContext('2d');
+                offCtx.textAlign = 'center';
+                offCtx.textBaseline = 'middle';
+                offCtx.font = `${cacheSize * 0.8}px "Segoe UI Emoji", "Segoe UI Symbol", Arial`;
+                offCtx.fillText(fruit.icon, cacheSize / 2, cacheSize / 2);
+                this.emojiCache[type] = offCanvas;
+            }
+
             resize() {
                 const vv = window.visualViewport;
                 this.width = vv ? vv.width : window.innerWidth;
                 this.height = vv ? vv.height : window.innerHeight;
                 this.canvas.width = this.width;
                 this.canvas.height = this.height;
+                this.videoCanvas.width = this.width;
+                this.videoCanvas.height = this.height;
                 this.updateVideoLayout();
             }
 
             updateVideoLayout() {
-                if (this.video.readyState < 2) return;
+                if (this.video.readyState < 1) {
+                    requestAnimationFrame(() => this.updateVideoLayout());
+                    return;
+                }
+                if (!this.video.videoWidth) {
+                    requestAnimationFrame(() => this.updateVideoLayout());
+                    return;
+                }
 
                 const vw = this.video.videoWidth;
                 const vh = this.video.videoHeight;
                 this.videoDims = { vw, vh };
                 const cw = this.width;
                 const ch = this.height;
-                // Cover 适配：填满屏幕，必要时裁剪；识别仍基于原始视频尺寸
                 const scale = Math.max(cw / vw, ch / vh);
                 const drawW = vw * scale;
                 const drawH = vh * scale;
@@ -1422,8 +1482,8 @@
                 hands.setOptions({
                     maxNumHands: 2,
                     modelComplexity: 0,
-                    minDetectionConfidence: 0.5,
-                    minTrackingConfidence: 0.5
+                    minDetectionConfidence: this.isMobile ? 0.7 : 0.5,
+                    minTrackingConfidence: this.isMobile ? 0.7 : 0.5
                 });
 
                 hands.onResults((results) => this.onHandsResults(results));
@@ -1455,7 +1515,7 @@
                     updateStatus("请求摄像头权限...");
                     const stream = await navigator.mediaDevices.getUserMedia({
                         video: this.isMobile
-                            ? { width: 960, height: 540, facingMode: "user" }
+                            ? { width: 480, height: 270, facingMode: "user" }
                             : { width: 1280, height: 720, facingMode: "user" }
                     });
 
@@ -1474,9 +1534,8 @@
                     this.state = 'MENU';
                     updateStatus("系统就绪");
 
-                    // Start processing loop
-                    this.processVideo();
-                    this.loop();
+                    // Start unified loop (replaces separate processVideo + loop)
+                    requestAnimationFrame((ts) => this.unifiedLoop(ts));
                 } catch (e) {
                     console.error("Init error:", e);
                     updateStatus("初始化失败");
@@ -1515,21 +1574,86 @@
                 this.initMediaPipe();
             }
 
-            async processVideo() {
-                if (this.video.readyState >= 2) {
-                    const now = Date.now();
-                    // 帧率限制 (Throttling)
-                    if (now - this.lastDetectionTime >= this.detectionInterval) {
-                        this.lastDetectionTime = now;
+            unifiedLoop(timestamp) {
+                const frameStart = performance.now();
+                const now = timestamp || Date.now();
+
+                // Delta time：归一化到 60fps (dt = 1/60 ≈ 0.0167s)
+                if (this.lastTimestamp > 0) {
+                    this.deltaTime = Math.min((now - this.lastTimestamp) / 1000, 0.05); // 上限50ms防爆炸
+                    this.timeScale = this.deltaTime * 60; // 60fps 归一化因子
+                } else {
+                    this.deltaTime = 1 / 60;
+                    this.timeScale = 1;
+                }
+                this.lastTimestamp = now;
+                this.lastFrameTime = frameStart;
+
+                // === 时间片 1: 手势检测 (每 detectionInterval ms 一次) ===
+                if (now - this.lastDetectionTime >= this.detectionInterval) {
+                    this.lastDetectionTime = now;
+                    if (this.video.readyState >= 2) {
                         try {
-                            await this.hands.send({ image: this.video });
+                            this.hands.send({ image: this.video });
                         } catch (e) {
                             console.error("MediaPipe processing error:", e);
-                            this.ui.status.innerText = "模型处理出错";
                         }
                     }
                 }
-                requestAnimationFrame(() => this.processVideo());
+
+                // === 时间片 1.5: 低频视频绘制到离屏 Canvas ===
+                if (now - this.lastVideoDrawTime >= this.videoDrawInterval) {
+                    this.lastVideoDrawTime = now;
+                    this.drawVideoToOffscreen();
+                }
+
+                // === 时间片 2: 游戏逻辑 ===
+                if (this.state === 'PLAYING') {
+                    this.updatePhysics();
+                    this.checkCollisions();
+                } else if (['MENU', 'GAMEOVER', 'PAUSED'].includes(this.state)) {
+                    this.checkMenuInteraction();
+                }
+
+                // === 时间片 3: 渲染 (保证每帧) ===
+                this.draw();
+
+                // === 帧率监控 ===
+                this.frameCount++;
+                if (now - this.lastFpsUpdate >= 1000) {
+                    this.fps = Math.round(this.frameCount * 1000 / (now - this.lastFpsUpdate));
+                    this.frameCount = 0;
+                    this.lastFpsUpdate = now;
+                    if (this.performanceMode && this.fps < this.minFpsThreshold) {
+                        this.adjustPerformance();
+                    }
+                }
+
+                // === 纯 rAF 调度：保持 60fps 稳定 ===
+                requestAnimationFrame((ts) => this.unifiedLoop(ts));
+            }
+
+            drawVideoToOffscreen() {
+                if (this.video.readyState < 2) return;
+
+                const vc = this.videoCtx;
+                const vw = this.videoCanvas.width;
+                const vh = this.videoCanvas.height;
+
+                vc.clearRect(0, 0, vw, vh);
+
+                if (this.videoMapping) {
+                    const map = this.videoMapping;
+                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
+                    // offscreen canvas 不是镜像的，直接用 offsetX
+                    vc.drawImage(
+                        this.video,
+                        0, 0, dims.vw, dims.vh,
+                        map.offsetX, map.offsetY, map.drawW, map.drawH
+                    );
+                } else {
+                    vc.drawImage(this.video, 0, 0, vw, vh);
+                }
             }
 
             onHandsResults(results) {
@@ -1687,17 +1811,27 @@
                 this.specialScale = lerp(r.specialScaleEasy, r.specialScaleHard);
                 this.burstScale = lerp(r.burstScaleEasy, r.burstScaleHard);
 
-                const spawnRate = lerp(r.spawnEasy, r.spawnHard);
-                const spawnFloor = lerp(r.floorEasy, r.floorHard);
-                const maxFruits = lerp(r.maxEasy, r.maxHard);
+                let spawnRate = lerp(r.spawnEasy, r.spawnHard);
+                let spawnFloor = lerp(r.floorEasy, r.floorHard);
+                let maxFruits = lerp(r.maxEasy, r.maxHard);
 
-                this.spawnRateInitial = this.isMobile ? spawnRate + 10 : spawnRate;
-                this.spawnRateFloor = this.isMobile ? Math.max(18, spawnFloor) : Math.max(22, spawnFloor);
-                this.maxFruits = this.isMobile ? Math.min(maxFruits, 14) : Math.round(maxFruits);
+                // 移动端：稍微降低难度，但不是粗暴的 +20 帧
+                if (this.isMobile) {
+                    const mobilePenalty = 1 + (1 - p) * 0.3; // 初期惩罚大，后期接近一致
+                    spawnRate *= mobilePenalty;
+                    spawnFloor *= mobilePenalty;
+                    maxFruits = Math.max(4, Math.round(maxFruits * 0.7)); // 移动端水果上限为桌面的 70%
+                } else {
+                    maxFruits = Math.round(maxFruits);
+                }
+
+                this.spawnRateInitial = spawnRate;
+                this.spawnRateFloor = Math.max(15, spawnFloor);
+                this.maxFruits = Math.round(maxFruits);
             }
 
             startGame() {
-                this.lastActionTime = Date.now(); // 重置冷却时间
+                this.lastActionTime = Date.now();
                 if (this.audioCtx && this.audioCtx.state === 'suspended') {
                     this.audioCtx.resume();
                 }
@@ -1712,6 +1846,9 @@
                 let count = 3;
                 this.ui.countdownDisplay.innerText = count;
 
+                // 预缓存所有 Emoji（分散在倒计时期间，不阻塞）
+                this.preWarmEmojiCache(count);
+
                 const timer = setInterval(() => {
                     count--;
                     if (count > 0) {
@@ -1724,6 +1861,21 @@
                         this.startPlaying();
                     }
                 }, 1000);
+            }
+
+            preWarmEmojiCache(steps) {
+                const allTypes = [...FRUIT_TYPES, ...SPECIAL_ITEMS].map(f => f.type);
+                const delayPerEmoji = (steps * 1000) / allTypes.length;
+                let index = 0;
+
+                const warmNext = () => {
+                    if (index < allTypes.length && this.state === 'COUNTDOWN') {
+                        this.ensureEmojiCached(allTypes[index]);
+                        index++;
+                        setTimeout(warmNext, delayPerEmoji);
+                    }
+                };
+                warmNext();
             }
 
             startPlaying() {
@@ -1876,13 +2028,17 @@
             }
 
             updatePhysics() {
-                // 时间流逝
+                // 时间流逝 (使用真实时间，不是帧数)
                 if (this.timeSlowTimer > 0) {
-                    this.timeSlowTimer--;
+                    this.timeSlowTimer -= this.deltaTime * 1000;
                     this.timeSlowFactor = 0.5;
                 } else {
                     this.timeSlowFactor = 1;
                 }
+
+                // 归一化因子：抵消帧率波动，确保物理模拟稳定
+                // timeScale = deltaTime * 60，60fps时=1，低帧率时>1补尝
+                const ts = this.timeScale * this.timeSlowFactor;
 
                 if (this.doubleScoreTimer > 0) {
                     this.doubleScoreTimer--;
@@ -1890,9 +2046,9 @@
 
                 // 难度增加
                 this.gameTime = Math.floor((Date.now() - this.startTime) / 1000);
-                // 随时间提升难度：先更新各项参数，再累积难度系数
                 this.applyDifficultyRamp(this.gameTime);
-                this.difficultyMultiplier = this.difficultyBase + Math.min(1.5, (this.gameTime / 60) * 0.3);
+                // 难度系数：随时间缓慢增长，与 spawnRate 配合形成平滑曲线
+                this.difficultyMultiplier = this.difficultyBase + Math.min(1.2, (this.gameTime / 180) * 1.2);
 
                 // 更新时间显示（仅当秒数变化时刷新）
                 this.refreshTimeDisplay();
@@ -1908,10 +2064,10 @@
                 // 更新水果位置
                 for (let i = this.fruits.length - 1; i >= 0; i--) {
                     let f = this.fruits[i];
-                    f.x += f.vx * this.timeSlowFactor;
-                    f.y += f.vy * this.timeSlowFactor;
-                    f.vy += CONFIG.GRAVITY * this.timeSlowFactor;
-                    f.rotation += f.rotationSpeed * this.timeSlowFactor;
+                    f.x += f.vx * ts;
+                    f.y += f.vy * ts;
+                    f.vy += CONFIG.GRAVITY * ts;
+                    f.rotation += f.rotationSpeed * ts;
 
                     // 移除出界水果
                     if (f.y > this.height + 100) {
@@ -1932,23 +2088,28 @@
                     }
                 }
 
-                // 更新粒子
+                // 更新粒子 (限制最大数量)
+                if (this.particles.length > (this.isMobile ? 30 : 80)) {
+                    this.particles.splice(0, this.particles.length - (this.isMobile ? 30 : 80));
+                }
                 for (let i = this.particles.length - 1; i >= 0; i--) {
                     let p = this.particles[i];
-                    p.x += p.vx * this.timeSlowFactor;
-                    p.y += p.vy * this.timeSlowFactor;
-                    p.vy += CONFIG.GRAVITY * 0.5 * this.timeSlowFactor;
+                    p.x += p.vx * ts;
+                    p.y += p.vy * ts;
+                    p.vy += CONFIG.GRAVITY * 0.5 * ts;
                     p.life--;
                     if (p.life <= 0) this.particles.splice(i, 1);
                 }
 
-                // 更新背景溅射
+                // 更新背景溅射 (限制最大数量)
+                if (this.splatters.length > (this.isMobile ? 20 : 50)) {
+                    this.splatters.splice(0, this.splatters.length - (this.isMobile ? 20 : 50));
+                }
                 for (let i = this.splatters.length - 1; i >= 0; i--) {
                     let s = this.splatters[i];
                     s.life--;
-                    // 模拟重力流淌效果 (Dripping effect)
                     if (s.style === 'BLOB' || s.style === 'SPLASH') {
-                        s.y += 0.2 * (s.size / 50); // 大的流得快
+                        s.y += 0.2 * (s.size / 50) * ts;
                     }
                     if (s.life <= 0) this.splatters.splice(i, 1);
                 }
@@ -1956,15 +2117,16 @@
                 // 更新浮动文字
                 for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
                     let t = this.floatingTexts[i];
-                    t.y += t.vy * this.timeSlowFactor;
+                    t.y += t.vy * ts;
                     t.life--;
-                    t.scale += 0.01; // 稍微变大
+                    t.scale += 0.01 * ts;
                     if (t.life <= 0) this.floatingTexts.splice(i, 1);
                 }
 
                 // 更新刀光 (遍历所有轨迹)
+                const maxTrail = this.bladeTrailLength || CONFIG.BLADE_LIFETIME;
                 for (let i = 0; i < this.bladeTrails.length; i++) {
-                    if (this.bladeTrails[i].length > CONFIG.BLADE_LIFETIME) {
+                    if (this.bladeTrails[i].length > maxTrail) {
                         this.bladeTrails[i].shift();
                     }
                 }
@@ -2153,34 +2315,31 @@
                 // 1. 背景溅射 (Splatter) - 增强版：多种样式、大小和密度
                 if (fruit.type !== 'bomb' && fruit.type !== 'coconut') {
                     // 随机生成 1-3 个溅射层，增加密度感 (移动端限制为1层)
-                    const splatterCount = this.isMobile ? 1 : (1 + Math.floor(Math.random() * 3));
+                    const splatterCount = this.isMobile ? 1 : (1 + Math.floor(Math.random() * 2));
 
                     for (let i = 0; i < splatterCount; i++) {
                         const rand = Math.random();
-                        let style = 'BLOB'; // 默认墨点
-                        if (rand > 0.7) style = 'SPLASH'; // 放射状
-                        else if (rand > 0.4) style = 'MIST'; // 喷雾状
+                        let style = 'BLOB';
+                        if (rand > 0.7) style = 'SPLASH';
+                        else if (rand > 0.4) style = 'MIST';
 
                         const splatter = {
                             x: fruit.x + (Math.random() - 0.5) * 60,
                             y: fruit.y + (Math.random() - 0.5) * 60,
                             color: fruit.color,
-                            // 调整大小范围：0.7倍 - 1.3倍 (减小尺寸)
-                            size: fruit.size * (0.7 + Math.random() * 0.6),
-                            life: 120, // 持续2秒
-                            maxLife: 120,
+                            size: fruit.size * (0.6 + Math.random() * 0.4),
+                            life: this.isMobile ? 60 : 120,
+                            maxLife: this.isMobile ? 60 : 120,
                             rotation: Math.random() * Math.PI * 2,
                             style: style,
-                            outline: [], // 用于 BLOB 样式的多边不规则外形
-                            blobs: [], // 旧数据结构保留兼容
-                            points: [], // 用于 SPLASH 样式的多边形
-                            droplets: [] // 用于 MIST 样式的液滴
+                            outline: [],
+                            blobs: [],
+                            points: [],
+                            droplets: []
                         };
 
-                        // 预计算形状数据 (避免每帧抖动)
                         if (style === 'BLOB') {
-                            // 生成无规则外形：环绕一圈的不等距顶点
-                            const pointCount = 24 + Math.floor(Math.random() * 14); // 24-37 点
+                            const pointCount = this.isMobile ? 12 : (24 + Math.floor(Math.random() * 14));
                             for (let j = 0; j < pointCount; j++) {
                                 const angle = (j / pointCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.12;
                                 const radius = splatter.size * (0.55 + Math.random() * 0.55);
@@ -2190,20 +2349,17 @@
                                 });
                             }
                         } else if (style === 'SPLASH') {
-                            // 尖锐的放射状 - 增加点数
-                            const numPoints = 20 + Math.floor(Math.random() * 15);
+                            const numPoints = this.isMobile ? 12 : (20 + Math.floor(Math.random() * 10));
                             for (let j = 0; j < numPoints; j++) {
                                 const angle = (j / numPoints) * Math.PI * 2;
-                                // 半径剧烈波动
-                                const r = splatter.size * (0.2 + Math.random() * 1.4);
+                                const r = splatter.size * (0.2 + Math.random() * 1.2);
                                 splatter.points.push({
                                     x: Math.cos(angle) * r,
                                     y: Math.sin(angle) * r
                                 });
                             }
                         } else if (style === 'MIST') {
-                            // 散落的小液滴 - 增加数量
-                            const numDroplets = 12 + Math.floor(Math.random() * 10);
+                            const numDroplets = this.isMobile ? 6 : (12 + Math.floor(Math.random() * 8));
                             for (let j = 0; j < numDroplets; j++) {
                                 const dist = Math.random() * splatter.size;
                                 const angle = Math.random() * Math.PI * 2;
@@ -2219,71 +2375,40 @@
                     }
                 }
 
-                // 2. 爆炸粒子 (Particles) — 全部不规则，并限制块状大小
-                const particleCount = this.particleCount;
-                for (let i = 0; i < particleCount; i++) {
-                    const verts = [];
-                    const vertCount = 6 + Math.floor(Math.random() * 6); // 6-11 边
-                    const baseR = 2 + Math.random() * 3; // 控制块大小更小
-                    for (let v = 0; v < vertCount; v++) {
-                        // 不规则角度与半径
-                        const ang = Math.random() * Math.PI * 2;
-                        const r = baseR * (0.5 + Math.random());
-                        verts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
-                    }
+                // 2. 飞散的水果碎片
+                const fragmentCount = this.isMobile ? 4 : (6 + Math.floor(Math.random() * 4));
+                for (let i = 0; i < fragmentCount; i++) {
+                    const angle = (Math.PI * 2 / fragmentCount) * i + (Math.random() - 0.5) * 0.3;
+                    const speed = (3 + Math.random() * 4) * (this.isMobile ? 0.7 : 1);
 
-                    this.particles.push({
+                    const fragment = {
                         x: fruit.x,
                         y: fruit.y,
-                        vx: (Math.random() - 0.5) * 10,
-                        vy: (Math.random() - 0.5) * 10,
-                        life: 30 + Math.random() * 20,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        rotation: Math.random() * Math.PI * 2,
+                        rotationSpeed: (Math.random() - 0.5) * 0.3,
+                        size: fruit.size * (0.25 + Math.random() * 0.2),
                         color: fruit.color,
-                        verts
-                    });
+                        icon: fruit.icon,
+                        life: this.isMobile ? 40 : 60,
+                        maxLife: this.isMobile ? 40 : 60,
+                        half: i < fragmentCount / 2 ? 'left' : 'right'
+                    };
+
+                    this.particles.push(fragment);
                 }
 
-                // 性能优化：限制最大粒子数，防止卡顿
-                if (this.particles.length > 100) {
-                    this.particles.splice(0, this.particles.length - 100);
-                }
-
-                // 如果不是炸弹，生成两半水果 (使用 Clip 裁剪模拟切开效果)
-                if (fruit.type !== 'bomb') {
-                    const sliceAngle = (Math.random() - 0.5) * Math.PI; // 随机切分角度
-                    const sepSpeed = 4; // 分离力度
-
-                    // 垂直于切面的分离向量
-                    const sepVx = Math.cos(sliceAngle + Math.PI / 2) * sepSpeed;
-                    const sepVy = Math.sin(sliceAngle + Math.PI / 2) * sepSpeed;
-
-                    // 第一半
-                    this.fruits.push({
-                        ...fruit,
-                        vx: fruit.vx + sepVx,
-                        vy: fruit.vy + sepVy,
-                        isSliced: true,
-                        active: false,
-                        rotationSpeed: fruit.rotationSpeed - 0.15,
-                        sliceAngle: sliceAngle,
-                        halfIndex: 1
-                    });
-                    // 第二半
-                    this.fruits.push({
-                        ...fruit,
-                        vx: fruit.vx - sepVx,
-                        vy: fruit.vy - sepVy,
-                        isSliced: true,
-                        active: false,
-                        rotationSpeed: fruit.rotationSpeed + 0.15,
-                        sliceAngle: sliceAngle,
-                        halfIndex: 2
-                    });
-                }
-
-                // 移除原始水果
-                const idx = this.fruits.indexOf(fruit);
-                if (idx > -1) this.fruits.splice(idx, 1);
+                // 3. 得分文字
+                this.floatingTexts.push({
+                    x: fruit.x,
+                    y: fruit.y,
+                    text: `+${fruit.score}`,
+                    vy: -3,
+                    life: this.isMobile ? 30 : 45,
+                    maxLife: this.isMobile ? 30 : 45,
+                    color: fruit.score > 0 ? '#ffeb3b' : '#ff4444'
+                });
             }
 
             createFloatingText(x, y, text, color) {
@@ -2344,31 +2469,24 @@
                 // 清空画布
                 this.ctx.clearRect(0, 0, this.width, this.height);
 
-                // 1. 绘制摄像头背景 (镜像)
-                this.ctx.save();
-                this.ctx.scale(-1, 1);
-                this.ctx.translate(-this.width, 0);
-                if (this.video.readyState === 4 && this.videoMapping) {
-                    const map = this.videoMapping;
-                    const dims = this.videoDims || { vw: this.video.videoWidth, vh: this.video.videoHeight };
-                    const destX = this.width - map.offsetX - map.drawW; // 镜像后从右往左放置
-                    this.ctx.drawImage(
-                        this.video,
-                        0, 0, dims.vw, dims.vh,
-                        destX, map.offsetY, map.drawW, map.drawH
-                    );
+                // 1. 绘制摄像头背景：使用离屏 canvas（已缓存视频帧）
+                if (this.video.readyState >= 2) {
+                    this.ctx.save();
+                    this.ctx.scale(-1, 1);
+                    this.ctx.translate(-this.width, 0);
+                    this.ctx.drawImage(this.videoCanvas, 0, 0, this.width, this.height);
+                    this.ctx.restore();
                 } else {
-                    // 备用背景
                     const gradient = this.ctx.createLinearGradient(0, 0, this.width, this.height);
-                    gradient.addColorStop(0, '#2c3e50');
-                    gradient.addColorStop(1, '#3498db');
+                    gradient.addColorStop(0, '#5d4037');
+                    gradient.addColorStop(1, '#3e2723');
                     this.ctx.fillStyle = gradient;
                     this.ctx.fillRect(0, 0, this.width, this.height);
                 }
-                this.ctx.restore();
 
-                // 1.5 绘制背景果汁溅射 (Splatters)
-                for (let s of this.splatters) {
+                // 1.5 绘制背景果汁溅射 (Splatters) - 限制数量
+                const splattersToDraw = this.splatters.slice(-this.maxSplatters);
+                for (let s of splattersToDraw) {
                     this.ctx.save();
                     this.ctx.translate(s.x, s.y);
                     this.ctx.rotate(s.rotation);
@@ -2440,55 +2558,57 @@
                 }
                 this.ctx.globalAlpha = 1;
 
-                // 2. 绘制水果
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
+                // 2. 绘制水果 (使用预渲染 Emoji 缓存，懒加载)
                 for (let f of this.fruits) {
+                    this.ensureEmojiCached(f.type);
+                    const cached = this.emojiCache[f.type];
+                    if (!cached) continue;
+
                     this.ctx.save();
                     this.ctx.translate(f.x, f.y);
-                    this.ctx.rotate(f.rotation);
-                    this.ctx.font = `${f.size}px "Segoe UI Emoji", "Segoe UI Symbol", Arial`;
 
                     if (f.isSliced && f.halfIndex) {
-                        // 绘制切开的半个水果
                         this.ctx.save();
-
-                        // 旋转到切分角度进行裁剪
                         this.ctx.rotate(f.sliceAngle);
                         this.ctx.beginPath();
                         if (f.halfIndex === 1) {
-                            // 上半部分 (相对于切分线)
                             this.ctx.rect(-f.size, -f.size, f.size * 2, f.size);
                         } else {
-                            // 下半部分
                             this.ctx.rect(-f.size, 0, f.size * 2, f.size);
                         }
                         this.ctx.clip();
-
-                        // 旋转回来绘制 Emoji，保持纹理方向一致
-                        this.ctx.rotate(-f.sliceAngle);
-                        this.ctx.fillText(f.icon, 0, 0);
-
                         this.ctx.restore();
                     } else {
-                        this.ctx.fillText(f.icon, 0, 0);
+                        this.ctx.rotate(f.sliceAngle);
                     }
+
+                    this.ctx.rotate(f.rotation);
+                    const drawSize = f.size * 1.2;
+                    this.ctx.drawImage(cached, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
                     this.ctx.restore();
                 }
 
-                // 3. 绘制粒子
+                // 3. 绘制粒子 (按颜色分组批量绘制，减少 ctx 状态切换)
+                const particleByColor = {};
                 for (let p of this.particles) {
-                    this.ctx.fillStyle = p.color;
-                    this.ctx.globalAlpha = Math.max(0, p.life / 50);
+                    if (!particleByColor[p.color]) particleByColor[p.color] = [];
+                    particleByColor[p.color].push(p);
+                }
+                for (const color in particleByColor) {
+                    this.ctx.fillStyle = color;
                     this.ctx.beginPath();
-                    if (p.verts && p.verts.length) {
-                        this.ctx.moveTo(p.x + p.verts[0].x, p.y + p.verts[0].y);
-                        for (let k = 1; k < p.verts.length; k++) {
-                            this.ctx.lineTo(p.x + p.verts[k].x, p.y + p.verts[k].y);
+                    for (const p of particleByColor[color]) {
+                        this.ctx.globalAlpha = Math.max(0, p.life / 50);
+                        if (p.verts && p.verts.length) {
+                            this.ctx.moveTo(p.x + p.verts[0].x, p.y + p.verts[0].y);
+                            for (let k = 1; k < p.verts.length; k++) {
+                                this.ctx.lineTo(p.x + p.verts[k].x, p.y + p.verts[k].y);
+                            }
+                            this.ctx.closePath();
+                        } else {
+                            this.ctx.moveTo(p.x + 2.5, p.y);
+                            this.ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
                         }
-                        this.ctx.closePath();
-                    } else {
-                        this.ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
                     }
                     this.ctx.fill();
                 }
@@ -2498,10 +2618,12 @@
                 this.ctx.save();
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.shadowColor = 'black';
-                this.ctx.shadowBlur = 2;
-                this.ctx.shadowOffsetX = 2;
-                this.ctx.shadowOffsetY = 2;
+                if (!this.isMobile) {
+                    this.ctx.shadowColor = 'black';
+                    this.ctx.shadowBlur = 2;
+                    this.ctx.shadowOffsetX = 2;
+                    this.ctx.shadowOffsetY = 2;
+                }
 
                 for (let t of this.floatingTexts) {
                     this.ctx.fillStyle = t.color;
@@ -2512,30 +2634,31 @@
                 this.ctx.restore();
 
                 // 4. 绘制刀光轨迹 (支持多手)
-                this.ctx.lineWidth = 5;
-                this.ctx.lineCap = 'round';
-                this.ctx.lineJoin = 'round';
-
-                const colors = ['#00ffff', '#ff00ff']; // 不同手不同颜色
-
+                const maxTrailLen = this.bladeTrailLength || 6;
                 for (let i = 0; i < this.bladeTrails.length; i++) {
                     const trail = this.bladeTrails[i];
                     if (!trail || trail.length < 2) continue;
 
                     this.ctx.beginPath();
                     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    this.ctx.lineWidth = this.isMobile ? 3 : 5;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.lineJoin = 'round';
 
                     this.ctx.moveTo(trail[0].x, trail[0].y);
-                    for (let j = 1; j < trail.length; j++) {
+                    for (let j = 1; j < Math.min(trail.length, maxTrailLen); j++) {
                         this.ctx.lineTo(trail[j].x, trail[j].y);
                     }
                     this.ctx.stroke();
 
-                    // 刀光发光效果
-                    this.ctx.shadowBlur = 10;
-                    this.ctx.shadowColor = colors[i % colors.length];
-                    this.ctx.stroke();
-                    this.ctx.shadowBlur = 0;
+                    // 刀光发光效果 (桌面端)
+                    if (!this.isMobile) {
+                        const colors = ['#00ffff', '#ff00ff'];
+                        this.ctx.shadowBlur = 10;
+                        this.ctx.shadowColor = colors[i % colors.length];
+                        this.ctx.stroke();
+                        this.ctx.shadowBlur = 0;
+                    }
                 }
 
                 // 5. 绘制手势识别点 (调试用)
@@ -2698,16 +2821,36 @@
                 }
             }
 
-            loop() {
-                if (this.state === 'PLAYING') {
-                    this.updatePhysics();
-                    this.checkCollisions();
-                } else if (['MENU', 'GAMEOVER', 'PAUSED'].includes(this.state)) {
-                    this.checkMenuInteraction();
+            adjustPerformance() {
+                // 降低水果数量上限
+                if (this.maxFruits > 4) {
+                    this.maxFruits = Math.max(4, this.maxFruits - 3);
+                    console.log(`[Performance] 降低水果上限至 ${this.maxFruits}`);
                 }
 
-                this.draw();
-                requestAnimationFrame(() => this.loop());
+                // 降低粒子数量
+                if (this.particleCount > 1) {
+                    this.particleCount = Math.max(1, this.particleCount - 1);
+                    console.log(`[Performance] 降低粒子数量至 ${this.particleCount}`);
+                }
+
+                // 降低溅射上限
+                if (this.maxSplatters > 5) {
+                    this.maxSplatters = Math.max(5, this.maxSplatters - 3);
+                    console.log(`[Performance] 降低溅射上限至 ${this.maxSplatters}`);
+                }
+
+                // 增加检测间隔（最大300ms）
+                if (this.detectionInterval < 300) {
+                    this.detectionInterval += 20;
+                    console.log(`[Performance] 增加检测间隔至 ${this.detectionInterval}ms`);
+                }
+
+                // 缩短刀光轨迹
+                if (this.bladeTrailLength > 3) {
+                    this.bladeTrailLength -= 2;
+                    console.log(`[Performance] 缩短刀光轨迹至 ${this.bladeTrailLength}`);
+                }
             }
         }
 
