@@ -14,6 +14,7 @@ export class InteractionHandler {
         this.drag = null;
         this.currentNodes = new Map();
         this.pendingInlineEditId = null;
+        this.editingNodeId = null;
         this.selectionListeners = new Set();
         this.linkingListeners = new Set();
         this.touchTapTracker = { nodeId: null, lastTime: 0 };
@@ -32,12 +33,18 @@ export class InteractionHandler {
     bindGlobalEvents() {
         window.addEventListener("keydown", event => {
             if (event.key === "Escape") {
+                if (this.editingNodeId) {
+                    this.commitInlineEditor();
+                }
                 this.cancelLinking();
                 this.hideContextMenu();
             }
         });
 
         this.svg.addEventListener("click", () => {
+            if (this.editingNodeId) {
+                this.commitInlineEditor();
+            }
             this.hideContextMenu();
         });
 
@@ -90,7 +97,7 @@ export class InteractionHandler {
                 return;
             }
             const graphPos = this.pointerToGraph(clientX, clientY);
-            const newId = this.state.addNode(parentId, "New node", graphPos);
+            const newId = this.state.addNode(parentId, "新节点", graphPos);
             this.selectNode(newId);
             this.queueInlineEditor(newId);
         };
@@ -128,6 +135,12 @@ export class InteractionHandler {
 
             const clickHandler = event => {
                 event.stopPropagation();
+                if (this.editingNodeId === nodeId) {
+                    return;
+                }
+                if (this.editingNodeId) {
+                    this.commitInlineEditor();
+                }
                 this.selectNode(nodeId);
                 this.hideContextMenu();
                 if (this.linking.active && this.linking.sourceId !== nodeId) {
@@ -156,6 +169,9 @@ export class InteractionHandler {
             this.attach(element, "contextmenu", ctxHandler, "ctxHandler");
 
             const pointerHandler = event => {
+                if (this.editingNodeId === nodeId) {
+                    return;
+                }
                 if (event.button !== 0 && event.pointerType !== "touch") {
                     return;
                 }
@@ -219,6 +235,12 @@ export class InteractionHandler {
     }
 
     openInlineEditor(nodeId, nodeElement) {
+        if (this.editingNodeId === nodeId) {
+            return;
+        }
+        if (this.editingNodeId) {
+            this.commitInlineEditor();
+        }
         const snapshot = this.state.getState();
         const node = snapshot.graph.nodes.find(n => n.id === nodeId);
         if (!node) {
@@ -234,12 +256,16 @@ export class InteractionHandler {
         editor.value = original;
         foreign.innerHTML = "";
         foreign.appendChild(editor);
+        foreign.style.pointerEvents = "auto";
+        this.editingNodeId = nodeId;
+        this._activeEditor = { nodeId, editor, foreign, original };
         editor.focus();
         editor.select();
 
         const commit = () => {
-            const next = editor.value.trim();
-            this.state.updateNodeContent(nodeId, next || original);
+            if (this._activeEditor && this._activeEditor.nodeId === nodeId) {
+                this.commitInlineEditor();
+            }
         };
 
         editor.addEventListener("keydown", event => {
@@ -247,30 +273,52 @@ export class InteractionHandler {
                 event.preventDefault();
                 commit();
             }
+            event.stopPropagation();
         });
         editor.addEventListener("blur", commit);
+        editor.addEventListener("pointerdown", event => {
+            event.stopPropagation();
+        });
+        editor.addEventListener("click", event => {
+            event.stopPropagation();
+        });
+    }
+
+    commitInlineEditor() {
+        if (!this._activeEditor) {
+            return;
+        }
+        const { nodeId, editor, foreign, original } = this._activeEditor;
+        const next = editor.value.trim();
+        this.editingNodeId = null;
+        this._activeEditor = null;
+        foreign.style.pointerEvents = "";
+        this.state.updateNodeContent(nodeId, next || original);
     }
 
     showContextMenu(point, type) {
         if (!this.contextMenu) {
             return;
         }
+        if (this.editingNodeId) {
+            this.commitInlineEditor();
+        }
         this.hideContextMenu();
         const list = document.createElement("ul");
         if (type === MENU_TYPE.NODE) {
-            list.appendChild(this.makeMenuItem("Generate Child Node", () => {
-                const newId = this.state.addNode(this.selectedNodeId, "New node");
+            list.appendChild(this.makeMenuItem("生成子节点", () => {
+                const newId = this.state.addNode(this.selectedNodeId, "新节点");
                 this.selectNode(newId);
                 this.queueInlineEditor(newId);
                 this.hideContextMenu();
             }));
-            list.appendChild(this.makeMenuItem("Start Link", () => {
+            list.appendChild(this.makeMenuItem("开始连线", () => {
                 this.beginLinking(this.selectedNodeId);
                 this.hideContextMenu();
             }));
             const node = this.state.getState().graph.nodes.find(n => n.id === this.selectedNodeId);
             const isRoot = node?.isRoot;
-            list.appendChild(this.makeMenuItem("Delete Node", () => {
+            list.appendChild(this.makeMenuItem("删除节点", () => {
                 this.cancelLinkingIfSource(this.selectedNodeId);
                 this.state.removeNode(this.selectedNodeId);
                 this.hideContextMenu();
@@ -278,8 +326,8 @@ export class InteractionHandler {
         } else {
             const roots = this.state.getState().graph.nodes.filter(n => n.isRoot);
             roots.forEach(root => {
-                list.appendChild(this.makeMenuItem(`Add child under ${root.content}`, () => {
-                    const newId = this.state.addNode(root.id, "New branch");
+                list.appendChild(this.makeMenuItem(`在 ${root.content} 下添加子节点`, () => {
+                    const newId = this.state.addNode(root.id, "新分支");
                     this.selectNode(newId);
                     this.queueInlineEditor(newId);
                     this.hideContextMenu();
@@ -410,10 +458,10 @@ export class InteractionHandler {
     quickAddChild() {
         const parentId = this.ensureSelectableNode();
         if (!parentId) {
-            alert("Please select a node first.");
+            alert("请先选择一个节点。");
             return;
         }
-        const newId = this.state.addNode(parentId, "New node");
+        const newId = this.state.addNode(parentId, "新节点");
         this.selectNode(newId);
         this.queueInlineEditor(newId);
     }
@@ -421,7 +469,7 @@ export class InteractionHandler {
     quickStartLink() {
         const parentId = this.ensureSelectableNode();
         if (!parentId) {
-            alert("Please select a node first.");
+            alert("请先选择一个节点。");
             return;
         }
         this.beginLinking(parentId);
@@ -433,13 +481,13 @@ export class InteractionHandler {
 
     quickDeleteSelected() {
         if (!this.selectedNodeId) {
-            alert("Select a non-root node to delete.");
+            alert("请选择一个非根节点来删除。");
             return;
         }
         const snapshot = this.state.getState();
         const node = snapshot.graph.nodes.find(n => n.id === this.selectedNodeId);
         if (!node || node.isRoot) {
-            alert("Root nodes cannot be deleted.");
+            alert("根节点无法删除。");
             return;
         }
         this.cancelLinkingIfSource(this.selectedNodeId);

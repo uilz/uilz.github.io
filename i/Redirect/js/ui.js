@@ -8,6 +8,10 @@ export class UIControls {
         this.quickButtons = {};
         this.teardownFns = [];
         this.typeOptions = ["daily", "weekly", "monthly", "quarterly", "annually", "decadely"];
+        this.typeLabels = {
+            daily: "每日", weekly: "每周", monthly: "每月",
+            quarterly: "每季", annually: "每年", decadely: "每十年"
+        };
         this.currentType = typeof this.state?.getMindType === "function" ? this.state.getMindType() : "daily";
         this.typeSelect = null;
         this.render();
@@ -25,11 +29,11 @@ export class UIControls {
         const typeSelector = this.createTypeSelector();
         primaryRow.appendChild(typeSelector);
         this.buttons = [
-            this.createButton("Load", () => this.io.load(), { className: "button-load" }),
-            this.createButton("Save", () => this.io.save(this.currentType), { className: "button-save" }),
-            this.createButton("Export PNG", () => this.io.exportImage(), { className: "button-export" }),
-            this.createButton("Reset", () => {
-                if (confirm("Reset to default roots?")) {
+            this.createButton("加载", () => this.io.load(), { className: "button-load" }),
+            this.createButton("保存", () => this.io.save(this.currentType), { className: "button-save" }),
+            this.createButton("导出图片", () => this.io.exportImage(), { className: "button-export" }),
+            this.createButton("重置", () => {
+                if (confirm("确定要重置为默认状态吗？")) {
                     this.interactions?.cancelLinking?.();
                     this.interactions?.clearSelection?.();
                     this.state.reset();
@@ -42,10 +46,10 @@ export class UIControls {
         const quickRow = document.createElement("div");
         quickRow.className = "ui-row ui-row-secondary";
         this.quickButtons = {
-            addChild: this.createButton("Add Child", () => this.interactions?.quickAddChild()),
-            startLink: this.createButton("Start Link", () => this.interactions?.quickStartLink()),
-            cancelLink: this.createButton("Cancel Link", () => this.interactions?.quickCancelLink(), { variant: "outline" }),
-            deleteNode: this.createButton("Delete Node", () => this.interactions?.quickDeleteSelected(), { variant: "outline" })
+            addChild: this.createButton("添加节点", () => this.interactions?.quickAddChild()),
+            startLink: this.createButton("开始连线", () => this.interactions?.quickStartLink()),
+            cancelLink: this.createButton("取消连线", () => this.interactions?.quickCancelLink(), { variant: "outline" }),
+            deleteNode: this.createButton("删除节点", () => this.interactions?.quickDeleteSelected(), { variant: "outline" })
         };
         Object.values(this.quickButtons).forEach(button => quickRow.appendChild(button));
 
@@ -107,8 +111,8 @@ export class UIControls {
             option.textContent = label;
             select.appendChild(option);
         };
-        this.typeOptions.forEach(type => addOption(type, capitalize(type)));
-        addOption("__custom__", "Custom...");
+        this.typeOptions.forEach(type => addOption(type, this.typeLabels[type] ?? capitalize(type)));
+        addOption("__custom__", "自定义...");
         select.value = this.currentType;
         select.addEventListener("change", () => this.handleTypeChange(select));
         wrapper.appendChild(select);
@@ -119,14 +123,14 @@ export class UIControls {
     handleTypeChange(select) {
         const value = select.value;
         if (value === "__custom__") {
-            const input = prompt("Enter custom type (letters only):", this.currentType);
+            const input = prompt("输入自定义类型（仅限英文字母）：", this.currentType);
             if (!input) {
                 select.value = this.currentType;
                 return;
             }
             const sanitized = input.trim();
             if (!/^[A-Za-z]+$/.test(sanitized)) {
-                alert("Type must contain letters only.");
+                alert("类型只能包含英文字母。");
                 select.value = this.currentType;
                 return;
             }

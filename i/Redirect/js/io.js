@@ -69,7 +69,7 @@ export class IOHandler {
                 const pngUrl = canvas.toDataURL("image/png");
                 const link = document.createElement("a");
                 link.href = pngUrl;
-                link.download = `genesis-mind-export-${Date.now()}.png`;
+                link.download = `jitu-export-${Date.now()}.png`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -81,7 +81,7 @@ export class IOHandler {
                 const blobUrl = URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = blobUrl;
-                link.download = `genesis-mind-export-${Date.now()}.svg`;
+                link.download = `jitu-export-${Date.now()}.svg`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -107,7 +107,7 @@ export class IOHandler {
         const stampDate = parseIsoDate(createdIso) ?? new Date();
         const stamp = storedStamp ?? formatTimestamp(stampDate);
         const safeType = sanitizeType(typeLabel);
-        link.download = `genesis-mind.${safeType}.${stamp}.json`;
+        link.download = `jitu.${safeType}.${stamp}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -137,7 +137,7 @@ export class IOHandler {
                         this.state.loadFromData(data);
                     } catch (error) {
                         console.error("Failed to load graph", error);
-                        alert("Unable to parse the selected JSON file.");
+                        alert("无法解析所选的 JSON 文件。");
                     } finally {
                         this.fileInput.value = "";
                     }

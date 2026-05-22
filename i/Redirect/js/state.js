@@ -1,6 +1,8 @@
 const ROOT_INSIGHT_ID = "root_insight";
 const ROOT_ACTION_ID = "root_action";
 const VERSION = "1.0.0";
+const STORAGE_KEY = "genesis_mind_state";
+const STORAGE_DEBOUNCE_MS = 400;
 
 const clone = value => {
     if (typeof structuredClone === "function") {
@@ -12,7 +14,10 @@ const clone = value => {
 class GraphState {
     constructor() {
         this.subscribers = new Set();
+        this._saveTimer = null;
         this.reset();
+        this._tryLoadFromStorage();
+        this._bindUnloadFlush();
     }
 
     reset() {
@@ -30,14 +35,14 @@ class GraphState {
                 nodes: [
                     {
                         id: ROOT_INSIGHT_ID,
-                        content: "\uD83D\uDC8E Insights",
+                        content: "\uD83D\uDC8E 洞察",
                         isRoot: true,
                         parent: null,
                         position: { x: 200, y: 400 }
                     },
                     {
                         id: ROOT_ACTION_ID,
-                        content: "\uD83D\uDE80 Actions",
+                        content: "\uD83D\uDE80 行动",
                         isRoot: true,
                         parent: null,
                         position: { x: 600, y: 400 }
@@ -63,6 +68,7 @@ class GraphState {
         for (const callback of this.subscribers) {
             callback(snapshot);
         }
+        this._debouncedSaveToStorage();
     }
 
     getState() {
@@ -102,7 +108,7 @@ class GraphState {
         if (!hasInsight) {
             merged.graph.nodes.unshift({
                 id: ROOT_INSIGHT_ID,
-                content: "\uD83D\uDC8E Insights",
+                content: "\uD83D\uDC8E 洞察",
                 isRoot: true,
                 parent: null,
                 position: { x: 200, y: 400 }
@@ -111,7 +117,7 @@ class GraphState {
         if (!hasAction) {
             merged.graph.nodes.push({
                 id: ROOT_ACTION_ID,
-                content: "\uD83D\uDE80 Actions",
+                content: "\uD83D\uDE80 行动",
                 isRoot: true,
                 parent: null,
                 position: { x: 600, y: 400 }
@@ -301,6 +307,62 @@ class GraphState {
             mind_type: "daily"
         };
         return { ...base, ...overrides };
+    }
+
+    _debouncedSaveToStorage() {
+        if (this._saveTimer) {
+            clearTimeout(this._saveTimer);
+        }
+        this._saveTimer = setTimeout(() => {
+            this._saveToStorage();
+            this._saveTimer = null;
+        }, STORAGE_DEBOUNCE_MS);
+    }
+
+    _saveToStorage() {
+        try {
+            const data = this.getState();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.warn("Failed to save state to localStorage", e);
+        }
+    }
+
+    _tryLoadFromStorage() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) {
+                return;
+            }
+            const data = JSON.parse(raw);
+            if (data && typeof data === "object" && data.graph) {
+                this.loadFromData(data);
+            }
+        } catch (e) {
+            console.warn("Failed to load state from localStorage", e);
+        }
+    }
+
+    clearStorage() {
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {
+            console.warn("Failed to clear localStorage", e);
+        }
+    }
+
+    _flushSaveToStorage() {
+        if (this._saveTimer) {
+            clearTimeout(this._saveTimer);
+            this._saveTimer = null;
+        }
+        this._saveToStorage();
+    }
+
+    _bindUnloadFlush() {
+        window.addEventListener("beforeunload", () => {
+            this._flushSaveToStorage();
+        });
     }
 }
 

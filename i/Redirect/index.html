@@ -1,31 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genesis Mind</title>
+    <title>迹图</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell">
         <div class="mode-switcher" role="tablist" aria-label="模式选择">
-            <button class="mode-button" data-mode="free" aria-pressed="true">模式1 · 自由模式</button>
-            <button class="mode-button" data-mode="compare" aria-pressed="false">模式2 · 对比回顾</button>
+            <button class="mode-button" data-mode="free" aria-pressed="true">作</button>
+            <button class="mode-button" data-mode="compare" aria-pressed="false">鉴</button>
+            <div class="settings-wrapper">
+                <button id="settings-button" class="settings-button" aria-expanded="false" aria-controls="settings-dropdown" title="设置">⚙</button>
+                <div id="settings-dropdown" class="settings-dropdown" hidden>
+                    <h3>风格切换</h3>
+                    <div class="theme-options">
+                        <button class="theme-option" data-theme-value="dark" data-active="true">
+                            <span class="theme-preview theme-preview-dark"></span>
+                            <span>暗夜</span>
+                        </button>
+                        <button class="theme-option" data-theme-value="ink" data-active="false">
+                            <span class="theme-preview theme-preview-ink"></span>
+                            <span>墨迹</span>
+                        </button>
+                        <button class="theme-option" data-theme-value="starry" data-active="false">
+                            <span class="theme-preview theme-preview-starry"></span>
+                            <span>星图</span>
+                        </button>
+                        <button class="theme-option" data-theme-value="zen" data-active="false">
+                            <span class="theme-preview theme-preview-zen"></span>
+                            <span>水墨</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="workspace" class="workspace workspace--free">
             <section class="workspace-left" aria-label="交互画布">
                 <div id="app">
                     <div id="ui-layer"></div>
-                    <svg id="graph-canvas" tabindex="0" role="application" aria-label="Genesis Mind Graph"></svg>
+                    <svg id="graph-canvas" tabindex="0" role="application" aria-label="迹图画布"></svg>
                     <div id="context-menu" class="context-menu" hidden></div>
                 </div>
             </section>
-            <aside id="comparison-panel" class="comparison-panel" aria-label="历史对比加载面板" data-collapsed="false">
+            <aside id="comparison-panel" class="comparison-panel" aria-label="历史鉴面板" data-collapsed="false">
             <div class="panel-header">
                 <div class="panel-title">
-                    <h2>对比回顾</h2>
-                    <p>批量导入历史 JSON，查看摘要并随时加载到左侧画布。</p>
+                    <h2>鉴</h2>
+                    <p>历史文件摘要，随需加载到画布。</p>
                 </div>
                 <button id="comparison-collapse-toggle" class="panel-toggle" aria-expanded="true" aria-controls="comparison-panel-body">
                     收起面板

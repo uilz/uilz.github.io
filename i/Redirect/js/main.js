@@ -270,8 +270,98 @@ class ModeController {
     }
 }
 
+class ThemeController {
+    constructor() {
+        this.THEME_KEY = "genesis_mind_theme";
+        this.VALID_THEMES = ["dark", "ink", "starry", "zen"];
+        this.settingsButton = document.getElementById("settings-button");
+        this.settingsDropdown = document.getElementById("settings-dropdown");
+        this.themeOptions = document.querySelectorAll(".theme-option[data-theme-value]");
+        this.currentTheme = this._loadTheme();
+        this._applyTheme(this.currentTheme);
+        this._bindEvents();
+    }
+
+    _loadTheme() {
+        try {
+            const saved = localStorage.getItem(this.THEME_KEY);
+            if (saved && this.VALID_THEMES.includes(saved)) {
+                return saved;
+            }
+        } catch (e) {
+            console.warn("Failed to load theme from localStorage", e);
+        }
+        return "dark";
+    }
+
+    _saveTheme(theme) {
+        try {
+            localStorage.setItem(this.THEME_KEY, theme);
+        } catch (e) {
+            console.warn("Failed to save theme to localStorage", e);
+        }
+    }
+
+    _applyTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        this.themeOptions.forEach(option => {
+            const isActive = option.dataset.themeValue === theme;
+            option.setAttribute("data-active", String(isActive));
+        });
+    }
+
+    setTheme(theme) {
+        if (!this.VALID_THEMES.includes(theme) || theme === this.currentTheme) {
+            return;
+        }
+        this.currentTheme = theme;
+        this._applyTheme(theme);
+        this._saveTheme(theme);
+    }
+
+    toggleDropdown() {
+        const isHidden = this.settingsDropdown.hidden;
+        this.settingsDropdown.hidden = !isHidden;
+        this.settingsButton.setAttribute("aria-expanded", String(isHidden));
+    }
+
+    closeDropdown() {
+        this.settingsDropdown.hidden = true;
+        this.settingsButton.setAttribute("aria-expanded", "false");
+    }
+
+    _bindEvents() {
+        if (this.settingsButton) {
+            this.settingsButton.addEventListener("click", event => {
+                event.stopPropagation();
+                this.toggleDropdown();
+            });
+        }
+
+        this.themeOptions.forEach(option => {
+            option.addEventListener("click", () => {
+                this.setTheme(option.dataset.themeValue);
+            });
+        });
+
+        document.addEventListener("click", event => {
+            if (!this.settingsDropdown.hidden && !this.settingsDropdown.contains(event.target) && event.target !== this.settingsButton) {
+                this.closeDropdown();
+            }
+        });
+
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape" && !this.settingsDropdown.hidden) {
+                this.closeDropdown();
+                this.settingsButton.focus();
+            }
+        });
+    }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
     const app = new GenesisMindApp();
     window.genesisMind = app;
     new ModeController(app);
+    new ThemeController();
 });
