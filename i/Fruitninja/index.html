@@ -5,7 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 手势切水果 (MediaPipe)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Shojumaru&display=swap" rel="stylesheet">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" as="script" crossorigin>
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" as="script" crossorigin>
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" as="script" crossorigin>
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" as="script" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Shojumaru&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Shojumaru&display=swap" rel="stylesheet"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
         crossorigin="anonymous"></script>
@@ -645,12 +650,12 @@
 
                 // CDN 配置
                 this.cdnList = [
-                    { name: 'Local (本地 ./hands/)', url: 'hands/' },
                     { name: 'JSDelivr (推荐)', url: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' },
+                    { name: 'JSDelivr Fastly', url: 'https://fastly.jsdelivr.net/npm/@mediapipe/hands/' },
                     { name: 'Unpkg (备用)', url: 'https://unpkg.com/@mediapipe/hands/' },
-                    { name: 'JSDelivr Fastly', url: 'https://fastly.jsdelivr.net/npm/@mediapipe/hands/' }
+                    { name: 'Local (本地 ./hands/)', url: 'hands/' }
                 ];
-                this.currentCdnIndex = 0; // 默认先用本地，后续可切换 CDN
+                this.currentCdnIndex = 0;
 
                 // 绑定UI元素
                 this.ui = {
@@ -1266,36 +1271,20 @@
                     return;
                 }
 
-                // 自动检测本地模型文件完整性
-                // 移动端优先 Lite，桌面使用 Full；缺失则切换 CDN
-                if (this.currentCdnIndex === 0) {
-                    const prefer = this.isMobile
-                        ? ['hand_landmark_lite.tflite']
-                        : ['hand_landmark_full.tflite'];
+                this.modelFile = 'hand_landmark_lite.tflite';
+
+                if (this.currentCdnIndex === this.cdnList.length - 1) {
                     let foundLocal = false;
-
-                    for (const candidate of prefer) {
-                        try {
-                            console.log(`Checking local model availability: ${candidate}...`);
-                            const response = await fetch(`hands/${candidate}`, { method: 'HEAD' });
-                            if (response.ok) {
-                                this.modelFile = candidate;
-                                foundLocal = true;
-                                break;
-                            }
-                        } catch (e) {
-                            console.warn(`Failed to check local model file ${candidate}.`, e);
-                        }
+                    try {
+                        const response = await fetch(`hands/${this.modelFile}`, { method: 'HEAD' });
+                        if (response.ok) foundLocal = true;
+                    } catch (e) {
+                        console.warn(`Failed to check local model file.`, e);
                     }
-
                     if (!foundLocal) {
                         console.warn(`Local model file missing. Switching to Online CDN.`);
-                        this.currentCdnIndex = 1; // Switch to JSDelivr
-                        this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
+                        this.currentCdnIndex = 0;
                     }
-                } else {
-                    // 非本地模式按平台优先级
-                    this.modelFile = this.isMobile ? 'hand_landmark_lite.tflite' : 'hand_landmark_full.tflite';
                 }
 
                 const cdn = this.cdnList[this.currentCdnIndex];
@@ -1316,21 +1305,42 @@
                     }
                 };
 
-                // 预取模型/wasm并显示百分比进度（并行下载）
                 const blobUrlMap = {};
-                // 预期大小表，用于展示更接近实际的体积（部分 CDN 会压缩传输导致 Content-Length 偏小）
                 const expectedSizes = {
-                    'hand_landmark_full.tflite': 5.22,
                     'hand_landmark_lite.tflite': 1.98,
                     'hands.binarypb': 0.01,
-                    'hands_solution_packed_assets.data': 4.12,
+                    'hands_solution_packed_assets.data': 4.13,
                     'hands_solution_packed_assets_loader.js': 0.01,
                     'hands_solution_simd_wasm_bin.js': 0.26,
                     'hands_solution_simd_wasm_bin.wasm': 5.75
                 };
 
+                const CACHE_NAME = 'fruitninja-models-v1';
+                let modelCache = null;
+                try {
+                    modelCache = await caches.open(CACHE_NAME);
+                } catch (e) {
+                    console.warn('Cache API 不可用，跳过持久化缓存', e);
+                }
+
                 const prefetchWithProgress = async (file, label, required = true) => {
                     const url = `${cdn.url}${file}`;
+
+                    if (modelCache) {
+                        try {
+                            const cached = await modelCache.match(url);
+                            if (cached && cached.ok) {
+                                const blob = await cached.blob();
+                                blobUrlMap[file] = URL.createObjectURL(blob);
+                                const sizeMB = (blob.size / 1048576).toFixed(2);
+                                updateStatus(`${label}: 缓存命中 (${sizeMB}MB)`, file);
+                                return;
+                            }
+                        } catch (e) {
+                            console.warn(`Cache read failed for ${file}`, e);
+                        }
+                    }
+
                     const res = await fetch(url);
                     if (!res.ok) {
                         if (!required) {
@@ -1362,29 +1372,31 @@
                     }
                     const blob = new Blob(chunks);
                     blobUrlMap[file] = URL.createObjectURL(blob);
+
+                    if (modelCache) {
+                        try {
+                            const cacheResponse = new Response(blob, {
+                                headers: { 'Content-Type': 'application/octet-stream' }
+                            });
+                            await modelCache.put(url, cacheResponse);
+                        } catch (e) {
+                            console.warn(`Cache write failed for ${file}`, e);
+                        }
+                    }
+
                     const finalMB = (loaded / 1048576).toFixed(2);
                     const suffix = expectedSizes[file] ? ` (~${expectedSizes[file].toFixed(2)}MB)` : '';
                     updateStatus(`${label}: 完成 (${finalMB}MB${suffix})`, file);
                 };
 
-                // 需要显示进度的核心文件（可按需扩展）
-                const assetFiles = this.isMobile
-                    ? [
-                        { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: true },
-                        { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
-                        { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
-                        { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
-                        { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
-                        { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
-                    ]
-                    : [
-                        { file: 'hand_landmark_full.tflite', label: 'hand_landmark_full.tflite (~5.2MB)', required: true },
-                        { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
-                        { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
-                        { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
-                        { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
-                        { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
-                    ];
+                const assetFiles = [
+                    { file: 'hand_landmark_lite.tflite', label: 'hand_landmark_lite.tflite', required: true },
+                    { file: 'hands_solution_packed_assets.data', label: 'hands_solution_packed_assets.data', required: true },
+                    { file: 'hands_solution_packed_assets_loader.js', label: 'hands_solution_packed_assets_loader.js', required: true },
+                    { file: 'hands_solution_simd_wasm_bin.js', label: 'hands_solution_simd_wasm_bin.js', required: true },
+                    { file: 'hands_solution_simd_wasm_bin.wasm', label: 'hands_solution_simd_wasm_bin.wasm', required: false },
+                    { file: 'hands.binarypb', label: 'hands.binarypb', required: true }
+                ];
 
                 updateStatus(`初始化 MediaPipe (${cdn.name})...`);
                 console.log(`Using CDN: ${cdn.url}`);
@@ -1407,10 +1419,9 @@
                     }
                 });
 
-                const modelComplexity = (this.modelFile && this.modelFile.includes('lite')) ? 0 : 1;
                 hands.setOptions({
                     maxNumHands: 2,
-                    modelComplexity,
+                    modelComplexity: 0,
                     minDetectionConfidence: 0.5,
                     minTrackingConfidence: 0.5
                 });
@@ -1485,9 +1496,10 @@
                 </button>
                 <div style="margin-top: 15px; font-size: 12px; text-align: left; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">
                     <strong>解决方案：</strong><br>
-                    1. 点击上方按钮切换线路重试。<br>
-                    2. 检查网络连接 (可能需要科学上网)。<br>
-                    3. 如果一直失败，请尝试手动下载模型文件到本地 <code>hands</code> 文件夹。
+                    1. 开启摄像头权限。<br>
+                    2. 点击上方按钮切换线路重试。<br>
+                    3. 检查网络连接 (尝试切换移动数据)。<br>
+                    4.如果一直失败，请尝试手动下载模型文件到本地 <code>hands</code> 文件夹。<br>
                 </div>
             `;
                 }
@@ -2701,6 +2713,12 @@
 
         // 启动游戏
         const game = new FruitNinjaGame();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch((e) => {
+                console.warn('Service Worker 注册失败', e);
+            });
+        }
 
     </script>
 </body>
