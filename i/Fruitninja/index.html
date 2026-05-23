@@ -691,7 +691,8 @@
                 // 性能优化：检测移动设备
                 this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 this.lastDetectionTime = 0;
-                this.detectionInterval = this.isMobile ? 200 : 0; // 移动端每200ms检测一次，约5FPS
+                this.detectionInterval = this.isMobile ? 200 : 0;
+                this.detectionInFlight = false; // 防止检测队列堆积
 
                 // 性能监控
                 this.frameCount = 0;
@@ -1367,12 +1368,12 @@
 
                 const blobUrlMap = {};
                 const expectedSizes = {
-                    'hand_landmark_lite.tflite': 1.98,
-                    'hands.binarypb': 0.01,
-                    'hands_solution_packed_assets.data': 4.13,
-                    'hands_solution_packed_assets_loader.js': 0.01,
-                    'hands_solution_simd_wasm_bin.js': 0.26,
-                    'hands_solution_simd_wasm_bin.wasm': 5.75
+                    'hand_landmark_lite.tflite': 1.98 * 1048576,
+                    'hands.binarypb': 0.01 * 1048576,
+                    'hands_solution_packed_assets.data': 4.13 * 1048576,
+                    'hands_solution_packed_assets_loader.js': 0.01 * 1048576,
+                    'hands_solution_simd_wasm_bin.js': 0.26 * 1048576,
+                    'hands_solution_simd_wasm_bin.wasm': 5.75 * 1048576
                 };
 
                 const CACHE_NAME = 'fruitninja-models-v1';
@@ -1410,6 +1411,9 @@
                         throw new Error(`${label} 获取失败 (${res.status})`);
                     }
                     const total = Number(res.headers.get('content-length')) || 0;
+                    const expectedBytes = expectedSizes[file] || 0;
+                    // 优先使用预期大小（content-length 可能是 gzip 后的大小，不准确）
+                    const referenceTotal = expectedBytes > 0 ? expectedBytes : total;
                     const reader = res.body.getReader();
                     let loaded = 0;
                     const chunks = [];
@@ -1419,13 +1423,10 @@
                         chunks.push(value);
                         loaded += value.byteLength;
                         const loadedMB = (loaded / 1048576).toFixed(2);
-                        const expectedMB = expectedSizes[file];
-                        if (total) {
-                            const pct = (loaded / total * 100).toFixed(1);
-                            const totalMB = (total / 1048576).toFixed(2);
+                        if (referenceTotal) {
+                            const pct = Math.min(100, (loaded / referenceTotal * 100)).toFixed(1);
+                            const totalMB = (referenceTotal / 1048576).toFixed(2);
                             updateStatus(`${label}: ${pct}% (${loadedMB}MB/${totalMB}MB)`, file);
-                        } else if (expectedMB) {
-                            updateStatus(`${label}: ${loadedMB}MB / ~${expectedMB.toFixed(2)}MB`, file);
                         } else {
                             updateStatus(`${label}: ${loadedMB}MB`, file);
                         }
@@ -1534,8 +1535,10 @@
                     this.state = 'MENU';
                     updateStatus("系统就绪");
 
-                    // Start unified loop (replaces separate processVideo + loop)
+                    // 启动渲染循环（60fps）
                     requestAnimationFrame((ts) => this.unifiedLoop(ts));
+                    // 启动独立检测循环（与渲染解耦）
+                    this.detectionLoop();
                 } catch (e) {
                     console.error("Init error:", e);
                     updateStatus("初始化失败");
@@ -1578,10 +1581,10 @@
                 const frameStart = performance.now();
                 const now = timestamp || Date.now();
 
-                // Delta time：归一化到 60fps (dt = 1/60 ≈ 0.0167s)
+                // Delta time：归一化到 60fps 基准 (任何帧率下游戏速度一致)
                 if (this.lastTimestamp > 0) {
-                    this.deltaTime = Math.min((now - this.lastTimestamp) / 1000, 0.05); // 上限50ms防爆炸
-                    this.timeScale = this.deltaTime * 60; // 60fps 归一化因子
+                    this.deltaTime = Math.min((now - this.lastTimestamp) / 1000, 0.05);
+                    this.timeScale = this.deltaTime * 60;
                 } else {
                     this.deltaTime = 1 / 60;
                     this.timeScale = 1;
@@ -1589,25 +1592,13 @@
                 this.lastTimestamp = now;
                 this.lastFrameTime = frameStart;
 
-                // === 时间片 1: 手势检测 (每 detectionInterval ms 一次) ===
-                if (now - this.lastDetectionTime >= this.detectionInterval) {
-                    this.lastDetectionTime = now;
-                    if (this.video.readyState >= 2) {
-                        try {
-                            this.hands.send({ image: this.video });
-                        } catch (e) {
-                            console.error("MediaPipe processing error:", e);
-                        }
-                    }
-                }
-
-                // === 时间片 1.5: 低频视频绘制到离屏 Canvas ===
+                // === 低频视频绘制到离屏 Canvas ===
                 if (now - this.lastVideoDrawTime >= this.videoDrawInterval) {
                     this.lastVideoDrawTime = now;
                     this.drawVideoToOffscreen();
                 }
 
-                // === 时间片 2: 游戏逻辑 ===
+                // === 游戏逻辑 ===
                 if (this.state === 'PLAYING') {
                     this.updatePhysics();
                     this.checkCollisions();
@@ -1615,7 +1606,7 @@
                     this.checkMenuInteraction();
                 }
 
-                // === 时间片 3: 渲染 (保证每帧) ===
+                // === 渲染 (保证每帧) ===
                 this.draw();
 
                 // === 帧率监控 ===
@@ -1657,8 +1648,8 @@
             }
 
             onHandsResults(results) {
-                // 镜像处理：MediaPipe输出的坐标是归一化的，且通常是镜像的
-                // 我们在绘制时会翻转Canvas，所以这里直接保存数据
+                this.detectionInFlight = false; // 检测完成，允许下一次
+
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                     this.handLandmarks = results.multiHandLandmarks;
                     this.detectGestures(results.multiHandLandmarks, results.multiHandedness);
@@ -1667,6 +1658,40 @@
                     this.gestureState = 'NONE';
                     this.ui.status.innerText = "未检测到手";
                 }
+            }
+
+            // 独立检测循环：与渲染完全解耦，根据帧率动态调整
+            detectionLoop() {
+                if (this.state === 'LOADING') {
+                    setTimeout(() => this.detectionLoop(), 500);
+                    return;
+                }
+
+                const now = Date.now();
+                const elapsed = now - this.lastDetectionTime;
+
+                // 动态调整检测间隔：帧率低时自动降频
+                let interval = this.detectionInterval;
+                if (this.isMobile && this.fps > 0) {
+                    if (this.fps < 20) interval = Math.max(interval, 400);
+                    else if (this.fps < 30) interval = Math.max(interval, 300);
+                    else if (this.fps < 45) interval = Math.max(interval, 250);
+                }
+
+                if (elapsed >= interval && !this.detectionInFlight && this.video.readyState >= 2) {
+                    this.lastDetectionTime = now;
+                    this.detectionInFlight = true;
+                    try {
+                        this.hands.send({ image: this.video });
+                    } catch (e) {
+                        this.detectionInFlight = false;
+                        console.error("MediaPipe processing error:", e);
+                    }
+                }
+
+                // 检测循环频率：比检测间隔快一点，确保及时触发
+                const loopInterval = Math.max(50, interval / 2);
+                setTimeout(() => this.detectionLoop(), loopInterval);
             }
 
             detectGestures(landmarksList, handedness) {
@@ -2041,7 +2066,7 @@
                 const ts = this.timeScale * this.timeSlowFactor;
 
                 if (this.doubleScoreTimer > 0) {
-                    this.doubleScoreTimer--;
+                    this.doubleScoreTimer -= ts;
                 }
 
                 // 难度增加
@@ -2054,7 +2079,7 @@
                 this.refreshTimeDisplay();
 
                 // 生成水果
-                this.spawnTimer++;
+                this.spawnTimer += ts;
                 const currentSpawnRate = Math.max(this.spawnRateFloor, this.spawnRateInitial - (this.difficultyMultiplier * 6));
                 if (this.spawnTimer > currentSpawnRate && this.fruits.length < this.maxFruits) {
                     this.spawnFruit();
@@ -2097,7 +2122,7 @@
                     p.x += p.vx * ts;
                     p.y += p.vy * ts;
                     p.vy += CONFIG.GRAVITY * 0.5 * ts;
-                    p.life--;
+                    p.life -= ts;
                     if (p.life <= 0) this.particles.splice(i, 1);
                 }
 
@@ -2107,7 +2132,7 @@
                 }
                 for (let i = this.splatters.length - 1; i >= 0; i--) {
                     let s = this.splatters[i];
-                    s.life--;
+                    s.life -= ts;
                     if (s.style === 'BLOB' || s.style === 'SPLASH') {
                         s.y += 0.2 * (s.size / 50) * ts;
                     }
@@ -2118,15 +2143,16 @@
                 for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
                     let t = this.floatingTexts[i];
                     t.y += t.vy * ts;
-                    t.life--;
+                    t.life -= ts;
                     t.scale += 0.01 * ts;
                     if (t.life <= 0) this.floatingTexts.splice(i, 1);
                 }
 
-                // 更新刀光 (遍历所有轨迹)
-                const maxTrail = this.bladeTrailLength || CONFIG.BLADE_LIFETIME;
+                // 更新刀光 (基于时间裁剪，帧率无关)
+                const trailLifetime = (this.bladeTrailLength || CONFIG.BLADE_LIFETIME) * (1000 / 60);
+                const trailNow = Date.now();
                 for (let i = 0; i < this.bladeTrails.length; i++) {
-                    if (this.bladeTrails[i].length > maxTrail) {
+                    while (this.bladeTrails[i].length > 0 && (trailNow - this.bladeTrails[i][0].time) > trailLifetime) {
                         this.bladeTrails[i].shift();
                     }
                 }
@@ -2236,7 +2262,7 @@
                     }
                 } else if (fruit.type === 'ice') {
                     this.playSliceSound(fruit, cutSpeed);
-                    this.timeSlowTimer = 300; // 5秒慢动作
+                    this.timeSlowTimer = 5000;
                     this.createFloatingText(fruit.x, fruit.y, "Freeze!", "#0ff");
                 } else {
                     this.playSliceSound(fruit, cutSpeed);
@@ -2274,7 +2300,7 @@
                     if (this.slicedFruitsTotal % 10 === 0) {
                         const effectType = Math.random() > 0.5 ? 'SLOW' : 'DOUBLE';
                         if (effectType === 'SLOW') {
-                            this.timeSlowTimer = 300; // 5 seconds
+                            this.timeSlowTimer = 5000;
                             this.createFloatingText(this.width / 2, this.height / 3, "BONUS: TIME SLOW!", "#00ffff");
                         } else {
                             this.doubleScoreTimer = 300; // 5 seconds
@@ -2840,9 +2866,9 @@
                     console.log(`[Performance] 降低溅射上限至 ${this.maxSplatters}`);
                 }
 
-                // 增加检测间隔（最大300ms）
-                if (this.detectionInterval < 300) {
-                    this.detectionInterval += 20;
+                // 增加检测间隔（最大500ms）
+                if (this.detectionInterval < 500) {
+                    this.detectionInterval += 30;
                     console.log(`[Performance] 增加检测间隔至 ${this.detectionInterval}ms`);
                 }
 
