@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bosch · Prado · Pre Material</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #f3efe6;
+  color: #3f3a33;
+  font-family: 'Inter', 'Noto Serif SC', sans-serif;
+  line-height: 1.6;
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ========== Header ========== */
+.header {
+  text-align: center;
+  margin-bottom: 60px;
+  padding: 40px 20px;
+  border-bottom: 1px solid #d8cfc0;
+}
+.header h1 {
+  font-family: 'Playfair Display', 'Noto Serif SC', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #2f2a25;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.header .sub {
+  color: #7e7366;
+  font-size: 1rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ========== Section Title ========== */
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  color: #6b5f52;
+  margin: 50px 0 24px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #d8cfc0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-title .num {
+  background: #7f8c6a;
+  color: #fffaf0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ========== Slide Cards ========== */
+.slide-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+.slide-grid.full { grid-template-columns: 1fr; max-width: 800px; margin: 0 auto 20px; }
+
+@media (max-width: 860px) {
+  .slide-grid { grid-template-columns: 1fr; }
+  .slide-grid.full { max-width: 100%; }
+}
+
+.slide-card {
+  background: linear-gradient(145deg, #fffaf3, #f7f1e7);
+  border: 1px solid #ded3c3;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+.slide-card:hover { transform: translateY(-2px); }
+
+.slide-label {
+  background: #ece4d8;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  color: #7a6c5b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid #ded3c3;
+}
+
+/* ---- Slide 1 (Title) ---- */
+.slide-1 {
+  padding: 35px;
+  text-align: center;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.painting-frame {
+  background: #eee7d9;
+  border: 1px solid #d7cbbb;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 24px;
+  position: relative;
+}
+.painting-frame .three-panels {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 3px;
+  height: 140px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.panel-left { background: linear-gradient(135deg, #7da57a, #a9c7a0); }
+.panel-center { background: linear-gradient(135deg, #d3b174, #ead8b5, #c9a46a); }
+.panel-right { background: linear-gradient(135deg, #a76b6b, #c99a9a, #8f5a5a); }
+
+.painting-frame .overlay-label {
+  position: absolute;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 250, 240, 0.85);
+  color: #6b5f52;
+  font-size: 0.7rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.1em;
+}
+
+.slide-1 h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: #2f2a25;
+  margin-bottom: 4px;
+  font-style: italic;
+}
+.slide-1 h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: #5d4f43;
+  font-weight: 400;
+  margin-bottom: 16px;
+}
+.slide-1 .meta {
+  font-size: 0.8rem;
+  color: #8a7d6d;
+  margin-bottom: 4px;
+}
+.slide-1 .museum {
+  font-size: 0.85rem;
+  color: #8a7d6d;
+  margin-top: 12px;
+  letter-spacing: 0.05em;
+}
+.slide-1 .tagline {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  color: #8b7457;
+  margin-top: 16px;
+  font-style: italic;
+  border-top: 1px solid #d8cfc0;
+  padding-top: 16px;
+}
+
+/* ---- Slide 2-5 (Triptych Panels) ---- */
+.slide-panel {
+  padding: 28px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.panel-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.panel-dot.eden { background: #7da57a; }
+.panel-dot.earth { background: #c9a46a; }
+.panel-dot.hell { background: #a76b6b; }
+.panel-dot.synth { background: #8f8a7a; }
+
+.panel-header .label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #5f564a;
+  letter-spacing: 0.05em;
+}
+.panel-header .cn-label {
+  font-size: 0.75rem;
+  color: #8a7d6d;
+  margin-left: 4px;
+}
+
+.panel-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.panel-detail-item {
+  display: grid;
+  grid-template-columns: 6px 1fr;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f7f2ea;
+  border-left: 3px solid #d9ccbc;
+}
+.panel-detail-item .marker {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+.marker.eden-dot { background: #8db58d; }
+.marker.earth-dot { background: #d3b174; }
+.marker.hell-dot { background: #b06a6a; }
+.marker.synth-dot { background: #9b937d; }
+
+.panel-detail-item .en-desc {
+  font-size: 0.82rem;
+  color: #443e37;
+  line-height: 1.5;
+}
+.panel-detail-item .cn-desc {
+  font-size: 0.72rem;
+  color: #8a7d6d;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.panel-tag {
+  margin-top: 16px;
+  font-size: 0.65rem;
+  color: #8a7d6d;
+  text-align: right;
+  font-style: italic;
+  border-top: 1px solid #d8cfc0;
+  padding-top: 12px;
+}
+
+/* ---- Slide 5 (Table + Synthesis) ---- */
+.slide-5-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .slide-5-content { grid-template-columns: 1fr; }
+}
+
+.compare-side {
+  border-left: 1px solid #d8cfc0;
+  padding-left: 20px;
+}
+
+.compare-side h4 {
+  font-size: 0.85rem;
+  color: #5d4f43;
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+}
+
+.compare-table {
+  width: 100%;
+  font-size: 0.75rem;
+}
+.compare-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid #e8dfd1;
+  vertical-align: top;
+}
+.compare-table .label-cell {
+  color: #6b5f52;
+  font-weight: 500;
+  width: 55px;
+}
+.compare-table .ita { color: #6f8f77; }
+.compare-table .north { color: #b48a52; }
+.compare-table .cn-cell {
+  color: #8a7d6d;
+  font-size: 0.65rem;
+}
+
+.quote-line {
+  margin-top: 14px;
+  border-top: 1px solid #d8cfc0;
+  padding-top: 12px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: #8b7457;
+  text-align: center;
+}
+
+.synthesis-box {
+  margin-top: 18px;
+  background: rgba(127, 140, 106, 0.08);
+  border: 1px solid #d6cbbb;
+  border-radius: 8px;
+  padding: 14px;
+}
+.synthesis-box .en-synth {
+  font-size: 0.8rem;
+  color: #7a6b55;
+  font-weight: 500;
+  font-style: italic;
+}
+.synthesis-box .cn-synth {
+  font-size: 0.72rem;
+  color: #8a7d6d;
+  margin-top: 6px;
+}
+
+/* ========== Script Section ========== */
+.script-box {
+  background: #fffaf3;
+  border: 1px solid #ded3c3;
+  border-radius: 12px;
+  padding: 28px;
+  line-height: 1.8;
+  margin-bottom: 30px;
+}
+
+.script-box .stage {
+  display: inline-block;
+  background: #ece4d8;
+  color: #7a6c5b;
+  font-size: 0.7rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+}
+
+.script-box p {
+  margin-bottom: 14px;
+  font-size: 0.92rem;
+  color: #443e37;
+}
+
+.script-box .highlight {
+  color: #9b7340;
+  font-weight: 500;
+}
+
+.script-box .cn-line {
+  color: #8a7d6d;
+  font-size: 0.78rem;
+  margin-bottom: 14px;
+  padding-left: 16px;
+  border-left: 3px solid #d8cfc0;
+  font-style: italic;
+}
+
+.timing-tag {
+  display: inline-block;
+  background: #ece4d8;
+  color: #7a6c5b;
+  font-size: 0.65rem;
+  padding: 1px 8px;
+  border-radius: 8px;
+  margin-right: 6px;
+}
+
+/* ========== Key Points ========== */
+.key-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  font-size: 0.85rem;
+}
+.key-table th {
+  text-align: left;
+  color: #5d4f43;
+  padding: 8px 12px;
+  border-bottom: 1px solid #d8cfc0;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.key-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e8dfd1;
+  color: #443e37;
+}
+.key-table tr:hover td { background: #faf5ec; }
+.key-table .col1 { color: #6b5f52; font-weight: 500; width: 100px; }
+.key-table .col2 { color: #443e37; }
+
+/* ========== Q&A ========== */
+.qa-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.qa-item {
+  background: #fffaf3;
+  border: 1px solid #ded3c3;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.qa-q {
+  padding: 14px 20px;
+  background: #f1eadf;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #5d4f43;
+  border-bottom: 1px solid #ded3c3;
+}
+.qa-a {
+  padding: 14px 20px;
+  font-size: 0.88rem;
+  color: #473f37;
+  line-height: 1.7;
+}
+.qa-a .ready-answer {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: #8a7d6d;
+  font-style: italic;
+  border-top: 1px dashed #d8cfc0;
+  padding-top: 8px;
+}
+
+/* ========== Tip Box ========== */
+.tip-box {
+  background: linear-gradient(135deg, rgba(127,140,106,0.08), rgba(127,140,106,0.03));
+  border: 1px solid #d8cfc0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-top: 30px;
+}
+.tip-box h4 { color: #7a6c5b; margin-bottom: 8px; font-size: 0.9rem; }
+.tip-box p { font-size: 0.85rem; color: #8a7d6d; line-height: 1.6; }
+
+.footer {
+  text-align: center;
+  margin-top: 60px;
+  padding: 20px;
+  border-top: 1px solid #d8cfc0;
+  color: #7a6c5b;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>The Garden of Earthly Delights</h1>
+  <div class="sub">人间乐园 · Museo del Prado · Pre Material</div>
+</div>
+
+<!-- ========== SECTION 1: PPT SLIDES ========== -->
+<div class="section-title"><span class="num">1</span> PPT 设计 · 5页渐进布局</div>
+
+<!-- Slide 1: Title -->
+<div class="slide-grid">
+  <div class="slide-card">
+    <div class="slide-label">Slide 1 · 封面</div>
+    <div class="slide-1">
+      <div class="painting-frame">
+        <div class="three-panels">
+          <div class="panel-left"></div>
+          <div class="panel-center"></div>
+          <div class="panel-right"></div>
+        </div>
+        <div class="overlay-label">Garden of Earthly Delights — full triptych</div>
+      </div>
+      <h2>The Garden of Earthly Delights</h2>
+      <h3>Hieronymus Bosch, c. 1490–1500<br><span style="font-size:0.7rem; color:#6a6458;">希罗尼穆斯·博斯，约1490-1500年</span></h3>
+      <div class="meta">Oil on oak panels · 220 × 389 cm · Triptych <span style="color:#5a5a4a;">| 橡木板油画 · 三联画</span></div>
+      <div class="museum">★ Museo del Prado, Madrid, Spain <span style="color:#5a5a4a;">| 西班牙马德里普拉多博物馆</span></div>
+      <div class="tagline">"The Northern Renaissance's Most Mysterious Masterpiece"</div>
+    </div>
+  </div>
+
+  <!-- Slide 2: LEFT · Eden -->
+  <div class="slide-card">
+    <div class="slide-label">Slide 2 · 左翼揭示</div>
+    <div class="slide-panel">
+      <div class="panel-header">
+        <div class="panel-dot eden"></div>
+        <span class="label">LEFT · Eden</span>
+        <span class="cn-label">左翼 · 伊甸园</span>
+      </div>
+      <div class="panel-detail-list">
+        <div class="panel-detail-item">
+          <div class="marker eden-dot"></div>
+          <div>
+            <div class="en-desc"><b>Christ-like God</b> presents Eve to Adam — unique medieval iconography</div>
+            <div class="cn-desc">基督形态的上帝将夏娃引荐给亚当——博斯独有的圣像学，同时代无人如此表现</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker eden-dot"></div>
+          <div>
+            <div class="en-desc"><b>The pink Fountain of Life</b> — organic, almost alien, not any classical fountain you've seen</div>
+            <div class="cn-desc">粉色的生命之泉——有机形态、近乎异星生物般，完全不同于任何古典喷泉</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker eden-dot"></div>
+          <div>
+            <div class="en-desc"><b>Harmony already cracking</b> — cat stalks a mouse, lion devours prey. Paradise isn't perfect</div>
+            <div class="cn-desc">和谐已在破裂——猫盯老鼠、狮子撕咬猎物。乐园并不完美，博斯暗示了堕落的前奏</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker eden-dot"></div>
+          <div>
+            <div class="en-desc"><b>Birds everywhere</b> — Bosch's lifelong obsession with birds begins here, in Eden</div>
+            <div class="cn-desc">群鸟遍布——博斯对鸟类的执念，从伊甸园就已经开始了</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-tag">只有博斯的伊甸园：上帝是基督、泉水像生物、乐园里有捕食者</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 3: CENTER · Earth -->
+<div class="slide-grid">
+  <div class="slide-card">
+    <div class="slide-label">Slide 3 · 中翼揭示</div>
+    <div class="slide-panel">
+      <div class="panel-header">
+        <div class="panel-dot earth"></div>
+        <span class="label">CENTER · Earth</span>
+        <span class="cn-label">中翼 · 人间</span>
+      </div>
+      <div class="panel-detail-list">
+        <div class="panel-detail-item">
+          <div class="marker earth-dot"></div>
+          <div>
+            <div class="en-desc"><b>Over 500 naked figures</b> — unjudged, unashamed. Humanity before the Fall</div>
+            <div class="cn-desc">五百多个裸体人物——无人评判、无人羞耻。这是堕落之前的人性全景</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker earth-dot"></div>
+          <div>
+            <div class="en-desc"><b>Giant birds, transparent spheres, people inside strawberries</b> — Bosch invents a visual language that doesn't exist anywhere else</div>
+            <div class="cn-desc">巨型怪鸟、透明球体、钻进草莓里的人——博斯发明了一套只属于他的视觉语言</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker earth-dot"></div>
+          <div>
+            <div class="en-desc"><b>Alchemical symbolism everywhere</b> — the quest to transcend human limits, rendered in paint</div>
+            <div class="cn-desc">炼金术符号遍布画面——人类试图超越自身极限的执念，被博斯画成了具象</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker earth-dot"></div>
+          <div>
+            <div class="en-desc"><b>Sensory overload ≠ pure evil</b> — Bosch captures the <em>full spectrum</em> of human desire, not just sin</div>
+            <div class="cn-desc">感官狂欢 ≠ 纯粹的恶——博斯捕捉的是人性欲望的<b>全光谱</b>，而不只是罪</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-tag">只有博斯的人间：500人、异界视觉、炼金术隐喻、不做道德审判</div>
+    </div>
+  </div>
+
+  <!-- Slide 4: RIGHT · Hell -->
+  <div class="slide-card">
+    <div class="slide-label">Slide 4 · 右翼揭示</div>
+    <div class="slide-panel">
+      <div class="panel-header">
+        <div class="panel-dot hell"></div>
+        <span class="label">RIGHT · Hell</span>
+        <span class="cn-label">右翼 · 地狱</span>
+      </div>
+      <div class="panel-detail-list">
+        <div class="panel-detail-item">
+          <div class="marker hell-dot"></div>
+          <div>
+            <div class="en-desc"><b>Musical instruments as torture devices</b> — a harp becomes a rack, a flute impales. Bosch's most surreal invention</div>
+            <div class="cn-desc">乐器变成刑具——竖琴成了拷问架，长笛刺穿人体。博斯最超现实的创造</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker hell-dot"></div>
+          <div>
+            <div class="en-desc"><b>Bird-demon devours souls → defecates them into a pit</b>. The digestive cycle of damnation</div>
+            <div class="cn-desc">鸟头恶魔吞食灵魂 → 排入下方的粪坑。博斯把"万劫不复"画成了一套消化系统</div>
+          </div>
+        </div>
+        <div class="panel-detail-item">
+          <div class="marker hell-dot"></div>
+          <div>
+            <div class="en-desc"><b>A pig dressed as a nun, knights attacked by demons</b> — the entire hierarchy of the world is inverted</div>
+            <div class="cn-desc">猪穿修女服、骑士被妖魔围攻——整个世界的等级秩序被彻底颠倒</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-tag">只有博斯的地狱：乐器即刑具、树人是图腾、等级被颠倒、消化即永罚</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 5: Table + Synthesis -->
+<div class="slide-grid">
+  <div class="slide-card" style="grid-column: 1 / -1;">
+    <div class="slide-label">Slide 5 · 对比表格 + 收束</div>
+    <div class="slide-panel">
+      <div class="panel-header">
+        <div class="panel-dot synth"></div>
+        <span class="label">Northern vs. Italian Renaissance</span>
+        <span class="cn-label">北方 vs 意大利文艺复兴</span>
+      </div>
+      <div class="slide-5-content">
+        <!-- Left: Bridge from panels to principles -->
+        <div>
+          <div style="font-size:0.75rem; color:#908a7e; margin-bottom:10px;">🔗 从画板到原理 · From Panels to Principles</div>
+          <div class="panel-detail-list">
+            <div class="panel-detail-item">
+              <div class="marker eden-dot"></div>
+              <div>
+                <div class="en-desc">Eden's cracked harmony → <b>Ideal: Moral warning</b></div>
+                <div class="cn-desc">伊甸园裂痕 → 理想 = 道德警示而非和谐比例</div>
+              </div>
+            </div>
+            <div class="panel-detail-item">
+              <div class="marker earth-dot"></div>
+              <div>
+                <div class="en-desc">500 figures, no judgment → <b>Focus: Soul & sin</b>, not ideal form</div>
+                <div class="cn-desc">500人不做审判 → 焦点 = 灵魂与罪恶，而非完美人体</div>
+              </div>
+            </div>
+            <div class="panel-detail-item">
+              <div class="marker hell-dot"></div>
+              <div>
+                <div class="en-desc">Tree-Man, bird-demon → <b>Style: Grotesque detail & symbol</b></div>
+                <div class="cn-desc">树人、鸟魔 → 风格 = 怪诞细节与象征，而非理想美</div>
+              </div>
+            </div>
+          </div>
+          <!-- Synthesis -->
+          <div class="synthesis-box" style="margin-top:16px;">
+            <div class="en-synth">"Bosch doesn't show us the ideal human.<br>He shows us the FULL human — innocent, desiring, and accountable.<br><b>That's his universal brilliance.</b>"</div>
+            <div class="cn-synth">博斯不画理想中的人。他画<b>完整</b>的人——有纯真、有欲望、也有后果。<br>这就是他的人性光辉，跨越500年仍然普世。</div>
+          </div>
+        </div>
+
+        <!-- Right: Table -->
+        <div class="compare-side">
+          <h4>对比表 · Comparison</h4>
+          <table class="compare-table">
+            <tr>
+              <td class="label-cell">Ideal<br><span class="cn-cell">理想</span></td>
+              <td class="north">Moral warning<br><span class="cn-cell">道德警示</span></td>
+              <td class="ita">Harmony & proportion<br><span class="cn-cell">和谐比例</span></td>
+            </tr>
+            <tr>
+              <td class="label-cell">Focus<br><span class="cn-cell">焦点</span></td>
+              <td class="north">Soul & sin<br><span class="cn-cell">灵魂与罪恶</span></td>
+              <td class="ita">Human form & nature<br><span class="cn-cell">人体与自然</span></td>
+            </tr>
+            <tr>
+              <td class="label-cell">Style<br><span class="cn-cell">风格</span></td>
+              <td class="north">Grotesque, detail, symbol<br><span class="cn-cell">怪诞·细节·象征</span></td>
+              <td class="ita">Ideal beauty, perspective<br><span class="cn-cell">理想美·透视</span></td>
+            </tr>
+            <tr>
+              <td class="label-cell">Rep.<br><span class="cn-cell">代表</span></td>
+              <td class="north">Hieronymus Bosch<br><span class="cn-cell">博斯</span></td>
+              <td class="ita">da Vinci / Raphael<br><span class="cn-cell">达·芬奇/拉斐尔</span></td>
+            </tr>
+          </table>
+          <div class="quote-line">"Italians perfected the form · Bosch perfected the conscience"</div>
+          <div style="text-align:center; font-size:0.65rem; color:#5a5a4a; margin-top:6px;">意大利人完善了形体 · 博斯完善了良知</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SECTION 2: SCRIPT ========== -->
+<div class="section-title"><span class="num">2</span> Pre 手稿 · 2分钟 (≈300词) <span style="font-size:0.7rem; color:#6a6458;">逐句中英对照</span></div>
+
+<div class="script-box">
+
+  <!-- Opening -->
+  <div class="stage">🎬 Opening · 开场 <span class="timing-tag">⏱ 25s</span></div>
+  <p>Good morning. The second stop on our museum tour is the <b>Museo del Prado</b> in Madrid — and today I'm going to show you something that doesn't look like anything else in the Renaissance.</p>
+  <div class="cn-line">各位好。我们博物馆之旅的第二站是马德里普拉多博物馆——今天我要展示一件在整个文艺复兴中都找不到同类的东西。</div>
+
+  <p>This is <span class="highlight">The Garden of Earthly Delights</span> by Hieronymus Bosch — a triptych nearly four meters wide, painted around 1490. It unfolds from left to right: <b>Eden → Earth → Hell</b>. But here's the thing — every triptych of the time told this story. What makes Bosch different is <em>how</em> he tells it.</p>
+  <div class="cn-line">这是博斯的《人间乐园》——近四米宽的三联画。从左到右展开：伊甸园→人间→地狱。但关键是——当时所有三联画都讲这个故事。博斯的不同之处在于他<b>怎么</b>讲。</div>
+
+  <!-- Body: Three panels with Bosch-specific details -->
+  <div class="stage">📖 Left Panel · 左翼 <span class="timing-tag">⏱ 20s</span></div>
+  <p>Look at the <span class="highlight">left panel — Eden.</span> In most Eden paintings, God is an old man with a beard. Here, God appears as a <b>Christ-like young figure</b>, holding Eve's wrist — an iconographic choice unique to Bosch. You'll also notice the <b>pink Fountain of Life</b> — not a classical marble structure, but something organic, almost alive. And even in paradise, a <b>cat stalks a mouse</b>. Bosch won't let us believe Eden was ever perfect.</p>
+  <div class="cn-line">看左翼——伊甸园。大多数伊甸园画里的上帝是白胡子老人。这里的上帝却是<b>基督形态的年轻人</b>，握着夏娃的手腕——只有博斯这样画。你还会看到<b>粉色生命之泉</b>——不是古典大理石建筑，而是有机的、近乎活着的生物形态。即使在乐园里，<b>猫在盯老鼠</b>。博斯不让我们相信伊甸园曾经完美。</div>
+
+  <div class="stage">📖 Center Panel · 中翼 <span class="timing-tag">⏱ 25s</span></div>
+  <p>Now the <span class="highlight">center panel</span> — and this is where Bosch goes somewhere no other artist dared. <b>Over five hundred</b> naked figures — not tortured, not judged, just <em>being</em>. They bathe, dance, ride giant birds, sit inside transparent spheres and oversized strawberries. It's <b>pure sensory overload</b>. But notice: there's no devil here yet. Bosch paints the complete spectrum of human desire — and he doesn't condemn it. He simply <b>shows it</b>. That's what makes it so unsettling — and so honest.</p>
+  <div class="cn-line">中翼——博斯进入了其他画家不敢涉足的领域。<b>五百多个</b>裸体人物——不被折磨、不被审判，只是<b>存在着</b>。他们沐浴、跳舞、骑巨型怪鸟、坐进透明球体和巨大草莓里。这是<b>纯粹的感官狂欢</b>。但注意：这里还没有魔鬼。博斯画的是人性欲望的完整光谱——而且他不做道德宣判，他只是<b>呈现</b>。这恰恰是它最让人不安、也最诚实的地方。</div>
+
+  <div class="stage">📖 Right Panel · 右翼 <span class="timing-tag">⏱ 20s</span></div>
+  <p>Then the <span class="highlight">right panel: Hell.</span> But not the generic hell of flames and pitchforks. Bosch gives us a hell of <b>musical instruments turned into torture devices</b> — a harp rack, a piercing flute. A <b>bird-headed demon eats souls and defecates them into a pit</b>. A <b>pig dresses as a nun</b>. In Bosch's hell, the entire moral and social hierarchy is inverted. Everything we trust becomes a trap.</p>
+  <div class="cn-line">然后是右翼——地狱。但不是那种火焰加叉子的通用地狱。博斯的地狱里，<b>乐器变成了刑具</b>——竖琴成了拷问架，长笛穿透人体。<b>鸟头恶魔吞食灵魂后直接排入粪坑</b>。<b>猪穿上修女服</b>。在博斯的地狱里，整个道德和社会秩序都被颠倒了。我们信任的一切都变成了陷阱。</div>
+
+  <!-- Contrast: tying table into speech -->
+  <div class="stage">⚡ Northern vs. Italian · 北方 vs 意大利 <span class="timing-tag">⏱ 25s</span></div>
+  <p>Now here's the key contrast. If we compare Bosch to his Italian contemporaries — Leonardo, Raphael — we see two radically different Renaissances. The Italians pursued the <span class="highlight">ideal human form</span>: perfect proportion, classical harmony. Bosch pursued the <span class="highlight">human soul</span>: its desires, its fears, its moral consequences. The Italians refined <b>beauty</b>. Bosch refined <b>conscience</b>. Same century, two completely different answers to the same question: what does it mean to be human?</p>
+  <div class="cn-line">这里是核心对比。如果把博斯和他的意大利同时代人——达·芬奇、拉斐尔——比较，我们看到两个截然不同的文艺复兴。意大利人追求<b>理想的人体形态</b>：完美比例、古典和谐。博斯追求<b>人的灵魂</b>：欲望、恐惧、道德后果。意大利人精炼了<b>美</b>，博斯精炼了<b>良知</b>。同一个世纪，对同一个问题——「人是什么」——给出了两种完全不同的答案。</div>
+
+  <!-- Closing: 人性光辉 -->
+  <div class="stage">🎯 Closing · 收束 — 人性光辉的普遍性 <span class="timing-tag">⏱ 20s</span></div>
+  <p>So here's what I think makes Bosch truly great — and why we're still talking about him five hundred years later. He doesn't paint the human being we <em>wish</em> we were. He paints the human being we <em>actually are</em>: innocent, desiring, flawed, and ultimately accountable. <b>The Italians gave us a mirror of perfection. Bosch gave us a mirror of the soul.</b> And that — the courage to show humanity's <b>full spectrum</b> — is, I believe, a kind of brilliance that never goes out of date. Thank you.</p>
+  <div class="cn-line">我认为这就是博斯真正伟大的地方——也是五百年后我们还在谈论他的原因。他不画我们希望自己成为的那种人。他画我们<b>实际</b>是的那种人：纯真、有欲望、有缺陷，最终要为自己的选择负责。<b>意大利人给了我们一面完美的镜子，博斯给了我们一面灵魂的镜子。</b>而这种——敢于呈现人性<b>全光谱</b>的勇气——我相信，是一种永远不会过时的光辉。谢谢。</div>
+
+</div>
+
+<!-- ========== SECTION 3: KEY POINTS ========== -->
+<div class="section-title"><span class="num">3</span> 重点速记卡 · Cheat Sheet</div>
+<table class="key-table">
+  <tr>
+    <th>要素 Key</th>
+    <th>英语</th>
+    <th>中文</th>
+  </tr>
+  <tr>
+    <td class="col1">作品</td>
+    <td class="col2">The Garden of Earthly Delights, Hieronymus Bosch</td>
+    <td class="col2">《人间乐园》，希罗尼穆斯·博斯</td>
+  </tr>
+  <tr>
+    <td class="col1">年代</td>
+    <td class="col2">c. 1490–1500（与达·芬奇同时代）</td>
+    <td class="col2">同时代对比：达·芬奇画《最后的晚餐》</td>
+  </tr>
+  <tr>
+    <td class="col1">地点</td>
+    <td class="col2">Museo del Prado, Madrid — 腓力二世收藏</td>
+    <td class="col2">西班牙马德里普拉多博物馆</td>
+  </tr>
+  <tr>
+    <td class="col1">形式</td>
+    <td class="col2">Triptych, oil on oak panels, ~4m wide</td>
+    <td class="col2">三联画，橡木板油画，展开近4米</td>
+  </tr>
+  <tr>
+    <td class="col1">左翼·伊甸</td>
+    <td class="col2">Christ-God, pink Fountain, cracked harmony, birds</td>
+    <td class="col2">基督上帝、粉色生命泉、乐园裂痕、群鸟</td>
+  </tr>
+  <tr>
+    <td class="col1">中翼·人间</td>
+    <td class="col2">500+ figures, giant birds, alchemy, full desire spectrum</td>
+    <td class="col2">500+人、巨鸟、炼金术、欲望全光谱</td>
+  </tr>
+  <tr>
+    <td class="col1">右翼·地狱</td>
+    <td class="col2">Instruments as torture, Tree-Man, bird-demon, inverted order</td>
+    <td class="col2">乐器刑具、树人、鸟魔、等级颠倒</td>
+  </tr>
+  <tr>
+    <td class="col1">核心对比</td>
+    <td class="col2">Italian = ideal form · Northern = moral soul</td>
+    <td class="col2">意大利=理想形体 · 北方=道德灵魂</td>
+  </tr>
+  <tr>
+    <td class="col1">金句</td>
+    <td class="col2" style="color:#d4a86a;">"Italians perfected the form · Bosch perfected the conscience"</td>
+    <td class="col2">「意大利人完善了形体，博斯完善了良知」</td>
+  </tr>
+  <tr>
+    <td class="col1">主题收束</td>
+    <td class="col2" style="color:#d4a86a;">Full spectrum of humanity = universal brilliance</td>
+    <td class="col2">人性的全光谱 = 普世的光辉</td>
+  </tr>
+</table>
+
+<!-- ========== SECTION 4: Q&A ========== -->
+<div class="section-title"><span class="num">4</span> Q&A 应对 · 中英双语</div>
+
+<div class="qa-grid">
+
+  <div class="qa-item">
+    <div class="qa-q">Q: Why is a Dutch painting in a Spanish museum? <span style="color:#5a5a4a; font-size:0.7rem;">荷兰画为什么在西班牙？</span></div>
+    <div class="qa-a">
+      Philip II of Spain was a huge fan of Bosch. In the late 16th century, he acquired several of Bosch's works for his personal collection. The Prado inherited that royal collection — which is why it now holds the world's largest collection of Bosch's paintings.
+      <span class="ready-answer">✅ 一句话：西班牙腓力二世狂热收藏 → 王室遗产进普拉多。Philip II's Bosch obsession → royal collection → Prado.</span>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">Q: How is Bosch Renaissance? He looks Medieval. <span style="color:#5a5a4a; font-size:0.7rem;">博斯算文艺复兴吗？看起来很中世纪。</span></div>
+    <div class="qa-a">
+      Fair point. Bosch is a transitional figure — religious themes in a Medieval way, but his <b>oil technique</b> and <b>attention to natural detail</b> push him into the Northern Renaissance. Unlike Italians who revived classical ideals, Northern artists focused on <b>texture, symbolism, and psychological realism</b>. Bosch sits right at that crossroads.
+      <span class="ready-answer">✅ 形式上中世纪，技法上（油画细节/心理写实）是北方文艺复兴典型。Transitional: Medieval themes + Renaissance oil technique + psychological depth.</span>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">Q: What do the giant fruits and strange creatures symbolize? <span style="color:#5a5a4a; font-size:0.7rem;">巨大的水果和怪诞生物象征什么？</span></div>
+    <div class="qa-a">
+      The oversized strawberries and cherries = <b>temporary sensual pleasure</b>. They look delicious but rot fast. The hybrid creatures — half-bird half-fish half-human — represent a world where <b>natural order has broken down</b>. Bosch uses them to ask: what happens when humans abandon moral discipline?
+      <span class="ready-answer">✅ 水果=短暂欢愉（好看但易腐）；杂交生物=自然秩序坍塌。Fruits = fleeting pleasure; hybrids = collapsed moral order.</span>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">Q: Can you compare Bosch to another Prado artist? <span style="color:#5a5a4a; font-size:0.7rem;">能跟普拉多另一位画家对比吗？</span></div>
+    <div class="qa-a">
+      Compare him to <b>Velázquez</b> (17th c., also in the Prado). Velázquez paints the real social world: kings, dwarves, maids of honor, with psychological depth. Bosch paints an <b>imagined moral universe</b>. One looks <b>outward</b> at society; the other looks <b>inward</b> at the soul. The Prado holds both ends of that spectrum.
+      <span class="ready-answer">✅ 博斯=向内看灵魂；委拉斯开兹=向外看社会。普拉多的两极。Bosch = inner moral world; Velázquez = outer social world.</span>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">Q: What's on the closed exterior panels? <span style="color:#5a5a4a; font-size:0.7rem;">三联画外面是什么？</span></div>
+    <div class="qa-a">
+      The exterior shows <b>the creation of the world</b> — a grey, lifeless sphere. The contrast is intentional: closed = cold, empty world before creation. Opened = the vibrant, chaotic world of human choices. It's a visual metaphor: <em>open the painting, open the story of human fall.</em>
+      <span class="ready-answer">✅ 外面=创世之初的荒芜球体；打开=人类的欢愉与堕落。Closed = before humanity; opened = the full human story.</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- TIP -->
+<div class="tip-box">
+  <h4>💡 Q&A 心态 · Mindset Tips</h4>
+  <p>老师问到你没准备的问题时，不要慌。用 <b>"I think…" / "From what I understand…"</b> 开头展示思考过程——比硬憋一个不对的答案、或者直接 "I don't know" 停下来要好得多。老师想看的是你能不能跟问题走，不是背稿。</p>
+  <p style="margin-top:8px;">另外这段稿子自己练几遍。那几个对比句（highlight 部分）是全场高光时刻，说到那里<b>稍微放慢语速、看观众眼睛</b>。结尾的 "full spectrum of humanity" 那一句是整场的 punchline，留一口气再说。</p>
+</div>
+
+<div class="footer">
+  Bosch · Prado · Pre Material · Prepared for English Presentation · 人间乐园 · 人性光辉
+</div>
+
+</body>
+</html>
