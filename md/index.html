@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>uilz · 文章</title>
+  <style>
+    :root{ --bg:#f7f7f8; --card:#ffffff; --muted:#6b7280; --accent:#0f172a; --border:#e6e9ee; }
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; background:var(--bg); color:var(--accent); display:flex; align-items:center; justify-content:center; min-height:100vh}
+    .card{width:min(720px,92%); background:var(--card); padding:40px; border-radius:12px; box-shadow:0 6px 30px rgba(16,24,40,0.06)}
+    h1{margin:0 0 6px;font-size:28px;font-weight:600}
+    p.lead{margin:0 0 28px;color:var(--muted);font-size:15px}
+    ul{list-style:none;padding:0;margin:0}
+    li{padding:14px 0;border-bottom:1px solid var(--border)}
+    li:last-child{border-bottom:none}
+    a.article{display:flex;justify-content:space-between;align-items:baseline;gap:12px;text-decoration:none;color:var(--accent)}
+    a.article:hover .title{color:#0969da}
+    .title{font-weight:600;font-size:16px}
+    .date{color:var(--muted);font-size:13px;white-space:nowrap}
+    .muted{margin-top:28px;color:var(--muted);font-size:13px;text-align:center}
+    .muted a{color:var(--accent);text-decoration:none}
+    .muted a:hover{text-decoration:underline}
+    @media(prefers-color-scheme:dark){
+      :root{--bg:#05060a;--card:#0b1220;--muted:#9aa4b2;--accent:#e6eef8;--border:#1f2937}
+      body{background:linear-gradient(180deg,#03040a,#05060a)}
+      .card{box-shadow:0 8px 40px rgba(2,6,23,0.6)}
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>📄 文章</h1>
+    <p class="lead">长文记录 · 手机友好阅读</p>
+
+    <ul id="article-list">
+      <!-- publish-md.sh 会在此插入文章列表 -->
+      <li><a class="article" href="test-publish.html"><span class="title">🧪 测试管线 — LaTeX + 表格</span><span class="date">2026-06-28</span></a></li>
+    
+      <li><a class="article" href="Thoughts-Memo-知乎存档整理.html"><span class="title">🧠 高效自学与 AI 辅导 — 知乎存档整理</span><span class="date">2025-06</span></a></li>
+    </ul>
+
+    <p class="muted"><a href="../">← 回到首页</a></p>
+  </main>
+</body>
+</html>
