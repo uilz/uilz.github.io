@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --blockquote-border: #d0d7de;
+    --link: #0969da;
+    --heading: #1f2328;
+    --table-header-bg: #f6f8fa;
+    --table-alt-bg: #f8f9fa;
+    --hr: #d0d7de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    padding: 40px;
+    max-width: 840px;
+    margin: 0 auto;
+  }
+  /* ── 标题 ── */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--heading);
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  /* ── 段落 ── */
+  p { margin-bottom: 1em; }
+  /* ── 链接 ── */
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  /* ── 列表 ── */
+  ul, ol { margin-bottom: 1em; padding-left: 2em; }
+  li { margin-bottom: 0.25em; }
+  li > p { margin-bottom: 0.25em; }
+  /* ── 代码 ── */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background-color: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  pre {
+    margin-bottom: 1em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    white-space: pre;
+  }
+  /* ── 引用 ── */
+  blockquote {
+    margin: 0 0 1em;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid var(--blockquote-border);
+  }
+  blockquote p { margin-bottom: 0.5em; }
+  /* ── 表格 ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    background: var(--table-header-bg);
+  }
+  tr:nth-child(even) { background: var(--table-alt-bg); }
+  /* ── 分割线 ── */
+  hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
+  /* ── 图片 ── */
+  img { max-width: 100%; }
+  /* ── 笔记/警告块（兼容 Obsidian callout 样式） ── */
+  .callout {
+    padding: 12px 16px;
+    margin-bottom: 1em;
+    border-left: 4px solid var(--link);
+    background: #f0f6ff;
+    border-radius: 6px;
+  }
+  .callout.warning { border-left-color: #d29922; background: #fff8c5; }
+  .callout.danger  { border-left-color: #cf222e; background: #ffebe9; }
+  .callout strong.callout-title { font-size: 0.9em; text-transform: uppercase; }
+  /* ── KaTeX 公式居中 ── */
+  .katex-display { margin: 0.8em 0; text-align: center; }
+</style>
+
+</head>
+<body>
+<h1
+id="edu-companion苹果果深度分析报告">edu-companion（苹果果）深度分析报告</h1>
+<blockquote>
+<p>原创：苹果果 | 2026-06-28 基于项目源码 (<code>~51K 后端</code> +
+<code>~47K 前端</code> + <code>~5.4K 测试</code>) 全面审查</p>
+</blockquote>
+<hr />
+<h2 id="一项目定位它现在是什么">一、项目定位：它现在是什么？</h2>
+<p><strong>一句话：</strong> 个人 AI 伴学系统，覆盖自学全生命周期。</p>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th>阶段</th>
+<th>功能</th>
+<th>技术深度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>课前</td>
+<td>知识图谱导航、前置诊断、学习规划</td>
+<td>CognitiveNode 5 层级 + ZPD 调度</td>
+</tr>
+<tr>
+<td>课中</td>
+<td>多模态对话、自适应练习、苏格拉底追问</td>
+<td>LLM 流式 + SM-2 间隔重复</td>
+</tr>
+<tr>
+<td>课后</td>
+<td>学情追踪、行为分析、遗忘曲线</td>
+<td>15 子系统 + 22 方程</td>
+</tr>
+<tr>
+<td>全程</td>
+<td>心理陪伴、习惯养成、成就系统</td>
+<td>情绪分析 + 12 成就 × 3 级</td>
+</tr>
+</tbody>
+</table>
+<p>这是<strong>一个人从零写到 v8.4.2</strong>的项目——16 个 Phase + 4
+轮重构，几百个文件、近百页文档。</p>
+<p>它的<strong>真实身份</strong>更像一个<strong>个人技术实验场</strong>——每个”先进教育理论”都被实现成了代码：ACT-R
+激活、Beta 信念、SM-2 间隔重复、Vygotsky ZPD、Bloom
+分类法、情绪检测、行为分析……理论上几乎覆盖了所有主流学习科学模型。</p>
+<hr />
+<h2 id="二技术架构评估">二、技术架构评估</h2>
+<h3 id="做得好的">✅ 做得好的</h3>
+<p><strong>1. 架构设计有自觉性</strong> - 从 v4.0 到
+v8.0，经历了清晰的架构演进：DDD 分层、领域/服务/基础设施三层分离 -
+<code>shared/protocols</code> + DI 容器实现依赖倒置 -
+独立认证网关（与业务完全解耦）</p>
+<p><strong>2. 代码质量持续治理</strong> - v4.0 重构净删 ~2500 行（-72%
+对话状态、-84% 分析模块） - v0.9.3 熵值治理：静默 except 从
+31→0，console.log 从 66→17 - 有 ADR（架构决策记录）体系，22
+条决策有案可查</p>
+<p><strong>3. 认知引擎够深</strong> - 15
+个子系统：激活、信念、预测编码、认知负荷、趋势、调度、元认知、投入度、深度处理……
+- 22 个方程：Beta 后验更新、ACT-R 基水平衰减、EWMA 趋势、Bloom 分类映射
+- 不是”套壳 ChatGPT”，有真实的认知建模</p>
+<p><strong>4. 文档体系完整</strong> - <code>docs/</code>
+有架构总览、模块设计、spec 规格、ADR 记录 - <code>MAINTENANCE.md</code>
+维护指南 694 行 - <code>CHANGELOG.md</code> 1219
+行，每次变更都有记录</p>
+<h3 id="存在的不足">⚠️ 存在的不足</h3>
+<p><strong>1. 测试覆盖率严重不足（⛔ 核心问题）</strong></p>
+<pre><code>后端 + 前端 ≈ 98,000 行 | 测试 ≈ 5,474 行
+测试覆盖率 ≈ 5.5%</code></pre>
+<ul>
+<li>31 个测试文件，但大量核心逻辑（认知引擎 22 方程、ZPD
+调度、情绪分析）几乎没有单元测试</li>
+<li>没有一个端到端测试覆盖”学生对话→生成练习→做错→认知更新→复习调度”这个核心闭环</li>
+<li><strong>没有测试就无法重构</strong>——这是项目最大的技术债</li>
+</ul>
+<p><strong>2. 认知模型的落地深度不足</strong></p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>实现程度</th>
+<th>实际使用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Beta 信念</td>
+<td>⭐⭐⭐ 方程完整</td>
+<td>练习更新、掌握度计算有使用</td>
+</tr>
+<tr>
+<td>ACT-R 激活</td>
+<td>⭐⭐ 模型定义完整</td>
+<td>节点排序有使用，但参数未自动调优</td>
+</tr>
+<tr>
+<td>SM-2 间隔重复</td>
+<td>⭐⭐⭐ 完整实现</td>
+<td>练习调度核心</td>
+</tr>
+<tr>
+<td>预测编码</td>
+<td>⭐ 模型定义</td>
+<td>几乎未被下游使用</td>
+</tr>
+<tr>
+<td>元认知/深度处理</td>
+<td>⭐ 字段定义</td>
+<td>存储了但不查询</td>
+</tr>
+</tbody>
+</table>
+<p>很多子系统<strong>定义得很好但没有被真正用起来</strong>——代码中有字段、有
+schema，但后续查询、决策链路中并没有引用它们。</p>
+<p><strong>3. pgvector 未真正部署</strong></p>
+<p>记忆中提到
+<code>pgvector not installed</code>，向量搜索是应用层手写余弦距离 +
+DOUBLE PRECISION[]。数据量小的时候可以工作，但： - 没有索引，搜索是 O(n)
+全表扫描 - 没有 HNSW/IVFFlat 加速 -
+当题库/素材量到万级时性能会急剧下降</p>
+<p><strong>4. 前端 State Management 有碎片化风险</strong></p>
+<ul>
+<li>Zustand store 拆成
+<code>conversation/</code>、<code>explain/</code>、<code>agent/</code>、<code>notification/</code>
+等多个 store</li>
+<li>但没有清晰的状态边界文档，新开发者容易搞不清某个状态该放哪个
+store</li>
+<li>部分组件直接从 store 读/写，部分走 prop drilling——不一致</li>
+</ul>
+<p><strong>5. LLM 强耦合，无离线回退</strong></p>
+<ul>
+<li>所有核心能力（对话、练习生成、分类、认知诊断）都依赖外部 LLM
+API</li>
+<li>如果 API 不可用，系统几乎完全瘫痪</li>
+<li>没有本地小模型（如通过 llama.cpp 跑 7B 模型）作为降级方案</li>
+</ul>
+<p><strong>6. God File 残留</strong></p>
+<p>虽然 v0.9.3 治理将 8 个 god file 降到了 4 个，但： -
+<code>conversation_routes.py</code> 770 行 -
+<code>practice_service.py</code> 738 行 - <code>tree_crud.py</code> 560
+行</p>
+<p>超过 500 行的文件仍然存在，说明部分模块边界还不够干净。</p>
+<hr />
+<h2 id="三与竞品主流-ai-教育产品的对比">三、与竞品（主流 AI
+教育产品）的对比</h2>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 11%" />
+<col style="width: 33%" />
+<col style="width: 26%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr>
+<th>维度</th>
+<th>苹果果</th>
+<th>Khan Academy + Khanmigo</th>
+<th>Quizlet + Q-Chat</th>
+<th>Duolingo Max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>认知诊断深度</td>
+<td>⭐⭐⭐ 15 子系统</td>
+<td>⭐ 简单知识状态</td>
+<td>⭐ 无</td>
+<td>⭐⭐ 间隔重复</td>
+</tr>
+<tr>
+<td>自适应练习</td>
+<td>⭐⭐⭐ SM-2+ZPD</td>
+<td>⭐⭐ 掌握度分级</td>
+<td>⭐ 闪卡</td>
+<td>⭐⭐⭐ 精细间隔</td>
+</tr>
+<tr>
+<td>知识图谱</td>
+<td>⭐⭐⭐ 5 层力导向</td>
+<td>⭐⭐ 课程树</td>
+<td>❌ 无</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>情绪分析</td>
+<td>⭐⭐⭐ 11 类检测</td>
+<td>❌ 无</td>
+<td>❌ 无</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>多模态输入</td>
+<td>⭐⭐ OCR+语音+图片</td>
+<td>⭐ 图片</td>
+<td>❌</td>
+<td>⭐⭐</td>
+</tr>
+<tr>
+<td>内容库规模</td>
+<td>❌ 无</td>
+<td>⭐⭐⭐⭐⭐ 10K+课程</td>
+<td>⭐⭐⭐⭐ 用户生成</td>
+<td>⭐⭐⭐ 高投入</td>
+</tr>
+<tr>
+<td>用户基数验证</td>
+<td>❌ 无</td>
+<td>⭐⭐⭐⭐⭐ 亿级</td>
+<td>⭐⭐⭐⭐⭐ 亿级</td>
+<td>⭐⭐⭐⭐⭐ 亿级</td>
+</tr>
+<tr>
+<td>A/B 测试能力</td>
+<td>❌ 无</td>
+<td>⭐⭐⭐⭐ 有</td>
+<td>⭐⭐⭐ 有</td>
+<td>⭐⭐⭐⭐⭐ 有</td>
+</tr>
+</tbody>
+</table>
+<p><strong>苹果果的核心竞争力</strong>在认知引擎深度——它比任何主流产品都更认真地对待”学生到底知道多少”这个问题的数学建模。但<strong>最大短板</strong>是没有任何真实用户数据来验证这些模型是否真的有效。</p>
+<hr />
+<h2 id="四如何引入先进思想">四、如何引入先进思想</h2>
+<h3 id="认知诊断升级从-bkt-到-dkt">4.1 认知诊断升级：从 BKT 到 DKT</h3>
+<p><strong>现状：</strong> 使用 Beta 信念（经典 BKT 贝叶斯版本）+ 22
+个手写方程</p>
+<p><strong>升级路线：</strong></p>
+<pre><code>Phase 1: BKT → DKT（Deep Knowledge Tracing）
+- 用 transformer 替代 Beta 分布作为掌握度估计器
+- 输入：学生答题序列 (question_id, correct, timestamp, time_spent)
+- 输出：每个知识点的 p(correct) 预测值
+- 优势：不依赖手动设计的动力学方程，数据驱动
+
+Phase 2: DKT + IRT 联合建模
+- 引入题目参数（难度、区分度、猜测率）
+- 3PL IRT 模型参数通过 LLM 自动估计
+- DKT 输出作为能力 θ，IRT 映射到具体题目正确率
+
+Phase 3: 个性化认知架构搜索
+- Neural Architecture Search 找到最适合该学生的认知模型结构
+- 每个学生有自己的&quot;认知架构参数&quot;</code></pre>
+<h3 id="graphrag利用知识图谱结构做检索增强">4.2
+GraphRAG：利用知识图谱结构做检索增强</h3>
+<p><strong>现状：</strong> 简单向量相似度搜索 + cosine distance</p>
+<p><strong>升级方案：</strong></p>
+<pre><code>┌────────────────────────┐
+│  学生问：&quot;导数定义&quot;      │
+└────────┬───────────────┘
+         ▼
+┌────────────────────────┐
+│  1. 向量检索 top-5 节点  │
+│  2. 图谱 BFS 展开 2 层   │
+│  3. 关联节点（先修/后修/  │
+│     类比）加权融合        │
+│  4. LLM 合成上下文        │
+└────────────────────────┘</code></pre>
+<ul>
+<li>不仅是”找到相关的”，还要理解”这个知识点依赖什么、解锁什么”</li>
+<li>用 Graph Embedding（Node2Vec /
+GraphSAGE）将图谱结构编码进向量搜索</li>
+<li>当学生问一个问题时，自动补全先修知识摘要作为 RAG 上下文</li>
+</ul>
+<h3 id="间隔重复升级从-sm-2-到-fsrs-个性化参数">4.3 间隔重复升级：从
+SM-2 到 FSRS + 个性化参数</h3>
+<p><strong>现状：</strong> 经典 SM-2 算法（SuperMemo 1987）</p>
+<p><strong>升级：</strong> - FSRS（Free Spaced Repetition
+Scheduler）：现代替代算法，精度高 2-3x - 每个知识点独立学习 FSRS 参数 -
+引入 retention
+预测：不只”该复习了”，还能预测”明天的掌握度会降到多少”</p>
+<h3 id="多智能体学习伙伴">4.4 多智能体学习伙伴</h3>
+<p><strong>现状：</strong> 一个 LLM 角色处理所有对话</p>
+<p><strong>升级：</strong></p>
+<pre><code>┌── 学生 ──┐
+     │
+     ├── 苏格拉底智能体 ── 追问式教学
+     ├── 陪练智能体 ── 大量练习 + 即时反馈
+     ├── 鼓励师智能体 ── 心理支持 + 习惯养成
+     ├── 诊断智能体 ── 评估掌握度 + 定位薄弱点
+     └── 规划智能体 ── 制定学习路径 + 调度复习</code></pre>
+<p>每个智能体有独立的
+prompt、知识库、交互风格，通过协调器（orchestrator）决定谁出场。</p>
+<h3 id="llm-as-judge-评估">4.5 LLM-as-Judge 评估</h3>
+<p><strong>现状：</strong> 选择题自动判对错，开放题无评估</p>
+<p><strong>升级：</strong> - 用 LLM 评估开放题答案质量（0-4 分 +
+具体反馈） - 自动标注错误类型（概念混淆、计算错误、表达不清） -
+错误簇分析升级：不只看”做错了”，还看”为什么错” -
+生成长期错误模式报告</p>
+<h3 id="元认知教学教学生如何学习">4.6 元认知教学（教学生如何学习）</h3>
+<p>这是《ZhiHuArchive 高效自学》系列文章的核心洞见：</p>
+<pre><code>功能模块：
+├── 学习策略诊断：你现在的学习方式是什么？
+│   ├── 被动听课型 vs 主动检索型
+│   ├── 死记硬背 vs 理解构建
+│   └── 集中突击 vs 间隔复习
+├── 策略建议引擎
+│   ├── 针对当前知识点的推荐学习方法
+│   ├── 费曼技巧 / 康奈尔笔记 / 思维导图建议
+│   └── 学习策略切换时机检测
+└── 学习方式进化追踪
+    ├── &quot;上周你用了 80% 被动学习，本周降到 60%&quot;
+    ├── &quot;尝试费曼技巧讲解双曲函数&quot;
+    └── 策略变换前后的掌握度增速对比</code></pre>
+<hr />
+<h2 id="五如何适应真实学生">五、如何适应真实学生</h2>
+<p>苹果果目前是一个<strong>技术展示品</strong>——它有所有零件，但还没有考虑”怎么让学生愿意用它”这个关键问题。</p>
+<h3 id="轻量级-onboarding">5.1 轻量级 onboarding</h3>
+<pre><code>Day 1 流程：
+1. &quot;你在学什么？&quot; → 选学科（数学/物理/化学/……）
+2. &quot;你的目标是什么？&quot; → 考试/竞赛/兴趣/预习
+3. &quot;你现在什么水平？&quot; → 自评 + 几道快速诊断题
+4. &quot;你每天能花多久？&quot; → 15min / 30min / 1h+
+5. → 系统自动生成第一周计划</code></pre>
+<p><strong>不要让学生自己配</strong>。当前系统需要学生理解”知识树”、“分区”、“认知节点”这些概念才能用——这对任何学生都是门槛。</p>
+<h3 id="渐进式参与">5.2 渐进式参与</h3>
+<pre><code>┌─────────────────────────────────────┐
+│ Day 1-3: 只用对话 + 自动记录        │
+│   &quot;像 ChatGPT 一样聊天，但系统在背后&quot;  │
+│   自动识别知识点，自动追踪掌握度        │
+│   学生完全无感                        │
+├─────────────────────────────────────┤
+│ Day 4-7: 第一次复习提醒              │
+│   &quot;你昨天学了导数定义，来做个快速检查&quot;   │
+│   3-5 道题，&lt; 5 分钟                  │
+│   反馈：掌握度 + 建议                  │
+├─────────────────────────────────────┤
+│ Week 2+: 主动学习模式                 │
+│   学习计划、知识图谱、自适应练习        │
+│   所有高级功能逐步解锁                  │
+└─────────────────────────────────────┘</code></pre>
+<h3 id="考试驱动设计对学生最实用">5.3 考试驱动设计（对学生最实用）</h3>
+<p>苹果果的”认知追踪”太学术化，学生只关心一件事：<strong>期末考试能考多少分</strong>。</p>
+<pre><code>考试模式：
+├── 选择目标（期中/期末/高考/竞赛）
+├── 输入考纲（或自动识别知识点）
+├── 系统诊断 → 每个考点掌握度百分比
+├── 优先级排序：离考试越近 × 提分空间越大
+├── 生成备考路线：每周重点、每日任务
+└── 考前冲刺：模拟考 + 时间分配训练</code></pre>
+<h3 id="社交与激励">5.4 社交与激励</h3>
+<ul>
+<li><strong>学习小组</strong>：匿名组队，比较每日学习时长/题目量（排名激励）</li>
+<li><strong>打卡分享</strong>：生成学习报告卡片可分享到社交平台</li>
+<li><strong>师徒系统</strong>：高年级学生辅导低年级（真实社交 +
+知识巩固）</li>
+<li><strong>奖章墙</strong>：不仅是成就计数，还能展示在个人主页</li>
+</ul>
+<h3 id="沉浸式学习体验">5.5 沉浸式学习体验</h3>
+<ul>
+<li><strong>专注模式</strong>：番茄钟 +
+学习音乐（白噪音/lo-fi/古典）</li>
+<li><strong>学习回放</strong>：每周一次”你这一周的学习旅程”——动画展示知识图谱的探索轨迹</li>
+<li><strong>成就动画</strong>：掌握一个难点后的小动画庆祝效果</li>
+<li><strong>学习笔记导出</strong>：自动生成这份知识点的 Anki 牌组 / PDF
+复习卡</li>
+</ul>
+<hr />
+<h2 id="六优先级路线建议">六、优先级路线建议</h2>
+<blockquote>
+<p>基于”投入产出比 + 对学生直接价值”排序</p>
+</blockquote>
+<h3 id="p0立刻做1-2-周">🚀 P0：立刻做（1-2 周）</h3>
+<pre><code>1. 考试模式（考试驱动设计）
+   ── 大部分学生用教育产品的第一动机
+   ── 现有认知追踪模型 + SM-2 已经够用
+
+2. 轻量 onboarding
+   ── 去掉所有概念门槛
+   ── 5 步引导，零配置开始学习
+
+3. FSRS 替换 SM-2
+   ── 现代间隔重复算法，代码量不大
+   ── 复习效率提升 2-3x</code></pre>
+<h3 id="p1短期1-2-月">🔧 P1：短期（1-2 月）</h3>
+<pre><code>4. 测试覆盖核心链路（对话→练习→认知更新→复习）
+   ── 没有测试就不敢重构
+   ── 先用 pytest 覆盖关键路径
+
+5. pgvector 安装 + HNSW 索引
+   ── 向量搜索加速 10-100x
+   ── 为知识图谱 + 素材搜索打基础
+
+6. LLM-as-Judge 开放题评估
+   ── 极大拓宽可支持的题型
+   ── 错误分析升级
+
+7. 元认知教学模块
+   ── 教学生&quot;怎么学&quot;，而不是只教&quot;学什么&quot;
+   ── 这是苹果果真正的差异化竞争力</code></pre>
+<h3 id="p2中期3-6-月">💡 P2：中期（3-6 月）</h3>
+<pre><code>8. GraphRAG 升级
+9. DKT 替代经典 BKT
+10. 多智能体学习伙伴
+11. 社交功能（学习小组 + 排名）
+12. 学习报告分享卡片</code></pre>
+<h3 id="p3长期6-月">🌟 P3：长期（6 月+）</h3>
+<pre><code>13. 移动端 App（React Native）
+14. 离线模式（本地小模型）
+15. 多人协同学习
+16. 课程市场（共享题库/学习路径）
+17. A/B 测试框架 → 数据驱动优化认知模型</code></pre>
+<hr />
+<h2 id="七结论">七、结论</h2>
+<p>苹果果是我见过的<strong>认知引擎最深度的个人教育项目</strong>。15
+个认知子系统和 22
+个方程不是凑数——它们确实对应了学习科学的主流理论（ACT-R、BKT、SM-2、ZPD、Bloom）。</p>
+<p>但它现在的问题是：</p>
+<blockquote>
+<p><strong>它是一台精密但无人驾驶的 F1 赛车。</strong>
+<strong>每个零件都很认真，但没有考虑谁坐在驾驶座上。</strong></p>
+</blockquote>
+<p>核心缺失不是技术能力，而是<strong>真实用户反馈循环</strong>和<strong>从学生视角出发的设计</strong>。</p>
+<p>最值得立即投入的方向不是加更多理论模型，而是： 1.
+用考试模式给学生一个使用动机 2. 用轻量 onboarding 降低使用门槛 3.
+用元认知教学建立真正差异化的教育价值</p>
+<p>当学生真正用它学习并获得更好的考试成绩，认知引擎的精确度才有意义。</p>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {  delimiters: [    {left: '$$', right: '$$', display: true},    {left: '$', right: '$', display: false},    {left: '\\(', right: '\\)', display: false},    {left: '\\[', right: '\\]', display: true}  ],  throwOnError: false});" crossorigin="anonymous"></script>
+</body>
+</html>
