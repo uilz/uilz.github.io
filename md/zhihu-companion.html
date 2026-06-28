@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --blockquote-border: #d0d7de;
+    --link: #0969da;
+    --heading: #1f2328;
+    --table-header-bg: #f6f8fa;
+    --table-alt-bg: #f8f9fa;
+    --hr: #d0d7de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    padding: 40px;
+    max-width: 840px;
+    margin: 0 auto;
+  }
+  /* ── 标题 ── */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--heading);
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  /* ── 段落 ── */
+  p { margin-bottom: 1em; }
+  /* ── 链接 ── */
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  /* ── 列表 ── */
+  ul, ol { margin-bottom: 1em; padding-left: 2em; }
+  li { margin-bottom: 0.25em; }
+  li > p { margin-bottom: 0.25em; }
+  /* ── 代码 ── */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background-color: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  pre {
+    margin-bottom: 1em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    white-space: pre;
+  }
+  /* ── 引用 ── */
+  blockquote {
+    margin: 0 0 1em;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid var(--blockquote-border);
+  }
+  blockquote p { margin-bottom: 0.5em; }
+  /* ── 表格 ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    background: var(--table-header-bg);
+  }
+  tr:nth-child(even) { background: var(--table-alt-bg); }
+  /* ── 分割线 ── */
+  hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
+  /* ── 图片 ── */
+  img { max-width: 100%; }
+  /* ── 笔记/警告块（兼容 Obsidian callout 样式） ── */
+  .callout {
+    padding: 12px 16px;
+    margin-bottom: 1em;
+    border-left: 4px solid var(--link);
+    background: #f0f6ff;
+    border-radius: 6px;
+  }
+  .callout.warning { border-left-color: #d29922; background: #fff8c5; }
+  .callout.danger  { border-left-color: #cf222e; background: #ffebe9; }
+  .callout strong.callout-title { font-size: 0.9em; text-transform: uppercase; }
+  /* ── KaTeX 公式居中 ── */
+  .katex-display { margin: 0.8em 0; text-align: center; }
+</style>
+
+</head>
+<body>
+<h1 id="thoughts-memo-zhihuarchive-高效自学与-edu-companion-专题整理">🧠
+Thoughts Memo × ZhiHuArchive — 高效自学与 edu-companion 专题整理</h1>
+<blockquote>
+<p><strong>站点</strong>：https://l-m-sherlock.github.io/ZhiHuArchive/<br />
+<strong>作者</strong>：Thoughts Memo 汉化组 · 叶峻峣（Jarrett Ye，FSRS
+算法作者）<br />
+<strong>关联</strong>：edu-companion（智能伴学系统）<br />
+<strong>定位</strong>：高效自学方法 × 自适应学习系统设计</p>
+</blockquote>
+<p>这个站聚合了学习科学领域最前沿的中文翻译文献——从 Wozniak（SuperMemo
+作者）、Andy Matuschak（《量子国度》作者）、到 Math Academy
+团队的实践记录。以下按 <strong>7 个主题</strong>
+聚合，每个主题都标注了对 edu-companion 的直接参考价值。</p>
+<hr />
+<h2 id="主题一math-academy自适应学习系统的完整蓝图">🏛️ 主题一：Math
+Academy——自适应学习系统的完整蓝图</h2>
+<p>Math Academy（MA）是目前最成熟的 AI
+自适应数学学习平台，它的技术架构几乎就是 edu-companion
+的发展路线图。</p>
+<h3 id="核心架构四组件模型">核心架构：四组件模型</h3>
+<p>MA 由四个相互配合的组件构成：</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr>
+<th>组件</th>
+<th>功能</th>
+<th>edu-companion 对应状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>知识图谱</strong></td>
+<td>数千个数学主题 + 前置关系 + 包含权重</td>
+<td>🟡 已有 pgvector 向量关联，缺少显式前置关系</td>
+</tr>
+<tr>
+<td><strong>学生模型</strong></td>
+<td>间隔重复追踪每个主题的掌握程度</td>
+<td>🟡 TOC 有进度追踪，缺细粒度画像</td>
+</tr>
+<tr>
+<td><strong>诊断算法</strong></td>
+<td>用最少题目定位知识薄弱点</td>
+<td>🔴 未实现</td>
+</tr>
+<tr>
+<td><strong>任务选择算法</strong></td>
+<td>精熟+交错+间隔 → 最优学习路径</td>
+<td>🔴 未实现</td>
+</tr>
+</tbody>
+</table>
+<h3 id="关键文章">关键文章</h3>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>价值点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1907408881207976645.html">MA
+的 AI 是如何工作？</a></td>
+<td>四组件架构详解——最好的入门</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/18159574293.html">第四章：核心技术——知识图谱</a></td>
+<td>前置关系 + 包含权重的细粒度设计</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1916803246829314569.html">MA
+如何构建知识图谱？</a></td>
+<td>纯手工构建 2500 主题的实战记录——“刚好在人力极限边缘”</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1915110629112547208.html">AI
+技术在教育领域的应用</a></td>
+<td>省流版四组件速览</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/2043299894606263125.html">MA
+的 Eurisko 五年回顾</a></td>
+<td>让高中生完成硕士级别课业的课程体系</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对-edu-companion-的直接启示">对 edu-companion 的直接启示</h3>
+<blockquote>
+<p><strong>你的知识图谱从”静态存储”升级为”决策引擎”的路径图就在这里。</strong><br />
+核心差距不在 AI 能力，而在<strong>知识图谱的结构化程度</strong>——MA
+花了一个月全职设置 2500 个主题×5
+个前置关系的包含权重。你不需要照搬，但可以在高数题库场景下尝试引入前置关系标注。</p>
+</blockquote>
+<hr />
+<h2 id="主题二间隔重复从工具到思维方式的升级">⚡
+主题二：间隔重复——从工具到思维方式的升级</h2>
+<p>edu-companion 目前用 embeddings 做向量检索式复习，但这组文章展示的
+SRS（间隔重复记忆系统）远不止于此。</p>
+<h3 id="三个认知层次">三个认知层次</h3>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 34%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr>
+<th>层次</th>
+<th>代表性文章</th>
+<th>核心观点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>层次一：SRS 基础</strong></td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/404257681.html">间隔重复记忆系统</a>、<a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/399786562.html">SRS
+使记忆成为选择</a></td>
+<td>测试效应+间隔效应=高效记忆，SRS 让记忆从偶然变为可控</td>
+</tr>
+<tr>
+<td><strong>层次二：SRS 用于概念理解</strong></td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/398045447.html">SRS
+可用于发展概念性理解</a>、<a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/412311494.html">SRS
+促进应用综合创造</a></td>
+<td>自己写卡片能深入理解复杂材料，卡片设计可训练高阶思维</td>
+</tr>
+<tr>
+<td><strong>层次三：SRS 是刻意练习</strong></td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/410370813.html">SRS
+多大程度上算刻意练习？</a></td>
+<td>指数退避 ≈ 聚焦弱点练习，复习环节可视为刻意练习的一种形式</td>
+</tr>
+</tbody>
+</table>
+<h3 id="卡片设计的最佳实践">卡片设计的最佳实践</h3>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>核心原则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/402705173.html">卡片应确保从记忆中提取答案</a></td>
+<td>必须实际提取，避免引导性问题</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/401944262.html">避免浅层次「模式匹配」</a></td>
+<td>深层问题设计，防止表面记忆</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/552951806.html">用不同问题文本更好吗？</a></td>
+<td>复习时用不同形式的问题，减少表面特征依赖</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/404698925.html">避免使用「对或错」卡片</a></td>
+<td>简单 True/False 效果差</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/533792911.html">「跳过」机制保持情感连接</a></td>
+<td>让用户把不关心的材料调低优先级，比删除更柔性</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/417555450.html">没有新卡片，复习会枯燥脱节</a></td>
+<td>持续添加新内容，复习才与当下思考关联</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/665213906.html">SRS
+让你误以为记忆很差</a></td>
+<td>反直觉认知偏差：容易记的内容推到远处了，日常看到的都是难的</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fsrs-算法">FSRS 算法</h3>
+<p>Jarrett Ye（叶峻峣）是 FSRS（次世代 Anki
+间隔重复算法）的开发者，这个站也是他的个人存档。</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/floating.html">FSRS4Anki
+使用指南</a>（搜索站内 FSRS）</td>
+<td>最新版本的使用教程</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对-edu-companion-的启示">对 edu-companion 的启示</h3>
+<blockquote>
+<p><strong>升级路径</strong>：向量检索式复习（当前）→
+概念性提取卡片（下一步）→ 综合应用卡片（远期）<br />
+你的复习不能只是”回顾材料片段”，而应该设计为<strong>概念性提取</strong>——给一个场景，让学习者判断用哪个定理。</p>
+</blockquote>
+<hr />
+<h2 id="主题三精熟学习与-bloom-的-2-sigma">🗺️ 主题三：精熟学习与 Bloom
+的 2 Sigma</h2>
+<p>这组文章为 edu-companion
+提供了最坚实的<strong>理论根基</strong>。</p>
+<h3 id="核心文章群">核心文章群</h3>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>篇幅</th>
+<th>核心价值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/720099642.html">Bloom
+的两个标准差问题</a></td>
+<td><strong>3.3 万字</strong></td>
+<td>系统比较 DI、精熟学习、一对一辅导。一对一辅导可提升 2σ——这恰好是 AI
+系统要替代的”理想教师”</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/28954028250.html">第十三章：精熟学习</a></td>
+<td>全文</td>
+<td>“没掌握前置知识就不学新的”——你的 topic tree
+有没有强制前置门槛？</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1895806402250905344.html">第十九章：交错练习</a></td>
+<td>全文</td>
+<td>交错 vs
+分块——交错感觉更困难，但长期保持更好。高数题库天然适合交错</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/28179723884.html">第十二章：刻意练习</a></td>
+<td>全文</td>
+<td>刻意练习 ≠ 机械重复，需要个性化+即时反馈+逐步改进</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/282349669.html">刻意练习的问题</a></td>
+<td>全文</td>
+<td>过度淡化天赋因素，不是所有领域都适用</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1932029581417693799.html">如何对数学进行刻意练习？</a></td>
+<td>全文</td>
+<td>自学本科/研究生数学的刻意练习路径</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1896502230300988542.html">第二十章：测试效应</a></td>
+<td>全文</td>
+<td>提取练习 + 间隔重复 = 间隔提取练习</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1971629069167757033.html">Alpha
+School 教育模式</a></td>
+<td>全文</td>
+<td>间隔重复+精熟+游戏化+短时高强度→每天 2h 学完学校一天</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对-edu-companion-的启示-1">对 edu-companion 的启示</h3>
+<blockquote>
+<p><strong>精熟学习门控</strong>：你的高数题库可以引入”没掌握 Ch5
+的前置概念，系统就不让跳到 Ch6”。<br />
+<strong>交错练习</strong>：题库混合章节出题，而不是一章一章地练。<br />
+<strong>两个标准差</strong>：这是你项目的终极目标——构建一个 AI
+系统，让自学效果逼近一对一辅导。</p>
+</blockquote>
+<hr />
+<h2 id="主题四ai-与教育应该做什么不应该做什么">🤖 主题四：AI
+与教育——应该做什么，不应该做什么</h2>
+<p>这组文章对 AI 教育有清醒的认识，帮你避开”AI 万能”的坑。</p>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>核心论点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/126373453566.html">AI
+大模型如何落地个性化学习？</a></td>
+<td>需要”目标驱动的情境嵌入+动态认知支持+记忆强化机制”，不是简单对话</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/2016109539146101079.html">利用
+AI 学数学？不如脚踏实地的传统 AI</a></td>
+<td>LLM 不是最优方案，间隔重复+知识图谱+诊断测试才是</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/2910221355.html">AIGC
+能解决个性化教育吗？很难</a></td>
+<td>AIGC 只是内容生成端，个性化需要诊断和路径规划——恰恰是 LLM
+做不好的</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1971629069167757033.html">Alpha
+School 与生成式 AI 无关</a></td>
+<td>所谓”AI 导师”本质是数据驱动的专家系统，和 ChatGPT 是两回事</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/2000977687901132792.html">俞敏洪：AI
+或消灭大量老师</a></td>
+<td>支持观点，但 AI 替代的是”人肉复读机”，不是真正的教师</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/2968400940.html">在 AI
+时代，应试教育怎么发展？</a></td>
+<td>AI 在应试教育上全面替代人类教师是迟早的事</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对-edu-companion-的启示-2">对 edu-companion 的启示</h3>
+<blockquote>
+<p><strong>不要追逐 LLM 热潮</strong>——Math Academy 的 AI
+是专家系统（Symbolic AI），不是大模型。你的 RAG
+目前的定位是”知识索引+问答”，很合理。<br />
+<strong>LLM
+的定位应该是”解读向导”而不是”核心引擎”</strong>——用来解释概念、生成题目变体、答疑解惑，但学习路径规划应该由规则引擎+间隔重复算法负责。</p>
+</blockquote>
+<hr />
+<h2 id="主题五知识工作者的笔记与思考基础设施">🌱
+主题五：知识工作者的笔记与思考基础设施</h2>
+<p>以 Andy Matuschak 为核心的笔记方法论系统，对 edu-companion
+的<strong>知识图谱可视化</strong>和<strong>TOC
+机制</strong>有直接启发。</p>
+<h3 id="常青笔记体系">常青笔记体系</h3>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>核心概念</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/428784607.html">常青笔记写作是知识工作的基本单位</a></td>
+<td>每天写常青笔记是知识工作者产出的主要指标</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/428781444.html">常青笔记应该是原子化的</a></td>
+<td>笔记最好只讲一件事</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/428783713.html">常青笔记之间应该建立大量链接</a></td>
+<td>链接网络让知识聚沙成塔</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/428784011.html">常青笔记应面向概念</a></td>
+<td>笔记标题用完整句子，避免模糊主张</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/574145059.html">与
+Andy Matuschak 畅聊</a></td>
+<td>知识工作技能训练、笔记与创造力、Orbit 项目</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/450095985.html">笔记写作实践大多是无效的</a></td>
+<td>大多数人笔记技能到平台期就停止了</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/428786556.html">数字笔记系统忽略连接的意义</a></td>
+<td>实体卡可以排开看，数字笔记反而做不到</td>
+</tr>
+</tbody>
+</table>
+<h3 id="渐进阅读">渐进阅读</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>核心</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/313020639.html">渐进阅读的必然性</a></td>
+<td>把阅读拆解为原子化学习行为——“宇宙的必然”</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/307996163.html">程序员视角的渐进阅读</a></td>
+<td>从 Anki 2.9 万张卡片转用 SuperMemo 的全过程</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/620583957.html">记忆系统与解题练习</a></td>
+<td><strong>“真正目标不是记住卡片答案，而是扩展思考和付诸实践的能力”</strong></td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/450623752.html">常青笔记有助于积累阅读成果</a></td>
+<td>写你所读，阅读成果在笔记间相互作用</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对-edu-companion-的启示-3">对 edu-companion 的启示</h3>
+<blockquote>
+<p>你的 <strong>material_indexer pipeline（parse → chunk →
+embed）</strong> 本质上就是渐进阅读的自动化版本。<br />
+常青笔记的<strong>链接网络思想</strong>可以直接借鉴到你的<strong>知识图谱可视化</strong>——不是单纯的
+tree view，而是让知识点之间的关联”可见可导航”。</p>
+</blockquote>
+<hr />
+<h2 id="主题六自学的底层动力内驱力与自由学习">🌿
+主题六：自学的底层动力——内驱力与自由学习</h2>
+<p>这组文章探讨了”为什么自学那么难”和”如何真正自由地学习”。</p>
+<h3 id="学习内驱力">学习内驱力</h3>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>核心观点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/422845775.html">内驱力到底是什么？如何产生？</a></td>
+<td>内驱力是大脑寻求新信息的本能，由奖励中枢驱动</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/418071200.html">4
+学习内驱力</a></td>
+<td>学习内驱力是拼凑世界知识的神经机制</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/418073564.html">5
+学校对学习内驱力的影响</a></td>
+<td>强制学校教育抑制内驱力</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/420088131.html">7
+学习内驱力与习得性无助</a></td>
+<td>“年龄增长丧失内驱力”是错误观念——实际上是学校教育扼杀的</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/3621782080.html">自学为什么那么难？</a></td>
+<td>因为学校抑制了从学习本身获取动力的天性</td>
+</tr>
+</tbody>
+</table>
+<h3 id="自由学习的理论与实践">自由学习的理论与实践</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/272543239.html">自由学习</a></td>
+<td>定义：所有选择由学生自己决定。没有时间空间速度方法方向限制</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/692307424.html">自由学习的指数加速</a></td>
+<td>兴趣驱动下学习目标与自由不矛盾，反而加速</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/2018523075621209316.html">自由学习
+vs 应试如何平衡？</a></td>
+<td>大一数学新生心路历程——和你的处境高度相似</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/559705516.html">学校的
+100+ 恶习</a></td>
+<td>Wozniak 代表作，学校摧残学习的罄竹难书</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/613820418.html">自由学习的经验分享</a></td>
+<td>离开学校后的自学实践——真实可操作</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/130433858173.html">Homeschool
+是什么？</a></td>
+<td>以兴趣为导向、自主驱动的教育方式</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对-edu-companion-的启示-4">对 edu-companion 的启示</h3>
+<blockquote>
+<p>你的用户（深大学生）正处于”应试 vs
+自由学习”的冲突中。系统应该<strong>既支持精熟学习式的强制门控（确保掌握），也支持自由探索式的自主学习（按兴趣走）</strong>。<br />
+两种模式可以共存——“目标模式”（跟着课程走）和”自由模式”（自己选知识点），用户自由切换。</p>
+</blockquote>
+<hr />
+<h2 id="主题七概念地图与深度理解">🔗 主题七：概念地图与深度理解</h2>
+<p>这组文章讲的是如何<strong>真正理解一个概念</strong>，而不是表面记忆。</p>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>文章</th>
+<th>核心观点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/442692019.html">理解概念需与其尽力较量</a></td>
+<td>“你不能只是读——得想：这在哪适用、哪不适用？含义是什么？”</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/279553703.html">概念发现故事</a></td>
+<td>给数学概念编一个”被发现的故事”，建构式理解</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/539330931.html">用 SRS
+掌握数学概念</a></td>
+<td>量子物理学家 Michael Nielsen 用 Anki 掌握数学概念的经验</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/442722946.html">复杂概念难学因为工作记忆装不下</a></td>
+<td>元素交互性高，需要先拆解前置概念</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1930200421491803500.html">绘制概念图</a></td>
+<td>方框-箭头式图表，有提取练习效果</td>
+</tr>
+<tr>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1930200421397037388.html">绘制概念图涉及内隐提取练习吗？</a></td>
+<td>研究发现概念图不触发内隐提取——需要主动回忆</td>
+</tr>
+</tbody>
+</table>
+<h3 id="对-edu-companion-的启示-5">对 edu-companion 的启示</h3>
+<blockquote>
+<p>你的<strong>高数题库</strong>可以在解析部分引入”概念发现故事”风格——不只给答案，而是讲清楚这个定理为什么会被发现、可以用在哪。<br />
+每个知识点的<strong>概念图可视化</strong>可以直接复用到你的<strong>知识图谱可视化组件</strong>。</p>
+</blockquote>
+<hr />
+<h2 id="你最应该优先精读的-top-5">🎯 你最应该优先精读的 Top 5</h2>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 35%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>文章</th>
+<th>为什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1907408881207976645.html">Math
+Academy 的 AI 是如何工作？</a></td>
+<td>edu-companion 的架构参考书。看完就知道你做到哪、下一步往哪走</td>
+</tr>
+<tr>
+<td>2</td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/720099642.html">Bloom
+的两个标准差问题（3.3万字）</a></td>
+<td>精熟学习+一对一辅导的理论大综述。项目”为什么值得做”的最强背书</td>
+</tr>
+<tr>
+<td>3</td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1916803246829314569.html">Math
+Academy 如何构建知识图谱？</a></td>
+<td>手工构建实战记录。“刚好在人力极限边缘”——你未来做内容标注的座右铭</td>
+</tr>
+<tr>
+<td>4</td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/1971629069167757033.html">Alpha
+School 的教育模式</a></td>
+<td>间隔重复+精熟+游戏化+短时高强度+自主进度的现实案例。产品形态参照</td>
+</tr>
+<tr>
+<td>5</td>
+<td><a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/620583957.html">记忆系统与解题练习</a></td>
+<td><strong>“真正目标不是记住答案，而是扩展思考和付诸实践的能力”</strong>——精炼概括整个项目的方向</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="一句话总结">📌 一句话总结</h2>
+<blockquote>
+<p><strong>edu-companion 不是在做另一个”AI 学习助手”，而是在复现 Math
+Academy 的工程理念 + Wozniak 的学习哲学 + Andy Matuschak
+的知识工作方法论，为自学用户提供一个”有 AI
+加持的精熟学习系统”。</strong></p>
+</blockquote>
+<hr />
+<p><em>整理完毕。如需深入某个主题下的具体文章全文，可以进一步提取。</em></p>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {  delimiters: [    {left: '$$', right: '$$', display: true},    {left: '$', right: '$', display: false},    {left: '\\(', right: '\\)', display: false},    {left: '\\[', right: '\\]', display: true}  ],  throwOnError: false});" crossorigin="anonymous"></script>
+</body>
+</html>
