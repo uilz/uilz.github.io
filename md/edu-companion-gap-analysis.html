@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --blockquote-border: #d0d7de;
+    --link: #0969da;
+    --heading: #1f2328;
+    --table-header-bg: #f6f8fa;
+    --table-alt-bg: #f8f9fa;
+    --hr: #d0d7de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    padding: 40px;
+    max-width: 840px;
+    margin: 0 auto;
+  }
+  /* ── 标题 ── */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--heading);
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  /* ── 段落 ── */
+  p { margin-bottom: 1em; }
+  /* ── 链接 ── */
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  /* ── 列表 ── */
+  ul, ol { margin-bottom: 1em; padding-left: 2em; }
+  li { margin-bottom: 0.25em; }
+  li > p { margin-bottom: 0.25em; }
+  /* ── 代码 ── */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background-color: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  pre {
+    margin-bottom: 1em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    white-space: pre;
+  }
+  /* ── 引用 ── */
+  blockquote {
+    margin: 0 0 1em;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid var(--blockquote-border);
+  }
+  blockquote p { margin-bottom: 0.5em; }
+  /* ── 表格 ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    background: var(--table-header-bg);
+  }
+  tr:nth-child(even) { background: var(--table-alt-bg); }
+  /* ── 分割线 ── */
+  hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
+  /* ── 图片 ── */
+  img { max-width: 100%; }
+  /* ── 笔记/警告块（兼容 Obsidian callout 样式） ── */
+  .callout {
+    padding: 12px 16px;
+    margin-bottom: 1em;
+    border-left: 4px solid var(--link);
+    background: #f0f6ff;
+    border-radius: 6px;
+  }
+  .callout.warning { border-left-color: #d29922; background: #fff8c5; }
+  .callout.danger  { border-left-color: #cf222e; background: #ffebe9; }
+  .callout strong.callout-title { font-size: 0.9em; text-transform: uppercase; }
+  /* ── KaTeX 公式居中 ── */
+  .katex-display { margin: 0.8em 0; text-align: center; }
+</style>
+
+</head>
+<body>
+<h1 id="对话-练习-知识树就够了吗">对话 + 练习 + 知识树就够了吗？</h1>
+<blockquote>
+<p>参考学习认知全流程，剖析 edu-companion 的缺失环节 2026-06-28</p>
+</blockquote>
+<hr />
+<h2 id="一先看基础假设">一、先看基础假设</h2>
+<p>edu-companion 目前三根支柱：</p>
+<pre><code>├── 🗣️ 对话    — LLM 自由问答、苏格拉底追问
+├── ✍️ 练习    — SM-2 自适应、错题本、间隔重复
+└── 🌳 知识树  — 5 级图谱、力导向可视化</code></pre>
+<p>对应的学习阶段：</p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>覆盖的学习阶段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>对话</td>
+<td>初步理解、概念澄清、追问深化</td>
+</tr>
+<tr>
+<td>练习</td>
+<td>主动检索、间隔复习、错误诊断</td>
+</tr>
+<tr>
+<td>知识树</td>
+<td>知识结构化、关联可视化</td>
+</tr>
+</tbody>
+</table>
+<p>看起来覆盖了 <strong>理解 → 巩固 → 结构化</strong> 的主线。</p>
+<p>但真实的完整学习链远不止这三步。下面逐阶段分析。</p>
+<hr />
+<h2 id="二完整学习认知流程11-阶段模型">二、完整学习认知流程（11
+阶段模型）</h2>
+<blockquote>
+<p>基于认知心理学（Bjork, 1994; Dunlosky et al., 2013; Roediger &amp;
+Karpicke, 2006; Ambrose et al., 2010）综合提炼</p>
+</blockquote>
+<pre><code>┌─────────────────────────────────────────────────────┐
+│               阶段 0：动机与目标设定                     │
+│  为什么要学？学到什么程度？到什么时候？                    │
+├─────────────────────────────────────────────────────┤
+│               阶段 1：首次接触（输入）                    │
+│  阅读教材 / 听课 / 看视频 / 读代码                      │
+├─────────────────────────────────────────────────────┤
+│               阶段 2：表层理解                          │
+│  &quot;好像懂了&quot; — 能用自己的话复述                          │
+├─────────────────────────────────────────────────────┤
+│               阶段 3：深层加工                          │
+│  自我解释、精加工质疑、找例子、连已有知识                   │
+├─────────────────────────────────────────────────────┤
+│               阶段 4：主动检索                          │
+│  闭卷回忆、做题目、闪卡 — 暴露&quot;以为懂了其实没懂&quot;            │
+├─────────────────────────────────────────────────────┤
+│               阶段 5：结构化整理                          │
+│  自己画概念图、写摘要、分类对比 — 把碎片变成系统             │
+├─────────────────────────────────────────────────────┤
+│               阶段 6：间隔巩固                          │
+│  按遗忘曲线复习、混合练习、交错练习                        │
+├─────────────────────────────────────────────────────┤
+│               阶段 7：迁移应用                          │
+│  在新的情境中运用所学 — 跨领域、解决真实问题                 │
+├─────────────────────────────────────────────────────┤
+│               阶段 8：产出创造                          │
+│  教给别人、写文章、做项目 — 从消费者变成生产者               │
+├─────────────────────────────────────────────────────┤
+│               阶段 9：反思元认知                          │
+│  &quot;我学得怎么样？哪里卡住了？策略要不要换？&quot;                 │
+├─────────────────────────────────────────────────────┤
+│               阶段 10：评估诊断                          │
+│   知道&quot;我到底会多少，差多少&quot;                              │
+└─────────────────────────────────────────────────────┘</code></pre>
+<hr />
+<h2
+id="三逐阶段对照edu-companion-有什么缺什么">三、逐阶段对照：edu-companion
+有什么、缺什么</h2>
+<h3 id="阶段-0动机与目标设定-几乎缺失">阶段 0：动机与目标设定 ❌
+几乎缺失</h3>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🎯 设定学习目标（期末考试 90 分 / 两周学完这章）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📅 时间规划（每天 1 小时，持续 30 天）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📊 进度可视化（已花时间 vs 预计需要时间）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🔥 动机诊断（为什么学不进去？累？没意思？太难？）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>💡 最小的承诺设计（“先学 5 分钟”）</td>
+<td>❌ 无</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>为什么重要：</strong>
+没有目标的学习就像没有目的地的航行。动机是学习的燃料，而 edu-companion
+假设学生”自带动力”。真实世界恰恰相反——大多数学生最大的问题是<strong>不想开始</strong>，不是<strong>不会做</strong>。</p>
+</blockquote>
+<hr />
+<h3 id="阶段-1首次接触输入-薄弱">阶段 1：首次接触（输入） ⚠️ 薄弱</h3>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📖 结构化学习材料（教材/讲义）</td>
+<td>⚠️ 文件管理支持上传，但无课程体系</td>
+</tr>
+<tr>
+<td>🎬 视频讲解（B站/录播课）</td>
+<td>✅ 支持 B站搜索</td>
+</tr>
+<tr>
+<td>🔊 语音讲解复杂内容</td>
+<td>✅ TTS</td>
+</tr>
+<tr>
+<td>📝 标准格式的课件/笔记</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📚 课程体系（什么先学什么后学）</td>
+<td>⚠️ 知识树有层级但无预设课程路径</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>关键缺失：</strong> edu-companion
+假设学生”已经有了学习材料”。但真实流程中，<strong>获取优质材料本身就是学习的核心环节</strong>。系统应该能推荐材料（而不是等学生上传），能自动生成结构化课程路径（而不是让学生自己探索知识树）。</p>
+</blockquote>
+<hr />
+<h3 id="阶段-2表层理解-最强环节">阶段 2：表层理解 ✅✅ 最强环节</h3>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🗣️ 自由提问</td>
+<td>✅ 对话系统</td>
+</tr>
+<tr>
+<td>🔍 概念解释</td>
+<td>✅ LLM 讲解</td>
+</tr>
+<tr>
+<td>📖 案例分析</td>
+<td>✅ 多轮对话支持</td>
+</tr>
+<tr>
+<td>❓ 苏格拉底追问</td>
+<td>✅ 追问功能</td>
+</tr>
+<tr>
+<td>🔗 联系已有知识</td>
+<td>⚠️ 有知识树参考但无主动联想</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>这是 edu-companion 做得最好的部分。</strong> LLM
+天生适合”解释概念、回答问题”——这是它的核心能力。但问题在于，学生可能会陷入”舒适区错觉”：<strong>觉得懂了是因为
+AI 能回答，不代表自己也能回答。</strong></p>
+</blockquote>
+<hr />
+<h3 id="阶段-3深层加工-几乎缺失">阶段 3：深层加工 ❌ 几乎缺失</h3>
+<blockquote>
+<p>这是 edu-companion 最严重的缺口之一。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✍️ 自我解释提示（“用自己的话解释一下这个公式”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🧐 精加工质疑（“为什么这个成立？如果不成立呢？”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📝 举例子（“找一个生活中的例子”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🔄 对比分类（“A 和 B 有什么本质区别？”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📐 推导跟进（“下一步怎么来的？”）</td>
+<td>⚠️ 对话中可以问但无系统引导</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>深层加工是”从懂到透”的关键一步。</strong> 研究表明（Chi et
+al.,
+1994），自我解释是最高效的学习策略之一，但很少有学生会自动这样做。<strong>系统应该主动引导学生做深层加工</strong>——不只是回答问题，而是追问”你怎么看？”</p>
+</blockquote>
+<hr />
+<h3 id="阶段-4主动检索-有但局限">阶段 4：主动检索 ✅ 有但局限</h3>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📋 闭卷做题</td>
+<td>✅ 练习系统</td>
+</tr>
+<tr>
+<td>📇 闪卡 / 快速自测</td>
+<td>✅ SM-2</td>
+</tr>
+<tr>
+<td>🔄 即时反馈（对/错+解析）</td>
+<td>✅ 有答案检查</td>
+</tr>
+<tr>
+<td>📉 检索困难暴露薄弱点</td>
+<td>✅ 错误分析</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>主动检索是 edu-companion 的第二个强项。</strong> SM-2
+工作得很好。但局限在于题型基本是<strong>选择题和简答题</strong>——缺少更高阶的检索形式（概念图回忆、程序性知识演示、情境判断等）。</p>
+</blockquote>
+<hr />
+<h3 id="阶段-5结构化整理-几乎缺失">阶段 5：结构化整理 ❌ 几乎缺失</h3>
+<blockquote>
+<p><strong>这是我认为 edu-companion 最被忽视的一个环节。</strong></p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🖊️ 学生自画概念图（不是看系统生成的，是自己画）</td>
+<td>❌ 无（只有查看模式）</td>
+</tr>
+<tr>
+<td>📝 写摘要/总结</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📊 对比表格（整理相似概念的异同）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🏗️ 重构笔记（用自己的结构组织知识）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🔗 跨章节关联</td>
+<td>❌ 无</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>知识树（Knowledge
+Tree）是系统的知识结构，不是学生的知识结构。</strong>
+让学生看树的拓扑图不等于学生建立了自己的知识结构。<strong>真正的学习发生在学生自己组织知识的时候</strong>——写笔记、画思维导图、整理对比表。</p>
+<p>这恰好是《ZhiHuArchive》文章中反复强调的”费曼技巧”核心：<strong>只有能用自己的结构讲出来，才算真学会了。</strong></p>
+</blockquote>
+<hr />
+<h3 id="阶段-6间隔巩固-有但可优化">阶段 6：间隔巩固 ✅ 有但可优化</h3>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>⏰ 间隔重复练习</td>
+<td>✅ SM-2</td>
+</tr>
+<tr>
+<td>🔀 交错练习（混合不同章节题目）</td>
+<td>⚠️ 各知识点独立，缺少交错</td>
+</tr>
+<tr>
+<td>📅 复习日程自动规划</td>
+<td>⚠️ 有秘书系统但比较简单</td>
+</tr>
+<tr>
+<td>🧩 知识点间的混合复习</td>
+<td>❌ 无</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>SM-2 本身工作良好，但缺少两个高级策略：</strong> 1.
+<strong>交错练习（Interleaving）</strong> —
+混合不同知识点的题目，比集中练习效果好 2-3
+倍。目前系统各知识点独立调度。 2. <strong>精细调度</strong> — FSRS
+算法比 SM-2 更优，记忆精度高 2x（已在前篇推荐过）。</p>
+</blockquote>
+<hr />
+<h3 id="阶段-7迁移应用-几乎缺失">阶段 7：迁移应用 ❌ 几乎缺失</h3>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🌐 真实场景应用（“这个知识在现实中有什么用？”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🧩 变式题目（同一概念不同包装）</td>
+<td>⚠️ 有限</td>
+</tr>
+<tr>
+<td>🏗️ 项目式学习（用所学解决一个综合问题）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🔄 跨领域类比（算法思维→日常生活）</td>
+<td>❌ 无</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>学习的最终目的是迁移，而不是在同一个场景重复。</strong>
+学生能回答”求导的公式”不等于能在物理题目中识别出”速度变化率=导数”。</p>
+<p>系统应该<strong>主动制造迁移机会</strong>： -
+在数学练习题里渗透物理应用场景 - 在编程练习中用到数学知识 -
+用跨领域案例连接不同章节</p>
+</blockquote>
+<hr />
+<h3 id="阶段-8产出创造-几乎缺失">阶段 8：产出创造 ❌ 几乎缺失</h3>
+<table>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🎤 费曼讲解（讲给 AI 听）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>✏️ 出题给别人做</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📝 写一篇文章解释这个知识点</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🎨 用所学知识做一个项目</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>💡 知识拓展/变式生成</td>
+<td>⚠️ 有知识扩展功能但较弱</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>教学相长（Learning by Teaching）</strong>
+是最有力的学习策略之一（Fiorella &amp; Mayer, 2013）。让学生<strong>教给
+AI</strong>（不是 AI 教学生）是一个被严重低估的功能。</p>
+<p>想象一个功能：<strong>“现在你来当老师，我会扮演一个完全不懂的学生。请用你能想到最简单的方式给我讲清楚导数是什么。”</strong>
+然后 AI 可以追问”为什么”，迫使学生在解释中暴露漏洞。</p>
+</blockquote>
+<hr />
+<h3 id="阶段-9反思元认知-几乎缺失">阶段 9：反思元认知 ❌ 几乎缺失</h3>
+<blockquote>
+<p><strong>这是 edu-companion 最严重、也最可惜的缺失。</strong>
+项目明明有完整的认知追踪数据，但没有让学生回顾这些数据。</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📊 学习后反思提示（“刚才的练习中你卡在哪里了？”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🎯 自信度校准（“你觉得自己这道题做对了吗？”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>📈 学习策略效果回顾（“这周你的学习方法有变化吗？”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>🔍 错误模式分析（“你总是错在哪一类题？”）</td>
+<td>⚠️ 有错误簇但无学生友好展示</td>
+</tr>
+<tr>
+<td>🗺️ 学习旅程回顾（“你这周探索了哪些新节点？”）</td>
+<td>❌ 无</td>
+</tr>
+<tr>
+<td>💡 策略建议（“你更适合用间隔练习而不是集中突击”）</td>
+<td>❌ 无</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>最可惜的地方：</strong> edu-companion 有 15
+个认知子系统的数据——掌握度、错误率、情绪趋势、遗忘曲线……但这些数据<strong>只给系统自己用（决策调度），没有转化成学生能理解的语言反馈给学生</strong>。</p>
+<p>真正的元认知能力是：<strong>学生知道自己不知道什么，知道自己目前的学习方式是否有效。</strong>
+而这些恰恰可以通过已有的追踪数据实现。</p>
+</blockquote>
+<hr />
+<h3 id="阶段-10评估诊断-部分有">阶段 10：评估诊断 ✅ 部分有</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>需要</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📋 阶段检测（学完一章后综合测试）</td>
+<td>⚠️ 练习系统可以组卷但无结构化的阶段检测</td>
+</tr>
+<tr>
+<td>📊 掌握度雷达图</td>
+<td>✅ 有</td>
+</tr>
+<tr>
+<td>📉 薄弱点定位</td>
+<td>✅ 有错误分析</td>
+</tr>
+<tr>
+<td>🎯 与目标对比（离目标还差多少）</td>
+<td>❌ 无</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="四缺失总览一张图看清差距">四、缺失总览：一张图看清差距</h2>
+<pre><code>学习阶段          edu-companion 覆盖度    关键缺口
+──────────────────────────────────────────────────
+0️⃣ 动机目标       ░░░░░░ 0%             没有目标设定
+1️⃣ 首次接触       ██░░░░ 30%            缺少课程体系/推荐
+2️⃣ 表层理解       ██████ 80%            ✅ 最强
+3️⃣ 深层加工       ██░░░░ 20%            缺少主动引导
+4️⃣ 主动检索       █████░ 70%            ✅ 但题型有限
+5️⃣ 结构化整理     ░░░░░░ 10%            学生不能自己画图/写笔记
+6️⃣ 间隔巩固       ████░░ 60%            缺少交错练习
+7️⃣ 迁移应用       █░░░░░ 10%            几乎无变式应用
+8️⃣ 产出创造       █░░░░░ 10%            无费曼讲解/出题
+9️⃣ 反思元认知     █░░░░░ 10%            最可惜——数据有但没反馈给学生
+🔟 评估诊断       █████░ 70%            ✅ 但有改进空间</code></pre>
+<h3 id="总结三大模式缺失">总结：三大模式缺失</h3>
+<p>所有缺失可以分为三个模式：</p>
+<hr />
+<h3 id="被动-主动-模式缺失">🅰 被动 → 主动 模式缺失</h3>
+<pre><code>现状： AI 输出 → 学生接收
+需要： 学生输出 → AI 评估 / 学生创造 → 系统支持
+
+具体缺失功能：
+├── 学生自画概念图（不是看系统生成的树）
+├── 费曼讲解（学生讲给 AI 听）
+├── 自己出题给别人做
+├── 写摘要/笔记（AI 辅助但不代写）
+└── 知识整理输出（用自己的结构组织）</code></pre>
+<blockquote>
+<p>目前 edu-companion 模式是 “AI 教，学生听”。真正的深度学习需要
+<strong>“学生做，AI 看”</strong>。</p>
+</blockquote>
+<hr />
+<h3 id="加工-元认知-模式缺失">🅱 加工 → 元认知 模式缺失</h3>
+<pre><code>现状： 系统追踪学生数据 → 系统自己做决策
+需要： 系统追踪学生数据 → 把洞察反馈给学生
+
+具体缺失功能：
+├── 学习后反思弹窗（&quot;刚才卡在哪？&quot;）
+├── 自信度校准（&quot;你觉得自己做对了吗？&quot;）
+├── 学习策略效果回顾（&quot;你的方法有效吗？&quot;）
+├── 错误模式可视化（&quot;你总是错在××类题型&quot;）
+└── 个性化策略建议（&quot;试试交错练习&quot;）</code></pre>
+<blockquote>
+<p>系统知道很多，但不告诉学生。<strong>元认知能力</strong>
+是最可迁移的能力——学会了”如何学习”才是一辈子的技能。</p>
+</blockquote>
+<hr />
+<h3 id="个体-社交-模式缺失">🅲 个体 → 社交 模式缺失</h3>
+<pre><code>现状： 纯粹单人学习
+需要： 至少支持 AI 充当&quot;学习伙伴&quot;角色
+
+具体缺失功能：
+├── AI 扮演同学角色（一起解题、互相讨论）
+├── 学习小组（匿名排名、激励）
+├── 师徒模式（高年级教低年级）
+└── 分享与反馈（分享自己的笔记、得到反馈）</code></pre>
+<blockquote>
+<p>注意这里不一定要真的人人社交——AI
+可以假扮”学习伙伴”的角色，这在教育心理学上已经被验证有效（Persuasive
+Tutor 模型）。学生解释给”AI
+同学”听和解释给真同学听，认知机制是一样的。</p>
+</blockquote>
+<hr />
+<h2 id="五优先级建议最该先补什么">五、优先级建议：最该先补什么</h2>
+<p>基于<strong>学习效果杠杆率</strong>排序：</p>
+<h3 id="p0-学习效果提升最大开发量最小">P0
+🔥（学习效果提升最大，开发量最小）</h3>
+<pre><code>1. 费曼讲解模式
+   ── 现有 LLM 即可实现，无需新架构
+   ── 学生讲，AI 追问&quot;为什么&quot;
+   ── 效果：Learning by Teaching 是最高效策略之一
+
+2. 自信度校准
+   ── 每道题让学生先自评&quot;你有多确定？&quot;
+   ── 对比自评 vs 实际表现
+   ── 效果：校正&quot;元认知错觉&quot;——这是差生和优生最大区别
+
+3. 自我解释提示
+   ── 每个概念讲解末尾追加&quot;用自己的话解释一下&quot;
+   ── 效果：深度学习 vs 表层理解的分水岭</code></pre>
+<h3 id="p1-高杠杆中等开发量">P1 ⭐（高杠杆，中等开发量）</h3>
+<pre><code>4. 学生概念图工具
+   ── 不是看系统生成的树，是自己画
+   ── 画完系统校正、补充
+   ── 效果：主动结构化知识，建立全局视角
+
+5. 学习后反思工作流
+   ── 每节/每天/每周不同粒度的回顾提示
+   ── 利用已有的认知追踪数据
+
+6. 交错练习引擎
+   ── 在 SM-2 基础上混合不同知识点
+   ── 比当前顺序练习效果好 2-3 倍</code></pre>
+<h3 id="p2-重要但可推后">P2 💡（重要但可推后）</h3>
+<pre><code>7. 课程体系（预设学习路径 + 材料推荐）
+8. 迁移应用练习（变式 + 跨领域）
+9. AI 同学角色（陪练模式）
+10. 动机管理（目标设定 + 进度可视化）</code></pre>
+<hr />
+<h2 id="六结论">六、结论</h2>
+<blockquote>
+<p><strong>对话 + 练习 + 知识树 ≈
+完成了学习”输入-输出”的主循环，但忽略了”学生自己思考、自己组织、自己反思、自己创造”的完整认知过程。</strong></p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 26%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>模式</th>
+<th>现状</th>
+<th>应有的转变</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>学生角色</td>
+<td>被动接收者</td>
+<td>主动建构者</td>
+</tr>
+<tr>
+<td>知识来源</td>
+<td>AI 告诉你</td>
+<td>你自己发现、组织、输出</td>
+</tr>
+<tr>
+<td>反馈方向</td>
+<td>AI → 学生</td>
+<td>学生 ←→ AI（双向）</td>
+</tr>
+<tr>
+<td>学习深度</td>
+<td>理解 + 检索（深度 2-4）</td>
+<td>理解→加工→组织→创造→反思（深度 2-9）</td>
+</tr>
+<tr>
+<td>元认知</td>
+<td>系统知道，你不知道</td>
+<td>系统把洞察还给你</td>
+</tr>
+</tbody>
+</table>
+<p>edu-companion 现在就像：</p>
+<blockquote>
+<p><strong>一个好教练，知道你的所有数据，但只在训练时说”再做一组”——从不告诉你”你的技术弱点是什么”、“为什么你总在某个动作上失误”、“你今天的训练方法有没有效果”。</strong></p>
+</blockquote>
+<p>补上<strong>元认知反馈</strong>和<strong>主动产出</strong>这两个环节的优先级，远高于加更多
+AI 模型或更复杂的认知方程。</p>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {  delimiters: [    {left: '$$', right: '$$', display: true},    {left: '$', right: '$', display: false},    {left: '\\(', right: '\\)', display: false},    {left: '\\[', right: '\\]', display: true}  ],  throwOnError: false});" crossorigin="anonymous"></script>
+</body>
+</html>
