@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --blockquote-border: #d0d7de;
+    --link: #0969da;
+    --heading: #1f2328;
+    --table-header-bg: #f6f8fa;
+    --table-alt-bg: #f8f9fa;
+    --hr: #d0d7de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    padding: 40px;
+    max-width: 840px;
+    margin: 0 auto;
+  }
+  /* ── 标题 ── */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--heading);
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  /* ── 段落 ── */
+  p { margin-bottom: 1em; }
+  /* ── 链接 ── */
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  /* ── 列表 ── */
+  ul, ol { margin-bottom: 1em; padding-left: 2em; }
+  li { margin-bottom: 0.25em; }
+  li > p { margin-bottom: 0.25em; }
+  /* ── 代码 ── */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background-color: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  pre {
+    margin-bottom: 1em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    white-space: pre;
+  }
+  /* ── 引用 ── */
+  blockquote {
+    margin: 0 0 1em;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid var(--blockquote-border);
+  }
+  blockquote p { margin-bottom: 0.5em; }
+  /* ── 表格 ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    background: var(--table-header-bg);
+  }
+  tr:nth-child(even) { background: var(--table-alt-bg); }
+  /* ── 分割线 ── */
+  hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
+  /* ── 图片 ── */
+  img { max-width: 100%; }
+  /* ── 笔记/警告块（兼容 Obsidian callout 样式） ── */
+  .callout {
+    padding: 12px 16px;
+    margin-bottom: 1em;
+    border-left: 4px solid var(--link);
+    background: #f0f6ff;
+    border-radius: 6px;
+  }
+  .callout.warning { border-left-color: #d29922; background: #fff8c5; }
+  .callout.danger  { border-left-color: #cf222e; background: #ffebe9; }
+  .callout strong.callout-title { font-size: 0.9em; text-transform: uppercase; }
+  /* ── KaTeX 公式居中 ── */
+  .katex-display { margin: 0.8em 0; text-align: center; }
+</style>
+
+</head>
+<body>
+<h1 id="anki-在高效自学中的深度用法从记忆工具到思维引擎">🧠 Anki
+在高效自学中的深度用法——从记忆工具到思维引擎</h1>
+<blockquote>
+<p><strong>关联项目</strong>：edu-companion（智能伴学系统）
+<strong>系列</strong>：Thoughts Memo × ZhiHuArchive 专题整理延伸阅读</p>
+</blockquote>
+<hr />
+<h2 id="引言anki-不只是背单词的工具">引言：Anki
+不只是”背单词的工具”</h2>
+<p>大多数人提到 Anki，第一反应是”背单词”或”记知识点”。但 Thoughts Memo
+社区（以 FSRS 算法作者叶峻峣为代表）对 Anki 的理解远不止于此——他们把
+Anki 的间隔重复系统（SRS, Spaced Repetition
+System）当作<strong>一种通用的思维训练框架</strong>，从记忆层一直延伸到概念理解和刻意练习。</p>
+<p>本文基于 ZhiHuArchive 中数十篇相关文章的精华，系统地拆解 Anki
+的用法层次、背后的科学原理，以及它对 edu-companion 这类 AI
+伴学系统的启示。</p>
+<hr />
+<h2 id="一anki-的底层机制srs-为什么有效">一、Anki 的底层机制：SRS
+为什么有效？</h2>
+<h3 id="遗忘曲线与间隔效应">1.1 遗忘曲线与间隔效应</h3>
+<p>Ebbinghaus
+遗忘曲线告诉我们：学完一个东西后，如果不复习，记忆呈指数衰减——1
+小时后忘掉约 50%，1 天后忘掉约 70%。</p>
+<p>但有一件事比这更关键——<strong>间隔效应</strong>：</p>
+<blockquote>
+<p>在<strong>即将遗忘的时刻进行回忆</strong>，比任何其他时间点的复习都更高效。</p>
+</blockquote>
+<p>这就是 SRS 的核心思想。Anki
+通过<strong>指数退避</strong>算法（exponential
+backoff）自动安排每次复习的时间：你回答得越容易，卡片被推到越远的未来；回答得越困难，它在近期再次出现。</p>
+<h3 id="检索效应testing-effect">1.2 检索效应（Testing Effect）</h3>
+<p>SRS 的另一个科学支柱是<strong>检索效应</strong>（Testing
+Effect，也称测试效应）：</p>
+<blockquote>
+<p>从记忆中主动提取信息，比重新阅读或复习笔记，能更大幅度地增强长期记忆。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>长期保持率（1周后）</th>
+<th>花费时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>重读笔记</td>
+<td>~30%</td>
+<td>中等</td>
+</tr>
+<tr>
+<td>划线标注</td>
+<td>~20%</td>
+<td>少</td>
+</tr>
+<tr>
+<td>自我测试（主动回忆）</td>
+<td>~60-80%</td>
+<td>多（但更值）</td>
+</tr>
+</tbody>
+</table>
+<p>这解释了 Anki
+最根本的设计原则：<strong>每张卡片都是一次主动回忆的练习</strong>，不是被动浏览。</p>
+<h3 id="最小信息原则">1.3 最小信息原则</h3>
+<p>SRS 的另一条核心原则来自 SuperMemo 的作者 Piotr Wozniak：</p>
+<blockquote>
+<p>一张卡片应该只测试一个最小信息单元。</p>
+</blockquote>
+<p>原因在于工作记忆的容量限制——如果一张卡片同时测试两个互不依赖的事实，其中任何一个被忘记都会导致整张卡片失败，但你无法知道是哪个没记住。</p>
+<blockquote>
+<p><strong>反例</strong>：“法国的首都是巴黎，德国的首都是柏林。” →
+正面问”法国首都是？“，背面想答”巴黎”还是”柏林”？混乱。</p>
+<p><strong>正例</strong>： - Q：法国的首都是？ → A：巴黎 -
+Q：德国的首都是？ → A：柏林</p>
+</blockquote>
+<hr />
+<h2 id="二anki-用法的三个层次">二、Anki 用法的三个层次</h2>
+<p>这是整个体系中最核心的部分。大部分人在层次一就停下了，而真正的高手能走到层次三。</p>
+<h3 id="层次一基础记忆fact-recall">🥉 层次一：基础记忆（Fact
+Recall）</h3>
+<p><strong>做什么</strong>：把需要记忆的事实做成 Q&amp;A
+卡片，每天过一定数量的复习。</p>
+<p><strong>适合</strong>： - 背单词（最经典场景） - 记忆公式、定理、日期
+- 记忆代码片段、API 用法 - 记忆解剖图、化学结构等可视化内容</p>
+<p><strong>典型卡片设计</strong>：</p>
+<pre><code>Q: 拉格朗日中值定理的公式是什么？
+A: 若 f(x) 在 [a,b] 连续、在 (a,b) 可导，则 ∃ ξ∈(a,b) 使得
+   f&#39;(ξ) = (f(b) - f(a))/(b - a)</code></pre>
+<p><strong>局限性</strong>：停留在这个层次，Anki
+只是一个”记忆维持工具”。它能让你不忘公式，但无法帮你<strong>理解为什么这个公式成立</strong>，更无法训练你在实际问题中<strong>选择用哪个公式</strong>。</p>
+<h3 id="层次二概念理解conceptual-understanding">🥈
+层次二：概念理解（Conceptual Understanding）</h3>
+<p><strong>这是 Thoughts Memo 社区强调的核心层次。</strong></p>
+<p><strong>做什么</strong>：不满足于记忆事实，而是设计卡片来<strong>强迫自己推理</strong>。卡片不是问”是什么”，而是问”为什么”、“怎么区分”、“在什么情况下适用”。</p>
+<p><strong>为什么有效</strong>：写卡片本身就是深度学习过程。要把一个概念压缩成一张好的卡片，你不得不：</p>
+<ol type="1">
+<li>理清概念的核心是什么</li>
+<li>找出常见的误解或混淆点</li>
+<li>设计能测试真正理解、而非表面记忆的问题</li>
+</ol>
+<p><strong>数学示例对比</strong>：</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>层次</th>
+<th>卡片</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一（基础记忆）</td>
+<td>Q: 罗尔定理的条件？A: f(a)=f(b)</td>
+<td>背完忘，不会用</td>
+</tr>
+<tr>
+<td>二（概念理解）</td>
+<td>Q: 如果 f 在 [a,b] 连续、在 (a,b) 可导，且
+f(a)=f(b)，你能推出什么？为什么不直接说导数处处为零？</td>
+<td>强迫你思考 Rolle 定理的结论和前提的关系</td>
+</tr>
+</tbody>
+</table>
+<p><strong>概念理解卡片的常见模式</strong>：</p>
+<pre><code>1. 比较题：
+   Q: 中值定理的三个版本（Rolle/Lagrange/Cauchy），它们的条件递进关系是什么？各比前一个多加了什么条件？
+
+2. 边界题：
+   Q: 为什么 Rolle 定理要求 f(a)=f(b)？如果去掉这个条件，结论变成什么？→ 退化为 Lagrange 中值定理
+
+3. 反例题：
+   Q: 如果 f 在 (a,b) 上不连续，Rolle 定理还成立吗？给一个反例。
+
+4. 应用题（场景式）：
+   Q: 证明方程 x³ + x - 1 = 0 在 (0,1) 内有实根。用什么定理？为什么？</code></pre>
+<p><strong>Andy
+Matuschak（《量子国度》作者）的用法</strong>：他不止是”复习卡片”，而是把卡片看作<strong>与未来的自己对话</strong>。他设计的卡片常常是开放式的：</p>
+<blockquote>
+<p>Q: 我昨天读的那篇关于认知负荷的论文，它的核心论点是什么？它和 Sweller
+的原论文有什么不同？</p>
+</blockquote>
+<p>这种卡片不是考记忆，而是<strong>让自己在未来的某一天被拉回到一个思考场景中</strong>。</p>
+<h3 id="层次三作为刻意练习deliberate-practice">🥇
+层次三：作为刻意练习（Deliberate Practice）</h3>
+<p><strong>这是最高层次的用法</strong>，也是文章 <em>SRS
+多大程度上算刻意练习？</em> 的核心论点。</p>
+<p><strong>核心论证</strong>：Anders Ericsson
+提出的”刻意练习”有四个特征：</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>刻意练习的特征</th>
+<th>SRS 如何满足</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. 聚焦弱点</td>
+<td>FSRS
+算法自动追踪每张卡片的难度和稳定性。错的卡片出现频率更高——系统天然在”补短板”</td>
+</tr>
+<tr>
+<td>2. 即时反馈</td>
+<td>每次回答后自己打分（Again = 没记住 / Hard = 勉强 / Good = 记得 /
+Easy = 太简单），立即知道自己哪里没掌握</td>
+</tr>
+<tr>
+<td>3. 逐步改进</td>
+<td>间隔逐渐拉长（从 1 天 → 4 天 → 15 天 → 2
+个月…），每次复习都在不同的时间线上”加固”记忆</td>
+</tr>
+<tr>
+<td>4. 个性化</td>
+<td>你打的分决定了你的学习曲线，每个人的复习节奏完全不一样</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>当然，SRS
+不完全等同于刻意练习——因为你做的不是”有教练指导的高强度训练”，而是自我引导的间歇性提取。但它的<strong>自动聚焦弱点</strong>机制，确实让它在自我学习中扮演了刻意练习的角色。</p>
+</blockquote>
+<p><strong>如何实践层次三</strong>： 1.
+不是为了”复习完”而刷卡片，而是每次看到卡片时<strong>刻意延长思考时间</strong>，多想一步
+2. 对自己打 Grade 保持诚实——“这题我其实没记住，只是凭上下文猜的” → 选
+Again 3. 定期淘汰”太简单”的卡片，换更高难度的问题形式 4.
+把多个知识点的卡片交错出现（interleaving），而不是按主题分组复习</p>
+<hr />
+<h2
+id="三卡片设计的核心原则附正反例">三、卡片设计的核心原则（附正反例）</h2>
+<p>ZhiHuArchive 中有 8+
+篇文章专门讨论卡片设计，以下是提炼出的<strong>铁律</strong>：</p>
+<h3 id="必须实际提取不能只是识别">3.1 必须实际提取，不能只是识别</h3>
+<pre><code>❌ 选择题式：
+题目中 f(a)=f(b) 且 f 在 [a,b] 连续导出什么结论？
+A) Rolle 定理  B) Lagrange 定理  C) Cauchy 定理
+→ 你靠排除法就能选对，没有真正提取
+
+✅ 生成式：
+Q: 什么条件下可以应用 Rolle 定理？写出完整的结论。
+A: f 在 [a,b] 连续、(a,b) 可导、f(a)=f(b) ⇒ ∃ξ∈(a,b), f&#39;(ξ)=0
+→ 你得从零开始回忆定理的完整表述</code></pre>
+<h3 id="避免浅层次模式匹配">3.2 避免浅层次模式匹配</h3>
+<pre><code>❌ 模式匹配卡片（所有问题都是同一句式）：
+Q: [定理名]的条件是什么？
+A: [罗列条件]
+
+→ 你只是记住了&quot;问条件→罗列条件&quot;这个套路，根本没理解
+
+✅ 多角度卡片：
+同一知识点设计 3-5 种不同角度的问法：
+1. 正向：Rolle 定理给我们什么结论？
+2. 逆向：如果 ξ 处导数为 0，能推出什么条件？
+3. 应用：证明这个方程有根——用什么定理？怎么用？
+4. 变式：如果 f(a)≠f(b)，结论如何变化？
+5. 联系：Rolle 定理是 Lagrange 中值定理的特例——为什么？</code></pre>
+<h3 id="用不同问题文本问同一个知识点">3.3
+用不同问题文本问同一个知识点</h3>
+<p>同一张事实，可以设计 3 种问法轮流出现：</p>
+<pre><code>方式 A（正向）：
+Q: 法国首都是？
+A: 巴黎
+
+方式 B（反向）：
+Q: 巴黎是哪个国家的首都？
+A: 法国
+
+方式 C（关联）：
+Q: 法国和德国的首都分别是？
+A: 巴黎、柏林</code></pre>
+<p>Anki
+本身不自动做这种变体设计——需要你手动创建多张卡片。但效果显著。</p>
+<h3 id="不要用对错卡片">3.4 不要用”对/错”卡片</h3>
+<pre><code>❌ False/True 题：
+Q: Rolle 定理要求 f(a)=f(b)。T/F
+→ 事实性判断太简单，不需要提取
+
+✅ 开放题：
+Q: Rolle 定理中 f(a)=f(b) 这个条件的直观意义是什么？
+A: 函数在区间两端取值相同，意味着如果中间有变化就必须&quot;先上后下&quot;或&quot;先下后上&quot;，因此必然有极值点，极值点导数为零</code></pre>
+<h3 id="跳过机制比删除更柔性">3.5 “跳过”机制比删除更柔性</h3>
+<p>Anki 的”暂停”（Suspend）和”降级”（Bury）功能比直接删除更智慧：</p>
+<blockquote>
+<p>有些材料当前不相关，但以后可能用上。直接删了就没了，以后得重新做卡片。暂停/降级让它先沉下去，等合适的时机再浮现。</p>
+</blockquote>
+<h3 id="持续添加新卡片">3.6 持续添加新卡片</h3>
+<blockquote>
+<p><strong>没有新卡片，复习会枯燥脱节。</strong></p>
+</blockquote>
+<p>这是被很多人忽视的点。如果你只复习旧卡片、不添加新内容，每天的复习就变成了”机械地在旧知识上打转”。新卡片给复习系统注入活水——<strong>新知识和旧知识之间会产生连接</strong>（elaborative
+encoding），让所有记忆更牢固。</p>
+<hr />
+<h2 id="四fsrs-算法anki-背后的数学引擎">四、FSRS 算法：Anki
+背后的数学引擎</h2>
+<p>FSRS（Free Spaced Repetition Scheduler）是由叶峻峣（Jarrett
+Ye）开发的次世代间隔重复算法，现已集成到 Anki 官方作为可选调度器。</p>
+<h3 id="传统算法sm-2的局限">4.1 传统算法（SM-2）的局限</h3>
+<p>原来的 Anki 调度算法使用一个固定的”难度”参数，通过一个简单的
+heuristic 公式计算下次复习时间：</p>
+<pre><code>间隔 = 上一次间隔 × 难度因子</code></pre>
+<p>问题：所有人的学习曲线被强行压缩成相同的形状，不考虑个体差异。</p>
+<h3 id="fsrs-的创新">4.2 FSRS 的创新</h3>
+<p>FSRS 使用<strong>四个可学习参数</strong>来建模记忆：</p>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+<th>实际问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>稳定性（Stability）</strong></td>
+<td>这个记忆能保持多久</td>
+<td>有些东西你 1 个月后还记得，有些 1 天后就忘</td>
+</tr>
+<tr>
+<td><strong>难度（Difficulty）</strong></td>
+<td>这个材料本身有多难</td>
+<td>简单的对话 vs. 复杂的数学定理，需要的复习频率不同</td>
+</tr>
+<tr>
+<td><strong>可提取性（Retrievability）</strong></td>
+<td>当前这一刻，你记住它的概率</td>
+<td>算法根据时间推算，决定今天要不要复习</td>
+</tr>
+<tr>
+<td><strong>响应多样性</strong></td>
+<td>你打分时的”手感”差异</td>
+<td>有些人喜欢给 Easy，有些人保守只给 Good——算法自适应</td>
+</tr>
+</tbody>
+</table>
+<p><strong>简化版描述</strong>：每次你回答完一张卡片，FSRS
+会根据你的回答历史和该卡片的特征，动态调整它的下次出现时间。如果你连续两次答对了，它不会像传统算法那样简单地翻倍间隔，而是根据你的<strong>个人记忆模式</strong>计算出最优时间。</p>
+<h3 id="fsrs-对学习者的实际影响">4.3 FSRS 对学习者的实际影响</h3>
+<ol type="1">
+<li><strong>每日复习量减少
+20-30%</strong>：用更少的复习达到同样的保持率</li>
+<li><strong>对”困难卡片”更宽容</strong>：不会因为连续答错几次就把间隔缩到
+1 天以内——它判断你是”真的没记住”还是”只是状态不好”</li>
+<li><strong>对新卡片更保守</strong>：初期间隔较短，确保新知识先被巩固</li>
+<li><strong>长期更精准</strong>：使用时间越长，算法对你个人的数据拟合越准确</li>
+</ol>
+<hr />
+<h2
+id="五实战如何为数学学习设计-anki-工作流">五、实战：如何为数学学习设计
+Anki 工作流</h2>
+<p>基于前文的原则，以下是针对高等数学（或任何数学课程）的具体方案：</p>
+<h3 id="卡片组织体系">5.1 卡片组织体系</h3>
+<p>建议按”三层结构”组织牌组：</p>
+<pre><code>📁 高数（牌组）
+├── 📁 Ch5_定积分（子牌组）
+│   ├── 📄 基础记忆层  → 公式、定理、定义
+│   ├── 📄 概念理解层  → 为什么成立、怎么用
+│   └── 📄 综合应用层  → 证明题思路、方法比较
+├── 📁 Ch6_微分方程
+│   └── ...
+└── 📁 Ch7_多元微积分
+    └── ...</code></pre>
+<h3 id="具体卡片设计示例">5.2 具体卡片设计示例</h3>
+<p><strong>基础记忆层</strong>（层次一）：</p>
+<pre><code>Q: 写出牛顿-莱布尼茨公式
+A: ∫_a^b f(x)dx = F(b) - F(a)，其中 F&#39;(x) = f(x)</code></pre>
+<p><strong>概念理解层</strong>（层次二）：</p>
+<pre><code>Q: 为什么牛顿-莱布尼茨公式要求 f 在 [a,b] 上连续？
+   提示：考虑一个在 [a,b] 上不连续但有原函数的函数
+   
+A: 如果不连续，积分可能不收敛，或 F(b)-F(a) 的差值与
+   黎曼和极限不对应。连续性保证了黎曼积分存在且与
+   原函数的差值一致。</code></pre>
+<p><strong>综合应用层</strong>（层次三）：</p>
+<pre><code>Q: 计算 ∫_0^π sin²x dx 至少用 2 种方法。
+   （提示：降幂公式 / 对称性）
+   
+A: 方法一（降幂）：sin²x = (1-cos2x)/2
+   = ∫_0^π (1-cos2x)/2 dx = [x/2 - sin2x/4]_0^π = π/2
+   
+   方法二（对称性）：∫_0^π sin²x dx = ∫_0^π cos²x dx
+   且 sin²x + cos²x = 1
+   所以 2∫_0^π sin²x dx = ∫_0^π 1 dx = π ⇒ 原式 = π/2
+   
+   通法总结：对称性和恒等式是简化定积分的利器——
+   遇到 sin²/cos²，优先考虑对称性而非直接积分。</code></pre>
+<h3 id="日常节奏">5.3 日常节奏</h3>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 40%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>时段</th>
+<th>做什么</th>
+<th>时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>上午</td>
+<td>新卡片 + 常规复习（无特殊处理）</td>
+<td>15-20 min</td>
+</tr>
+<tr>
+<td>下午/晚上学完新内容后</td>
+<td>制作 3-5 张新卡片（当天学的内容、当天做错的题）</td>
+<td>10 min</td>
+</tr>
+<tr>
+<td>周末</td>
+<td>批量设计”概念理解”卡片（回顾本周弱点）</td>
+<td>20-30 min</td>
+</tr>
+<tr>
+<td>考前一周</td>
+<td>暂停所有已掌握的卡片，集中攻克”Again”率 &gt; 20% 的弱卡</td>
+<td>按需</td>
+</tr>
+</tbody>
+</table>
+<h3 id="常见误区">5.4 常见误区</h3>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>误区</th>
+<th>正确做法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一天加 50 张新卡片</td>
+<td>一天加 5-10 张，质量优先。太多新卡片会导致复习堆积</td>
+</tr>
+<tr>
+<td>只看”Good”和”Easy”，不打 Again</td>
+<td><strong>诚实打分</strong>——Again 不可怕，可怕的是”假装会了”</td>
+</tr>
+<tr>
+<td>卡片的正面全部是”Q: …“，反面全是”A: …”</td>
+<td>多样化格式：填空题、类比题、列举题、反向题交替</td>
+</tr>
+<tr>
+<td>从来没删过卡片</td>
+<td>定期（每月）整理牌组：合并重复卡片、删除无关的、改写模糊的</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="六对-edu-companion-的启示">六、对 edu-companion 的启示</h2>
+<p>edu-companion 当前的”向量检索式复习”（material search 基于 embedding
+相似度）处于<strong>层次零</strong>——让用户回顾材料片段。升级路径清晰：</p>
+<h3 id="近期概念性提取">近期：概念性提取</h3>
+<p>在解析题库时，对每个知识点自动生成<strong>多角度理解卡片</strong>：</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例：从知识点生成多角度问题</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>知识点: <span class="st">&quot;牛顿-莱布尼茨公式&quot;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>→ 正向问题: <span class="st">&quot;牛顿-莱布尼茨公式的内容是什么？&quot;</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>→ 逆向问题: <span class="st">&quot;如果知道 F(b)-F(a) = 5，且 F&#39;(x)=f(x)，能推出什么？&quot;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>→ 条件变式: <span class="st">&quot;如果 f 在 [a,b] 上不连续，公式还成立吗？&quot;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>→ 应用场景: <span class="st">&quot;计算 ∫_0^1 e^x dx 用什么方法？&quot;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>→ 联系问题: <span class="st">&quot;这个公式和定积分的定义有什么关系？&quot;</span></span></code></pre></div>
+<h3 id="中期自适应间隔">中期：自适应间隔</h3>
+<p>引入类似 FSRS
+的记忆模型，不只是”推荐相似材料”，而是<strong>追踪每个知识点的掌握曲线</strong>：</p>
+<ul>
+<li>用户看过的每个知识点，记录”首次接触时间”和”最近复习时间”</li>
+<li>根据用户的答题表现（答对/答错），动态调整该知识点的推荐复习时间</li>
+<li>对”多次答错”的知识点自动降低难度，提供更多辅助材料</li>
+</ul>
+<h3 id="远期综合应用引擎">远期：综合应用引擎</h3>
+<p>最理想的状态是——edu-companion
+不仅能帮助用户记忆和理解，还能<strong>诊断用户在综合应用层面的薄弱点</strong>：</p>
+<blockquote>
+<p>用户做了 3 道定积分证明题都卡在”构造函数”这一步 →
+系统识别到”构造辅助函数”的技能缺陷 → 推送专门训练这个技能的 5 道递进题 →
+同步推送对应的概念卡片：“构造辅助函数时，通常从哪些条件出发？”</p>
+</blockquote>
+<p>这就是 Math Academy 四组件模型中”诊断算法 +
+任务选择算法”的工程实现。</p>
+<hr />
+<h2 id="七总结">七、总结</h2>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>目标</th>
+<th>卡片设计关键词</th>
+<th>edu-companion 对标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一</td>
+<td>维持记忆</td>
+<td>Q&amp;A、最小信息、事实</td>
+<td>当前：材料回顾</td>
+</tr>
+<tr>
+<td>二</td>
+<td>概念理解</td>
+<td>比较、反例、边界、场景</td>
+<td>近期目标</td>
+</tr>
+<tr>
+<td>三</td>
+<td>刻意练习</td>
+<td>弱点聚焦、交错、诚实反馈</td>
+<td>远期目标</td>
+</tr>
+</tbody>
+</table>
+<p>Anki
+的真正力量不在于”让你不忘”，而在于<strong>它逼迫你把知识从”模糊知道”变成”清晰提取”</strong>。每一次回答卡片，都是在大脑里重新走一遍推理路径——次数多了，那条路就变成了高速公路。</p>
+<hr />
+<blockquote>
+<p><strong>延伸阅读</strong>： - <a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/398045447.html">SRS
+可用于发展概念性理解</a> - <a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/412311494.html">SRS
+促进应用综合创造</a> - <a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/410370813.html">SRS
+多大程度上算刻意练习？</a> - <a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/539330931.html">用 SRS
+掌握数学概念</a> - <a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/620583957.html">记忆系统与解题练习</a>
+- <a
+href="https://l-m-sherlock.github.io/ZhiHuArchive/665213906.html">SRS
+让你误以为记忆很差</a></p>
+</blockquote>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {  delimiters: [    {left: '$$', right: '$$', display: true},    {left: '$', right: '$', display: false},    {left: '\\(', right: '\\)', display: false},    {left: '\\[', right: '\\]', display: true}  ],  throwOnError: false});" crossorigin="anonymous"></script>
+</body>
+</html>
