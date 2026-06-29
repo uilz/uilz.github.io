@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --blockquote-border: #d0d7de;
+    --link: #0969da;
+    --heading: #1f2328;
+    --table-header-bg: #f6f8fa;
+    --table-alt-bg: #f8f9fa;
+    --hr: #d0d7de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    padding: 40px;
+    max-width: 840px;
+    margin: 0 auto;
+  }
+  /* ── 标题 ── */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--heading);
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  /* ── 段落 ── */
+  p { margin-bottom: 1em; }
+  /* ── 链接 ── */
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  /* ── 列表 ── */
+  ul, ol { margin-bottom: 1em; padding-left: 2em; }
+  li { margin-bottom: 0.25em; }
+  li > p { margin-bottom: 0.25em; }
+  /* ── 代码 ── */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background-color: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  pre {
+    margin-bottom: 1em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    white-space: pre;
+  }
+  /* ── 引用 ── */
+  blockquote {
+    margin: 0 0 1em;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid var(--blockquote-border);
+  }
+  blockquote p { margin-bottom: 0.5em; }
+  /* ── 表格 ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    background: var(--table-header-bg);
+  }
+  tr:nth-child(even) { background: var(--table-alt-bg); }
+  /* ── 分割线 ── */
+  hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
+  /* ── 图片 ── */
+  img { max-width: 100%; }
+  /* ── 笔记/警告块（兼容 Obsidian callout 样式） ── */
+  .callout {
+    padding: 12px 16px;
+    margin-bottom: 1em;
+    border-left: 4px solid var(--link);
+    background: #f0f6ff;
+    border-radius: 6px;
+  }
+  .callout.warning { border-left-color: #d29922; background: #fff8c5; }
+  .callout.danger  { border-left-color: #cf222e; background: #ffebe9; }
+  .callout strong.callout-title { font-size: 0.9em; text-transform: uppercase; }
+  /* ── KaTeX 公式居中 ── */
+  .katex-display { margin: 0.8em 0; text-align: center; }
+</style>
+
+</head>
+<body>
+<h1
+id="计算机系统概论终极期末复习提纲-题库">《计算机系统概论》终极期末复习提纲
++ 题库</h1>
+<blockquote>
+<p>整理自：课后作业（第2~9章）| 按知识点→题型→去重归并 |
+深大·大一·计系</p>
+</blockquote>
+<hr />
+<h2 id="第二章数据的表示与运算">【第二章】数据的表示与运算</h2>
+<hr />
+<h3
+id="知识点1二进制基础组合数无符号整数范围">【知识点1】二进制基础：组合数、无符号整数范围</h3>
+<h4
+id="题型1n位二进制的组合数与表示范围">【题型1】n位二进制的组合数与表示范围</h4>
+<p><strong>【代表性例题】</strong>（原题1/2，书2.1/2.4）</p>
+<p><strong>【题干】</strong> （1）给定 n
+位二进制，共有多少种不同的组合？ （2）给定 n
+位二进制，可以表示多少个无符号整数？范围是什么？</p>
+<p><strong>【核心考点】</strong> 二进制位数与组合数的关系（2ⁿ
+个编码），无符号整数的范围从全 0 到全 1。</p>
+<p><strong>【通用解法与通式】</strong> - 组合数 = 2ⁿ - 无符号整数个数 =
+2ⁿ - 范围 = [0, 2ⁿ − 1]</p>
+<p><strong>【详细推导与步骤】</strong> - n 位二进制，每位能取 0 或
+1，独立选择，总组合 = 2 × 2 × … × 2 = 2ⁿ - 无符号整数：最小是全
+0（0），最大是全 1（2ⁿ − 1） - 例：8 位二进制 → 0 ~ 255</p>
+<p><strong>【同类变体总结】</strong> -
+同类变体无——本题是二进制基础概念题，后续所有进制/编码计算均基于此。</p>
+<hr />
+<h3
+id="知识点2原码反码补码的表示与转换">【知识点2】原码、反码、补码的表示与转换</h3>
+<h4
+id="题型2给定十进制数用指定位数写出原码反码补码">【题型2】给定十进制数，用指定位数写出原码/反码/补码</h4>
+<p><strong>【代表性例题】</strong>（原题3，书2.5）</p>
+<p><strong>【题干】</strong> 使用5位二进制分别表示 +7 和
+−7，写出以下三种编码：原码（signed magnitude）、反码（1’s
+complement）、补码（2’s complement）。</p>
+<p><strong>【核心考点】</strong> 三种有符号数编码方案的定义与区别： -
+<strong>原码</strong>：符号位（最高位）+ 数值绝对值 -
+<strong>反码</strong>：正数同原码；负数 = 对应正数按位取反 -
+<strong>补码</strong>：正数同原码；负数 = 反码 + 1</p>
+<p><strong>【通用解法与通式】</strong></p>
+<table>
+<thead>
+<tr>
+<th>数值</th>
+<th>原码</th>
+<th>反码</th>
+<th>补码</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>+X</td>
+<td>0 + X的二进制</td>
+<td>同原码</td>
+<td>同原码</td>
+</tr>
+<tr>
+<td>−X</td>
+<td>1 + X的二进制</td>
+<td>原码符号位不变，数值位取反</td>
+<td>反码 + 1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>核心公式：</strong> 补码 = 反码 + 1 =
+原码符号位不变，数值位取反后 + 1</p>
+<p><strong>【详细推导与步骤】</strong> +7 的 5
+位二进制：00111（数值部分占4位0111，符号位0）</p>
+<p><strong>+7：</strong> - 原码：0 0111 - 反码：0 0111（正数同原码） -
+补码：0 0111（正数同原码）</p>
+<p><strong>−7：</strong> - 原码：1 0111（符号位为1） - 反码：1
+1000（数值位 0111 → 1000，符号位保持1） - 补码：1 1001（反码1 1000 + 1 =
+1 1001）</p>
+<p><strong>易错点提醒：</strong>
+反码是在原码基础上数值位取反，<strong>符号位不变</strong>；补码是反码 +
+1，进位丢弃。</p>
+<h4 id="题型3十进制-补码转换">【题型3】十进制 ↔︎ 补码转换</h4>
+<p><strong>【代表性例题1——十进制转补码】</strong>（原题4/7，书2.6/2.11）</p>
+<p><strong>【题干】</strong> （1）写出 −32 的 6 位补码表示。
+（2）将以下十进制数转换为 8 位补码二进制：a. 102 b. 64 c. 33 d. −128 e.
+127</p>
+<p><strong>【核心考点】</strong> 十进制负数转补码：先求绝对值的二进制 →
+取反 → +1。正数直接转二进制并在高位补 0。</p>
+<p><strong>【通用解法与通式】</strong> 1. <strong>正数转 n
+位补码：</strong> 将十进制转为二进制，高位补 0 至 n 位 2. <strong>负数转
+n 位补码（快速法）：</strong> - 法一：求绝对值的二进制 → 取反 → +1 -
+法二（更快捷）：从右向左找第一个 1，左边各位取反（包括符号位） 3.
+<strong>注意：</strong> n 位补码能表示的最小负数是
+−2ⁿ⁻¹，如果绝对值超过此范围则无法表示</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>(1) −32 的 6 位补码</strong> - 32 的 6 位二进制 = 10 0000 -
+取反 → 01 1111 - +1 → <strong>10 0000</strong> - 验算：6位补码范围
+−32~31，−32 的最小值就是 10 0000 ✓ - ⚠ 注意：−32 取反+1 后回到了 10
+0000，因为 32 本身正好使符号位溢出</p>
+<p><strong>(2) 8位补码转换</strong> - <strong>102</strong> → 110 0110 →
+<strong>0110 0110</strong>（高位补0） - <strong>64</strong> → 100 0000 →
+<strong>0100 0000</strong> - <strong>33</strong> → 10 0001 →
+<strong>0010 0001</strong> - <strong>−128</strong>： - 128 的 8 位二进制
+= 1000 0000 - 8 位补码范围 [−128, 127]，−128 恰好可表示 - 补码就是
+<strong>1000 0000</strong>（−128 的特殊性：没有对应的原码/反码） -
+<strong>127</strong> → 111 1111 → <strong>0111 1111</strong></p>
+<p><strong>【同类变体总结】</strong> - 类似的原题5（书2.8）问的是 8
+位补码最大正数和绝对值最大负数：答案是 0111 1111 (127) 和 1000 0000
+(−128)，n 位通式：最大值 2ⁿ⁻¹−1，最小值 −2ⁿ⁻¹。</p>
+<hr />
+<p><strong>【代表性例题2——补码转十进制】</strong>（原题6，书2.10）</p>
+<p><strong>【题干】</strong> 将以下补码二进制数转换为十进制： a. 1010 b.
+01011010 c. 11111110 d. 0011100111010011</p>
+<p><strong>【核心考点】</strong> 补码转十进制：看符号位（最高位）。0
+为正数，直接转；1 为负数，取反+1 得绝对值再加负号。</p>
+<p><strong>【通用解法与通式】</strong> 1. 检查最高位（MSB） 2.
+<strong>MSB = 0</strong>：直接按无符号二进制转十进制 3. <strong>MSB =
+1</strong>：数值位取反 → +1 → 转十进制 → 加负号 4.
+快速法（对负数）：从右向左找到第一个
+1，左边各位（含符号位）取反后转十进制</p>
+<p><strong>【详细推导与步骤】</strong> - <strong>a.
+1010</strong>（4位）：MSB=1 → 数值取反 0101 → +1 = 0110 = 6 →
+<strong>−6</strong> - <strong>b. 01011010</strong>（8位）：MSB=0 →
+直接转 = 64+16+8+2 = <strong>90</strong> -
+<strong>c. 11111110</strong>（8位）：MSB=1 → 取反 0000001 → +1 = 0000010
+= 2 → <strong>−2</strong> -
+<strong>d. 0011100111010011</strong>（16位）：MSB=0 → 直接转 =
+<strong>14,803</strong> （2¹³+2¹²+2¹¹+2⁸+2⁷+2⁶+2⁴+2¹+2⁰ =
+8192+4096+2048+256+128+64+16+2+1 = 14803）</p>
+<p><strong>【同类变体总结】</strong> -
+原题20（书2.47）将<strong>十六进制</strong>补码转十进制：xF0、x7FF、x16、x8000
+- 本质上与本题相同，只是先要把十六进制展开为二进制，再按上述规则转换 -
+xF0 = 1111 0000 → MSB=1 → 取反 000 1111 → +1 = 0001 0000 = 16 →
+<strong>−16</strong> - x7FF = 0111 1111 1111 → MSB=0 →
+<strong>2047</strong> - x16 = 0001 0110 → MSB=0 → <strong>22</strong> -
+x8000 = 1000 0000 0000 0000 → MSB=1 → 取反 111 1111 1111 → +1 = 1000
+0000 0000 → <strong>−32768</strong></p>
+<hr />
+<h3
+id="知识点3补码加减运算与溢出判断">【知识点3】补码加减运算与溢出判断</h3>
+<h4 id="题型4补码加法运算同位数">【题型4】补码加法运算（同位数）</h4>
+<p><strong>【代表性例题】</strong>（原题8，书2.14）</p>
+<p><strong>【题干】</strong> 完成以下二进制加法（结果用二进制表示）： a.
+1011 + 0001 b. 1100 + 0011 c. 0101 + 0110 d. 1111 + 0001</p>
+<p><strong>【核心考点】</strong>
+补码加法与无符号加法在二进制层面做的是<strong>完全相同</strong>的加法操作，区别仅在于对结果的解释方式不同。</p>
+<p><strong>【通用解法与通式】</strong> 1. 逐位相加，进位向高位传播 2.
+最后产生的进位（超出位数的）直接丢弃 3.
+结果的位数与操作数相同，不保留进位</p>
+<p><strong>【详细推导与步骤】</strong> - a. 1011 + 0001 =
+<strong>1100</strong> - b. 1100 + 0011 = <strong>1111</strong> - c. 0101
++ 0110 = <strong>1011</strong>（注意：从无符号看是
+5+6=11，二进制正确；从补码看是 5+6=−5，说明发生了溢出） - d. 1111 + 0001
+= <strong>0000</strong>（进位 1 被丢弃，结果是 0000）</p>
+<h4 id="题型5补码溢出判断">【题型5】补码溢出判断</h4>
+<p><strong>【代表性例题】</strong>（原题11/12/13，书2.20/2.21/2.25）</p>
+<p><strong>【题干】</strong> 以下 4
+位补码运算中，哪些会产生溢出？请通过将操作数和结果转换为十进制来验证。
+a. 1100 + 0011 b. 1100 + 0100 c. 0111 + 0001 d. 1000 − 0001 e. 0111 +
+1001</p>
+<p>附加问：描述两个补码数相加时，什么条件表明发生了溢出？
+附加问：为什么一个负的补码数和一个正的补码数相加永远不会产生溢出？</p>
+<p><strong>【核心考点】</strong>
+溢出只发生在<strong>同号相加</strong>时（正+正得负，或
+负+负得正）。异号相加永远不会溢出。</p>
+<p><strong>【通用解法与通式】</strong></p>
+<p><strong>溢出判据（两种等价方法）：</strong></p>
+<p><strong>方法一（符号位法）：</strong>
+两个操作数符号相同，但结果的符号与之不同 → 溢出 - 正 + 正 = 负 →
+溢出（结果超出最大正数 2ⁿ⁻¹−1） - 负 + 负 = 正 → 溢出（结果超出最小负数
+−2ⁿ⁻¹）</p>
+<p><strong>方法二（进位法）：</strong> 最高数值位向符号位的进位 ≠
+符号位向进位位的进位 → 溢出</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 14%" />
+<col style="width: 11%" />
+<col style="width: 20%" />
+<col style="width: 16%" />
+<col style="width: 14%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr>
+<th>运算</th>
+<th>十进制</th>
+<th>符号</th>
+<th>结果(4位)</th>
+<th>转十进制</th>
+<th>溢出？</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a. 1100+0011</td>
+<td>(−4)+3</td>
+<td>异号</td>
+<td>1111</td>
+<td>−1</td>
+<td><strong>否</strong></td>
+<td>异号不会溢出</td>
+</tr>
+<tr>
+<td>b. 1100+0100</td>
+<td>(−4)+4</td>
+<td>异号</td>
+<td>0000</td>
+<td>0</td>
+<td><strong>否</strong></td>
+<td>异号不会溢出</td>
+</tr>
+<tr>
+<td>c. 0111+0001</td>
+<td>7+1</td>
+<td>同号正</td>
+<td>1000</td>
+<td>−8</td>
+<td><strong>是</strong></td>
+<td>正+正=负，溢出</td>
+</tr>
+<tr>
+<td>d. 1000−0001</td>
+<td>(−8)−1 = (−8)+(−1)</td>
+<td>同号负</td>
+<td>0111</td>
+<td>7</td>
+<td><strong>是</strong></td>
+<td>负+负=正，溢出</td>
+</tr>
+<tr>
+<td>e. 0111+1001</td>
+<td>7+(−7)</td>
+<td>异号</td>
+<td>0000</td>
+<td>0</td>
+<td><strong>否</strong></td>
+<td>异号不会溢出</td>
+</tr>
+</tbody>
+</table>
+<p><strong>原理证明（负+正不会溢出）：</strong> - 设
+A&lt;0（补码），B&gt;0（补码） - A 的取值范围 [−2ⁿ⁻¹, −1]，B 的取值范围
+[1, 2ⁿ⁻¹−1] - A+B 的取值范围 [−2ⁿ⁻¹+1, 2ⁿ⁻¹−2] - 这个范围完全包含在 n
+位补码的可表示范围 [−2ⁿ⁻¹, 2ⁿ⁻¹−1] 之内，因此绝不可能溢出</p>
+<p><strong>【同类变体总结】</strong> -
+原题21（书2.49）要求<strong>16位补码加法并用十六进制表示结果</strong>：x025B+x26DE、x7D96+xF0A0
+- 只是位数扩展为 16 位，溢出判断逻辑完全相同 - x025B+x26DE：0000 0010
+0101 1011 + 0010 0110 1101 1110 = 0010 1001 0011 1001 =
+<strong>x2939</strong>（异号？不，都是正数，正常） -
+第二问附带考察溢出特征：x7D96+xF0A0
+的结果符号如何？x7D96的最高位为0（正），xF0A0最高位为1（负），异号相加一定不溢出</p>
+<hr />
+<h4
+id="题型6不同位数补码加法符号扩展">【题型6】不同位数补码加法——符号扩展</h4>
+<p><strong>【代表性例题】</strong>（原题9/10，书2.17/2.19）</p>
+<p><strong>【题干】</strong>
+（1）完成以下补码二进制加法，并给出十进制结果（注意：不同位数的操作数需先进行符号扩展）：
+a. 01 + 1011 b. 11 + 01010101 c. 0101 + 110 d. 01 + 10</p>
+<p>（2）将 −27 分别用 8 位、16 位、32
+位补码表示。这说明了符号扩展的什么性质？</p>
+<p><strong>【核心考点】</strong> <strong>符号扩展（Sign
+Extension）</strong>：当需要将较短位数的补码扩展到更多位时，将<strong>最高位（符号位）复制填充</strong>到新增的高位中。</p>
+<p><strong>【通用解法与通式】</strong> 1.
+将较短的操作数符号扩展至与较长的操作数同位数 2. 然后执行标准的补码加法
+3. 结果位数取较长操作数的位数</p>
+<p><strong>符号扩展规则：</strong> - 短补码 →
+长补码：新增的高位全部填为原最高位的值 - 正数（最高位=0）：高位补 0 -
+负数（最高位=1）：高位补 1</p>
+<p><strong>【详细推导与步骤】</strong> <strong>(1a) 01 + 1011</strong> -
+01 是 2 位，1011 是 4 位 → 将 01 符号扩展为 4 位：0001 - 0001 + 1011 =
+1100 = <strong>−4</strong> - 十进制验算：1 + (−5) = −4 ✓</p>
+<p><strong>(1b) 11 + 01010101</strong> - 11 是 2 位，符号扩展至 8
+位：1111 1111 - 1111 1111 + 0101 0101 = 0101 0100（进位丢弃）=
+<strong>84</strong> - 十进制验算：(−1) + 85 = 84 ✓</p>
+<p><strong>(1c) 0101 + 110</strong> - 110 是 3 位，符号扩展至 4 位：1110
+- 0101 + 1110 = 0011（进位丢弃）= <strong>3</strong> - 十进制验算：5 +
+(−2) = 3 ✓</p>
+<p><strong>(1d) 01 + 10</strong> - 同是 2 位，不需扩展 - 01 = 1, 10 = −2
+→ 1 + (−2) = −1 = <strong>11</strong> - 01 + 10 = 11 ✓</p>
+<p><strong>(2) −27 的符号扩展</strong> - 8 位：先求 27 = 0001 1011，取反
+1110 0100，+1 = <strong>1110 0101</strong> = xE5 - 16 位：<strong>1111
+1111 1110 0101</strong> = xFFE5 - 32 位：<strong>1111 1111 1111 1111
+1111 1111 1110 0101</strong> = xFFFFFFE5 -
+结论：补码数的符号扩展不改变其数值，因为高位补的 1 或 0
+只是复制了符号位信息</p>
+<hr />
+<h3
+id="知识点4逻辑运算andornotxor">【知识点4】逻辑运算（AND、OR、NOT、XOR）</h3>
+<h4 id="题型7按位逻辑运算">【题型7】按位逻辑运算</h4>
+<p><strong>【代表性例题】</strong>（原题14/15/16/22，书2.30/2.34/2.36/2.50）</p>
+<p><strong>【题干题14】</strong> 计算按位 AND：a. 01010111 AND 11010111
+b. 101 AND 110 c. 11100000 AND 10110100</p>
+<p><strong>【题干题15】</strong> 计算逻辑运算：a. NOT(1011) OR NOT(1100)
+b. NOT(1000 AND (1100 OR 0101)) c. NOT(NOT(1101)) d. (0110 OR 0000) AND
+1111</p>
+<p><strong>【题干题16】</strong> 参考 BUSYNESS
+位向量（8台机器的忙闲状态，1=空闲，0=忙碌）： a.
+用什么掩码和操作可以将机器2标记为忙碌？ b.
+用什么掩码和操作可以同时将机器2和机器6标记为空闲？
+c. 用什么掩码和操作可以将所有机器标记为忙碌？</p>
+<p><strong>【题干题22】</strong> 计算十六进制逻辑运算：a. x5478 AND
+xFDEA b. xABCD OR x1234 c. NOT((NOT(xDEFA)) AND (NOT(xFFFF))) d. x00FF
+XOR x325C</p>
+<p><strong>【核心考点】</strong> 按位逻辑运算规则： -
+AND（与）：1&amp;1=1，其余为 0（用于清零特定位，掩码中0的位置被清0） -
+OR（或）：0|0=0，其余为 1（用于置位特定位置，掩码中1的位置被置1） -
+NOT（非）：0→1, 1→0（按位取反） -
+XOR（异或）：相同为0，相异为1（用于翻转特定位）</p>
+<p><strong>掩码技巧：</strong> - AND 掩码（清零）：想将某位设为 0 →
+该位掩码为 0，其余为 1 - OR 掩码（置位）：想将某位设为 1 → 该位掩码为
+1，其余为 0 - XOR 掩码（翻转）：想翻转某位 → 该位掩码为 1，其余为 0 -
+NOT(X AND Y) = NOT(X) OR NOT(Y)（德摩根律） - NOT(X OR Y) = NOT(X) AND
+NOT(Y)</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>题14 按位 AND：</strong> - a. 01010111 AND 11010111 =
+<strong>0101 0111</strong> - b. 101 AND 110 = 先将较短数高位补0 → 101
+AND 110 = <strong>100</strong> - c. 11100000 AND 10110100 = <strong>1010
+0000</strong></p>
+<p><strong>题15 逻辑运算：</strong> - a. NOT(1011) OR NOT(1100) = 0100
+OR 0011 = <strong>0111</strong> - b. NOT(1000 AND (1100 OR 0101)) =
+NOT(1000 AND 1101) = NOT(1000) = <strong>0111</strong> -
+c. NOT(NOT(1101)) = <strong>1101</strong>（双重否定还原） - d. (0110 OR
+0000) AND 1111 = 0110 AND 1111 = <strong>0110</strong></p>
+<p><strong>题16 BUSYNESS 掩码：</strong> &gt; 位向量中：1 =
+空闲（idle），0 = 忙碌（busy）</p>
+<ul>
+<li><ol type="a">
+<li><strong>标记机器2为忙碌（设为0）</strong>：AND 掩码 1111 1011 = xFB
+→ 该位 AND 0 清零</li>
+</ol>
+<ul>
+<li>操作：BUSYNESS ← BUSYNESS AND xFB</li>
+</ul></li>
+<li><ol start="2" type="a">
+<li><strong>同时将机器2和机器6标记为空闲（设为1）</strong>：OR 掩码 0100
+0100 = x44</li>
+</ol>
+<ul>
+<li>操作：BUSYNESS ← BUSYNESS OR x44</li>
+</ul></li>
+<li><ol start="3" type="a">
+<li><strong>将所有机器标记为忙碌（全设为0）</strong>：AND 掩码 0000 0000
+= x00</li>
+</ol>
+<ul>
+<li>操作：BUSYNESS ← BUSYNESS AND x00（等价于直接清0）</li>
+</ul></li>
+</ul>
+<p><strong>题22 十六进制逻辑运算：</strong> - a. x5478 AND xFDEA - 0101
+0100 0111 1000 AND 1111 1101 1110 1010 = 0101 0100 0110 1000 =
+<strong>x5468</strong> - b. xABCD OR x1234 = <strong>xBBFD</strong> -
+c. NOT((NOT(xDEFA)) AND (NOT(xFFFF))) - 利用德摩根律简化：=
+NOT(NOT(xDEFA) AND NOT(xFFFF)) - = NOT(NOT(xDEFA OR xFFFF)) = xDEFA OR
+xFFFF = <strong>xFFFF</strong> - d. x00FF XOR x325C - x00FF = 0000 0000
+1111 1111 - x325C = 0011 0010 0101 1100 - XOR = 0011 0010 1010 0011 =
+<strong>x32A3</strong></p>
+<p><strong>【同类变体总结】</strong> - 此题集涵盖了 AND/OR/NOT/XOR
+的全部基本规则，无同类遗漏。</p>
+<hr />
+<h3 id="知识点5ieee-754-单精度浮点数表示">【知识点5】IEEE 754
+单精度浮点数表示</h3>
+<h4 id="题型8十进制-ieee-754-单精度浮点">【题型8】十进制 ↔︎ IEEE 754
+单精度浮点</h4>
+<p><strong>【代表性例题1——十进制转IEEE
+754】</strong>（原题17，书2.39）</p>
+<p><strong>【题干】</strong> 将以下十进制数写成IEEE
+754单精度（32位）浮点数表示： a. 3.75 b. −55 23/64 c. 3.1415927
+d. 64000</p>
+<p><strong>【核心考点】</strong> IEEE 754 单精度结构（32位）： |
+1位符号(S) | 8位指数(E) | 23位尾数(M) | |————|———–|————| | 0=正, 1=负 |
+偏移127（即真实指数 = E − 127） | 1.M（隐含前导1） |</p>
+<p><strong>核心公式：</strong> 数值 = (−1)ˢ × (1.M) × 2^(E−127)</p>
+<p><strong>特殊情况：</strong> - E=255, M=0 → ±∞ - E=255, M≠0 → NaN -
+E=0, M=0 → ±0 - E=0, M≠0 → 非规格化数（隐含前导 0）</p>
+<p><strong>【通用解法与通式】</strong></p>
+<p><strong>十进制 → IEEE 754 步骤：</strong> 1. 确定符号
+S（负数→1，正数→0） 2. 将绝对值分为<strong>整数部分和小数部分</strong>
+3. 整数部分转二进制（除2取余） 4. 小数部分转二进制（乘2取整） 5.
+合并二进制，标准化为 1.xxx × 2ⁿ 形式 6. 指数 E = n +
+127（转为8位二进制） 7. 尾数 M = 小数点后的 23 位（截断或舍入）</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>(a) 3.75</strong> - S=0（正数） - 整数 3 = 11₂，小数 0.75 =
+11₂（0.75×2=1.5取1, 0.5×2=1取1） - 3.75 = 11.11₂ = 1.111 × 2¹ - n=1, E =
+1+127 = 128 = 1000 0000₂ - M = 111 0000 0000 0000 0000 0000 -
+<strong>结果：0 10000000 11100000000000000000000</strong></p>
+<p><strong>(b) −55 23/64</strong> - S=1（负数） - 55 = 32+16+4+2+1 =
+110111₂ - 23/64 = 0.359375 - 0.359375×2 = 0.71875→0 - 0.71875×2 =
+1.4375→1 - 0.4375×2 = 0.875→0 - 0.875×2 = 1.75→1 - 0.75×2 = 1.5→1 -
+0.5×2 = 1.0→1 - 所以 23/64 = 0.010111₂ - 55.359375 = 110111.010111₂ =
+1.10111010111 × 2⁵ - n=5, E = 5+127 = 132 = 1000 0100₂ - M = 10111010111
+00000000000 - <strong>结果：1 10000100
+10111010111000000000000</strong></p>
+<p><strong>(c) 3.1415927</strong> - S=0, 3 = 11₂ - 0.1415927： -
+0.1415927×2 = 0.2831854→0 - 0.2831854×2 = 0.5663708→0 - 0.5663708×2 =
+1.1327416→1 - 0.1327416×2 = 0.2654832→0 - …（继续至23位） - 0.1415927 ≈
+0.001001000011111101101₂ - 3.1415927 = 11.001001000011111101101₂ =
+1.1001001000011111101101 × 2¹ - n=1, E = 128 = 1000 0000₂ - M =
+10010010000111111011010 - <strong>结果：0 10000000
+10010010000111111011010</strong></p>
+<p><strong>(d) 64000</strong> - 64000 = 1111101000000000₂ - =
+1.111101000000000 × 2¹⁵ - E = 15+127 = 142 = 1000 1110₂ - M =
+11110100000000000000000 - <strong>结果：0 10001110
+11110100000000000000000</strong></p>
+<hr />
+<p><strong>【代表性例题2——IEEE 754
+转十进制】</strong>（原题18，书2.40）</p>
+<p><strong>【题干】</strong> 将以下IEEE 754浮点数转换为十进制： a. 0
+10000000 00000000000000000000000 b. 1 10000011 00010000000000000000000
+c. 0 11111111 00000000000000000000000 d. 1 10000000
+10010000000000000000000</p>
+<p><strong>【核心考点】</strong> IEEE 754 解码：S → 符号，E(8位) → 减127
+→ 真实指数，M(23位) → 前加 1. 成尾数。</p>
+<p><strong>【通用解法与通式】</strong> 1. S = bit31 → 符号 2. E =
+bits30-23 → 十进制 → 真实指数 = E − 127 3. M = bits22-0 → 尾数 =
+1.M（隐含前导1） 4. 数值 = (−1)ˢ × 1.M × 2^(E−127)</p>
+<p><strong>【详细推导与步骤】</strong> <strong>(a) 0 10000000
+00000000000000000000000</strong> - S=0, E=128→真实指数=1, M=0 - 数值 =
+1.0 × 2¹ = <strong>2.0</strong></p>
+<p><strong>(b) 1 10000011 00010000000000000000000</strong> - S=1,
+E=131→真实指数=4, M=0001… - 尾数 = 1.0001₂ = 1 + 1/16 = 1.0625 - 数值 =
+−1.0625 × 2⁴ = −1.0625 × 16 = <strong>−17.0</strong></p>
+<p><strong>(c) 0 11111111 00000000000000000000000</strong> - E=255, M=0
+→ 这是 IEEE 754 的<strong>正无穷大 (+∞)</strong> -
+表示无穷大或除以零的结果</p>
+<p><strong>(d) 1 10000000 10010000000000000000000</strong> - S=1,
+E=128→真实指数=1 - 尾数 = 1.1001₂ = 1 + 1/2 + 1/16 = 1.5625 - 数值 =
+−1.5625 × 2¹ = <strong>−3.125</strong></p>
+<hr />
+<h4 id="题型9ieee-754-指数范围">【题型9】IEEE 754 指数范围</h4>
+<p><strong>【代表性例题】</strong>（原题19，书2.41）</p>
+<p><strong>【题干】</strong> a. IEEE 754 标准中 32
+位浮点数允许的最大指数是多少？ b. IEEE 754 标准中 32
+位浮点数允许的最小指数是多少？</p>
+<p><strong>【核心考点】</strong> IEEE 754 的 8 位指数编码中，E 的范围是
+1~254（E=0 和 E=255 有特殊用途）。</p>
+<p><strong>【通用解法与通式】</strong> - 8 位指数取值范围：0000 0001 ~
+1111 1110（即 1~254） - 最大真实指数：E_max − 127 = 254 − 127 =
+<strong>127</strong> - 最小真实指数：E_min − 127 = 1 − 127 =
+<strong>−126</strong> -
+注：E=0（真实指数=−127）用于非规格化数和±0，E=255 用于±∞和NaN</p>
+<hr />
+<h3
+id="知识点6十六进制补码运算综合">【知识点6】十六进制补码运算综合</h3>
+<h4
+id="题型10十六进制补码加法与结果判断">【题型10】十六进制补码加法与结果判断</h4>
+<p><em>此题型已在【题型5/6】中涵盖（原题21涉及十六进制补码加法），此处不再重复。见上方同类变体。</em></p>
+<hr />
+<h2 id="第三章数字逻辑结构">【第三章】数字逻辑结构</h2>
+<hr />
+<h3 id="知识点1晶体管级电路分析">【知识点1】晶体管级电路分析</h3>
+<h4
+id="题型11晶体管开关电路与真值表">【题型11】晶体管开关电路与真值表</h4>
+<p><strong>【代表性例题】</strong>（原题2/3/4/5/6/8）</p>
+<p><strong>【题干题2】</strong> 对晶体管的级电路，列出完整真值表（输入
+A、B、C，输出 OUT）。该电路实现了什么逻辑函数？</p>
+<p><strong>【题干题5】</strong> 下图晶体管级电路实现 Y = NOT (A AND (B
+OR C))。请给每个晶体管的栅极标上对应的输入（A、B 或 C）。</p>
+<p><strong>【题干题8】</strong> 一位同学想用一个 P 型和一个 N
+型晶体管搭反相器，却接反了（P 管接地，N 管接 Vdd）。问当 A=0 和 A=1 时
+OUT 分别是多少？</p>
+<p><strong>【核心考点】</strong> - <strong>P
+型晶体管（PMOS）</strong>：栅极输入 0（低电平）时导通，输入 1 时截止 ——
+用于<strong>上拉到 Vdd</strong> - <strong>N
+型晶体管（NMOS）</strong>：栅极输入 1（高电平）时导通，输入 0 时截止 ——
+用于<strong>下拉到 GND</strong> - <strong>CMOS
+基本结构</strong>：PUN（PMOS上拉网络） + PDN（NMOS下拉网络），互补工作 -
+<strong>正确反相器</strong>：PMOS在Vdd与输出之间，NMOS在输出与GND之间</p>
+<p><strong>【通用解法与通式】</strong></p>
+<p><strong>晶体管级电路分析步骤：</strong> 1. 从上往下追踪路径：PMOS
+连接 Vdd（电源），NMOS 连接 GND（地） 2. PMOS 串联 = AND 逻辑，PMOS 并联
+= OR 逻辑（对上拉路径） 3. NMOS 串联 = AND 逻辑，NMOS 并联 = OR
+逻辑（对下拉路径） 4. 输出 = 上拉使能（PMOS路径通）时取
+1，下拉使能（NMOS路径通）时取 0 5.
+<strong>冲突</strong>：如果上下同时导通 → 短路（严重缺陷） 6.
+<strong>浮动</strong>：如果上下都不通 → 输出不确定（高阻态）</p>
+<p><strong>题8 反接分析：</strong> - 正确：A=0 → PMOS导通 → Vdd →
+OUT=1；A=1 → NMOS导通 → GND → OUT=0 - 反接（P接地，N接Vdd）：A=0 →
+P管导通（OUT接地=0）且 N管截止；A=1 → P管截止且 N管导通（OUT接Vdd=1） -
+结果：<strong>实现了反相器功能</strong>，但 PMOS 下拉能力弱，NMOS
+上拉能力弱，逻辑电平可能不达标（输出噪声容限差）</p>
+<p><strong>【同类变体总结】</strong> -
+原题1要求填入晶体管使输出恒为1/0——关键是保证PMOS在1时有上拉路径、NMOS在0时有下拉路径
+-
+原题7（六输入AND门带取反）：A/B/F取反后的六输入AND——需逐位检查，只有全为1时输出才为1</p>
+<hr />
+<h3
+id="知识点2基本逻辑门与逻辑完备性">【知识点2】基本逻辑门与逻辑完备性</h3>
+<h4 id="题型12nand-逻辑完备性证明">【题型12】NAND 逻辑完备性证明</h4>
+<p><strong>【代表性例题】</strong>（原题15）</p>
+<p><strong>【题干】</strong> 集合 {AND, OR, NOT} 逻辑完备。请证明仅用
+NAND 门也是逻辑完备的，即分别用 NAND 实现 NOT、AND、OR。</p>
+<p><strong>【核心考点】</strong> 逻辑完备性：如果一个门可以构造出
+AND、OR、NOT（或等效的功能集合），则它是逻辑完备的。 NAND
+是<strong>通用门</strong>——仅用 NAND 可构造任意逻辑函数。</p>
+<p><strong>【通用解法与通式】</strong></p>
+<p><strong>NAND → 基本门：</strong> - <strong>NOT(x)</strong> = NAND(x,
+x) （输入合并为同一个信号） - <strong>AND(x, y)</strong> = NOT(NAND(x,
+y)) = NAND(NAND(x, y), NAND(x, y)) - <strong>OR(x, y)</strong> =
+NAND(NOT(x), NOT(y)) = NAND(NAND(x, x), NAND(y, y))</p>
+<p><strong>【详细推导与步骤】</strong> - NAND(x, y) = NOT(x AND y) - 将
+x 和 x 输入 NAND：NAND(x, x) = NOT(x AND x) = NOT(x) → <strong>实现了
+NOT</strong> - AND(x, y) = NOT(NOT(x AND y)) = NOT(NAND(x, y)) =
+NAND(NAND(x, y), NAND(x, y)) - 由德摩根律：OR(x, y) = NOT(NOT(x) AND
+NOT(y)) = NAND(NOT(x), NOT(y)) = NAND(NAND(x, x), NAND(y, y))</p>
+<hr />
+<h3 id="知识点3存储器与地址">【知识点3】存储器与地址</h3>
+<h4
+id="题型13地址线寻址能力与存储器大小">【题型13】地址线、寻址能力与存储器大小</h4>
+<p><strong>【代表性例题】</strong>（原题9/10/11/13/14/22）</p>
+<p><strong>【题干】</strong>
+（原题9）按字节寻址的存储器具有14位地址，问该存储器中能存储多少个
+nibble（4位）？ （原题10）五输入译码器有多少条输出线？ （原题11）16
+输入多路复用器（mux）需要多少条选择线？ （原题13）若一个计算机具有 8
+字节可寻址性，且需要 3 位来访问一个存储单元，问存储器总大小是多少字节？
+（原题14）给定 22 位地址、3
+位可寻址的存储器，该存储器共包含多少位存储？</p>
+<p><strong>【核心考点】</strong> - <strong>地址线数（n）</strong> →
+可寻址单元数 = 2ⁿ -
+<strong>可寻址性（addressability）</strong>：每个存储单元包含的位数/字节数
+- <strong>存储器总大小</strong> = 可寻址单元数 × 每单元的位数/字节数 -
+<strong>译码器</strong>：n 输入 → 2ⁿ 条输出线（独热编码） -
+<strong>多路复用器（MUX）</strong>：2ⁿ 输入 → n 条选择线，1 条输出线</p>
+<p><strong>【通用解法与通式】</strong></p>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可寻址单元数 = 2^地址线数</td>
+<td>地址线决定可寻址空间</td>
+</tr>
+<tr>
+<td>总大小 = 可寻址单元数 × 可寻址性</td>
+<td>总存存储量</td>
+</tr>
+<tr>
+<td>译码器输出线 = 2ⁿ</td>
+<td>n 输入译码器</td>
+</tr>
+<tr>
+<td>MUX 选择线 = log₂(输入数)</td>
+<td>n 输入 MUX</td>
+</tr>
+</tbody>
+</table>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>题9：</strong> 14位地址 → 2¹⁴ = 16384 个字节 → 每个字节 = 2
+个 nibble → <strong>32768 个 nibble</strong></p>
+<p><strong>题10：</strong> 五输入译码器 → 2⁵ = <strong>32
+条输出线</strong></p>
+<p><strong>题11：</strong> 16 输入 MUX → 输出线 = 1 条，选择线 = log₂16
+= <strong>4 条</strong></p>
+<p><strong>题13：</strong> 8 字节可寻址性（每单元 8 字节）+ 3 位地址线 -
+可寻址单元 = 2³ = 8 个单元 - 总大小 = 8 × 8 = <strong>64
+字节</strong></p>
+<p><strong>题14：</strong> 22 位地址 + 3 位可寻址（每单元 3 位？或
+2³=8位？） - 按语义：“3 位可寻址” 意为每单元 3 位 - 可寻址单元 = 2²² =
+4,194,304 - 总位数 = 4,194,304 × 3 = <strong>12,582,912 位</strong> - =
+约 1.5 MB</p>
+<hr />
+<h3 id="知识点4时序逻辑电路">【知识点4】时序逻辑电路</h3>
+<h4
+id="题型14锁存器触发器和有限状态机">【题型14】锁存器、触发器和有限状态机</h4>
+<p><strong>【代表性例题】</strong>（原题19/20/21）</p>
+<p><strong>【题干】</strong> （题19）R-S 锁存器中为什么不允许 S 和 R
+同时被置为 0？ （题20）在同步时序电路中，门控 D
+锁存器与主从触发器（flip-flop）有何根本区别？为什么同步 FSM
+必须使用触发器？ （题21）有限状态机由哪五个要素组成？</p>
+<p><strong>【核心考点】</strong> - <strong>R-S
+锁存器</strong>：R=重置(0), S=置位(1)；R=S=0 导致 Q=Q̅=1 → 违反 Q 与 Q̅
+互反的基本约束 - <strong>门控 D
+锁存器与触发器的区别</strong>：锁存器在时钟高电平时透明传输（电平触发），触发器只在时钟边沿采样（边沿触发）
+-
+<strong>有限状态机五要素</strong>：状态寄存器、下一态逻辑、输出逻辑、时钟、复位</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>题19：</strong> R-S 锁存器中，S=0 将 Q 置 1，R=0 将 Q 置
+0。当 S=R=0 时，两个与非门的输出同时为 1，导致 Q=Q̅=1，<strong>破坏了 Q
+与 Q̅ 始终互补的基本规则</strong>，称为禁止态（invalid state）。</p>
+<p><strong>题20：</strong> - <strong>门控 D 锁存器</strong>：时钟为 1
+时透明（输出随输入变化），时钟为 0 时锁存 -
+<strong>主从触发器</strong>：在时钟上升沿（或下降沿）瞬间采样输入并锁定输出，其余时间输出不变
+- <strong>同步 FSM
+必须用触发器</strong>：因为锁存器的透明特性会导致在同一个时钟周期内状态可能多次变化，引发竞态条件（race
+condition），无法保证状态同步更新</p>
+<p><strong>题21：</strong> 有限状态机的 <strong>五个要素</strong>： 1.
+<strong>状态寄存器</strong>（State Register）—— 存放当前状态 2.
+<strong>下一态逻辑</strong>（Next-State Logic）——
+组合逻辑，根据当前状态和输入计算下一状态 3.
+<strong>输出逻辑</strong>（Output Logic）——
+组合逻辑，根据状态（和输入）产生输出 4. <strong>时钟</strong>（Clock）——
+同步状态更新 5. <strong>复位</strong>（Reset）——
+将状态机初始化到已知初始状态</p>
+<hr />
+<h3 id="知识点5时序延迟">【知识点5】时序延迟</h3>
+<h4 id="题型15门延迟与加法器延迟">【题型15】门延迟与加法器延迟</h4>
+<p><strong>【代表性例题】</strong>（原题18/23）</p>
+<p><strong>【题干】</strong>
+（题18）设逻辑结构速度取决于输入到输出所经过的最多门数（NOT、AND、OR
+各算一级）。求： a. 两输入 mux 的延迟 b. 一位全加器的延迟 c. 4
+位行波进位加法器的延迟 d. 扩至 32 位呢？</p>
+<p>（题23）2 GHz
+主频的笔记本电脑，每个时钟周期多长时间？每秒执行多少个周期？</p>
+<p><strong>【核心考点】</strong> -
+<strong>行波进位加法器</strong>：高位必须等待低位的进位 - <strong>延迟 =
+log(位数) × 每级门延迟</strong>（实际上是线性累积） -
+<strong>时钟周期（T）= 1 / 频率（f）</strong></p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>题18 延迟分析：</strong> - a. 2输入MUX：由 AND-OR 结构，约
+<strong>2 级门</strong>延迟 - b. 一位全加器：产生进位需要 <strong>2
+级门</strong>（从输入 A/B 到 Cout 约 2 级） - c. 4
+位行波进位加法器：最低位延迟 2 级 + 后续每位 2 级进位传递 = 2 + 3×2 =
+<strong>8 级门</strong>延迟 - d. 32 位 = 2 + 31×2 = <strong>64
+级门</strong>延迟 - 注：级联进位延迟 ≈
+2k（k为位数），所以加法器位数增加时延迟线性增长——这是行波进位结构的根本局限</p>
+<p><strong>题23：</strong> f = 2 GHz - T = 1/f = 1/(2×10⁹) = 0.5×10⁻⁹ =
+<strong>0.5 ns</strong> - 每秒周期 = f = <strong>2×10⁹ =
+20亿个周期</strong></p>
+<hr />
+<h2 id="第四-五章冯诺依曼模型与-lc-3-架构">【第四-五章】冯·诺依曼模型与
+LC-3 架构</h2>
+<hr />
+<h3 id="知识点1冯诺依曼模型">【知识点1】冯·诺依曼模型</h3>
+<h4 id="题型16冯诺依曼五大组成部分">【题型16】冯·诺依曼五大组成部分</h4>
+<p><strong>【代表性例题】</strong>（原题Ex4.1）</p>
+<p><strong>【题干】</strong>
+请说出冯·诺依曼模型的五个组成部分，并说明各自的用途。</p>
+<p><strong>【核心考点】</strong>
+冯·诺依曼架构是存储程序计算机的基础模型。</p>
+<p><strong>【详细推导与步骤】</strong> 1.
+<strong>主存储器（Memory）</strong>：存储指令和数据（程序） 2.
+<strong>处理单元（Processing Unit / ALU）</strong>：执行算术和逻辑运算
+3. <strong>控制单元（Control Unit）</strong>：解释指令并控制执行流程 4.
+<strong>输入（Input）</strong>：向计算机输入数据和程序 5.
+<strong>输出（Output）</strong>：将处理结果输出给用户</p>
+<p><strong>核心思想：</strong>
+指令和数据<strong>统一存储在同一个存储器</strong>中，这是冯·诺依曼架构的根本特征（与哈佛架构区别）。</p>
+<hr />
+<h4 id="题型17指令周期与取指阶段">【题型17】指令周期与取指阶段</h4>
+<p><strong>【代表性例题】</strong>（原题Ex4.6/4.9）</p>
+<p><strong>【题干】</strong>
+（Ex4.6）指令的两个组成部分是什么？它们包含什么信息？
+（Ex4.9）指令周期的
+FETCH（取指）阶段会做两件重要的事情。一件是将要处理的下一条指令加载到指令寄存器（IR）中。另一件重要的事情是什么？</p>
+<p><strong>【核心考点】</strong> 指令周期：FETCH（取指）→
+DECODE（译码）→ EVALUATE ADDRESS（计算地址）→ FETCH
+OPERANDS（取操作数）→ EXECUTE（执行）→ STORE RESULT（存结果）</p>
+<p><strong>【详细推导与步骤】</strong> -
+<strong>指令的两个组成部分：操作码（Opcode）+ 操作数（Operand）</strong>
+- 操作码：指明要做什么（如 ADD、LD、BR） -
+操作数：指明操作对象是谁（寄存器、内存地址、立即数）</p>
+<ul>
+<li><strong>取指阶段的两件事：</strong>
+<ol type="1">
+<li>将指令从内存加载到 IR（指令寄存器）</li>
+<li><strong>更新 PC（程序计数器）指向下一条指令</strong>（通常 PC ← PC +
+1）</li>
+</ol></li>
+</ul>
+<hr />
+<h3 id="知识点2lc-3-指令与寻址模式">【知识点2】LC-3 指令与寻址模式</h3>
+<h4 id="题型18位向量测试与掩码指令">【题型18】位向量测试与掩码指令</h4>
+<p><strong>【代表性例题】</strong>（原题Ex5.6/5.33）</p>
+<p><strong>【题干】</strong> （Ex5.6）回顾第2章中的机器繁忙示例。假设
+BUSYNESS 位向量存储在 R2 中： a. 写一条 LC-3 指令，判断机器 2 是否繁忙。
+b. 写一条 LC-3 指令，判断机器 2 和机器 3 是否同时繁忙。 c. 写一条 LC-3
+指令，表示没有任何机器繁忙。 d. 你能写一条 LC-3 指令来判断机器 6
+是否繁忙吗？这里有问题吗？</p>
+<p><strong>【核心考点】</strong> LC-3 AND 指令可立即测试特定位。LC-3 的
+AND 立即数指令只能使用 5 位无符号立即数（0~31）。</p>
+<p><strong>【详细推导与步骤】</strong> - BUSYNESS
+约定：1=空闲，0=忙碌（与第2章不同，这里是LC-3的约定）</p>
+<ul>
+<li><p><strong>a. 判断机器 2（bit2）是否繁忙：</strong>
+<code>AND R3, R2, #4</code>（掩码=0100₂=4）</p>
+<ul>
+<li>结果=0 → 机器2忙碌；结果≠0 → 机器2空闲</li>
+</ul></li>
+<li><p><strong>b. 判断机器 2 和 3 是否同时繁忙：</strong>
+<code>AND R3, R2, #12</code>（掩码=1100₂=12）</p>
+<ul>
+<li>结果≠12 → 至少一个不空闲/非同时忙碌</li>
+</ul></li>
+<li><p><strong>c. 没有任何机器繁忙：</strong>
+<code>AND R3, R2, #0</code> → 结果为 0 则所有机器都在工作</p></li>
+<li><p><strong>d. 判断机器 6（bit6）：</strong> 掩码应为 2⁶ = 64</p>
+<ul>
+<li>LC-3 的 AND 立即数指令只能使用 5 位立即数（范围 0~31），64
+超出范围</li>
+<li><strong>问题：无法用一条 AND 立即数指令完成</strong>，需要先用 LD
+加载掩码再用 AND</li>
+<li><code>LD R3, MASK6</code> + <code>AND R3, R2, R3</code>，其中 MASK6
+.FILL x0040</li>
+</ul></li>
+</ul>
+<h4 id="题型19寻址模式辨析">【题型19】寻址模式辨析</h4>
+<p><strong>【代表性例题】</strong>（原题Ex5.16）</p>
+<p><strong>【题干】</strong> 下列情况下，使用哪种 LC-3 寻址模式最合理？
+a. 你想从距离当前指令小于 ±28 个位置的地址加载一个值。 b. 你想从距离超过
+±28 个位置的地址加载一个值。 c. 你想加载一个连续地址的数组。</p>
+<p><strong>【核心考点】</strong> LC-3 五种寻址模式及其特点：</p>
+<table>
+<thead>
+<tr>
+<th>寻址模式</th>
+<th>偏移范围</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PC相对（LD）</td>
+<td>±256 字（9位偏移）</td>
+<td>就近访问</td>
+</tr>
+<tr>
+<td>间接（LDI）</td>
+<td>±256 字</td>
+<td>指向指针（两级访问）</td>
+</tr>
+<tr>
+<td>基址+偏移（LDR）</td>
+<td>±32 字（6位偏移）</td>
+<td>数组/结构体访问</td>
+</tr>
+<tr>
+<td>立即（LEA）</td>
+<td>±256 字</td>
+<td>加载有效地址</td>
+</tr>
+<tr>
+<td>寄存器</td>
+<td>无偏移</td>
+<td>寄存器间操作</td>
+</tr>
+</tbody>
+</table>
+<p><strong>【详细推导与步骤】</strong> - <strong>a.
+小于±28</strong>：<strong>LDR 基址+偏移</strong>（6位偏移 =
+±32，足以覆盖±28，且最适合数组） - <strong>b.
+超过±28</strong>：<strong>LD/LDI PC相对</strong>（9位偏移 = ±256）或
+<strong>LEA + LDR</strong> 组合 -
+<strong>c. 连续地址数组</strong>：<strong>LDR 基址+偏移</strong> —
+用基址寄存器指向数组首地址，偏移递增遍历元素</p>
+<h4 id="题型20lc-3-指令格式与操作码解译">【题型20】LC-3
+指令格式与操作码解译</h4>
+<p><strong>【代表性例题】</strong>（原题Ex5.9/5.11/5.12/5.13/5.14/5.15/5.22/5.23）</p>
+<p><strong>【题干集锦】</strong> - Ex5.9 以下指令哪些可以作为
+NOP（无操作）使用？ - 0001 001 001 1 00000 — ADD R1, R1, #0 - 0000 111
+000000001 — BRnzp +1 - 0000 000 000000000 — BR 0（不检查任何条件） -
+Ex5.11 如何用一条指令做 R2 = R1 − 20？ - Ex5.12
+无符号整数加法，符号位不同但结果位不同，何时可信任结果？ - Ex5.13
+指令序列技巧（寄存器移动、减法、清空） - Ex5.14 用 NOT 和 AND 实现 OR -
+Ex5.15/5.22/5.23 解码 16 位机器码</p>
+<p><strong>【核心考点】</strong> LC-3 指令格式：15-12（操作码）+
+11-0（具体字段）
+NOP（不操作）需要不改变任何寄存器、不跳转、不影响程序状态。</p>
+<p><strong>【通用解法与通式】</strong></p>
+<p><strong>LC-3 指令解码方法：</strong> 1. bits[15:12] → 操作码（如
+0001=ADD, 0101=AND, 0000=BR, 1110=LEA, 0010=LD, 0110=LDR, 1010=LDI） 2.
+bits[11:9] → DR（目的寄存器） 3. bits[8:6] → SR1（源寄存器1） 4. bit[5]
+→ 立即/寄存器标志（0=寄存器, 1=立即数） 5. 根据指令类型解析剩余位</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>Ex5.9 NOP 分析：</strong> - ADD R1, R1, #0 → R1 = R1 + 0 = R1
+✓ 不影响结果 - BRnzp +1 → 总是跳到下一条（因为 +1 指向下一条） ✓
+不影响顺序执行 - BR 0 → 不检查 N/Z/P
+任何条件，故<strong>永远不跳转</strong> ✓ - <strong>三个都可以作为
+NOP</strong> ✅</p>
+<p><strong>Ex5.11 R2 = R1 − 20：</strong> - LC-3 无减法指令，可以用
+<code>ADD R2, R1, #-20</code> - −20 的补码是 11101100… 但 5
+位立即数能表示的范围是 −16~15 - −20 超过 5
+位立即数范围！<strong>不能只用一条指令</strong> - 需要
+<code>LD R3, NEG20</code> + <code>ADD R2, R1, R3</code> 两步</p>
+<p><strong>Ex5.12 无符号加法结果可信条件：</strong> - R0[15] = R1[15] ≠
+R2[15] 说明符号位不一致 -
+若操作数为<strong>无符号整数</strong>，则加法结果在[0,
+2¹⁶−1]范围内无条件可信 - 因为无符号整数加法没有符号位溢出的概念</p>
+<p><strong>Ex5.13 指令技巧：</strong> - <strong>a. R3 ←
+R2（移动）：</strong> <code>ADD R3, R2, #0</code> - <strong>b. R1 ← R2 −
+R3：</strong> 1. <code>NOT R1, R3</code> → R1 = −R3 − 1 2.
+<code>ADD R1, R1, #1</code> → R1 = −R3 3. <code>ADD R1, R2, R1</code> →
+R1 = R2 − R3 - <strong>c. 不改变寄存器只设条件码：</strong>
+<code>ADD R1, R1, #0</code>（加0改变条件码但不改变值） - <strong>d. N=1,
+Z=1, P=0 可能吗？</strong> — <strong>不可能</strong>！同一时刻 N 和 Z
+互斥（一个数不能同时为负和零） - <strong>e. 清空 R2：</strong>
+<code>AND R2, R2, #0</code></p>
+<p><strong>Ex5.14 NOT+AND 实现 OR：</strong> - R3 = R1 OR R2 -
+由德摩根律：OR(A,B) = NOT(NOT(A) AND NOT(B)) - 指令序列： 1.
+<code>NOT R3, R1</code> → R3 = NOT(R1) 2. <code>NOT R1, R2</code> → R1 =
+NOT(R2)（暂存于R1） 3. <code>AND R3, R3, R1</code> → R3 = NOT(R1) AND
+NOT(R2) 4. <code>NOT R3, R3</code> → R3 = NOT(NOT(R1) AND NOT(R2)) = R1
+OR R2</p>
+<p><strong>Ex5.15 机器码解码：</strong> - x3100: 1110 001 000100000 →
+14位操作码=1110=LEA - bit[11:9]=001=R1, offset=000100000=32 -
+<code>LEA R1, #32</code>（R1 = PC+32 = x3100+32+1?
+注意LC-3中LEA的PC=当前指令地址+1） - 实际：R1 = x3100 + 1 + 32 = x3121 -
+x3101: 0010 010 000100000 → 操作码=0010=LD - <code>LD R2, #32</code> →
+R2 = Mem[R3?… 需要继续算]</p>
+<hr />
+<h3 id="知识点3lc-3-条件码与分支">【知识点3】LC-3 条件码与分支</h3>
+<h4 id="题型21条件码分析与分支预测">【题型21】条件码分析与分支预测</h4>
+<p><strong>【代表性例题】</strong>（原题Ex5.30/5.32）</p>
+<p><strong>【题干】</strong> （Ex5.32）初始条件码 N=0, Z=0,
+P=1，执行以下指令序列后条件码是多少？ x3050: 0000 001 000000010 → BRp +2
+x3053: 0101 000 000 1 00000 → AND R0, R0, #0 x3054: 0001 000 000 1 11111
+→ ADD R0, R0, #-1</p>
+<p>（Ex5.30）如果 x3103 处的 BRz x3100 被触发，关于 R1 和 R0
+我们可以得出什么结论？</p>
+<p><strong>【核心考点】</strong> - BR 指令判断 NZP 条件码执行分支 -
+每条指令执行完后自动更新条件码（N/Z/P） - BRp 只在 P=1 时跳转</p>
+<p><strong>【详细推导与步骤】</strong> <strong>Ex5.32：</strong> -
+初始：N=0, Z=0, P=1 - x3050: BRp +2 → P=1 → 跳转到 x3050+1+2 =
+<strong>x3053</strong> - x3053: AND R0, R0, #0 → R0=0 → 条件码设为 Z=1 -
+x3054: ADD R0, R0, #-1 → R0 = −1 → 条件码设为 <strong>N=1</strong></p>
+<p><strong>Ex5.30：</strong> - 如果 BRz x3100 被触发，说明条件码中的 Z=1
+- 在此之前执行了： - x3100: NOT R1, R1 - x3101: ADD R2, R0, R1 - x3102:
+NOT R2, R2 - x3103: BRz x3100 - 若 Z=1 → NOT(R2) = 0 → R2 = NOT(0) =
+xFFFF → 说明 R0 + R1 = xFFFF - 即 R0 = NOT(R1)，也就是 R0 与 R1
+互为按位取反</p>
+<hr />
+<h2 id="第七章lc-3-汇编语言">【第七章】LC-3 汇编语言</h2>
+<hr />
+<h3 id="知识点1伪操作与符号表">【知识点1】伪操作与符号表</h3>
+<h4
+id="题型22符号表构建与位置计数器lc">【题型22】符号表构建与位置计数器（LC）</h4>
+<p><strong>【代表性例题】</strong>（原题7.4）</p>
+<p><strong>【题干】</strong>
+写出汇编器翻译下面这段程序时生成的符号表。</p>
+<pre><code>.ORIG x301C
+        ST  R3, SAVE3
+        ST  R2, SAVE2
+        AND R2, R2, #0
+TEST    IN
+        BRz TEST
+        ADD R1, R0, #-10
+        BRn FINISH
+        ADD R1, R0, #-15
+        NOT R1, R1
+        BRn FINISH
+        HALT
+FINISH  ADD R2, R2, #1
+        HALT
+SAVE3   .FILL X0000
+SAVE2   .FILL X0000
+        .END</code></pre>
+<p><strong>【核心考点】</strong> 汇编器维护<strong>位置计数器（Location
+Counter, LC）</strong>，从 <code>.ORIG</code>
+指定的地址开始递增。遇到标号时，将当前 LC 值记录到符号表。</p>
+<p><strong>【通用解法与通式】</strong> 1. <code>.ORIG x301C</code> → LC
+初始化为 x301C 2.
+每条指令/伪操作占用<strong>1个字（16位=2字节）</strong>，执行后 LC+1 3.
+遇到标号：符号表添加 [标号名 → 当前 LC 值] 4. <code>.FILL</code> 也占 1
+个字（LC+1） 5. <code>.BLKW n</code> 占 n 个字（LC+n） 6.
+<code>.END</code> 不占用空间</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>指令/伪操作</th>
+<th>标号</th>
+<th>符号表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>x301C</td>
+<td>ST R3, SAVE3</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x301D</td>
+<td>ST R2, SAVE2</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x301E</td>
+<td>AND R2, R2, #0</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x301F</td>
+<td>IN</td>
+<td><strong>TEST</strong></td>
+<td>TEST = x301F</td>
+</tr>
+<tr>
+<td>x3020</td>
+<td>BRz TEST</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3021</td>
+<td>ADD R1, R0, #-10</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3022</td>
+<td>BRn FINISH</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3023</td>
+<td>ADD R1, R0, #-15</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3024</td>
+<td>NOT R1, R1</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3025</td>
+<td>BRn FINISH</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3026</td>
+<td>HALT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3027</td>
+<td>ADD R2, R2, #1</td>
+<td><strong>FINISH</strong></td>
+<td>FINISH = x3027</td>
+</tr>
+<tr>
+<td>x3028</td>
+<td>HALT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>x3029</td>
+<td>.FILL x0000</td>
+<td><strong>SAVE3</strong></td>
+<td>SAVE3 = x3029</td>
+</tr>
+<tr>
+<td>x302A</td>
+<td>.FILL x0000</td>
+<td><strong>SAVE2</strong></td>
+<td>SAVE2 = x302A</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4
+id="题型23伪操作辨析.end-vs-halt.fill-vs-.blkw">【题型23】伪操作辨析：.END
+vs HALT、.FILL vs .BLKW</h4>
+<p><strong>【代表性例题】</strong>（原题7.9/7.25/7.20）</p>
+<p><strong>【题干】</strong> - 7.9：.END 伪操作的作用是什么？它与 HALT
+指令有何区别？ - 7.25：伪操作 .FILL xFF004 做了什么？为什么？ -
+7.20：两位程序员写了两个模块，都想把 x0015 存入
+x4000，方法有什么本质不同？</p>
+<p><strong>【核心考点】</strong> - <strong>.END</strong> =
+汇编期伪操作，告诉汇编器”程序在此结束”（不生成机器码） - <strong>HALT /
+TRAP x25</strong> = 运行时指令，告诉 CPU”停止执行” -
+<strong>.FILL</strong> = 在内存中分配并初始化一个字（16位） -
+<strong>.BLKW n</strong> = 在内存中预留 n 个字（不初始化） -
+<strong>STI</strong> = 间接存储（运行时写入），<strong>.FILL</strong> =
+装载时初始化</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>题7.9：</strong> -
+<code>.END</code>：<strong>汇编时指令</strong>，告诉汇编器到此结束汇编，不产生任何机器码
+- <code>HALT</code>：<strong>运行时指令</strong>（TRAP x25），执行时停止
+CPU - 区别：前者是给汇编器看的，后者是给 CPU 执行的</p>
+<p><strong>题7.25：</strong> - <code>.FILL xFF004</code> — xFF004 需要
+20 位（超过 16 位） - LC-3 每个内存单元只有 16 位宽，无法存放 20 位的值
+- 汇编器会报错：<strong>超出 16 位字范围</strong>（值截断或错误）</p>
+<p><strong>题7.20：</strong> - <strong>(a)</strong> 运行时通过
+<code>STI R0, PTR</code> 将计算结果 R0 写入
+x4000——<strong>运行时写入</strong> - <strong>(b)</strong> 直接用
+<code>.FILL x0015</code> 在 x4000
+位置初始化——<strong>装载时初始化</strong> -
+区别本质：<strong>(a)</strong>
+在程序执行过程中修改内存；<strong>(b)</strong>
+在程序被加载到内存时就已存在</p>
+<hr />
+<h3 id="知识点2手工汇编与机器码">【知识点2】手工汇编与机器码</h3>
+<h4 id="题型24pc-相对寻址与偏移计算">【题型24】PC
+相对寻址与偏移计算</h4>
+<p><strong>【代表性例题】</strong>（原题7.1/7.2）</p>
+<p><strong>【题干】</strong> <strong>7.1：</strong> 某程序包含：</p>
+<pre><code>PLACE   .FILL  x45A7
+        LDI    R3, PLACE</code></pre>
+<p>汇编器把翻译后的 LDI 指令放入 x3025。x3025 单元中存放的是什么？</p>
+<p><strong>7.2：</strong> 某程序包含：</p>
+<pre><code>ASCII   LD  R1, ASCII</code></pre>
+<p>符号表中 ASCII = x4F08。执行完毕后 R1 中是什么值？</p>
+<p><strong>【核心考点】</strong> - <strong>PC 相对寻址公式：</strong>
+有效地址 = PC（当前指令地址+1）+ 偏移量（9位符号扩展） -
+<strong>LDI</strong>：先计算有效地址，再在该地址取指针，指针指向的值 →
+目标寄存器 - <strong>LD</strong>：先计算有效地址，该地址的值 →
+目标寄存器</p>
+<p><strong>【通用解法与通式】</strong></p>
+<p><strong>PC 相对偏移量计算：</strong></p>
+<pre><code>偏移量 = 目标地址 − (指令地址 + 1)</code></pre>
+<p>LC-3 中 <code>PC</code>
+在取指后已自增指向下一条指令，因此计算偏移时的基准是 <strong>指令地址 +
+1</strong>。</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>题7.1：</strong> LDI 指令在 x3025 - 目标地址 = PLACE 标号地址
+- 假设 LDI 指令占用 x3025，偏移量使得有效地址 = PLACE 的地址 - PLACE 在
+x3025+1 相邻？不，.FILL 通常紧跟或在前 - 设 PLACE 在 x3024（LDI
+之前），偏移 = x3024 − (x3025+1) = x3024 − x3026 = −2 - LDI 的执行：从
+x3024 读 → x45A7 → 再把 x45A7 作为地址 → 读该地址的值 → R3 -
+<strong>x3025 中存放的是</strong>
+机器码：<code>1010 011 111111110</code>（LDI R3, offset=-2）</p>
+<p><strong>题7.2：</strong> LD R1, ASCII 在地址 x4F08 - ASCII
+本身就是这个指令的地址 - 偏移 = x4F08 − (x4F08+1) = −1 =
+111111111（9位） - 执行：从 Mem[x4F08+1+(−1)] = Mem[x4F08] 读取 - 但
+x4F08 中存放的是 <strong>指令的机器码</strong>！ - LD 指令的机器码：0010
+001 111111111 - R1 = 0x23FF（即 0010 0001 1111 1111） - ⚠
+<strong>关键洞察：</strong> 标号 ASCII
+既是指令的标签也是数据加载的目标，形成了”自引用”</p>
+<hr />
+<h4
+id="题型25完整手工汇编与程序功能分析">【题型25】完整手工汇编与程序功能分析</h4>
+<p><strong>【代表性例题】</strong>（原题7.6/7.21）</p>
+<p><strong>【题干题7.6】</strong> 为下面的程序建立符号表，并汇编标号
+A、B、D 处的指令。用 15 个词以内说明该程序做什么。</p>
+<pre><code>.ORIG x3000
+        AND R0, R0, #0
+A       LD  R1, E
+        AND R2, R1, #1
+        BRp C
+B       ADD R1, R1, #-1
+C       ADD R0, R0, R1
+        ADD R1, R1, #-2
+D       BRp C
+        ST  R0, F
+        TRAP x25
+E       .BLKW 1
+F       .BLKW 1
+        .END</code></pre>
+<p><strong>【核心考点】</strong> 手工汇编需要：① 建立符号表 → ②
+计算每条指令的 PC 偏移 → ③ 填入机器码字段</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>符号表：</strong> | 标号 | 地址 | |——|——| | A | x3001 | | B |
+x3004 | | C | x3005 | | D | x3007 | | E | x3009 | | F | x300A |</p>
+<p><strong>A 处指令（x3001）：</strong> <code>LD R1, E</code> - E =
+x3009，偏移 = x3009 − (x3001+1) = x3009 − x3002 = 7 -
+机器码：<code>0010 001 000000111</code></p>
+<p><strong>B 处指令（x3004）：</strong> <code>ADD R1, R1, #-1</code> -
+立即数 −1 的 5 位补码 = 11111 -
+机器码：<code>0001 001 001 1 11111</code></p>
+<p><strong>D 处指令（x3007）：</strong> <code>BRp C</code> - C =
+x3005，偏移 = x3005 − (x3007+1) = x3005 − x3008 = −3 - 9 位补码 = 1 1111
+1101 = 0x1FD（补码表示 −3） -
+机器码：<code>0000 001 111111101</code></p>
+<p><strong>程序功能：</strong> 若 E 为奇数则加(E−1)，为偶数则加
+E，反复减2直到≤0。即求和「奇数→偶数→…→0或负」。</p>
+<hr />
+<p><strong>【代表性例题——程序功能阅读】</strong>（原题7.15/7.16/7.31）</p>
+<p><strong>【题干题7.15】</strong> 一串整数从 x4000 开始，以 x0000
+结束。下面程序做什么？</p>
+<pre><code>LOOP    LDR R1, R0, #0
+        BRz DONE
+        AND R5, R1, R2   ; R2 = x8000
+        BRz L1
+        BRnzp NEXT
+L1      ADD R1, R1, R1
+        STR R1, R0, #0
+NEXT    ADD R0, R0, #1
+        BRnzp LOOP
+MASK    .FILL x8000</code></pre>
+<p><strong>【核心考点】</strong> 按位分析：x8000 = 1000 0000 0000
+0000（测试符号位 / 最高位）</p>
+<p><strong>【详细推导与步骤】</strong> - R2 = x8000，AND 检测 R1
+的最高位 - 若最高位为 1 → BRz 不触发 → BRnzp NEXT（跳过左移） -
+若最高位为 0 → BRz L1 → 左移一位（ADD R1, R1, R1） -
+<strong>程序功能：</strong>
+遍历数组，将所有<strong>非负数（符号位=0）左移一位</strong>（相当于乘以2），负数保持不变
+- 序列以 0 结束</p>
+<p><strong>题7.16：</strong> 类似地，AND #1
+测试奇数/偶数——统计数组中奇数和偶数的个数分别存入 R4 和 R3</p>
+<p><strong>题7.31：</strong> AND #1 → BRz SKIP → 统计区间 x5000~x5FFF
+中<strong>奇数的个数</strong></p>
+<hr />
+<h3 id="知识点3常见汇编错误分析">【知识点3】常见汇编错误分析</h3>
+<h4 id="题型26汇编时错误-vs-运行时错误">【题型26】汇编时错误 vs
+运行时错误</h4>
+<p><strong>【代表性例题】</strong>（原题7.10/7.13/7.24/7.36）</p>
+<p><strong>【题干题7.10】</strong></p>
+<pre><code>        ADD R3, R3, #30
+        ST  R3, A
+        HALT
+A       .FILL #0</code></pre>
+<p>指出错误并说明如何修正。</p>
+<p><strong>【题干题7.13】</strong></p>
+<pre><code>ONE   LD  R0, A
+      ADD R1, R1, R0
+TWO   LD  R0, B
+      ADD R1, R1, R0
+THREE LD  R0, C
+      ADD R1, R1, R0
+      ST  R1, SUM
+      TRAP x25
+A     .FILL x0001
+B     .FILL x0002
+C     .FILL x0003
+D     .FILL x0004</code></pre>
+<p>有两处错误。</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>题7.10：</strong> - 错误：<code>ADD R3, R3, #30</code> — 30
+的 5 位补码能表示吗？ - 5 位立即数范围：−16 ~ 15 - <strong>30 &gt;
+15，超出立即数范围！</strong> - 修正：先用 LD 加载 30 到寄存器，再用 ADD
+寄存器模式
+<code>LD R4, VAL30   ADD R3, R3, R4   ...   VAL30 .FILL #30</code> -
+这是<strong>汇编时错误</strong>（汇编器会发现 30 无法编码为 5
+位立即数）</p>
+<p><strong>题7.13：</strong> - <strong>错误1（第3行）：</strong>
+<code>ADD R1, R1, R0</code> — <strong>R1 未初始化</strong> - 首次累加时
+R1 是未知值（寄存器未清零） - 修正：在累加前先
+<code>AND R1, R1, #0</code> -
+这是<strong>运行时错误</strong>（汇编器不会检测到寄存器未初始化） -
+<strong>错误2：</strong> 标号 <code>SUM</code> 未定义（ST R1, SUM 但无
+SUM .FILL） - 这是<strong>汇编时错误</strong>（汇编器找不到 SUM 符号） -
+注：第13行 D .FILL x0004 是多余的但不算错误</p>
+<p><strong>题7.24（左移4位错误）：</strong></p>
+<pre><code>LOOP    BRz DONE    ← 先判断，此时 R2 还未减1
+        ADD R2, R2, #-1
+        ADD R3, R3, R3
+        BR  LOOP</code></pre>
+<ul>
+<li><strong>错误：</strong> <code>BRz DONE</code> 放在循环开头
+<ul>
+<li>第一次进入循环时 R2=4，Z=0，不会退出</li>
+<li>但第4次循环(减至0)后，BRz 在<strong>下一步</strong>检查</li>
+<li>然而最后一次 ADD R2 后 Z=1，但 BRz
+在循环开头检查——这时仍会继续加一次</li>
+<li><strong>结果：左移了5次而不是4次！</strong></li>
+</ul></li>
+<li>修正：将 BRz DONE 移到 ADD R2 之后</li>
+</ul>
+<p><strong>题7.36（取模算法错误）：</strong></p>
+<pre><code>        NOT R2, R1
+        ADD R2, R2, #1   ; R2 = −B
+L1      ADD R0, R0, R2   ; R0 -= B（循环减法）
+        BRzp L1           ; 若结果≥0继续减
+        ADD R0, R0, R1   ; R0 += B（恢复余数）
+        ST  R0, L3        ; 这里的 L3 是 .FILL x3200</code></pre>
+<ul>
+<li><strong>Bug 在第10行：</strong> <code>ST R0, L3</code> — ST 使用
+<strong>PC 相对寻址</strong>
+<ul>
+<li>L3 是标号，地址是 x3200 吗？检查：L3 .FILL x3200</li>
+<li>ST 不是存到 x3200，而是存到 <strong>L3 这个地址</strong></li>
+<li>L3 里放的是 x3200（地址值），所以正确做法应该是
+<strong>STI</strong>（间接存储）</li>
+</ul></li>
+<li><strong>修正：</strong> 将第10行 <code>ST R0, L3</code> 改为
+<code>STI R0, L3</code>
+<ul>
+<li>STI 会：从 L3 读取 x3200 → 将 R0 写入 x3200</li>
+</ul></li>
+</ul>
+<hr />
+<h3 id="知识点4循环与条件码">【知识点4】循环与条件码</h3>
+<h4 id="题型27循环执行次数分析">【题型27】循环执行次数分析</h4>
+<p><strong>【代表性例题】</strong>（原题7.19）</p>
+<p><strong>【题干】</strong> 执行下面的 LC-3 程序时，标号 LOOP
+处的指令会执行多少次？</p>
+<pre><code>        LEA R2, DATA
+        LDR R4, R2, #0
+LOOP    ADD R4, R4, #-3
+        BRzp LOOP
+DATA    .FILL x000B</code></pre>
+<p><strong>【核心考点】</strong>
+循环条件分析：BRzp（大于等于0时跳转）减到负数时停止。</p>
+<p><strong>【详细推导与步骤】</strong> - DATA = x000B = 11 - R4 初始值 =
+11 - 第1次循环：R4 = 11−3 = 8 → BRzp 成立 - 第2次：5 → BRzp 成立 -
+第3次：2 → BRzp 成立 - 第4次：−1 → BRzp <strong>不成立</strong>（N=1,
+Z=0, P=0） - <strong>LOOP 执行了 4 次</strong> - 注意：BRzp 检查 Z 或
+P，不检查 N → 直到负数才退出</p>
+<hr />
+<h2
+id="第八-九章子程序栈与输入输出">【第八-九章】子程序、栈与输入/输出</h2>
+<hr />
+<h3 id="知识点1栈操作push-pop">【知识点1】栈操作（PUSH / POP）</h3>
+<h4 id="题型28栈的出入顺序追踪">【题型28】栈的出入顺序追踪</h4>
+<p><strong>【代表性例题】</strong>（原题8.8/8.9）</p>
+<p><strong>【题干】</strong> 对一个栈执行下列操作：PUSH A, PUSH B, POP,
+PUSH C, PUSH D, POP, PUSH E, POP, POP, PUSH F a. 执行 PUSH F
+之后，栈中包含哪些元素？ b. 在哪一时刻栈中元素最多？ 继续：PUSH G, PUSH
+H, PUSH I, PUSH J, POP, PUSH K, POP, POP, POP, PUSH L, POP, POP, PUSH M
+c. 此时栈中包含哪些元素？</p>
+<p><strong>【核心考点】</strong> 栈的
+LIFO（后进先出）特性。每一步追踪栈顶指针的变化。</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>栈内容（栈底→栈顶）</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PUSH A</td>
+<td>A</td>
+<td></td>
+</tr>
+<tr>
+<td>PUSH B</td>
+<td>A, B</td>
+<td></td>
+</tr>
+<tr>
+<td>POP</td>
+<td>A</td>
+<td>弹出B</td>
+</tr>
+<tr>
+<td>PUSH C</td>
+<td>A, C</td>
+<td></td>
+</tr>
+<tr>
+<td>PUSH D</td>
+<td>A, C, D</td>
+<td><strong>最多3个元素</strong></td>
+</tr>
+<tr>
+<td>POP</td>
+<td>A, C</td>
+<td>弹出D</td>
+</tr>
+<tr>
+<td>PUSH E</td>
+<td>A, C, E</td>
+<td></td>
+</tr>
+<tr>
+<td>POP</td>
+<td>A, C</td>
+<td>弹出E</td>
+</tr>
+<tr>
+<td>POP</td>
+<td>A</td>
+<td>弹出C</td>
+</tr>
+<tr>
+<td>PUSH F</td>
+<td>A, F</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>a. PUSH F 后：</strong> 栈中为 <strong>[A,
+F]</strong>（从底到顶：A→F）</p>
+<p><strong>b. 最多元素时刻：</strong> PUSH D 之后，PUSH D→POP
+之前，栈中有 <strong>3 个元素</strong>（A, C, D）</p>
+<p><strong>c. 继续后续操作：</strong> | 操作 | 栈内容 | |——|——–| | PUSH
+G | A, F, G | | PUSH H | A, F, G, H | | PUSH I | A, F, G, H, I | | PUSH
+J | A, F, G, H, I, J | | POP | A, F, G, H, I | | PUSH K | A, F, G, H, I,
+K | | POP | A, F, G, H, I | | POP | A, F, G, H | | POP | A, F, G | |
+PUSH L | A, F, G, L | | POP | A, F, G | | POP | A, F | | PUSH M | A, F,
+M |</p>
+<p><strong>最终栈内容：</strong> <strong>[A, F, M]</strong></p>
+<hr />
+<h3 id="知识点2子程序与返回链接">【知识点2】子程序与返回链接</h3>
+<h4 id="题型29jsrret-与-r7-保存问题">【题型29】JSR/RET 与 R7
+保存问题</h4>
+<p><strong>【代表性例题】</strong>（原题9.26）</p>
+<p><strong>【题干】</strong> 下面的程序本应在屏幕上打印数字
+5，却不能正常工作。为什么？</p>
+<pre><code>        JSR A
+        OUT
+        BRnzp DONE
+A       AND R0, R0, #0
+        ADD R0, R0, #5
+        JSR B
+        RET
+DONE    HALT
+B       LD R1, ASCII
+        ADD R0, R0, R1
+        RET
+ASCII   .FILL x0030</code></pre>
+<p><strong>【核心考点】</strong> JSR 将返回地址存入
+<strong>R7</strong>，但嵌套 JSR 会<strong>覆盖 R7</strong>。</p>
+<p><strong>【详细推导与步骤】</strong> - 主程序 JSR A → R7 =
+返回地址（JSR 下一条指令地址） - A 中 JSR B → <strong>R7 被覆盖为 B
+的返回地址</strong>（A 中 RET 的地址丢失） - B 中 RET 跳回 A（因为 R7 是
+B 的返回地址） - A 中 RET 此时用的 R7 是 B 的返回地址，不是主程序的 →
+<strong>返回位置错误</strong> - <strong>修正：</strong> 在 A 中调用 B
+之前，<strong>先保存 R7 到内存或栈</strong>，B 返回后再恢复</p>
+<hr />
+<h4 id="题型30子程序调用与-trap-服务例程">【题型30】子程序调用与 TRAP
+服务例程</h4>
+<p><strong>【代表性例题】</strong>（原题9.28/9.47）</p>
+<p><strong>【题干】</strong> - 9.28：内存 x4000
+处定义新服务例程（GETC+OUT），x0072 中存 x4000。能正常工作吗？ -
+9.47：TRAP x9A 调用服务例程转小写为大写。</p>
+<p><strong>【核心考点】</strong> - TRAP
+服务例程通过<strong>陷阱向量表</strong>（Trap Vector Table）定位：地址 =
+x0000 + trap_vector - TRAP x9A → 从 x009A 读取服务例程入口地址 -
+服务例程中必须<strong>保存和恢复所有被修改的寄存器</strong>（保护调用者）</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>9.28：</strong> - TRAP x72 → 从 x0072 取地址 → x4000 → 跳转到
+x4000 执行服务例程 - 服务例程：<code>ST R7, SaveR7</code> →
+<code>GETC</code> → <code>OUT</code> → <code>LD R7, SaveR7</code> →
+<code>RET</code> - ⚠ <strong>问题：</strong> <code>GETC</code> 和
+<code>OUT</code> 本身也是 TRAP 指令，它们会<strong>再次修改
+R7</strong>！ - 嵌套 TRAP 导致 R7 被覆盖：ST 保存的 R7 是 TRAP x72
+的返回地址，但 GETC/OUT 内部 TRAP 修改了 R7 - <strong>修复：</strong>
+在调用 GETC/OUT 前，先将 R7 压栈或存入其他寄存器</p>
+<p><strong>9.47 补全：</strong> - (a) <code>ST R7, SaveR7</code> —
+保存返回地址 - (b) <code>ADD R0, R0, R1</code> — R1 = ‘A’ − ‘a’
+的差值（将小写转大写） - (c) <code>LD R0, SaveR0</code> /
+<code>LD R7, SaveR7</code> — 恢复寄存器 - (d) <code>.FILL xFFE0</code> —
+即 −32 = ‘A’ − ‘a’ = 65 − 97 = −32 - (e) 标号 =
+<code>SaveR7</code>（与上方 .BLKW 1 配对）</p>
+<hr />
+<h3
+id="知识点3输入输出与存储器映射">【知识点3】输入/输出与存储器映射</h3>
+<h4 id="题型31轮询式输出dsrddr">【题型31】轮询式输出（DSR/DDR）</h4>
+<p><strong>【代表性例题】</strong>（原题9.31/9.34）</p>
+<p><strong>【题干】</strong> - 9.31：补全程序输出 “ABCFGH” -
+9.34：分析程序输出什么（ASCII 从 x0041 到 xFFB6）</p>
+<p><strong>【核心考点】</strong> LC-3 使用<strong>存储器映射
+I/O</strong>：DSR（xFE04）状态寄存器，DDR（xFE06）数据寄存器 - DSR[15]=1
+表示显示器就绪 - 轮询循环：<code>LDI R2, DSR</code> →
+<code>BRzp AGAIN</code> → <code>STI R0, DDR</code></p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>9.31 补全：</strong> - (a) <code>ADD R1, R1, #1</code> —
+递增指针指向下一个字符 - (b) <code>HALT</code> / <code>TRAP x25</code> —
+程序结束 - (c) 子程序 SUB_1 入口 - (d) <code>BRzp K</code> — 若
+DSR[15]=0（未就绪），继续轮询 - 输出逻辑：先用 TRAP x21 输出
+“ABC”，再通过存储器映射输出 “FGH”</p>
+<p><strong>9.34 程序分析：</strong> - R0 从 x0041（‘A’）开始递增 - R1 =
+xFFB6 = −x004A - 循环：轮询 DSR → 输出 R0 字符 → R0++ → 检查 R0+R1=0（即
+R0=x004A=‘J’） - <strong>输出：ABCDEFGHIJ</strong>（A到J共10个字符）</p>
+<hr />
+<h4 id="题型32栈实现字符反转">【题型32】栈实现字符反转</h4>
+<p><strong>【代表性例题】</strong>（原题9.46）</p>
+<p><strong>【题干】</strong> 下面的程序用 JSR PUSH/POP
+处理输入。若用户键入 a、b、c 后按回车，屏幕上出现什么？</p>
+<pre><code>X       GETC
+        OUT
+        ADD R1, R0, x-0A
+        BRz Y
+        JSR PUSH
+        BRnzp X
+Y       ... 弹栈并输出 ...
+STACK   .BLKW 5
+STACK_BASE .FILL x0FFF</code></pre>
+<p><strong>【核心考点】</strong> 利用栈的 LIFO 特性反转字符顺序。</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>(1) 键入 abc + 回车：</strong> - a 入栈 → b 入栈 → c 入栈 →
+回车触发弹出 - 弹出顺序：c、b、a - 屏幕输出：“abc”（输入时回显）+
+“cba”（弹出时输出）= <strong>abccba</strong></p>
+<p><strong>(2) 键入 abcdefgh + 回车（8个字符）：</strong> - 栈空间只有 5
+个字（.BLKW 5） - <strong>问题：栈溢出！</strong> PUSH 不检测上溢 -
+第6个字符压栈时会覆盖 STACK_BASE 和之后的内容 → 程序崩溃</p>
+<hr />
+<h3 id="知识点4子程序实现算法">【知识点4】子程序实现算法</h3>
+<h4
+id="题型33子程序功能阅读mod排序素数">【题型33】子程序功能阅读：MOD、排序、素数</h4>
+<p><strong>【代表性例题】</strong>（原题9.21 — 素数判定/9.25 —
+冒泡排序）</p>
+<p><strong>【题干9.21 素数判定】</strong> 假设 A 中存入一个大于 2、小于
+32768 的整数。程序做什么？</p>
+<pre><code>        JSR MOD
+        BRz STORE0
+        ...
+MOD     ADD R2, R0, #0
+        NOT R3, R1
+        ADD R3, R3, #1
+DEC     ADD R2, R2, R3
+        BRp DEC
+        RET</code></pre>
+<p><strong>【核心考点】</strong> MOD
+子程序通过循环减法实现取模。主程序从 2 开始试除。</p>
+<p><strong>【详细推导与步骤】</strong> - <code>MOD</code>：用 R1 除
+R0（循环减 R1），结果 R2=余数，RET 时条件码标记余数 - 主程序：从 2 到
+A−1，逐个试除 - 若某除数能整除（余数=0）→ BRz STORE0 → RESULT=0 - 若试到
+A−1 都不能整除 → STORE1 → RESULT=1 - <strong>程序功能：</strong>
+<strong>判断 A 是否为素数</strong>——是则 RESULT=1，否则=0</p>
+<p><strong>【题干9.25 冒泡排序】</strong></p>
+<pre><code>LOOP1   ...          ; 外层循环
+LOOP2   JSR SUB1     ; 比较相邻
+        JSR SUB2     ; 交换
+        ...
+SUB1    比较 R2 和 R2+1 的值并设置条件码
+SUB2    交换 R2 和 R2+1 的值</code></pre>
+<ul>
+<li>两层循环（LOOP1 外层 ×9 次，LOOP2 内层递减）</li>
+<li>SUB1 比较相邻元素（R5 = −R2, R6 = R2+1，R4 = R5+R6 = R6−R2）</li>
+<li>BRzp → 不交换（已经有序）；负 → 交换</li>
+<li><strong>功能：</strong> 对 DATA 处的 10
+个元素执行<strong>冒泡排序（升序）</strong></li>
+</ul>
+<hr />
+<h3 id="知识点5字符串与-trap-x22puts">【知识点5】字符串与 TRAP
+x22（PUTS）</h3>
+<h4 id="题型34字符串输出分析">【题型34】字符串输出分析</h4>
+<p><strong>【代表性例题】</strong>（原题9.18/9.19）</p>
+<p><strong>【题干】</strong> - 9.18：<code>LEA R1, L1</code> → 变址输出
+<code>HBoeoakteSmtHaotren!s</code> → 实际输出？ -
+9.19：<code>STR R1, R0, #3</code> 覆盖字符串 → 输出是什么？</p>
+<p><strong>【核心考点】</strong> - PUTS（TRAP x22）输出从 R0
+指向地址开始的字符串，直到遇到 x0000 - STR 可在运行时修改字符串内容 -
+LDR 变址访问可以”跳过”字符</p>
+<p><strong>【详细推导与步骤】</strong></p>
+<p><strong>9.18：</strong> 字符串 “HBoeoakteSmtHaotren!s” - LEA R1,
+L1（取程序自身地址） - 循环：LDR R0, R1, xC 每次取偏移 +12 处的字符 -
+每次指针 +2（因为 R2=2） - <strong>输出：“Boston State”
+或类似跳跃取字</strong>（每两个字符跳一步，偏移12跨域）</p>
+<p><strong>9.19：</strong> 字符串初始为 “FUNKY”（在 LABEL）、“HELLO
+WORLD”（在 LABEL2） - <code>LEA R0, LABEL</code> → R0 = LABEL 地址 -
+<code>STR R1, R0, #3</code> → 将 R1(=0) 写入 LABEL+3 -
+“FUNKY”的第4个字符 ‘K’ 被替换为 0（空字符终止符） - PUTS
+输出：<strong>“FUN”</strong>（遇到 x0000 提前结束）</p>
+<hr />
+<blockquote>
+<p>整理完毕。共计涵盖 <strong>第2~9章</strong>，按
+<strong>34个核心题型</strong> 组织，已执行去重归并。</p>
+</blockquote>
+<blockquote>
+<p>🎯 <strong>备考建议：</strong>
+优先掌握补码运算与溢出判断（必考）、IEEE 754 浮点数（高频）、LC-3
+指令解码与寻址模式（必考）、栈操作与子程序（高频）。</p>
+</blockquote>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {  delimiters: [    {left: '$$', right: '$$', display: true},    {left: '$', right: '$', display: false},    {left: '\\(', right: '\\)', display: false},    {left: '\\[', right: '\\]', display: true}  ],  throwOnError: false});" crossorigin="anonymous"></script>
+</body>
+</html>
