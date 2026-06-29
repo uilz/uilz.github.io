@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --blockquote-border: #d0d7de;
+    --link: #0969da;
+    --heading: #1f2328;
+    --table-header-bg: #f6f8fa;
+    --table-alt-bg: #f8f9fa;
+    --hr: #d0d7de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    padding: 40px;
+    max-width: 840px;
+    margin: 0 auto;
+  }
+  /* ── 标题 ── */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--heading);
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  /* ── 段落 ── */
+  p { margin-bottom: 1em; }
+  /* ── 链接 ── */
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  /* ── 列表 ── */
+  ul, ol { margin-bottom: 1em; padding-left: 2em; }
+  li { margin-bottom: 0.25em; }
+  li > p { margin-bottom: 0.25em; }
+  /* ── 代码 ── */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background-color: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  pre {
+    margin-bottom: 1em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    white-space: pre;
+  }
+  /* ── 引用 ── */
+  blockquote {
+    margin: 0 0 1em;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid var(--blockquote-border);
+  }
+  blockquote p { margin-bottom: 0.5em; }
+  /* ── 表格 ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    background: var(--table-header-bg);
+  }
+  tr:nth-child(even) { background: var(--table-alt-bg); }
+  /* ── 分割线 ── */
+  hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
+  /* ── 图片 ── */
+  img { max-width: 100%; }
+  /* ── 笔记/警告块（兼容 Obsidian callout 样式） ── */
+  .callout {
+    padding: 12px 16px;
+    margin-bottom: 1em;
+    border-left: 4px solid var(--link);
+    background: #f0f6ff;
+    border-radius: 6px;
+  }
+  .callout.warning { border-left-color: #d29922; background: #fff8c5; }
+  .callout.danger  { border-left-color: #cf222e; background: #ffebe9; }
+  .callout strong.callout-title { font-size: 0.9em; text-transform: uppercase; }
+  /* ── KaTeX 公式居中 ── */
+  .katex-display { margin: 0.8em 0; text-align: center; }
+</style>
+
+</head>
+<body>
+<h1 id="数字电路期末复习总结">🔢 数字电路期末复习总结</h1>
+<blockquote>
+<p>基于课件整理：第1-5章 + 第8-9章</p>
+</blockquote>
+<hr />
+<h2 id="第1章-逻辑代数基础">📖 第1章 逻辑代数基础</h2>
+<h3 id="一数制与码制">一、数制与码制</h3>
+<h4 id="常用数制">1. 常用数制</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">数制</th>
+<th style="text-align: center;">基数</th>
+<th style="text-align: left;">数码</th>
+<th style="text-align: center;">进位规则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">二进制(B)</td>
+<td style="text-align: center;">2</td>
+<td style="text-align: left;">0,1</td>
+<td style="text-align: center;">逢二进一</td>
+</tr>
+<tr>
+<td style="text-align: center;">八进制(O/Q)</td>
+<td style="text-align: center;">8</td>
+<td style="text-align: left;">0~7</td>
+<td style="text-align: center;">逢八进一</td>
+</tr>
+<tr>
+<td style="text-align: center;">十进制(D)</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: left;">0~9</td>
+<td style="text-align: center;">逢十进一</td>
+</tr>
+<tr>
+<td style="text-align: center;">十六进制(H)</td>
+<td style="text-align: center;">16</td>
+<td style="text-align: left;">0~9, A(10)~F(15)</td>
+<td style="text-align: center;">逢十六进一</td>
+</tr>
+</tbody>
+</table>
+<h4 id="数制转换">2. 数制转换</h4>
+<ul>
+<li><strong>二→十</strong>：按权展开相加</li>
+<li><strong>十→二</strong>：整数除2取余倒序，小数乘2取整正序</li>
+<li><strong>二→八</strong>：整数从右开始三位一组，小数从左开始三位一组</li>
+<li><strong>二→十六</strong>：整数从右开始四位一组，小数从左开始四位一组</li>
+<li><strong>八/十六→二</strong>：每位展开为3/4位二进制</li>
+</ul>
+<h4 id="常用代码">3. 常用代码</h4>
+<ul>
+<li><strong>8421BCD码</strong>：有权码，位权8-4-2-1，用4位二进制表示1位十进制</li>
+<li><strong>格雷码(Gray)</strong>：无权循环码，相邻码之间只有1位不同</li>
+<li><strong>ASCII码</strong>：7位二进制表示128个字符和符号</li>
+</ul>
+<hr />
+<h3 id="二逻辑代数基本运算">二、逻辑代数基本运算</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">运算</th>
+<th style="text-align: center;">运算符</th>
+<th style="text-align: left;">逻辑关系</th>
+<th style="text-align: left;">口诀</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>与(AND)</strong></td>
+<td style="text-align: center;"><code>·</code> 或省略</td>
+<td style="text-align: left;">全1出1，有0出0</td>
+<td style="text-align: left;">一假即假</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>或(OR)</strong></td>
+<td style="text-align: center;"><code>+</code></td>
+<td style="text-align: left;">有1出1，全0出0</td>
+<td style="text-align: left;">一真即真</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>非(NOT)</strong></td>
+<td style="text-align: center;"><code>¯</code> 上划线</td>
+<td style="text-align: left;">0变1，1变0</td>
+<td style="text-align: left;">取反</td>
+</tr>
+</tbody>
+</table>
+<h4 id="复合门电路">复合门电路</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">门电路</th>
+<th style="text-align: left;">运算</th>
+<th style="text-align: left;">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">与非门(NAND)</td>
+<td style="text-align: left;">Y = A·B</td>
+<td style="text-align: left;">先与后非</td>
+</tr>
+<tr>
+<td style="text-align: center;">或非门(NOR)</td>
+<td style="text-align: left;">Y = A+B</td>
+<td style="text-align: left;">先或后非</td>
+</tr>
+<tr>
+<td style="text-align: center;">异或门(XOR)</td>
+<td style="text-align: left;">Y = A ⊕ B = A’B+AB’</td>
+<td style="text-align: left;">相异出1</td>
+</tr>
+<tr>
+<td style="text-align: center;">同或门(XNOR)</td>
+<td style="text-align: left;">Y = A ⊙ B = AB+A’B’</td>
+<td style="text-align: left;">相同出1</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="三逻辑代数公式和规则">三、逻辑代数公式和规则</h3>
+<h4 id="基本公式">基本公式</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">名称</th>
+<th style="text-align: left;">公式1</th>
+<th style="text-align: center;">公式2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">0-1律</td>
+<td style="text-align: left;">A·0=0</td>
+<td style="text-align: center;">A+1=1</td>
+</tr>
+<tr>
+<td style="text-align: center;">自等律</td>
+<td style="text-align: left;">A·1=A</td>
+<td style="text-align: center;">A+0=A</td>
+</tr>
+<tr>
+<td style="text-align: center;">互补律</td>
+<td style="text-align: left;">A·A’=0</td>
+<td style="text-align: center;">A+A’=1</td>
+</tr>
+<tr>
+<td style="text-align: center;">重叠律(同一律)</td>
+<td style="text-align: left;">A·A=A</td>
+<td style="text-align: center;">A+A=A</td>
+</tr>
+<tr>
+<td style="text-align: center;">交换律</td>
+<td style="text-align: left;">A·B=B·A</td>
+<td style="text-align: center;">A+B=B+A</td>
+</tr>
+<tr>
+<td style="text-align: center;">结合律</td>
+<td style="text-align: left;">(A·B)·C=A·(B·C)</td>
+<td style="text-align: center;">(A+B)+C=A+(B+C)</td>
+</tr>
+<tr>
+<td style="text-align: center;">分配律</td>
+<td style="text-align: left;">A·(B+C)=AB+AC</td>
+<td style="text-align: center;">A+BC=(A+B)(A+C)</td>
+</tr>
+<tr>
+<td style="text-align: center;">吸收律</td>
+<td style="text-align: left;">A+A·B=A</td>
+<td style="text-align: center;">A·(A+B)=A</td>
+</tr>
+<tr>
+<td style="text-align: center;">摩根定律</td>
+<td style="text-align: left;">(A·B)‘=A’+B’</td>
+<td style="text-align: center;">(A+B)‘=A’·B’</td>
+</tr>
+<tr>
+<td style="text-align: center;">还原律(双重否定)</td>
+<td style="text-align: left;">(A’)’=A</td>
+<td style="text-align: center;">-</td>
+</tr>
+</tbody>
+</table>
+<h4 id="三个重要规则">三个重要规则</h4>
+<ol type="1">
+<li><strong>代入规则</strong>：任何变量用另一个逻辑函数代入，等式仍成立</li>
+<li><strong>反演规则</strong>：<code>·↔︎+</code>，<code>0↔︎1</code>，原变量↔︎反变量（注意运算次序！）</li>
+<li><strong>对偶规则</strong>：<code>·↔︎+</code>，<code>0↔︎1</code>（变量不变反）</li>
+</ol>
+<hr />
+<h3 id="四逻辑函数描述方法">四、逻辑函数描述方法</h3>
+<ol type="1">
+<li><strong>表达式</strong>：与或式、标准与或式（最小项之和）、或与式、标准或与式</li>
+<li><strong>真值表</strong>：列出所有变量取值组合及对应函数值</li>
+<li><strong>卡诺图</strong>：变量取值按循环码排列的方格图</li>
+<li><strong>逻辑图</strong>：用门电路符号表示的电路图</li>
+</ol>
+<h4 id="标准与或表达式最小项之和">标准与或表达式（最小项之和）</h4>
+<ul>
+<li>最小项：n个变量的乘积项，每个变量以原变量或反变量形式出现一次</li>
+<li>所有最小项之和构成标准与或式</li>
+</ul>
+<hr />
+<h3 id="五逻辑函数化简">五、逻辑函数化简</h3>
+<h4 id="代数化简法">代数化简法</h4>
+<ul>
+<li>并项法：<code>AB+AB'=A</code></li>
+<li>吸收法：<code>A+AB=A</code></li>
+<li>消项法：<code>AB+A'C+BC=AB+A'C</code></li>
+<li>消因子法：<code>A+A'B=A+B</code></li>
+</ul>
+<h4 id="卡诺图化简法">卡诺图化简法</h4>
+<ul>
+<li>2^n个相邻最小项可合并消去n个变量</li>
+<li>画圈原则：圈大（包含2^n个格）、圈少、不遗漏所有1格</li>
+<li><strong>约束项/无关项</strong>：可当0或1使用，以利于化简</li>
+</ul>
+<hr />
+<h2 id="第2章-组合逻辑电路">📖 第2章 组合逻辑电路</h2>
+<h3 id="一组合逻辑电路特点">一、组合逻辑电路特点</h3>
+<ul>
+<li>输出仅取决于<strong>当前输入</strong></li>
+<li>无记忆功能，无反馈回路</li>
+<li>由门电路构成</li>
+</ul>
+<h3 id="二组合逻辑电路分析">二、组合逻辑电路分析</h3>
+<p><strong>步骤</strong>：逻辑图 → 表达式 → 化简 → 真值表 → 功能说明</p>
+<h3 id="三组合逻辑电路设计">三、组合逻辑电路设计</h3>
+<p><strong>步骤</strong>：逻辑功能要求 → 真值表 → 表达式 → 化简 →
+逻辑图</p>
+<h3
+id="四常用中规模集成组合逻辑电路">四、常用中规模集成组合逻辑电路</h3>
+<h4 id="编码器">1. 编码器</h4>
+<ul>
+<li><strong>二进制编码器</strong>：2^n条输入线 → n位二进制码</li>
+<li><strong>优先编码器</strong>：允许多个输入同时有效，按优先级编码</li>
+<li>常用芯片：<strong>74LS148</strong>（8线-3线优先编码器）</li>
+</ul>
+<h4 id="译码器">2. 译码器</h4>
+<ul>
+<li>n位二进制码 → 2^n个输出（一个有效）</li>
+<li>常用芯片：<strong>74LS138</strong>（3线-8线译码器）</li>
+<li>功能扩展：级联实现更多输入</li>
+<li><strong>显示译码器</strong>：驱动七段数码管（共阴/共阳）</li>
+</ul>
+<h4 id="数据选择器">3. 数据选择器</h4>
+<ul>
+<li>从多路输入中选择一路输出（n位地址选择 2^n 路输入）</li>
+<li>常用芯片：<strong>74LS151</strong>（8选1）、<strong>74LS153</strong>（双4选1）</li>
+<li>可以用来<strong>实现任意逻辑函数</strong>（通过地址端+数据端）</li>
+</ul>
+<h4 id="加法器">4. 加法器</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">类型</th>
+<th style="text-align: left;">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">半加器(HA)</td>
+<td style="text-align: left;">两个1位二进制相加，不考虑低位进位</td>
+</tr>
+<tr>
+<td style="text-align: left;">全加器(FA)</td>
+<td style="text-align: left;">两个1位二进制相加，考虑低位进位</td>
+</tr>
+<tr>
+<td style="text-align: left;">串行进位加法器</td>
+<td style="text-align: left;">低位→高位串行，速度慢</td>
+</tr>
+<tr>
+<td style="text-align: left;">超前进位加法器</td>
+<td style="text-align: left;">并行计算进位，速度快</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>基本公式</strong>：S = A⊕B⊕Ci，Co = AB + (A⊕B)·Ci = AB + ACi
++ BCi</li>
+</ul>
+<h4 id="数值比较器">5. 数值比较器</h4>
+<ul>
+<li>比较两个二进制数的大小（A&gt;B, A=B, A&lt;B）</li>
+<li>多位比较：先比较高位，高位相同再比较低位</li>
+</ul>
+<hr />
+<h2 id="第3章-触发器">📖 第3章 触发器</h2>
+<h3 id="一基本概念">一、基本概念</h3>
+<p>触发器是<strong>具有记忆功能</strong>的基本逻辑单元，能存储1位二进制信息。特征：
+- 有两个稳定状态（0状态和1状态） - 在触发信号作用下可翻转 -
+触发信号消失后保持新状态</p>
+<h3 id="二各类触发器">二、各类触发器</h3>
+<h4 id="基本rs触发器">1. 基本RS触发器</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">输入</th>
+<th style="text-align: center;">输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">R’=0, S’=1</td>
+<td style="text-align: center;">Q=0（复位）</td>
+</tr>
+<tr>
+<td style="text-align: center;">R’=1, S’=0</td>
+<td style="text-align: center;">Q=1（置位）</td>
+</tr>
+<tr>
+<td style="text-align: center;">R’=1, S’=1</td>
+<td style="text-align: center;">保持</td>
+</tr>
+<tr>
+<td style="text-align: center;">R’=0, S’=0</td>
+<td style="text-align: center;"><strong>禁止态</strong>（不定）⚠️</td>
+</tr>
+</tbody>
+</table>
+<h4 id="同步rs触发器">2. 同步RS触发器</h4>
+<ul>
+<li>加时钟CP控制，仅在CP有效时接收输入</li>
+<li>仍有RS=11的禁止态</li>
+</ul>
+<h4 id="主从触发器">3. 主从触发器</h4>
+<ul>
+<li>主触发器（CP=1时工作）+ 从触发器（CP↓时工作）</li>
+<li><strong>CP=1时主触发器接收，CP↓时从触发器输出</strong></li>
+<li>克服了空翻现象</li>
+</ul>
+<h4 id="边沿触发器最常用">4. 边沿触发器（最常用）</h4>
+<ul>
+<li>仅在时钟<strong>上升沿或下降沿</strong>瞬间接收输入</li>
+<li>抗干扰能力强，无空翻</li>
+</ul>
+<h3 id="三触发器的逻辑功能分类">三、触发器的逻辑功能分类</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">类型</th>
+<th style="text-align: left;">特性方程</th>
+<th style="text-align: left;">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>RS触发器</strong></td>
+<td style="text-align: left;">Q* = S+R’Q, S·R=0</td>
+<td style="text-align: left;">有禁止态</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>JK触发器</strong></td>
+<td style="text-align: left;">Q* = JQ’+K’Q</td>
+<td style="text-align: left;">无约束，功能最全</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>D触发器</strong></td>
+<td style="text-align: left;">Q* = D</td>
+<td style="text-align: left;">最简单，数据锁存</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>T触发器</strong></td>
+<td style="text-align: left;">Q* = T⊕Q = TQ’+T’Q</td>
+<td style="text-align: left;">T=1时计数，T=0时保持</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>T’触发器</strong></td>
+<td style="text-align: left;">Q* = Q’</td>
+<td style="text-align: left;">每来一个CP翻转一次</td>
+</tr>
+</tbody>
+</table>
+<h3 id="四触发器转换">四、触发器转换</h3>
+<ul>
+<li><strong>JK→D</strong>：令 J=D, K=D’ → D=(D·Q’)+(D’·Q) ✓</li>
+<li><strong>JK→T</strong>：令 J=K=T</li>
+<li><strong>D→JK</strong>：D=JQ’+K’Q</li>
+</ul>
+<hr />
+<h2 id="第4章-时序逻辑电路">📖 第4章 时序逻辑电路</h2>
+<h3 id="一时序逻辑电路特点">一、时序逻辑电路特点</h3>
+<ul>
+<li>输出不仅取决于<strong>当前输入</strong>，还取决于<strong>电路原状态</strong>（有记忆）</li>
+<li>由<strong>组合电路</strong>和<strong>存储电路</strong>（触发器）组成</li>
+<li>用<strong>状态方程、驱动方程、输出方程</strong>描述</li>
+</ul>
+<h3 id="二时序电路分析方法">二、时序电路分析方法</h3>
+<p><strong>步骤</strong>： 1. 写各触发器驱动方程（激励函数） 2.
+代入特性方程求次态方程 3. 写输出方程 4. 列状态转换表/状态转换图 5.
+画时序波形图 6. <strong>判断逻辑功能</strong></p>
+<h3 id="三计数器重点">三、计数器（重点 ⭐）</h3>
+<h4 id="按计数进制">按计数进制</h4>
+<ul>
+<li><strong>二进制计数器</strong>：按二进制规律计数</li>
+<li><strong>十进制计数器</strong>：按8421BCD码（0000~1001）</li>
+<li><strong>任意进制计数器</strong>：N进制</li>
+</ul>
+<h4 id="按计数方向">按计数方向</h4>
+<ul>
+<li><strong>加法计数器</strong>：递增计数</li>
+<li><strong>减法计数器</strong>：递减计数</li>
+<li><strong>可逆计数器</strong>：可加可减（如<strong>74LS193</strong>）</li>
+</ul>
+<h4 id="按触发方式">按触发方式</h4>
+<ul>
+<li><strong>同步计数器</strong>：所有触发器共用一个CP ✅（速度快）</li>
+<li><strong>异步计数器</strong>：低位触发器的输出作为高位CP（速度慢，结构简单）</li>
+</ul>
+<h4 id="用中规模芯片构成n进制计数器">用中规模芯片构成N进制计数器</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">方法</th>
+<th style="text-align: left;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>置零法(清零)</strong></td>
+<td style="text-align: left;">计数到N时产生清零信号，快速回到0</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>置数法(置位)</strong></td>
+<td style="text-align: left;">计数到某值时置入指定初值</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>级联</strong></td>
+<td style="text-align: left;">多片芯片串接扩大计数范围</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️
+<strong>注意异步清零和同步清零的区别</strong>（异步立即清零，同步等下一个CP）</p>
+<h4 id="常用计数器芯片">常用计数器芯片</h4>
+<ul>
+<li><strong>74LS160</strong>：同步十进制加法计数器</li>
+<li><strong>74LS161</strong>：同步4位二进制加法计数器</li>
+<li><strong>74LS192</strong>：同步十进制可逆计数器</li>
+<li><strong>74LS193</strong>：同步4位二进制可逆计数器</li>
+<li><strong>74LS290</strong>：异步二-五-十进制计数器</li>
+</ul>
+<h3 id="四寄存器">四、寄存器</h3>
+<h4 id="数码寄存器">数码寄存器</h4>
+<ul>
+<li>并行输入，并行输出</li>
+<li>存储多位二进制信息</li>
+</ul>
+<h4 id="移位寄存器">移位寄存器</h4>
+<ul>
+<li>在CP作用下数据逐位左移/右移</li>
+<li>可进行<strong>串→并、并→串</strong>转换</li>
+<li>常用芯片：<strong>74LS194</strong>（双向移位寄存器，4位）</li>
+</ul>
+<hr />
+<h2 id="第5章-半导体存储器">📖 第5章 半导体存储器</h2>
+<h3 id="一分类">一、分类</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">类型</th>
+<th style="text-align: left;">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>ROM（只读存储器）</strong></td>
+<td style="text-align: left;">非易失性，断电不丢失</td>
+</tr>
+<tr>
+<td
+style="text-align: left;"><strong>RAM（随机存取存储器）</strong></td>
+<td style="text-align: left;">易失性，断电丢失数据</td>
+</tr>
+</tbody>
+</table>
+<h3 id="二rom的分类">二、ROM的分类</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">类型</th>
+<th style="text-align: left;">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>掩模ROM(MROM)</strong></td>
+<td style="text-align: left;">出厂时编程，不可改写</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>可编程ROM(PROM)</strong></td>
+<td style="text-align: left;">用户一次性编程，不可擦除</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>可擦除ROM(EPROM)</strong></td>
+<td style="text-align: left;">紫外线擦除，可重复编程</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>电可擦除ROM(EEPROM)</strong></td>
+<td style="text-align: left;">电擦除，可在线编程</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Flash存储器</strong></td>
+<td style="text-align: left;">速度快，容量大，电擦除</td>
+</tr>
+</tbody>
+</table>
+<h3 id="三ram的分类">三、RAM的分类</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">类型</th>
+<th style="text-align: left;">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>静态RAM(SRAM)</strong></td>
+<td style="text-align: left;">用触发器存储，速度快，集成度低</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>动态RAM(DRAM)</strong></td>
+<td style="text-align: left;">用电容存储，需刷新，集成度高</td>
+</tr>
+</tbody>
+</table>
+<h3 id="四存储器容量扩展">四、存储器容量扩展</h3>
+<ul>
+<li><strong>位扩展</strong>：增加字长（多个芯片地址并联）</li>
+<li><strong>字扩展</strong>：增加存储单元数量（片选信号CS控制）</li>
+<li><strong>字位扩展</strong>：同时扩展</li>
+</ul>
+<h3 id="五rom实现逻辑函数">五、ROM实现逻辑函数</h3>
+<ul>
+<li>ROM的地址译码器产生<strong>全部最小项</strong></li>
+<li>ROM的存储阵列即<strong>或阵列</strong></li>
+<li>在ROM中写入真值表数据即可实现任意组合逻辑函数</li>
+<li><strong>ROM = 与阵列(固定) + 或阵列(可编程)</strong></li>
+</ul>
+<hr />
+<h2 id="第8章-da和ad转换">📖 第8章 D/A和A/D转换</h2>
+<h3 id="一da转换器数模转换">一、D/A转换器（数模转换）</h3>
+<h4 id="权电阻网络dac">1. 权电阻网络DAC</h4>
+<ul>
+<li>各支路电阻与权值成反比：R、R/2、R/4…</li>
+<li><strong>缺点</strong>：电阻值范围大，精度难保证</li>
+</ul>
+<h4 id="倒t型电阻网络dac-最常用">2. 倒T型电阻网络DAC ✅（最常用）</h4>
+<ul>
+<li>R-2R电阻网络，仅需两种电阻值</li>
+<li>各支路电流按二进制规律分配</li>
+<li>输出：u₀ = -(Uref × D) / (2ⁿ) × Rf/R</li>
+</ul>
+<h4 id="dac主要技术指标">3. DAC主要技术指标</h4>
+<ul>
+<li><strong>分辨率</strong> = Uref / 2ⁿ（最小输出电压变化）</li>
+<li><strong>转换精度</strong>：实际输出与理论值的偏差</li>
+<li><strong>转换速度</strong>：从输入数字量到输出稳定模拟量的时间</li>
+</ul>
+<hr />
+<h3 id="二ad转换器模数转换">二、A/D转换器（模数转换）</h3>
+<h4
+id="转换步骤采样保持量化编码">转换步骤：<strong>采样→保持→量化→编码</strong></h4>
+<h4 id="采样定理">采样定理</h4>
+<ul>
+<li><strong>f_s ≥ 2·f_i(max)</strong>（奈奎斯特定理）</li>
+<li>采样频率至少为信号最高频率的2倍</li>
+</ul>
+<h4 id="常见adc类型按速度排序">常见ADC类型（按速度排序）</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">类型</th>
+<th style="text-align: center;">速度</th>
+<th style="text-align: left;">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>并联比较型</strong></td>
+<td style="text-align: center;">🏆最快(几十ns)</td>
+<td style="text-align: left;">硬件复杂，n位需2ⁿ-1个比较器</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>逐次渐近型</strong></td>
+<td style="text-align: center;">⚡较快(几十μs)</td>
+<td
+style="text-align: left;">速度/精度折中，<strong>应用最广</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>双积分型</strong></td>
+<td style="text-align: center;">🐢最慢(几十ms)</td>
+<td style="text-align: left;">抗干扰强，精度高，但速度慢</td>
+</tr>
+</tbody>
+</table>
+<h4 id="逐次渐近型adc原理">逐次渐近型ADC原理</h4>
+<ul>
+<li>从MSB到LSB逐位比较</li>
+<li>每次比较确定一位是1还是0</li>
+<li>n位ADC需 (n+2) 个CP周期</li>
+</ul>
+<h4 id="双积分型adc特点">双积分型ADC特点</h4>
+<ul>
+<li>两次积分：先对输入积分T₁固定时间，再对基准反向积分</li>
+<li>结果与R、C参数无关 ✅</li>
+<li>抗干扰能力强 ✅</li>
+<li>转换速度慢 ❌</li>
+</ul>
+<h4 id="adc主要技术指标">ADC主要技术指标</h4>
+<ul>
+<li><strong>分辨率</strong>：满量程/2ⁿ（如10位、5V →
+分辨率≈4.88mV）</li>
+<li><strong>转换速度</strong>：并联型(几十ns) &gt; 逐次渐近型(几十μs)
+&gt; 双积分型(几十ms)</li>
+</ul>
+<hr />
+<h2 id="第9章-脉冲信号的产生与整形">📖 第9章 脉冲信号的产生与整形</h2>
+<h3 id="一555定时器重点">一、555定时器（重点 ⭐⭐）</h3>
+<p><strong>名称由来</strong>：内部3个5kΩ电阻分压</p>
+<p><strong>引脚功能</strong>： | 引脚 | 名称 | 功能 | |:—:|:—|:—| | 1 |
+GND | 接地 | | 2 | TR（触发） | 低电平触发，&lt;1/3Vcc时使输出=1 | | 3 |
+OUT | 输出端 | | 4 | RST（复位） | 低电平复位 | | 5 | CO（控制电压） |
+外接控制电压，调节阈值(不接时串0.01μF) | | 6 | TH（阈值） |
+高电平触发，&gt;2/3Vcc时使输出=0 | | 7 | DIS（放电） |
+放电端，输出为0时接地 | | 8 | VCC | 电源 |</p>
+<p><strong>功能表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">TH(6脚)</th>
+<th style="text-align: center;">TR(2脚)</th>
+<th style="text-align: center;">RST(4脚)</th>
+<th style="text-align: center;">OUT(3脚)</th>
+<th style="text-align: center;">DIS(7脚)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">×</td>
+<td style="text-align: center;">×</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">接地</td>
+</tr>
+<tr>
+<td style="text-align: center;">&gt;2/3Vcc</td>
+<td style="text-align: center;">&gt;1/3Vcc</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">接地</td>
+</tr>
+<tr>
+<td style="text-align: center;">&lt;2/3Vcc</td>
+<td style="text-align: center;">&lt;1/3Vcc</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">开路</td>
+</tr>
+<tr>
+<td style="text-align: center;">&lt;2/3Vcc</td>
+<td style="text-align: center;">&gt;1/3Vcc</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;"><strong>保持</strong></td>
+<td style="text-align: center;"><strong>保持</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="二555定时器的三种应用高频考点">二、555定时器的三种应用（高频考点
+⭐⭐）</h3>
+<h4 id="施密特触发器">🔹 施密特触发器</h4>
+<p><strong>接法</strong>：TR(2)和TH(6)短接作为输入端</p>
+<p><strong>特点</strong>： - 两个阈值：UT+ = 2/3Vcc，UT- = 1/3Vcc -
+回差电压：ΔUT = UT+ - UT- = 1/3Vcc - 可调回差：通过5脚外接电压</p>
+<p><strong>应用</strong>： 1. <strong>波形变换</strong>：正弦波→矩形波
+2. <strong>脉冲整形</strong>：将边沿变差的脉冲整形 3.
+<strong>脉冲鉴幅</strong>：选出幅度大于UT+的脉冲</p>
+<h4 id="单稳态触发器">🔹 单稳态触发器</h4>
+<p><strong>接法</strong>：TR(2)作为触发输入，外部R、C定时</p>
+<p><strong>工作过程</strong>： - <strong>稳态</strong>：OUT=0，DIS接地 -
+<strong>触发</strong>：TR&lt;1/3Vcc → OUT跳高，DIS开路，C充电 -
+<strong>暂稳态结束</strong>：UC达到2/3Vcc → OUT跳低，DIS接地，C放电 -
+<strong>输出脉宽</strong>：tw ≈ 1.1·R·C（与R、C有关，与触发无关）</p>
+<p><strong>应用</strong>：脉冲整形、定时、延时</p>
+<h4 id="多谐振荡器自激振荡无稳态">🔹 多谐振荡器（自激振荡，无稳态）</h4>
+<p><strong>接法</strong>：TH(6)+TR(2)连C，DIS经R₂接C，VCC经(R₁+R₂)接C</p>
+<p><strong>工作过程</strong>： - 电容C交替充放电 -
+UC在1/3~2/3Vcc之间来回变化 - OUT输出矩形波</p>
+<p><strong>周期公式</strong>： - t₁（充电）= 0.7·(R₁+R₂)·C（OUT=1） -
+t₂（放电）= 0.7·R₂·C（OUT=0） - <strong>T = t₁+t₂ =
+0.7·(R₁+2R₂)·C</strong> - <strong>占空比 q = t₁/T =
+(R₁+R₂)/(R₁+2R₂)</strong></p>
+<p>✅
+<strong>记忆口诀</strong>：充电(R₁+R₂)，放电R₂，周期0.7乘电阻和电容</p>
+<hr />
+<h3 id="三施密特触发器的特性">三、施密特触发器的特性</h3>
+<ol type="1">
+<li><strong>滞后特性</strong>：上升阈值≠下降阈值，有回差ΔUT</li>
+<li><strong>正反馈</strong>：状态跳变快，边沿陡峭</li>
+<li>反相/同相两种类型</li>
+</ol>
+<h3 id="四单稳态触发器的特性">四、单稳态触发器的特性</h3>
+<ol type="1">
+<li><strong>1个稳态 + 1个暂稳态</strong></li>
+<li>触发翻转，自动返回</li>
+<li>脉冲宽度<strong>由RC决定</strong>，与触发无关</li>
+<li>分<strong>可重复触发</strong>和<strong>不可重复触发</strong>两种</li>
+</ol>
+<h3 id="五石英晶体多谐振荡器">五、石英晶体多谐振荡器</h3>
+<ul>
+<li>频率稳定性高（10⁻⁶~10⁻⁸）</li>
+<li>振荡频率仅取决于晶体谐振频率，与RC无关</li>
+<li>用于对频率精度要求高的场合（如电子钟表）</li>
+</ul>
+<hr />
+<h2 id="备考要点总结">📋 备考要点总结</h2>
+<h3 id="必考知识点等级">必考知识点等级</h3>
+<p>⭐⭐⭐ <strong>高频考点</strong>（必须掌握） -
+555定时器三种电路（施密特/单稳态/多谐）的结构、波形、参数计算 -
+计数器设计（同步/异步、N进制） - 组合逻辑电路分析与设计 -
+触发器特性方程及转换 - 时序电路分析与状态图</p>
+<p>⭐⭐ <strong>中等频率</strong> - 数制转换 - 卡诺图化简 -
+编码器/译码器/数据选择器功能 - D/A和A/D转换器的类型比较 -
+存储器容量扩展</p>
+<p>⭐ <strong>了解即可</strong> - 基本概念（模拟量/数字量） -
+各种代码（BCD/Gray/ASCII） - ROM实现逻辑函数的原理</p>
+<h3 id="常见计算题">常见计算题</h3>
+<ol type="1">
+<li><strong>单稳态触发器</strong> tw = 1.1·R·C 求脉宽</li>
+<li><strong>多谐振荡器</strong> T = 0.7·(R₁+2R₂)·C 求周期/频率</li>
+<li><strong>DAC输出</strong> u₀ = -(Uref·D)/2ⁿ</li>
+<li><strong>ADC分辨率</strong> = 满量程/2ⁿ</li>
+<li><strong>触发器特性方程</strong>代入计算次态</li>
+<li><strong>计数器</strong>清零/置数法构成N进制</li>
+</ol>
+<hr />
+<p>📌
+<em>以上为课件知识点整理，建议结合课本习题和往年试题练习巩固。祝考试顺利！🎯</em></p>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {  delimiters: [    {left: '$$', right: '$$', display: true},    {left: '$', right: '$', display: false},    {left: '\\(', right: '\\)', display: false},    {left: '\\[', right: '\\]', display: true}  ],  throwOnError: false});" crossorigin="anonymous"></script>
+</body>
+</html>
