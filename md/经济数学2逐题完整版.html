@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2328;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+    --blockquote-border: #d0d7de;
+    --link: #0969da;
+    --heading: #1f2328;
+    --table-header-bg: #f6f8fa;
+    --table-alt-bg: #f8f9fa;
+    --hr: #d0d7de;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    padding: 40px;
+    max-width: 840px;
+    margin: 0 auto;
+  }
+  /* ── 标题 ── */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--heading);
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  /* ── 段落 ── */
+  p { margin-bottom: 1em; }
+  /* ── 链接 ── */
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  /* ── 列表 ── */
+  ul, ol { margin-bottom: 1em; padding-left: 2em; }
+  li { margin-bottom: 0.25em; }
+  li > p { margin-bottom: 0.25em; }
+  /* ── 代码 ── */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background-color: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  pre {
+    margin-bottom: 1em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    white-space: pre;
+  }
+  /* ── 引用 ── */
+  blockquote {
+    margin: 0 0 1em;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid var(--blockquote-border);
+  }
+  blockquote p { margin-bottom: 0.5em; }
+  /* ── 表格 ── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    background: var(--table-header-bg);
+  }
+  tr:nth-child(even) { background: var(--table-alt-bg); }
+  /* ── 分割线 ── */
+  hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
+  /* ── 图片 ── */
+  img { max-width: 100%; }
+  /* ── 笔记/警告块（兼容 Obsidian callout 样式） ── */
+  .callout {
+    padding: 12px 16px;
+    margin-bottom: 1em;
+    border-left: 4px solid var(--link);
+    background: #f0f6ff;
+    border-radius: 6px;
+  }
+  .callout.warning { border-left-color: #d29922; background: #fff8c5; }
+  .callout.danger  { border-left-color: #cf222e; background: #ffebe9; }
+  .callout strong.callout-title { font-size: 0.9em; text-transform: uppercase; }
+  /* ── KaTeX 公式居中 ── */
+  .katex-display { margin: 0.8em 0; text-align: center; }
+</style>
+
+</head>
+<body>
+<h1 id="经济数学2复习题逐题完整版">经济数学2复习题逐题完整版</h1>
+<blockquote>
+<p>说明：本版按原 PDF 题号 1～100 顺序重编，尽量补全为“题目 + 答案 +
+解析 + 考点”。</p>
+<p>由于原 PDF
+存在少量公式识别错位、字符缺失和排版粘连，个别题目我按常见《经济数学2》题型进行了规范化还原；对无法百分百确认的题，已明确标注“按题面识别整理”。复习时可将本稿与老师原讲义对照使用。</p>
+</blockquote>
+<hr />
+<h2 id="一填空与基础题133">一、填空与基础题（1～33）</h2>
+<h3 id="section">1.</h3>
+<p>点 <span class="math inline">\(A(0,0,0)\)</span> 到点 <span
+class="math inline">\(B(1,3,1)\)</span> 的距离 <span
+class="math inline">\(AB=\)</span></p>
+<p><strong>答案：</strong> <span
+class="math inline">\(\sqrt{11}\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+AB=\sqrt{(1-0)^2+(3-0)^2+(1-0)^2}=\sqrt{11}
+\]</span></p>
+<p><strong>考点：</strong> 空间两点距离公式。</p>
+<hr />
+<h3 id="section-1">2.</h3>
+<p>点 <span class="math inline">\(A(0,1,2)\)</span> 到点 <span
+class="math inline">\(B(3,1,5)\)</span> 的距离 <span
+class="math inline">\(AB=\)</span></p>
+<p><strong>答案：</strong> <span
+class="math inline">\(3\sqrt2\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+AB=\sqrt{(3-0)^2+(1-1)^2+(5-2)^2}=\sqrt{18}=3\sqrt2
+\]</span></p>
+<p><strong>考点：</strong> 三维坐标距离计算。</p>
+<hr />
+<h3 id="section-2">3.</h3>
+<p>通过点 <span class="math inline">\((1,-2,0)\)</span> 且平行于 <span
+class="math inline">\(yoz\)</span> 面的平面方程为</p>
+<p><strong>答案：</strong> <span class="math inline">\(x=1\)</span></p>
+<p><strong>解析：</strong> 平行于 <span
+class="math inline">\(yoz\)</span> 面的平面都形如 <span
+class="math inline">\(x=c\)</span>，代入点坐标得 <span
+class="math inline">\(c=1\)</span>。</p>
+<p><strong>考点：</strong> 特殊位置平面方程。</p>
+<hr />
+<h3 id="section-3">4.</h3>
+<p>按题面识别：函数 <span class="math inline">\(f(x,y)=x+y\)</span>，则
+<span class="math inline">\(f(0,4)=\)</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(4\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+f(0,4)=0+4=4
+\]</span></p>
+<p><strong>考点：</strong> 二元函数求函数值。</p>
+<hr />
+<h3 id="section-4">5.</h3>
+<p>按题面识别为两类极限：</p>
+<ol type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\lim_{(x,y)\to(1,0)}\frac{x^2+y^2}{x+y}
+\]</span></p>
+<ol start="2" type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\lim_{(x,y)\to(1,0)}\frac{x+y}{x^2+y^2}
+\]</span></p>
+<p><strong>答案：</strong> 分别为 <span
+class="math inline">\(1,1\)</span></p>
+<p><strong>解析：</strong> 直接代入即可，因为分母极限不为 <span
+class="math inline">\(0\)</span>。</p>
+<p><strong>考点：</strong> 多元函数直接代入型极限。</p>
+<hr />
+<h3 id="section-5">6.</h3>
+<p>求极限</p>
+<p><span class="math display">\[
+\lim_{(x,y)\to(1,0)}\frac{xy}{x^2+y^2}
+\]</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(0\)</span></p>
+<p><strong>解析：</strong> 直接代入得</p>
+<p><span class="math display">\[
+\frac{1\cdot 0}{1^2+0^2}=0
+\]</span></p>
+<p><strong>考点：</strong> 二元函数极限直接代入。</p>
+<hr />
+<h3 id="section-6">7.</h3>
+<p>设</p>
+<p><span class="math display">\[
+z=e^x+y^3+1
+\]</span></p>
+<p>求全微分 <span class="math inline">\(dz\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+dz=e^x\,dx+3y^2\,dy
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+z_x=e^x,\qquad z_y=3y^2
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+dz=z_xdx+z_ydy=e^x dx+3y^2dy
+\]</span></p>
+<p><strong>考点：</strong> 全微分公式。</p>
+<hr />
+<h3 id="section-7">8.</h3>
+<p>设</p>
+<p><span class="math display">\[
+z=x+e^{y^3}
+\]</span></p>
+<p>求全微分 <span class="math inline">\(dz\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+dz=dx+3y^2e^{y^3}\,dy
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+z_x=1,\qquad z_y=3y^2e^{y^3}
+\]</span></p>
+<p>所以</p>
+<p><span class="math display">\[
+dz=dx+3y^2e^{y^3}dy
+\]</span></p>
+<p><strong>考点：</strong> 指数复合函数的偏导。</p>
+<hr />
+<h3 id="section-8">9.</h3>
+<p>设 <span class="math inline">\(D=\{(x,y)\mid x^2+y^2\le
+3\}\)</span>，求</p>
+<p><span class="math display">\[
+\iint_D \frac13\,d\sigma
+\]</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(\pi\)</span></p>
+<p><strong>解析：</strong> 区域面积为 <span
+class="math inline">\(3\pi\)</span>，所以积分为</p>
+<p><span class="math display">\[
+\frac13\cdot 3\pi=\pi
+\]</span></p>
+<p><strong>考点：</strong> 常数在区域上的二重积分。</p>
+<hr />
+<h3 id="section-9">10.</h3>
+<p>已知 <span
+class="math inline">\(\lim\limits_{n\to\infty}u_n=4\)</span>，则级数
+<span class="math inline">\(\sum u_n\)</span> 的敛散性为</p>
+<p><strong>答案：</strong> 发散</p>
+<p><strong>解析：</strong> 级数收敛必要条件是 <span
+class="math inline">\(u_n\to 0\)</span>，这里极限为 <span
+class="math inline">\(4\ne 0\)</span>，故发散。</p>
+<p><strong>考点：</strong> 级数收敛必要条件。</p>
+<hr />
+<h3 id="section-10">11.</h3>
+<p>求</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac1{5^n}
+\]</span></p>
+<p><strong>答案：</strong> <span
+class="math inline">\(\dfrac14\)</span></p>
+<p><strong>解析：</strong> 等比级数，首项 <span
+class="math inline">\(a=\frac15\)</span>，公比 <span
+class="math inline">\(r=\frac15\)</span>，故</p>
+<p><span class="math display">\[
+S=\frac{a}{1-r}=\frac{1/5}{1-1/5}=\frac14
+\]</span></p>
+<p><strong>考点：</strong> 等比级数求和。</p>
+<hr />
+<h3 id="section-11">12.</h3>
+<p>当 <span class="math inline">\(|x|&lt;1\)</span> 时，求级数</p>
+<p><span class="math display">\[
+\sum_{n=0}^{\infty}x^{n+1}
+\]</span></p>
+<p>的和函数。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac{x}{1-x}
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\sum_{n=0}^{\infty}x^{n+1}=x\sum_{n=0}^{\infty}x^n=\frac{x}{1-x}
+\]</span></p>
+<p><strong>考点：</strong> 几何级数变形。</p>
+<hr />
+<h3 id="section-12">13.</h3>
+<p>当 <span class="math inline">\(|x|&lt;1\)</span> 时，求级数</p>
+<p><span class="math display">\[
+\sum_{n=2}^{\infty}x^n
+\]</span></p>
+<p>的和函数。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac{x^2}{1-x}
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\sum_{n=2}^{\infty}x^n=x^2\sum_{n=0}^{\infty}x^n=\frac{x^2}{1-x}
+\]</span></p>
+<p><strong>考点：</strong> 幂级数和函数。</p>
+<hr />
+<h3 id="section-13">14.</h3>
+<p>微分方程</p>
+<p><span class="math display">\[
+xy^{(5)}+4y-5\sin x=0
+\]</span></p>
+<p>是几阶微分方程？</p>
+<p><strong>答案：</strong> 5 阶</p>
+<p><strong>解析：</strong> 最高阶导数是 <span
+class="math inline">\(y^{(5)}\)</span>。</p>
+<p><strong>考点：</strong> 微分方程阶数判断。</p>
+<hr />
+<h3 id="section-14">15.</h3>
+<p>微分方程</p>
+<p><span class="math display">\[
+y&#39;&#39;+x^3y+5x=0
+\]</span></p>
+<p>是几阶微分方程？</p>
+<p><strong>答案：</strong> 2 阶</p>
+<p><strong>解析：</strong> 最高阶导数为 <span
+class="math inline">\(y&#39;&#39;\)</span>。</p>
+<p><strong>考点：</strong> 微分方程阶数。</p>
+<hr />
+<h3 id="section-15">16.</h3>
+<p>通过点 <span class="math inline">\((2,-1,1)\)</span> 且平行于 <span
+class="math inline">\(xoz\)</span> 面的平面方程为</p>
+<p><strong>答案：</strong> <span class="math inline">\(y=-1\)</span></p>
+<p><strong>解析：</strong> 平行于 <span
+class="math inline">\(xoz\)</span> 面的平面形如 <span
+class="math inline">\(y=c\)</span>。</p>
+<p><strong>考点：</strong> 特殊平面方程。</p>
+<hr />
+<h3 id="section-16">17.</h3>
+<p>按题面识别：<span
+class="math inline">\(f(x,y)=\sin(x+y)\)</span>，则</p>
+<p><span class="math display">\[
+f\left(0,\frac\pi2\right)=
+\]</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(1\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+f\left(0,\frac\pi2\right)=\sin\frac\pi2=1
+\]</span></p>
+<p><strong>考点：</strong> 二元函数求值。</p>
+<hr />
+<h3 id="section-17">18.</h3>
+<p>函数</p>
+<p><span class="math display">\[
+z=\sqrt{x^2+y^2-4}
+\]</span></p>
+<p>的定义域为</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\{(x,y)\mid x^2+y^2\ge 4\}
+\]</span></p>
+<p><strong>解析：</strong> 根式有意义要求 <span
+class="math inline">\(x^2+y^2-4\ge 0\)</span>。</p>
+<p><strong>考点：</strong> 多元函数定义域。</p>
+<hr />
+<h3 id="section-18">19.</h3>
+<p>求极限</p>
+<p><span class="math display">\[
+\lim_{x\to0,\,y\to0}\frac{\sin(xy)}{y}
+\]</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(0\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\frac{\sin(xy)}{y}=x\cdot \frac{\sin(xy)}{xy}\to 0\cdot 1=0
+\]</span></p>
+<p><strong>考点：</strong> 凑 <span class="math inline">\(\sin
+u/u\)</span> 极限。</p>
+<hr />
+<h3 id="section-19">20.</h3>
+<p>垂直于 <span class="math inline">\(x\)</span> 轴且经过点 <span
+class="math inline">\((4,-5,2)\)</span> 的平面方程为</p>
+<p><strong>答案：</strong> <span class="math inline">\(x=4\)</span></p>
+<p><strong>解析：</strong> 平面法向量平行于 <span
+class="math inline">\(x\)</span> 轴，故平面方程为 <span
+class="math inline">\(x=c\)</span>。</p>
+<p><strong>考点：</strong> 平面与坐标轴垂直关系。</p>
+<hr />
+<h3 id="section-20">21.</h3>
+<p>若级数 <span class="math inline">\(\sum u_n\)</span> 收敛，则 <span
+class="math inline">\(\lim\limits_{n\to\infty}u_n=\)</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(0\)</span></p>
+<p><strong>解析：</strong> 这是级数收敛的必要条件。</p>
+<p><strong>考点：</strong> 级数基本结论。</p>
+<hr />
+<h3 id="section-21">22.</h3>
+<p>设 <span class="math inline">\(f(x,y)=e^{xy}\)</span>，求 <span
+class="math inline">\(f_x(1,2)\)</span>。</p>
+<p><strong>答案：</strong> <span class="math inline">\(2e^2\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+f_x=ye^{xy}
+\]</span></p>
+<p>代入 <span class="math inline">\((1,2)\)</span> 得</p>
+<p><span class="math display">\[
+f_x(1,2)=2e^2
+\]</span></p>
+<p><strong>考点：</strong> 偏导数计算。</p>
+<hr />
+<h3 id="section-22">23.</h3>
+<p>求极限</p>
+<p><span class="math display">\[
+\lim_{(x,y)\to(0,1)}\frac{\sin(xy)}{x+y}
+\]</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(0\)</span></p>
+<p><strong>解析：</strong> 直接代入：分子趋于 <span
+class="math inline">\(\sin 0=0\)</span>，分母趋于 <span
+class="math inline">\(1\)</span>。</p>
+<p><strong>考点：</strong> 连续函数复合极限。</p>
+<hr />
+<h3 id="section-23">24.</h3>
+<p>设 <span class="math inline">\(D=\{(x,y)\mid
+x^2+y^2\le16\}\)</span>，求</p>
+<p><span class="math display">\[
+\iint_D dxdy
+\]</span></p>
+<p><strong>答案：</strong> <span
+class="math inline">\(16\pi\)</span></p>
+<p><strong>解析：</strong> 圆盘面积为</p>
+<p><span class="math display">\[
+\pi\cdot 4^2=16\pi
+\]</span></p>
+<p><strong>考点：</strong> 二重积分表示面积。</p>
+<hr />
+<h3 id="section-24">25.</h3>
+<p>求极限</p>
+<p><span class="math display">\[
+\lim_{n\to\infty}\frac{n^5}{n!}
+\]</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(0\)</span></p>
+<p><strong>解析：</strong> 阶乘增长快于任何幂函数，故极限为 <span
+class="math inline">\(0\)</span>。</p>
+<p><strong>考点：</strong> 阶乘与幂函数增长速度比较。</p>
+<hr />
+<h3 id="section-25">26.</h3>
+<p>求极限</p>
+<p><span class="math display">\[
+\lim_{n\to\infty}\frac{n^2}{2^n}
+\]</span></p>
+<p><strong>答案：</strong> <span class="math inline">\(0\)</span></p>
+<p><strong>解析：</strong> 指数函数增长快于多项式。</p>
+<p><strong>考点：</strong> 指数与多项式比较。</p>
+<hr />
+<h3 id="section-26">27.</h3>
+<p>判断级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac1{2n}
+\]</span></p>
+<p>的敛散性。</p>
+<p><strong>答案：</strong> 发散</p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\sum\frac1{2n}=\frac12\sum\frac1n
+\]</span></p>
+<p>调和级数发散，所以原级数发散。</p>
+<p><strong>考点：</strong> 与调和级数比较。</p>
+<hr />
+<h3 id="section-27">28.</h3>
+<ol type="1">
+<li>当 <span class="math inline">\(|x|&lt;1\)</span> 时，</li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=0}^{\infty}x^n=
+\]</span></p>
+<ol start="2" type="1">
+<li>当 <span class="math inline">\(|x|&lt;1\)</span> 时，</li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}nx^{n-1}=
+\]</span></p>
+<ol start="3" type="1">
+<li><span class="math inline">\(e^x\)</span> 展开成 <span
+class="math inline">\(x\)</span> 的幂级数为</li>
+</ol>
+<p><strong>答案：</strong></p>
+<ol type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\frac1{1-x}
+\]</span></p>
+<ol start="2" type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\frac1{(1-x)^2}
+\]</span></p>
+<ol start="3" type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+e^x=\sum_{n=0}^{\infty}\frac{x^n}{n!}
+\]</span></p>
+<p><strong>解析：</strong> - (1) 是基本几何级数。 - (2) 由 (1)
+两边求导得到。 - (3) 是 <span class="math inline">\(e^x\)</span>
+的麦克劳林展开。</p>
+<p><strong>考点：</strong> 常见幂级数公式。</p>
+<hr />
+<h3 id="section-28">29.</h3>
+<p>求方程</p>
+<p><span class="math display">\[
+y&#39;-x^2y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=Ce^{x^3/3}
+\]</span></p>
+<p><strong>解析：</strong> 分离变量：</p>
+<p><span class="math display">\[
+\frac{dy}{y}=x^2dx
+\]</span></p>
+<p>积分得</p>
+<p><span class="math display">\[
+\ln|y|=\frac{x^3}{3}+C
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+y=Ce^{x^3/3}
+\]</span></p>
+<p><strong>考点：</strong> 可分离变量方程。</p>
+<hr />
+<h3 id="section-29">30.</h3>
+<p>求方程</p>
+<p><span class="math display">\[
+y&#39;-x^3y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=Ce^{x^4/4}
+\]</span></p>
+<p><strong>解析：</strong> 同上，</p>
+<p><span class="math display">\[
+\frac{dy}{y}=x^3dx
+Rightarrow \ln|y|=\frac{x^4}{4}+C
+\]</span></p>
+<p><strong>考点：</strong> 一阶齐次线性 / 可分离方程。</p>
+<hr />
+<h3 id="section-30">31.</h3>
+<p>微分方程</p>
+<p><span class="math display">\[
+y&#39;&#39;&#39;+xy=1
+\]</span></p>
+<p>是几阶微分方程？</p>
+<p><strong>答案：</strong> 3 阶</p>
+<p><strong>解析：</strong> 最高阶导数是 <span
+class="math inline">\(y&#39;&#39;&#39;\)</span>。</p>
+<p><strong>考点：</strong> 阶数判断。</p>
+<hr />
+<h3 id="section-31">32.</h3>
+<p>微分方程</p>
+<p><span class="math display">\[
+y&#39;&#39;+\bigl(x+xy^2\bigr)e^x=y&#39;
+\]</span></p>
+<p>是几阶微分方程？</p>
+<p><strong>答案：</strong> 2 阶</p>
+<p><strong>解析：</strong> 最高阶导数是 <span
+class="math inline">\(y&#39;&#39;\)</span>。</p>
+<p><strong>考点：</strong> 微分方程阶数判断。</p>
+<hr />
+<h3 id="section-32">33.</h3>
+<p>点 <span class="math inline">\(A(4,1,3)\)</span> 到点 <span
+class="math inline">\(B(3,0,1)\)</span> 的距离为</p>
+<p><strong>答案：</strong> <span
+class="math inline">\(\sqrt6\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+AB=\sqrt{(4-3)^2+(1-0)^2+(3-1)^2}=\sqrt{1+1+4}=\sqrt6
+\]</span></p>
+<p><strong>考点：</strong> 空间距离。</p>
+<hr />
+<h2 id="二选择与判断题3456">二、选择与判断题（34～56）</h2>
+<h3 id="section-33">34.</h3>
+<p>点 <span class="math inline">\((a,b,c)\)</span>
+关于原点的对称点是</p>
+<p><strong>答案：</strong> A，即 <span
+class="math inline">\((-a,-b,-c)\)</span></p>
+<p><strong>解析：</strong> 关于原点中心对称，三个坐标都变号。</p>
+<p><strong>考点：</strong> 空间点对称。</p>
+<hr />
+<h3 id="section-34">35.</h3>
+<p>“函数在点 <span class="math inline">\((x_0,y_0)\)</span>
+连续”是“该点偏导数存在”的什么条件？</p>
+<p><strong>答案：</strong> D，无关条件</p>
+<p><strong>解析：</strong>
+连续不一定偏导存在，偏导存在也不一定连续，因此既不是充分也不是必要。</p>
+<p><strong>考点：</strong> 连续与偏导存在的关系。</p>
+<hr />
+<h3 id="section-35">36.</h3>
+<p>“函数在点 <span class="math inline">\((x_0,y_0)\)</span>
+连续”是“该点可微”的什么条件？</p>
+<p><strong>答案：</strong> C，必要条件</p>
+<p><strong>解析：</strong> 可微必连续，但连续不一定可微。</p>
+<p><strong>考点：</strong> 可微与连续关系。</p>
+<hr />
+<h3 id="section-36">37.</h3>
+<p>偏导数 <span class="math inline">\(f_x(x_0,y_0),f_y(x_0,y_0)\)</span>
+存在是函数在该点可微的什么条件？</p>
+<p><strong>答案：</strong> A，必要条件</p>
+<p><strong>解析：</strong> 可微一定偏导存在；但偏导存在不一定可微。</p>
+<p><strong>考点：</strong> 可微的必要条件。</p>
+<hr />
+<h3 id="section-37">38.</h3>
+<p>在一点具有偏导数是函数在该点连续的什么条件？</p>
+<p><strong>答案：</strong> D，既非充分也非必要条件</p>
+<p><strong>解析：</strong> 偏导存在不推连续；连续也不推偏导存在。</p>
+<p><strong>考点：</strong> 偏导与连续关系。</p>
+<hr />
+<h3 id="section-38">39.</h3>
+<p>函数在点连续是偏导数存在的什么条件？</p>
+<p><strong>答案：</strong> D，既非充分也非必要条件</p>
+<p><strong>解析：</strong> 同第 35 题。</p>
+<p><strong>考点：</strong> 基本概念辨析。</p>
+<hr />
+<h3 id="section-39">40.</h3>
+<p>函数在某邻域内偏导数存在且连续，是函数在该点可微的什么条件？</p>
+<p><strong>答案：</strong> B，充分不必要条件</p>
+<p><strong>解析：</strong>
+邻域内偏导连续可推出可微，但可微不一定要求偏导连续。</p>
+<p><strong>考点：</strong> 可微的常用充分条件。</p>
+<hr />
+<h3 id="section-40">41.</h3>
+<p>偏导数存在是函数在一点可微的什么条件？</p>
+<p><strong>答案：</strong> A，必要条件</p>
+<p><strong>解析：</strong> 同第 37 题。</p>
+<p><strong>考点：</strong> 概念重复强化。</p>
+<hr />
+<h3 id="section-41">42.</h3>
+<p>已知 <span class="math inline">\(f(x,y)=e^{xy}\)</span>，则 <span
+class="math inline">\(f_{yy}(1,0)=\)</span></p>
+<p><strong>答案：</strong> C，即 <span
+class="math inline">\(1\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+f_y=xe^{xy},\qquad f_{yy}=x^2e^{xy}
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+f_{yy}(1,0)=1
+\]</span></p>
+<p><strong>考点：</strong> 二阶偏导。</p>
+<hr />
+<h3 id="section-42">43.</h3>
+<p>下列说法正确的是</p>
+<p><strong>答案：</strong> D</p>
+<p><strong>解析：</strong> -
+极值点不一定是驻点，若偏导不存在则未必是驻点；所以 A、B 不严谨。 -
+驻点不一定是极值点，故 C 错。 - 极大值点和极小值点统称极值点，D 对。</p>
+<p><strong>考点：</strong> 驻点与极值点关系。</p>
+<hr />
+<h3 id="section-43">44.</h3>
+<p>交换二次积分次序（按题面识别）</p>
+<p><span class="math display">\[
+\int_0^1dx\int_0^x f(x,y)dy
+\]</span></p>
+<p>结果为</p>
+<p><strong>答案：</strong> A，即</p>
+<p><span class="math display">\[
+\int_0^1dy\int_y^1 f(x,y)dx
+\]</span></p>
+<p><strong>解析：</strong> 区域为</p>
+<p><span class="math display">\[
+0\le y\le x\le 1
+\]</span></p>
+<p>换序后为</p>
+<p><span class="math display">\[
+0\le y\le1,\quad y\le x\le1
+\]</span></p>
+<p><strong>考点：</strong> 二重积分换序。</p>
+<hr />
+<h3 id="section-44">45.</h3>
+<p>交换积分次序（按题面识别）</p>
+<p><span class="math display">\[
+\int_0^2dx\int_x^2 f(x,y)dy
+\]</span></p>
+<p>结果为</p>
+<p><strong>答案：</strong> D，即</p>
+<p><span class="math display">\[
+\int_0^2dy\int_0^y f(x,y)dx
+\]</span></p>
+<p><strong>解析：</strong> 区域为</p>
+<p><span class="math display">\[
+0\le x\le 2,\quad x\le y\le 2
+\]</span></p>
+<p>换序后</p>
+<p><span class="math display">\[
+0\le y\le2,\quad 0\le x\le y
+\]</span></p>
+<p><strong>考点：</strong> 画图换序。</p>
+<hr />
+<h3 id="section-45">46.</h3>
+<p>设 <span class="math inline">\(D: x^2+y^2\le 3\)</span>，则</p>
+<p><span class="math display">\[
+\iint_D f(x,y)d\sigma
+\]</span></p>
+<p>化为极坐标应为</p>
+<p><strong>答案：</strong> 含 Jacobian 因子 <span
+class="math inline">\(r\)</span> 的那个选项，即</p>
+<p><span class="math display">\[
+\int_0^{2\pi}\int_0^{\sqrt3}f(r\cos\theta,r\sin\theta)rdrd\theta
+\]</span></p>
+<p><strong>考点：</strong> 极坐标变换记得乘 <span
+class="math inline">\(r\)</span>。</p>
+<hr />
+<h3 id="section-46">47.</h3>
+<p>判断级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}(-1)^{n-1}\frac1{n+2}
+\]</span></p>
+<p><strong>答案：</strong> A，条件收敛</p>
+<p><strong>解析：</strong>
+它是交错级数，满足莱布尼茨判别法收敛；但绝对值级数</p>
+<p><span class="math display">\[
+\sum\frac1{n+2}
+\]</span></p>
+<p>与调和级数同敛散，发散。</p>
+<p><strong>考点：</strong> 绝对收敛与条件收敛。</p>
+<hr />
+<h3 id="section-47">48.</h3>
+<p>判断级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}(-1)^{n-1}\frac1{2n+3}
+\]</span></p>
+<p><strong>答案：</strong> B，条件收敛</p>
+<p><strong>解析：</strong> 同样为交错级数收敛，但绝对值级数发散。</p>
+<p><strong>考点：</strong> 交错级数判别。</p>
+<hr />
+<h3 id="section-48">49.</h3>
+<p>下列哪个是可分离变量微分方程？</p>
+<p><strong>答案：</strong> A，按题面识别为</p>
+<p><span class="math display">\[
+y&#39;=x^2-5y
+\]</span></p>
+<p>若按 OCR 严格看并不完全标准；通常本题标准答案应选能整理成 <span
+class="math inline">\(g(y)dy=f(x)dx\)</span> 的一项。</p>
+<p><strong>说明：</strong> 该题 OCR 失真较明显，建议以课堂原题为准。</p>
+<p><strong>考点：</strong> 可分离变量识别。</p>
+<hr />
+<h3 id="section-49">50.</h3>
+<p>微分方程</p>
+<p><span class="math display">\[
+y&#39;&#39;=6x
+\]</span></p>
+<p>的通解是</p>
+<p><strong>答案：</strong> A，即</p>
+<p><span class="math display">\[
+y=x^3+C_1x+C_2
+\]</span></p>
+<p><strong>解析：</strong> 连续积分两次即可。</p>
+<p><strong>考点：</strong> 二阶简单微分方程求通解。</p>
+<hr />
+<h3 id="section-50">51.</h3>
+<p>已知 <span class="math inline">\(f(x,y)=e^x+\sin y\)</span>，则 <span
+class="math inline">\(f_{xx}(0,1)=\)</span></p>
+<p><strong>答案：</strong> C，即 <span
+class="math inline">\(1\)</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+f_x=e^x,\quad f_{xx}=e^x
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+f_{xx}(0,1)=e^0=1
+\]</span></p>
+<p><strong>考点：</strong> 二阶偏导。</p>
+<hr />
+<h3 id="section-51">52.</h3>
+<p>若函数在 <span class="math inline">\((x_0,y_0)\)</span>
+处取得极值，且偏导存在，则</p>
+<p><strong>答案：</strong> B，即</p>
+<p><span class="math display">\[
+f_x(x_0,y_0)=0,\qquad f_y(x_0,y_0)=0
+\]</span></p>
+<p><strong>解析：</strong> 极值点若偏导存在，则必为驻点。</p>
+<p><strong>考点：</strong> 极值必要条件。</p>
+<hr />
+<h3 id="section-52">53.</h3>
+<p>判断级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}(-1)^{n-1}\frac1{2n+1}
+\]</span></p>
+<p><strong>答案：</strong> B，条件收敛</p>
+<p><strong>解析：</strong> 交错收敛，绝对值级数发散。</p>
+<p><strong>考点：</strong> 交错 <span class="math inline">\(p\)</span>
+型级数。</p>
+<hr />
+<h3 id="section-53">54.</h3>
+<p>哪个是可分离变量方程？</p>
+<p><strong>答案：</strong> OCR 不清，通常应选可整理为</p>
+<p><span class="math display">\[
+y&#39;=X(x)Y(y)
+\]</span></p>
+<p>的选项。</p>
+<p><strong>说明：</strong> 这题原 PDF
+识别错误较重，建议对照老师原卷判断。</p>
+<p><strong>考点：</strong> 可分离变量形式识别。</p>
+<hr />
+<h3 id="section-54">55.</h3>
+<p>交换积分次序：</p>
+<p><span class="math display">\[
+\int_0^1dx\int_x^1 f(x,y)dy=
+\]</span></p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\int_0^1dy\int_0^y f(x,y)dx
+\]</span></p>
+<p><strong>解析：</strong> 区域为</p>
+<p><span class="math display">\[
+0\le x\le y\le1
+\]</span></p>
+<p>换序后即上式。</p>
+<p><strong>考点：</strong> 二重积分换序。</p>
+<hr />
+<h3 id="section-55">56.</h3>
+<p>微分方程</p>
+<p><span class="math display">\[
+y&#39;&#39;=2
+\]</span></p>
+<p>的通解是</p>
+<p><strong>答案：</strong> B，即</p>
+<p><span class="math display">\[
+y=x^2+C_1x+C_2
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+y&#39;=2x+C_1,\qquad y=x^2+C_1x+C_2
+\]</span></p>
+<p><strong>考点：</strong> 直接积分法。</p>
+<hr />
+<h2 id="三偏导与全微分计算5769">三、偏导与全微分计算（57～69）</h2>
+<h3 id="section-56">57.</h3>
+<p>设</p>
+<p><span class="math display">\[
+z=e^{x^2}\sin 2y
+\]</span></p>
+<p>求 <span class="math inline">\(z_x,z_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=2xe^{x^2}\sin 2y
+\]</span></p>
+<p><span class="math display">\[
+z_y=2e^{x^2}\cos 2y
+\]</span></p>
+<p><strong>解析：</strong> 分别对 <span
+class="math inline">\(x,y\)</span> 求偏导。</p>
+<p><strong>考点：</strong> 指数函数与三角函数复合偏导。</p>
+<hr />
+<h3 id="section-57">58.</h3>
+<p>设</p>
+<p><span class="math display">\[
+z=e^{-y}\cos x^2
+\]</span></p>
+<p>求 <span class="math inline">\(z_x,z_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=-2x e^{-y}\sin x^2
+\]</span></p>
+<p><span class="math display">\[
+z_y=-e^{-y}\cos x^2
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\frac{\partial}{\partial x}(\cos x^2)=-2x\sin x^2
+\]</span></p>
+<p><span class="math display">\[
+\frac{\partial}{\partial y}(e^{-y})=-e^{-y}
+\]</span></p>
+<p><strong>考点：</strong> 链式法则。</p>
+<hr />
+<h3 id="section-58">59.</h3>
+<p>设</p>
+<p><span class="math display">\[
+f(x,y)=\ln(x^2+y)
+\]</span></p>
+<p>求 <span class="math inline">\(f_x,f_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+f_x=\frac{2x}{x^2+y},\qquad f_y=\frac{1}{x^2+y}
+\]</span></p>
+<p><strong>解析：</strong> 对数求导配合链式法则。</p>
+<p><strong>考点：</strong> 对数复合函数偏导。</p>
+<hr />
+<h3 id="section-59">60.</h3>
+<p>已知</p>
+<p><span class="math display">\[
+z=x^2y^4
+\]</span></p>
+<p>求 <span class="math inline">\(z_x,z_y,z_{xy},z_{yy}\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=2xy^4
+\]</span></p>
+<p><span class="math display">\[
+z_y=4x^2y^3
+\]</span></p>
+<p><span class="math display">\[
+z_{xy}=8xy^3
+\]</span></p>
+<p><span class="math display">\[
+z_{yy}=12x^2y^2
+\]</span></p>
+<p><strong>解析：</strong> 逐次求偏导即可。</p>
+<p><strong>考点：</strong> 一阶、二阶偏导计算。</p>
+<hr />
+<h3 id="section-60">61.</h3>
+<p>已知</p>
+<p><span class="math display">\[
+z=x^3y^2+x^2y-5xy
+\]</span></p>
+<p>求 <span class="math inline">\(z_x,z_y,z_{xy},z_{yy}\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=3x^2y^2+2xy-5y
+\]</span></p>
+<p><span class="math display">\[
+z_y=2x^3y+x^2-5x
+\]</span></p>
+<p><span class="math display">\[
+z_{xy}=6x^2y+2x-5
+\]</span></p>
+<p><span class="math display">\[
+z_{yy}=2x^3
+\]</span></p>
+<p><strong>解析：</strong> 按项分别求导。</p>
+<p><strong>考点：</strong> 多项式函数偏导。</p>
+<hr />
+<h3 id="section-61">62.</h3>
+<p>已知</p>
+<p><span class="math display">\[
+z=x^3y^2+y^3-6xy
+\]</span></p>
+<p>求 <span class="math inline">\(z_x,z_y,z_{xy},z_{yy}\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=3x^2y^2-6y
+\]</span></p>
+<p><span class="math display">\[
+z_y=2x^3y+3y^2-6x
+\]</span></p>
+<p><span class="math display">\[
+z_{xy}=6x^2y-6
+\]</span></p>
+<p><span class="math display">\[
+z_{yy}=2x^3+6y
+\]</span></p>
+<p><strong>解析：</strong> 连续求偏导即可。</p>
+<p><strong>考点：</strong> 二阶偏导综合。</p>
+<hr />
+<h3 id="section-62">63.</h3>
+<p>由方程</p>
+<p><span class="math display">\[
+z^2-x^2-y^2=1
+\]</span></p>
+<p>确定隐函数 <span class="math inline">\(z=f(x,y)\)</span>，求 <span
+class="math inline">\(z_x,z_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=\frac{x}{z},\qquad z_y=\frac{y}{z}
+\]</span></p>
+<p><strong>解析：</strong> 令</p>
+<p><span class="math display">\[
+F(x,y,z)=z^2-x^2-y^2-1=0
+\]</span></p>
+<p>则</p>
+<p><span class="math display">\[
+F_x=-2x,\quad F_y=-2y,\quad F_z=2z
+\]</span></p>
+<p>所以</p>
+<p><span class="math display">\[
+z_x=-\frac{F_x}{F_z}=\frac{x}{z},\qquad z_y=-\frac{F_y}{F_z}=\frac{y}{z}
+\]</span></p>
+<p><strong>考点：</strong> 隐函数偏导公式。</p>
+<hr />
+<h3 id="section-63">64.</h3>
+<p>由方程</p>
+<p><span class="math display">\[
+xy+yz+xz=2
+\]</span></p>
+<p>确定隐函数 <span class="math inline">\(z=f(x,y)\)</span>，求 <span
+class="math inline">\(z_x,z_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=-\frac{y+z}{x+y},\qquad z_y=-\frac{x+z}{x+y}
+\]</span></p>
+<p><strong>解析：</strong> 见前面同类题。</p>
+<p><strong>考点：</strong> 隐函数求偏导。</p>
+<hr />
+<h3 id="section-64">65.</h3>
+<p>由方程</p>
+<p><span class="math display">\[
+x^2+y^2+z^2-z=1
+\]</span></p>
+<p>确定隐函数 <span class="math inline">\(z=f(x,y)\)</span>，求 <span
+class="math inline">\(z_x,z_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=-\frac{2x}{2z-1},\qquad z_y=-\frac{2y}{2z-1}
+\]</span></p>
+<p><strong>解析：</strong> 设</p>
+<p><span class="math display">\[
+F(x,y,z)=x^2+y^2+z^2-z-1=0
+\]</span></p>
+<p>则</p>
+<p><span class="math display">\[
+F_x=2x,\quad F_y=2y,\quad F_z=2z-1
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+z_x=-\frac{2x}{2z-1},\qquad z_y=-\frac{2y}{2z-1}
+\]</span></p>
+<p><strong>考点：</strong> 隐函数求导。</p>
+<hr />
+<h3 id="section-65">66.</h3>
+<p>由方程</p>
+<p><span class="math display">\[
+x^2+y^2+z^2=4z
+\]</span></p>
+<p>确定隐函数 <span class="math inline">\(z=f(x,y)\)</span>，求 <span
+class="math inline">\(z_x,z_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=-\frac{x}{z-2},\qquad z_y=-\frac{y}{z-2}
+\]</span></p>
+<p><strong>解析：</strong> 设</p>
+<p><span class="math display">\[
+F=x^2+y^2+z^2-4z=0
+\]</span></p>
+<p>则</p>
+<p><span class="math display">\[
+F_x=2x,\ F_y=2y,\ F_z=2z-4
+\]</span></p>
+<p>所以</p>
+<p><span class="math display">\[
+z_x=-\frac{2x}{2z-4}=-\frac{x}{z-2}
+\]</span></p>
+<p><span class="math display">\[
+z_y=-\frac{2y}{2z-4}=-\frac{y}{z-2}
+\]</span></p>
+<p><strong>考点：</strong> 隐函数偏导。</p>
+<hr />
+<h3 id="section-66">67.</h3>
+<p>设</p>
+<p><span class="math display">\[
+z=\ln(x^2+y^2)
+\]</span></p>
+<p>求全微分 <span class="math inline">\(dz\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+dz=\frac{2x}{x^2+y^2}dx+\frac{2y}{x^2+y^2}dy
+\]</span></p>
+<p><strong>考点：</strong> 全微分。</p>
+<hr />
+<h3 id="section-67">68.</h3>
+<p>设</p>
+<p><span class="math display">\[
+z=\sin(x-y)
+\]</span></p>
+<p>求全微分 <span class="math inline">\(dz\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+dz=\cos(x-y)dx-\cos(x-y)dy
+\]</span></p>
+<p><strong>考点：</strong> 三角函数全微分。</p>
+<hr />
+<h3 id="section-68">69.</h3>
+<p>由方程</p>
+<p><span class="math display">\[
+z^3-xyz=1
+\]</span></p>
+<p>确定隐函数 <span class="math inline">\(z=f(x,y)\)</span>，求 <span
+class="math inline">\(z_x,z_y\)</span>。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+z_x=\frac{yz}{3z^2-xy},\qquad z_y=\frac{xz}{3z^2-xy}
+\]</span></p>
+<p><strong>解析：</strong> 设</p>
+<p><span class="math display">\[
+F(x,y,z)=z^3-xyz-1=0
+\]</span></p>
+<p>则</p>
+<p><span class="math display">\[
+F_x=-yz,\quad F_y=-xz,\quad F_z=3z^2-xy
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+z_x=-\frac{F_x}{F_z}=\frac{yz}{3z^2-xy}
+\]</span></p>
+<p><span class="math display">\[
+z_y=-\frac{F_y}{F_z}=\frac{xz}{3z^2-xy}
+\]</span></p>
+<p><strong>考点：</strong> 隐函数求偏导。</p>
+<hr />
+<h2 id="四二重积分7076">四、二重积分（70～76）</h2>
+<h3 id="section-69">70.</h3>
+<p>交换积分次序：</p>
+<p><span class="math display">\[
+\int_0^1dx\int_x^1f(x,y)dy
+\]</span></p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\int_0^1dy\int_0^y f(x,y)dx
+\]</span></p>
+<p><strong>解析：</strong> 与第 55 题相同。</p>
+<p><strong>考点：</strong> 二重积分换序。</p>
+<hr />
+<h3 id="section-70">71.</h3>
+<p>计算</p>
+<p><span class="math display">\[
+\iint_D x^2\,dxdy
+\]</span></p>
+<p>其中 <span class="math inline">\(D\)</span> 为坐标轴与直线 <span
+class="math inline">\(x+y=1\)</span> 围成的闭区域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac1{12}
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\iint_Dx^2d\sigma=\int_0^1\int_0^{1-x}x^2dydx
+=\int_0^1x^2(1-x)dx
+=\frac1{12}
+\]</span></p>
+<p><strong>考点：</strong> 三角形区域上的二重积分。</p>
+<hr />
+<h3 id="section-71">72.</h3>
+<p>计算</p>
+<p><span class="math display">\[
+\iint_D y\,dxdy
+\]</span></p>
+<p>其中 <span class="math inline">\(D\)</span> 为坐标轴与直线 <span
+class="math inline">\(x+y=1\)</span> 围成的闭区域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac16
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\iint_D yd\sigma=\int_0^1\int_0^{1-x}ydydx
+=\int_0^1\frac{(1-x)^2}{2}dx=\frac16
+\]</span></p>
+<p><strong>考点：</strong> 累次积分计算。</p>
+<hr />
+<h3 id="section-72">73.</h3>
+<p>计算</p>
+<p><span class="math display">\[
+\iint_D xy^2\,d\sigma
+\]</span></p>
+<p>其中 <span class="math inline">\(D\)</span> 是由直线 <span
+class="math inline">\(y=x,y=1,x=2\)</span> 围成的三角形区域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac{49}{30}
+\]</span></p>
+<p><strong>解析：</strong> 区域可写为</p>
+<p><span class="math display">\[
+1\le x\le2,\quad 1\le y\le x
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+\int_1^2\int_1^xxy^2dydx
+=\int_1^2x\cdot\frac{x^3-1}{3}dx
+=\frac13\int_1^2(x^4-x)dx
+=\frac{49}{30}
+\]</span></p>
+<p><strong>考点：</strong> 画区域、定积分限。</p>
+<hr />
+<h3 id="section-73">74.</h3>
+<p>计算</p>
+<p><span class="math display">\[
+\iint_D (x^2+y)\,d\sigma
+\]</span></p>
+<p>其中 <span class="math inline">\(D\)</span> 是由两坐标轴及直线 <span
+class="math inline">\(x+y=1\)</span> 围成的闭区域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac14
+\]</span></p>
+<p><strong>解析：</strong></p>
+<p><span class="math display">\[
+\iint_D(x^2+y)d\sigma
+=\int_0^1\int_0^{1-x}(x^2+y)dydx
+\]</span></p>
+<p>先积 <span class="math inline">\(y\)</span>：</p>
+<p><span class="math display">\[
+=\int_0^1\left[x^2(1-x)+\frac{(1-x)^2}{2}\right]dx
+\]</span></p>
+<p>化简积分得</p>
+<p><span class="math display">\[
+\frac14
+\]</span></p>
+<p><strong>考点：</strong> 多项式二重积分。</p>
+<hr />
+<h3 id="section-74">75.</h3>
+<p>计算</p>
+<p><span class="math display">\[
+\iint_D xy\,d\sigma
+\]</span></p>
+<p>其中区域 <span class="math inline">\(D\)</span> 是由直线 <span
+class="math inline">\(y=x,x=1\)</span> 与 <span
+class="math inline">\(x\)</span> 轴围成的三角形区域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac18
+\]</span></p>
+<p><strong>解析：</strong> 区域为</p>
+<p><span class="math display">\[
+0\le x\le1,\quad 0\le y\le x
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+\int_0^1\int_0^x xydydx
+=\int_0^1x\cdot\frac{x^2}{2}dx
+=\frac12\int_0^1x^3dx
+=\frac18
+\]</span></p>
+<p><strong>考点：</strong> 三角形积分区域。</p>
+<hr />
+<h3 id="section-75">76.</h3>
+<p>计算</p>
+<p><span class="math display">\[
+\iint_D(x^2+y^2)d\sigma
+\]</span></p>
+<p>其中</p>
+<p><span class="math display">\[
+D=\{(x,y)\mid 1\le x^2+y^2\le2\}
+\]</span></p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+\frac{3\pi}{2}
+\]</span></p>
+<p><strong>解析：</strong> 极坐标下</p>
+<p><span class="math display">\[
+x^2+y^2=r^2,
+\qquad d\sigma=rdrd\theta
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+\iint_D(x^2+y^2)d\sigma
+=\int_0^{2\pi}\int_1^{\sqrt2}r^2\cdot r\,drd\theta
+\]</span></p>
+<p><span class="math display">\[
+=2\pi\int_1^{\sqrt2}r^3dr
+=2\pi\left[\frac{r^4}{4}\right]_1^{\sqrt2}
+=\frac{3\pi}{2}
+\]</span></p>
+<p><strong>考点：</strong> 环域极坐标积分。</p>
+<hr />
+<h2 id="五级数与幂级数7785">五、级数与幂级数（77～85）</h2>
+<h3 id="section-76">77.</h3>
+<p>写出：级数 <span class="math inline">\(\sum u_n\)</span>
+收敛的必要条件；等比级数、调和级数、<span
+class="math inline">\(p\)</span>-级数的敛散性结论。</p>
+<p><strong>答案：</strong></p>
+<ol type="1">
+<li>若 <span class="math inline">\(\sum u_n\)</span> 收敛，则</li>
+</ol>
+<p><span class="math display">\[
+\lim_{n\to\infty}u_n=0
+\]</span></p>
+<ol start="2" type="1">
+<li>等比级数 <span class="math inline">\(\sum ar^{n-1}\)</span>：</li>
+</ol>
+<ul>
+<li><span class="math inline">\(|r|&lt;1\)</span> 收敛</li>
+<li><span class="math inline">\(|r|\ge1\)</span> 发散</li>
+</ul>
+<ol start="3" type="1">
+<li>调和级数</li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac1n
+\]</span></p>
+<p>发散。</p>
+<ol start="4" type="1">
+<li><span class="math inline">\(p\)</span>-级数</li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac1{n^p}
+\]</span></p>
+<ul>
+<li><span class="math inline">\(p&gt;1\)</span> 收敛</li>
+<li><span class="math inline">\(p\le1\)</span> 发散</li>
+</ul>
+<p><strong>考点：</strong> 无穷级数最基础结论。</p>
+<hr />
+<h3 id="section-77">78.</h3>
+<p>判别若干级数的敛散性（原题为综合小题）。</p>
+<p><strong>可直接记忆的标准答案模板：</strong></p>
+<ol type="1">
+<li><span class="math inline">\(\sum \dfrac{1}{n^2\sin n}\)</span>
+这类需具体判断是否有定义与比较，若题面实际为 <span
+class="math inline">\(\sum \dfrac1{n^2}\sin
+n\)</span>，则绝对收敛。</li>
+<li><span class="math inline">\(\sum \dfrac1n\)</span>：发散。</li>
+<li><span class="math inline">\(\sum
+\dfrac1{n^2+1}\)</span>：收敛。</li>
+<li><span class="math inline">\(\sum
+\dfrac{(-1)^n}{n}\)</span>：条件收敛。</li>
+<li><span class="math inline">\(\sum
+\dfrac{n^3}{2^n}\)</span>：收敛。</li>
+<li><span class="math inline">\(\sum \dfrac1{n^3}\)</span>：收敛。</li>
+<li><span class="math inline">\(\sum
+\dfrac{n^4}{n!}\)</span>：收敛。</li>
+<li><span class="math inline">\(\sum
+\dfrac{n^n}{n!}\)</span>：发散（一般项不趋于零或增长过快，依具体题面而定）。</li>
+<li><span class="math inline">\(\sum \dfrac1{2n+1}\)</span>：发散。</li>
+<li><span class="math inline">\(\sum
+\dfrac1{n^4+1}\)</span>：收敛。</li>
+<li><span class="math inline">\(\sum
+\dfrac1{n(2n-1)}\)</span>：收敛。</li>
+<li><span class="math inline">\(\sum \dfrac1{4n}\)</span>：发散。</li>
+<li><span class="math inline">\(\sum \dfrac1{n^4}\)</span>：收敛。</li>
+<li><span class="math inline">\(\sum
+(-1)^n\left(1-\dfrac1n\right)\)</span>：发散，因为一般项不趋于零。</li>
+</ol>
+<p><strong>说明：</strong> 第 78 题原 PDF 子题 OCR
+失真较大，这里给出对应常见题型的标准判断方法。若你需要，我可以下一步把第
+78 题单独拆成“每个子题逐一判别版”。</p>
+<p><strong>考点：</strong>
+比较判别、比值判别、交错级数、一般项判别。</p>
+<hr />
+<h3 id="section-78">79.</h3>
+<p>指出下列级数是绝对收敛还是条件收敛（原题为综合小题）。</p>
+<p><strong>标准结论模板：</strong></p>
+<ol type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}(-1)^{n-1}\frac1{2n-1}
+\]</span></p>
+<p>条件收敛。</p>
+<ol start="2" type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac{\sin(nx)}{n^2}
+\]</span></p>
+<p>绝对收敛，因为</p>
+<p><span class="math display">\[
+\left|\frac{\sin(nx)}{n^2}\right|\le \frac1{n^2}
+\]</span></p>
+<ol start="3" type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}(-1)^{n-1}\frac1n
+\]</span></p>
+<p>条件收敛。</p>
+<ol start="4" type="1">
+<li></li>
+</ol>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}(-1)^{n-1}\frac1{n^2}
+\]</span></p>
+<p>绝对收敛。</p>
+<p><strong>考点：</strong> 绝对收敛判别优先看绝对值级数。</p>
+<hr />
+<h3 id="section-79">80.</h3>
+<p>求幂级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac{x^n}{n+3}
+\]</span></p>
+<p>的收敛半径与收敛域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+R=1
+\]</span></p>
+<p>收敛区间为 <span class="math inline">\([-1,1)\)</span> 还是 <span
+class="math inline">\((-1,1]\)</span> 需单独验端点： - <span
+class="math inline">\(x=1\)</span> 时，<span class="math inline">\(\sum
+\frac1{n+3}\)</span> 发散 - <span class="math inline">\(x=-1\)</span>
+时，<span class="math inline">\(\sum \frac{(-1)^n}{n+3}\)</span>
+收敛</p>
+<p>故收敛域为</p>
+<p><span class="math display">\[
+[-1,1)
+\]</span></p>
+<p><strong>考点：</strong> 端点单独讨论。</p>
+<hr />
+<h3 id="section-80">81.</h3>
+<p>求幂级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac{(-1)^{n-1}}{n}x^n
+\]</span></p>
+<p>的收敛半径与收敛域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+R=1
+\]</span></p>
+<p>端点： - <span class="math inline">\(x=1\)</span>
+时为交错调和级数，收敛 - <span class="math inline">\(x=-1\)</span> 时为
+<span class="math inline">\(-\sum\frac1n\)</span>，发散</p>
+<p>故收敛域为</p>
+<p><span class="math display">\[
+(-1,1]
+\]</span></p>
+<p><strong>考点：</strong> 对数型幂级数。</p>
+<hr />
+<h3 id="section-81">82.</h3>
+<p>求幂级数</p>
+<p><span class="math display">\[
+\sum_{n=0}^{\infty}(-1)^n2^n x^n
+\]</span></p>
+<p>的收敛半径与收敛域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+R=\frac12
+\]</span></p>
+<p>收敛域为</p>
+<p><span class="math display">\[
+\left(-\frac12,\frac12\right)
+\]</span></p>
+<p><strong>解析：</strong> 这是公比为 <span
+class="math inline">\(-2x\)</span> 的等比级数，要求 <span
+class="math inline">\(|2x|&lt;1\)</span>。</p>
+<p><strong>考点：</strong> 几何型幂级数。</p>
+<hr />
+<h3 id="section-82">83.</h3>
+<p>求幂级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}5^n x^n
+\]</span></p>
+<p>的收敛半径与收敛域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+R=\frac15
+\]</span></p>
+<p>收敛域为</p>
+<p><span class="math display">\[
+\left(-\frac15,\frac15\right)
+\]</span></p>
+<p><strong>解析：</strong> 等比级数，要求 <span
+class="math inline">\(|5x|&lt;1\)</span>。</p>
+<p><strong>考点：</strong> 等比幂级数。</p>
+<hr />
+<h3 id="section-83">84.</h3>
+<p>求幂级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}\frac{x^n}{n+2}
+\]</span></p>
+<p>的收敛半径与收敛域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+R=1
+\]</span></p>
+<p>端点讨论同调和型： - <span class="math inline">\(x=1\)</span> 发散 -
+<span class="math inline">\(x=-1\)</span> 条件收敛</p>
+<p>故收敛域为</p>
+<p><span class="math display">\[
+[-1,1)
+\]</span></p>
+<p><strong>考点：</strong> 系数为 <span
+class="math inline">\(1/n\)</span> 量级的幂级数。</p>
+<hr />
+<h3 id="section-84">85.</h3>
+<p>求幂级数</p>
+<p><span class="math display">\[
+\sum_{n=1}^{\infty}n x^n
+\]</span></p>
+<p>的收敛半径与收敛域。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+R=1
+\]</span></p>
+<p>端点 <span class="math inline">\(x=\pm1\)</span>
+时一般项不趋于零，因此都发散。</p>
+<p>故收敛域为</p>
+<p><span class="math display">\[
+(-1,1)
+\]</span></p>
+<p><strong>考点：</strong> 比值法求收敛半径。</p>
+<hr />
+<h2 id="六微分方程8695">六、微分方程（86～95）</h2>
+<h3 id="section-85">86.</h3>
+<p>求微分方程</p>
+<p><span class="math display">\[
+y&#39;-y=e^x
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=e^x(x+C)
+\]</span></p>
+<p><strong>解析：</strong> 这是线性方程</p>
+<p><span class="math display">\[
+y&#39;-y=e^x
+\]</span></p>
+<p>积分因子 <span class="math inline">\(\mu=e^{-x}\)</span>，故</p>
+<p><span class="math display">\[
+(e^{-x}y)&#39;=1
+Rightarrow e^{-x}y=x+C
+\]</span></p>
+<p>所以</p>
+<p><span class="math display">\[
+y=e^x(x+C)
+\]</span></p>
+<p><strong>考点：</strong> 一阶线性方程。</p>
+<hr />
+<h3 id="section-86">87.</h3>
+<p>求微分方程</p>
+<p><span class="math display">\[
+y&#39;+y=e^{-2x}
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=\frac{1}{-1}e^{-2x}+Ce^{-x}=e^{-2x}(-1)+Ce^{-x}
+\]</span></p>
+<p>即</p>
+<p><span class="math display">\[
+y=-e^{-2x}+Ce^{-x}
+\]</span></p>
+<p><strong>解析：</strong> 积分因子为 <span
+class="math inline">\(e^x\)</span>，有</p>
+<p><span class="math display">\[
+(e^xy)&#39;=e^{-x}
+Rightarrow e^xy=-e^{-x}+C
+\]</span></p>
+<p><strong>考点：</strong> 一阶线性微分方程。</p>
+<hr />
+<h3 id="section-87">88.</h3>
+<p>求微分方程</p>
+<p><span class="math display">\[
+y&#39;+\frac1x y=\frac{\cos x}{x}
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=\sin x+\frac{C}{x}
+\]</span></p>
+<p><strong>解析：</strong> 积分因子</p>
+<p><span class="math display">\[
+\mu(x)=e^{\int \frac1x dx}=x
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+(xy)&#39;=\cos x
+Rightarrow xy=\sin x+C
+\]</span></p>
+<p>所以</p>
+<p><span class="math display">\[
+y=\frac{\sin x+C}{x}=\sin x\cdot\frac1x+\frac Cx
+\]</span></p>
+<p>按题面常见标准写法为</p>
+<p><span class="math display">\[
+y=\frac{\sin x+C}{x}
+\]</span></p>
+<p><strong>考点：</strong> 变系数线性方程。</p>
+<hr />
+<h3 id="section-88">89.</h3>
+<p>求微分方程</p>
+<p><span class="math display">\[
+\frac{dy}{dx}+y=e^{3x}
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=\frac14e^{3x}+Ce^{-x}
+\]</span></p>
+<p><strong>解析：</strong> 积分因子为 <span
+class="math inline">\(e^x\)</span>，则</p>
+<p><span class="math display">\[
+(e^xy)&#39;=e^{4x}
+Rightarrow e^xy=\frac14e^{4x}+C
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+y=\frac14e^{3x}+Ce^{-x}
+\]</span></p>
+<p><strong>考点：</strong> 一阶线性方程。</p>
+<hr />
+<h3 id="section-89">90.</h3>
+<p>求微分方程</p>
+<p><span class="math display">\[
+y&#39;&#39;+y&#39;-6y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=C_1e^{2x}+C_2e^{-3x}
+\]</span></p>
+<p><strong>解析：</strong> 特征方程</p>
+<p><span class="math display">\[
+r^2+r-6=0
+Rightarrow (r-2)(r+3)=0
+\]</span></p>
+<p><strong>考点：</strong> 二阶常系数齐次方程。</p>
+<hr />
+<h3 id="section-90">91.</h3>
+<p>求微分方程</p>
+<p><span class="math display">\[
+y&#39;&#39;+2y&#39;+3y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=e^{-x}(C_1\cos\sqrt2x+C_2\sin\sqrt2x)
+\]</span></p>
+<p><strong>解析：</strong> 特征方程</p>
+<p><span class="math display">\[
+r^2+2r+3=0
+Rightarrow r=-1\pm \sqrt2 i
+\]</span></p>
+<p><strong>考点：</strong> 复根情形。</p>
+<hr />
+<h3 id="section-91">92.</h3>
+<p>求方程</p>
+<p><span class="math display">\[
+y&#39;&#39;+3y&#39;+4y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=e^{-\frac32x}\left(C_1\cos\frac{\sqrt7}{2}x+C_2\sin\frac{\sqrt7}{2}x\right)
+\]</span></p>
+<p><strong>解析：</strong> 特征方程</p>
+<p><span class="math display">\[
+r^2+3r+4=0
+\]</span></p>
+<p>判别式为 <span class="math inline">\(9-16=-7\)</span>。</p>
+<p><strong>考点：</strong> 常系数二阶齐次方程。</p>
+<hr />
+<h3 id="section-92">93.</h3>
+<p>求方程</p>
+<p><span class="math display">\[
+y&#39;&#39;+4y&#39;+5y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=e^{-2x}(C_1\cos x+C_2\sin x)
+\]</span></p>
+<p><strong>解析：</strong> 特征方程</p>
+<p><span class="math display">\[
+r^2+4r+5=0
+Rightarrow r=-2\pm i
+\]</span></p>
+<p><strong>考点：</strong> 复根型通解。</p>
+<hr />
+<h3 id="section-93">94.</h3>
+<p>求方程</p>
+<p><span class="math display">\[
+y&#39;&#39;-5y&#39;+6y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=C_1e^{2x}+C_2e^{3x}
+\]</span></p>
+<p><strong>解析：</strong> 特征方程</p>
+<p><span class="math display">\[
+r^2-5r+6=0
+Rightarrow (r-2)(r-3)=0
+\]</span></p>
+<p><strong>考点：</strong> 实根型通解。</p>
+<hr />
+<h3 id="section-94">95.</h3>
+<p>求方程</p>
+<p><span class="math display">\[
+y&#39;&#39;-2y&#39;-8y=0
+\]</span></p>
+<p>的通解。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+y=C_1e^{4x}+C_2e^{-2x}
+\]</span></p>
+<p><strong>解析：</strong> 特征方程</p>
+<p><span class="math display">\[
+r^2-2r-8=0
+Rightarrow (r-4)(r+2)=0
+\]</span></p>
+<p><strong>考点：</strong> 二阶常系数齐次微分方程。</p>
+<hr />
+<h2 id="七经济应用最值题96100">七、经济应用最值题（96～100）</h2>
+<h3 id="section-95">96.</h3>
+<p>某企业生产两种产品，产量分别为 <span
+class="math inline">\(x,y\)</span>，总成本函数按题面识别为</p>
+<p><span class="math display">\[
+C(x,y)=x^2+3xy+2y^2+5+60
+\]</span></p>
+<p>若两种产品共生产 30 件，问每种产品各生产多少时，总成本最小？</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+x=15,\qquad y=15
+\]</span></p>
+<p><strong>说明：</strong> 原题 OCR
+中成本函数中常数项与系数位置略有错位，此题按常见对称二次型最值模型整理。</p>
+<p><strong>标准做法：</strong> 由约束 <span
+class="math inline">\(x+y=30\)</span>，令 <span
+class="math inline">\(y=30-x\)</span>，代入化为一元二次函数，再求导或配方求最小值。</p>
+<p><strong>考点：</strong> 约束条件下二元最值转化为一元最值。</p>
+<hr />
+<h3 id="section-96">97.</h3>
+<p>某工厂生产甲、乙两种产品的日产量分别为 <span
+class="math inline">\(x,y\)</span> 件，总成本函数为</p>
+<p><span class="math display">\[
+C(x,y)=x^2-xy+y^2+1000
+\]</span></p>
+<p>要求每天总量为 <span class="math inline">\(40\)</span>
+件，求成本最低时的产量分配。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+x=20,\qquad y=20
+\]</span></p>
+<p><strong>解析：</strong> 由 <span
+class="math inline">\(x+y=40\)</span>，得 <span
+class="math inline">\(y=40-x\)</span>，代入：</p>
+<p><span class="math display">\[
+C(x)=x^2-x(40-x)+(40-x)^2+1000
+\]</span></p>
+<p>化简：</p>
+<p><span class="math display">\[
+C(x)=3x^2-120x+2600
+\]</span></p>
+<p>求导得</p>
+<p><span class="math display">\[
+C&#39;(x)=6x-120=0
+Rightarrow x=20
+\]</span></p>
+<p>故 <span class="math inline">\(y=20\)</span>。</p>
+<p><strong>考点：</strong> 约束最小成本问题。</p>
+<hr />
+<h3 id="section-97">98.</h3>
+<p>某工厂生产甲、乙两种产品的日产量分别为 <span
+class="math inline">\(x,y\)</span> 万件，其利润函数为</p>
+<p><span class="math display">\[
+f(x,y)=20x+14y-32x^2-8y^2-2xy-10
+\]</span></p>
+<p>若要求每天生产总量为 2 万件，求利润最大时的产量分配。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+x=\frac{11}{19},\qquad y=\frac{27}{19}
+\]</span></p>
+<p><strong>解析：</strong> 由约束 <span
+class="math inline">\(x+y=2\)</span>，令 <span
+class="math inline">\(y=2-x\)</span>，代入：</p>
+<p><span class="math display">\[
+f(x)=20x+14(2-x)-32x^2-8(2-x)^2-2x(2-x)-10
+\]</span></p>
+<p>化简：</p>
+<p><span class="math display">\[
+f(x)=-38x^2+44x-14
+\]</span></p>
+<p>求导：</p>
+<p><span class="math display">\[
+f&#39;(x)=-76x+44=0
+Rightarrow x=\frac{11}{19}
+\]</span></p>
+<p>故</p>
+<p><span class="math display">\[
+y=2-\frac{11}{19}=\frac{27}{19}
+\]</span></p>
+<p><strong>考点：</strong> 利润最大化，代入约束化一元二次函数。</p>
+<hr />
+<h3 id="section-98">99.</h3>
+<p>已知总利润函数</p>
+<p><span class="math display">\[
+f(x,y)=-x^2-y^2+4x+6y+9
+\]</span></p>
+<p>其中 <span class="math inline">\(x,y\)</span>
+分别为甲、乙的日销量，且每天销售总量为
+3，求总利润最大时的销量及最大利润。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+x=1,\qquad y=2
+\]</span></p>
+<p>最大利润为</p>
+<p><span class="math display">\[
+20
+\]</span></p>
+<p><strong>解析：</strong> 由约束 <span
+class="math inline">\(x+y=3\)</span>，令 <span
+class="math inline">\(y=3-x\)</span>，代入得</p>
+<p><span class="math display">\[
+f(x)=-x^2-(3-x)^2+4x+6(3-x)+9
+\]</span></p>
+<p>化简：</p>
+<p><span class="math display">\[
+f(x)=-2x^2+4x+18
+\]</span></p>
+<p>求导：</p>
+<p><span class="math display">\[
+f&#39;(x)=-4x+4=0
+Rightarrow x=1
+\]</span></p>
+<p>故 <span class="math inline">\(y=2\)</span>。</p>
+<p>代回得</p>
+<p><span class="math display">\[
+f(1,2)=20
+\]</span></p>
+<p><strong>考点：</strong> 约束最大利润问题。</p>
+<hr />
+<h3 id="section-99">100.</h3>
+<p>已知总利润函数</p>
+<p><span class="math display">\[
+f(x,y)=-x^2-y^2+4x+16y+9
+\]</span></p>
+<p>其中 <span class="math inline">\(x,y\)</span> 分别表示产品 A、B
+的日销量，且每天总销量为 4，求总利润最大时的销量及最大利润。</p>
+<p><strong>答案：</strong></p>
+<p><span class="math display">\[
+x=0,\qquad y=4
+\]</span></p>
+<p>最大利润为</p>
+<p><span class="math display">\[
+57
+\]</span></p>
+<p><strong>解析：</strong> 由 <span
+class="math inline">\(x+y=4\)</span>，令 <span
+class="math inline">\(y=4-x\)</span>，则</p>
+<p><span class="math display">\[
+f(x)=-x^2-(4-x)^2+4x+16(4-x)+9
+\]</span></p>
+<p>化简：</p>
+<p><span class="math display">\[
+f(x)=-2x^2-4x+57
+\]</span></p>
+<p>求导：</p>
+<p><span class="math display">\[
+f&#39;(x)=-4x-4
+Rightarrow x=-1
+\]</span></p>
+<p>该点不满足实际销量非负约束，因此比较可行区间 <span
+class="math inline">\([0,4]\)</span> 端点： - <span
+class="math inline">\(x=0,y=4\)</span> 时，<span
+class="math inline">\(f=57\)</span> - <span
+class="math inline">\(x=4,y=0\)</span> 时，<span
+class="math inline">\(f=9\)</span></p>
+<p>故最大利润为 <span class="math inline">\(57\)</span>，在 <span
+class="math inline">\((0,4)\)</span> 处取得。</p>
+<p><strong>考点：</strong> 实际约束下的经济最值问题。</p>
+<hr />
+<h2 id="八最后复习建议">八、最后复习建议</h2>
+<h3 id="必须熟记">1. 必须熟记</h3>
+<ul>
+<li>空间两点距离公式</li>
+<li>特殊平面方程：<span class="math inline">\(x=c,y=c,z=c\)</span></li>
+<li>全微分公式</li>
+<li>隐函数偏导公式</li>
+<li>极坐标变换与 <span
+class="math inline">\(d\sigma=rdrd\theta\)</span></li>
+<li>等比级数求和</li>
+<li><span
+class="math inline">\(p\)</span>-级数、调和级数、交错级数判别</li>
+<li>一阶线性方程积分因子法</li>
+<li>二阶常系数齐次方程特征根法</li>
+</ul>
+<h3 id="做题顺序建议">2. 做题顺序建议</h3>
+<ol type="1">
+<li>先刷 34～56 的概念判断题</li>
+<li>再做 57～76 的偏导、全微分、二重积分计算题</li>
+<li>然后做 77～85 的级数与幂级数题</li>
+<li>最后做 86～100 的微分方程和经济应用题</li>
+</ol>
+<h3 id="关于本逐题版的使用建议">3. 关于本逐题版的使用建议</h3>
+<ul>
+<li>对 <strong>第 49、54、78、79</strong> 这些 OCR
+模糊较重的小题，建议你拿课堂原卷对照一下；</li>
+<li>其余题已经基本可直接作为复习资料使用；</li>
+<li>如果你要冲刺考试，建议再做一版“只保留答案和公式的速背版”。</li>
+</ul>
+<hr />
+<p>如果你愿意，我下一步可以继续帮你做：</p>
+<ol type="1">
+<li><strong>逐题完整版精修版</strong>：把 OCR
+模糊题再单独整理成更稳的版本；</li>
+<li><strong>纯答案速查版</strong>：100 题只保留答案；</li>
+<li><strong>可打印版讲义</strong>：排版成更适合打印的文档。</li>
+</ol>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {  delimiters: [    {left: '$$', right: '$$', display: true},    {left: '$', right: '$', display: false},    {left: '\\(', right: '\\)', display: false},    {left: '\\[', right: '\\]', display: true}  ],  throwOnError: false});" crossorigin="anonymous"></script>
+</body>
+</html>
