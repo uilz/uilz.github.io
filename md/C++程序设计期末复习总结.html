@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深大C++期末考试复习 - 核心知识点</title>
+    <style>
+        :root {
+            --sidebar-width: 270px;
+            --sidebar-bg: #1a1d27;
+            --sidebar-hover: #252836;
+            --sidebar-active: #2d3148;
+            --accent: #6c8cff;
+            --accent-light: #e8ecff;
+            --accent-glow: #8aa4ff;
+            --text-primary: #1e2130;
+            --text-secondary: #4a4f63;
+            --text-muted: #6e7389;
+            --bg-main: #f5f6fa;
+            --bg-card: #ffffff;
+            --border: #e8eaf0;
+            --code-bg: #1e2233;
+            --code-text: #d6d9e6;
+            --code-keyword: #c792ea;
+            --code-string: #c3e88d;
+            --code-comment: #676e8a;
+            --code-type: #ffcb6b;
+            --code-func: #82aaff;
+            --code-number: #f78c6c;
+            --tag-syntax: #fff3e0;
+            --tag-syntax-text: #e65100;
+            --tag-example: #e8f5e9;
+            --tag-example-text: #2e7d32;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 18px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 32px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.7;
+            display: flex;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ========== 侧边栏 ========== */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--sidebar-bg);
+            color: #c8ccd8;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 2px 0 24px rgba(0, 0, 0, 0.15);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+        }
+
+        .sidebar-header {
+            padding: 28px 24px 18px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .sidebar-header .logo-icon {
+            font-size: 28px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .sidebar-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+            line-height: 1.3;
+        }
+        .sidebar-header .subtitle {
+            font-size: 0.78rem;
+            color: #8890a8;
+            margin-top: 3px;
+            letter-spacing: 0.2px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 10px 0;
+            list-style: none;
+        }
+        .sidebar-nav .nav-group {
+            margin-bottom: 2px;
+        }
+        .sidebar-nav .nav-group-title {
+            display: block;
+            padding: 10px 24px 6px 24px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #6b7290;
+            cursor: default;
+            user-select: none;
+        }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 24px 9px 24px;
+            color: #b4b9c8;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all var(--transition);
+            position: relative;
+            letter-spacing: 0.2px;
+        }
+        .sidebar-nav a:hover {
+            background: var(--sidebar-hover);
+            color: #e8ebf2;
+            border-left-color: rgba(108, 140, 255, 0.45);
+        }
+        .sidebar-nav a.active {
+            background: var(--sidebar-active);
+            color: #ffffff;
+            font-weight: 600;
+            border-left-color: var(--accent);
+            box-shadow: inset 0 0 20px rgba(108, 140, 255, 0.08);
+        }
+        .sidebar-nav a .nav-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.5;
+            flex-shrink: 0;
+            transition: all var(--transition);
+        }
+        .sidebar-nav a.active .nav-dot {
+            opacity: 1;
+            background: var(--accent-glow);
+            box-shadow: 0 0 8px rgba(108, 140, 255, 0.6);
+        }
+        .sidebar-nav a.sub {
+            padding-left: 48px;
+            font-size: 0.82rem;
+            font-weight: 400;
+        }
+        .sidebar-nav a.sub .nav-dot {
+            width: 4px;
+            height: 4px;
+            opacity: 0.35;
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.7rem;
+            color: #5c6278;
+            text-align: center;
+            flex-shrink: 0;
+            letter-spacing: 0.3px;
+        }
+
+        /* ========== 主内容区 ========== */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 36px 40px 60px 40px;
+            max-width: 1100px;
+            width: 100%;
+        }
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            letter-spacing: -0.3px;
+        }
+        .page-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 36px;
+            font-weight: 400;
+        }
+
+        /* 章节 */
+        .section {
+            margin-bottom: 44px;
+            scroll-margin-top: 28px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--border);
+        }
+        .section-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+            background: var(--accent-light);
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            color: var(--text-primary);
+        }
+        .section-header .badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.4px;
+            margin-left: auto;
+        }
+        .badge-syntax {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .badge-example {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* 卡片 */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 26px 30px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            transition: box-shadow var(--transition);
+        }
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.1px;
+        }
+        .card h3 .indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .indicator-syntax {
+            background: #ff9800;
+            box-shadow: 0 0 6px rgba(255, 152, 0, 0.4);
+        }
+        .indicator-example {
+            background: #4caf50;
+            box-shadow: 0 0 6px rgba(76, 175, 80, 0.4);
+        }
+
+        .card ul {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        .card ul li {
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-size: 0.93rem;
+            position: relative;
+        }
+        .card ul li strong {
+            color: var(--text-primary);
+        }
+        .card p {
+            color: var(--text-secondary);
+            font-size: 0.93rem;
+            margin-bottom: 8px;
+        }
+        .card .inline-code {
+            background: #f0f1f5;
+            color: #c62828;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.88em;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+        }
+
+        /* 代码块 */
+        .code-block-wrapper {
+            margin: 16px 0;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+        }
+        .code-block-header {
+            background: #171a24;
+            color: #a0a7bb;
+            padding: 10px 18px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+        .code-block-header .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot-red {
+            background: #ff5f57;
+        }
+        .dot-yellow {
+            background: #febc2e;
+        }
+        .dot-green {
+            background: #28c840;
+        }
+        .code-block-header .filename {
+            margin-left: 8px;
+            color: #8890a8;
+            font-weight: 400;
+        }
+        .code-block-body {
+            background: var(--code-bg);
+            padding: 18px 20px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+        }
+        .code-block-body::-webkit-scrollbar {
+            height: 5px;
+        }
+        .code-block-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .code-block-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .code-block-body pre {
+            margin: 0;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.65;
+            color: var(--code-text);
+            white-space: pre;
+            letter-spacing: -0.1px;
+        }
+        .code-block-body code {
+            font-family: inherit;
+        }
+        /* 简易语法高亮 */
+        .kw {
+            color: #c792ea;
+            font-weight: 500;
+        }
+        .dt {
+            color: #ffcb6b;
+        }
+        .fn {
+            color: #82aaff;
+        }
+        .str {
+            color: #c3e88d;
+        }
+        .cm {
+            color: #676e8a;
+            font-style: italic;
+        }
+        .num {
+            color: #f78c6c;
+        }
+        .pp {
+            color: #89ddff;
+        }
+
+        /* 解析块 */
+        .analysis-block {
+            background: #fafbfc;
+            border-left: 4px solid var(--accent);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            padding: 16px 20px;
+            margin: 14px 0;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .analysis-block strong {
+            color: var(--accent);
+        }
+
+        /* 输出块 */
+        .output-block {
+            background: #f5f6f8;
+            border: 1px dashed #d0d3dc;
+            border-radius: var(--radius-sm);
+            padding: 10px 16px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.84rem;
+            color: #3a3d4a;
+            letter-spacing: 0.1px;
+            margin: 8px 0;
+            user-select: all;
+        }
+
+        /* 返回顶部 */
+        .back-to-top {
+            position: fixed;
+            bottom: 28px;
+            right: 32px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all var(--transition);
+            pointer-events: none;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .back-to-top:hover {
+            background: #5a7de8;
+            transform: translateY(-3px);
+            box-shadow: 0 16px 36px rgba(108, 140, 255, 0.35);
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 300;
+            background: var(--sidebar-bg);
+            color: #fff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 响应式 */
+        @media (max-width: 860px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                width: 280px;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 24px 18px 40px 18px;
+            }
+            .mobile-menu-btn {
+                display: flex;
+            }
+            .page-title {
+                font-size: 1.5rem;
+                padding-left: 48px;
+            }
+            .page-subtitle {
+                padding-left: 48px;
+            }
+            .back-to-top {
+                right: 16px;
+                bottom: 20px;
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            .card {
+                padding: 18px 16px;
+            }
+            .code-block-body {
+                padding: 14px 12px;
+            }
+            .code-block-body pre {
+                font-size: 0.76rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 16px 10px 30px 10px;
+            }
+            .page-title {
+                font-size: 1.3rem;
+                padding-left: 44px;
+            }
+            .page-subtitle {
+                font-size: 0.8rem;
+                padding-left: 44px;
+            }
+            .section-header h2 {
+                font-size: 1.2rem;
+            }
+            .section-icon {
+                width: 34px;
+                height: 34px;
+                font-size: 17px;
+            }
+        }
+
+        /* 侧边栏遮罩 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .sidebar-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="菜单">☰</button>
+
+    <!-- 侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ==================== 侧边栏 ==================== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="logo-icon">📘</span>
+            <h2>C++ 期末复习</h2>
+            <p class="subtitle">深圳大学 · 大一</p>
+        </div>
+        <ul class="sidebar-nav">
+            <li class="nav-group">
+                <span class="nav-group-title">第一部分</span>
+                <a href="#section1-syntax" class="sub"><span class="nav-dot"></span>语法说明</a>
+                <a href="#section1-example" class="sub"><span class="nav-dot"></span>例题1 · 构造与析构</a>
+            </li>
+            <li class="nav-group">
+                <span class="nav-group-title">第二部分</span>
+                <a href="#section2-syntax" class="sub"><span class="nav-dot"></span>语法说明</a>
+                <a href="#section2-example" class="sub"><span class="nav-dot"></span>例题2 · 虚函数多态</a>
+            </li>
+            <li class="nav-group">
+                <span class="nav-group-title">第三部分</span>
+                <a href="#section3-syntax" class="sub"><span class="nav-dot"></span>语法说明</a>
+                <a href="#section3-example1" class="sub"><span class="nav-dot"></span>例题3 · 复数类重载</a>
+                <a href="#section3-example2" class="sub"><span class="nav-dot"></span>例题4 · 自增运算符</a>
+            </li>
+            <li class="nav-group">
+                <span class="nav-group-title">第四部分</span>
+                <a href="#section4-syntax" class="sub"><span class="nav-dot"></span>语法说明</a>
+                <a href="#section4-example1" class="sub"><span class="nav-dot"></span>例题5 · 函数模板</a>
+                <a href="#section4-example2" class="sub"><span class="nav-dot"></span>例题6 · 栈类模板</a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">C++ OOP Review · 2026</div>
+    </aside>
+
+    <!-- ==================== 主内容区 ==================== -->
+    <main class="main-content">
+        <h1 class="page-title">C++ 核心知识点精讲</h1>
+        <p class="page-subtitle">覆盖：类和对象 · 继承和多态 · 运算符重载 · 模板 —— 含6道经典例题与详细解析</p>
+
+        <!-- ========== 第一部分：类和对象 ========== -->
+        <section class="section" id="section1">
+            <div class="section-header">
+                <div class="section-icon">①</div>
+                <h2>类和对象</h2>
+                <span class="badge badge-syntax">核心语法</span>
+            </div>
+
+            <!-- 语法说明 -->
+            <div class="card" id="section1-syntax">
+                <h3><span class="indicator indicator-syntax"></span>关键语法说明</h3>
+                <ul>
+                    <li><strong>类定义：</strong><code class="inline-code">class ClassName { };</code> 以分号结尾。成员默认私有（<code class="inline-code">private</code>），可用 <code class="inline-code">public</code>、<code class="inline-code">protected</code> 指定访问权限。</li>
+                    <li><strong>构造函数：</strong>与类同名，无返回类型，可重载。对象创建时自动调用。注意<strong>初始化列表</strong> <code class="inline-code">: member(value) {}</code> 的用法。</li>
+                    <li><strong>析构函数：</strong><code class="inline-code">~ClassName()</code>，无参无返回，负责资源释放。对象销毁时自动调用。</li>
+                    <li><strong>拷贝构造函数：</strong><code class="inline-code">ClassName(const ClassName&amp; other)</code>，用已有对象初始化新对象时调用。<strong>深拷贝与浅拷贝</strong>的区别要清楚。</li>
+                    <li><strong>this 指针：</strong>指向对象自身的指针，在成员函数中隐式可用，常用于返回对象自身。</li>
+                    <li><strong>常成员函数：</strong><code class="inline-code">返回类型 函数名(参数) const;</code> 表示不会修改对象成员，<code class="inline-code">const</code> 对象只能调用 <code class="inline-code">const</code> 成员函数。</li>
+                    <li><strong>静态成员：</strong><code class="inline-code">static</code> 成员变量属于类本身，所有对象共享，类外需定义；静态成员函数只能访问静态成员。</li>
+                </ul>
+            </div>
+
+            <!-- 例题1 -->
+            <div class="card" id="section1-example">
+                <h3><span class="indicator indicator-example"></span>例题1：构造函数与析构顺序</h3>
+                <div class="code-block-wrapper">
+                    <div class="code-block-header">
+                        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+                        <span class="filename">example1.cpp</span>
+                    </div>
+                    <div class="code-block-body">
+                        <pre><code><span class="pp">#include</span> <span class="str">&lt;iostream&gt;</span>
+                            <span class="kw">using</span> <span class="kw">namespace</span> std;
+
+                            <span class="kw">class</span> <span class="dt">Test</span> {
+                            <span class="kw">public</span>:
+                            <span class="fn">Test</span>(<span class="dt">int</span> n) : <span class="fn">id</span>(n) { cout &lt;&lt; <span class="str">"构造 "</span> &lt;&lt; id &lt;&lt; <span class="str">" "</span>; }
+                            <span class="fn">~Test</span>() { cout &lt;&lt; <span class="str">"析构 "</span> &lt;&lt; id &lt;&lt; <span class="str">" "</span>; }
+                            <span class="kw">private</span>:
+                            <span class="dt">int</span> id;
+                        };
+
+                        <span class="dt">Test</span> <span class="fn">global</span>(<span class="num">1</span>);          <span class="cm">// 全局对象</span>
+
+                        <span class="dt">void</span> <span class="fn">func</span>() {
+                            <span class="dt">Test</span> <span class="fn">local</span>(<span class="num">2</span>);       <span class="cm">// 局部对象</span>
+                            <span class="kw">static</span> <span class="dt">Test</span> <span class="fn">st</span>(<span class="num">3</span>);   <span class="cm">// 局部静态对象（只构造一次）</span>
+                        }
+
+                        <span class="dt">int</span> <span class="fn">main</span>() {
+                            <span class="dt">Test</span> <span class="fn">t</span>(<span class="num">4</span>);
+                            <span class="fn">func</span>();
+                            <span class="fn">func</span>();
+                            <span class="kw">return</span> <span class="num">0</span>;
+                        }</code></pre>
+                    </div>
+                </div>
+                <div class="analysis-block">
+                    <strong>📝 解析：</strong>全局对象 <code class="inline-code">global(1)</code> 在 <code class="inline-code">main</code> 前构造。<code class="inline-code">main</code> 中 <code class="inline-code">t(4)</code> 构造。第一次调用 <code class="inline-code">func()</code>：构造 <code class="inline-code">local(2)</code>，静态局部 <code class="inline-code">st(3)</code> 只在第一次进入时构造一次；函数结束时 <code class="inline-code">local(2)</code> 销毁。第二次 <code class="inline-code">func()</code>：再次构造 <code class="inline-code">local(2)</code>，静态对象不再构造；函数结束销毁 <code class="inline-code">local(2)</code>。<code class="inline-code">main</code> 结束后销毁 <code class="inline-code">t(4)</code>，然后全局和静态对象按构造<strong>相反顺序</strong>销毁：<code class="inline-code">st(3)</code> → <code class="inline-code">global(1)</code>。
+                </div>
+                <p style="margin-top:8px;font-weight:600;color:var(--text-primary);">输出结果：</p>
+                <div class="output-block">构造 1 构造 4 构造 2 构造 3 析构 2 构造 2 析构 2 析构 4 析构 3 析构 1</div>
+            </div>
+        </section>
+
+        <!-- ========== 第二部分：继承和多态 ========== -->
+        <section class="section" id="section2">
+            <div class="section-header">
+                <div class="section-icon">②</div>
+                <h2>继承和多态</h2>
+                <span class="badge badge-syntax">核心语法</span>
+            </div>
+
+            <!-- 语法说明 -->
+            <div class="card" id="section2-syntax">
+                <h3><span class="indicator indicator-syntax"></span>关键语法说明</h3>
+                <ul>
+                    <li><strong>继承方式：</strong><code class="inline-code">class Derived : public Base</code>（公有继承），<code class="inline-code">protected</code>/<code class="inline-code">private</code> 继承会改变基类成员在派生类中的访问级别。通常考试用 <code class="inline-code">public</code> 继承。</li>
+                    <li><strong>构造函数与析构顺序：</strong>构造时<strong>先基类后派生类</strong>，析构时<strong>先派生类后基类</strong>。</li>
+                    <li><strong>多态条件：</strong>① 基类函数声明为 <code class="inline-code">virtual</code>；② 通过基类指针或引用调用虚函数；③ 派生类重写（覆盖）该虚函数（函数签名相同）。</li>
+                    <li><strong>虚函数：</strong><code class="inline-code">virtual 返回类型 函数名();</code> 可以在基类中给出默认实现。派生类覆盖时可加 <code class="inline-code">override</code> 关键字（C++11）提示编译器检查。</li>
+                    <li><strong>纯虚函数与抽象类：</strong><code class="inline-code">virtual void func() = 0;</code> 至少有一个纯虚函数的类为<strong>抽象类</strong>，不能实例化。派生类必须实现所有纯虚函数才能成为具体类。</li>
+                    <li><strong>虚析构函数：</strong>如果类作为基类使用，通常应将析构函数声明为虚，确保派生类对象通过基类指针删除时正确调用派生类析构函数。</li>
+                </ul>
+            </div>
+
+            <!-- 例题2 -->
+            <div class="card" id="section2-example">
+                <h3><span class="indicator indicator-example"></span>例题2：虚函数与构造析构顺序</h3>
+                <div class="code-block-wrapper">
+                    <div class="code-block-header">
+                        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+                        <span class="filename">example2.cpp</span>
+                    </div>
+                    <div class="code-block-body">
+                        <pre><code><span class="pp">#include</span> <span class="str">&lt;iostream&gt;</span>
+                            <span class="kw">using</span> <span class="kw">namespace</span> std;
+
+                            <span class="kw">class</span> <span class="dt">Base</span> {
+                            <span class="kw">public</span>:
+                            <span class="fn">Base</span>() { cout &lt;&lt; <span class="str">"B "</span>; <span class="fn">show</span>(); }
+                            <span class="kw">virtual</span> <span class="fn">~Base</span>() { cout &lt;&lt; <span class="str">"~B "</span>; }
+                            <span class="kw">virtual</span> <span class="dt">void</span> <span class="fn">show</span>() { cout &lt;&lt; <span class="str">"Base::show "</span>; }
+                        };
+
+                        <span class="kw">class</span> <span class="dt">Derived</span> : <span class="kw">public</span> <span class="dt">Base</span> {
+                        <span class="kw">public</span>:
+                        <span class="fn">Derived</span>() { cout &lt;&lt; <span class="str">"D "</span>; }
+                        <span class="fn">~Derived</span>() { cout &lt;&lt; <span class="str">"~D "</span>; }
+                        <span class="dt">void</span> <span class="fn">show</span>() <span class="kw">override</span> { cout &lt;&lt; <span class="str">"Derived::show "</span>; }
+                    };
+
+                    <span class="dt">int</span> <span class="fn">main</span>() {
+                        <span class="dt">Base</span>* p = <span class="kw">new</span> <span class="dt">Derived</span>();
+                        p-&gt;<span class="fn">show</span>();
+                        <span class="kw">delete</span> p;
+                        <span class="kw">return</span> <span class="num">0</span>;
+                    }</code></pre>
+                </div>
+            </div>
+            <div class="analysis-block">
+                <strong>📝 解析：</strong><code class="inline-code">new Derived()</code> 先调 <code class="inline-code">Base</code> 构造函数：输出 <code class="inline-code">B </code>，构造函数中调用 <code class="inline-code">show()</code>，此时对象的<strong>虚表还是 Base 的虚表</strong>（派生类还没构造完），所以调用 <code class="inline-code">Base::show</code>，输出 <code class="inline-code">Base::show </code>；然后 <code class="inline-code">Derived</code> 构造函数输出 <code class="inline-code">D </code>。<br>
+                <code class="inline-code">p-&gt;show()</code> 通过基类指针调虚函数，动态绑定到 <code class="inline-code">Derived::show</code>，输出 <code class="inline-code">Derived::show </code>。<br>
+                <code class="inline-code">delete p</code>：因析构函数是虚的，先调 <code class="inline-code">~Derived()</code> 输出 <code class="inline-code">~D </code>，再调 <code class="inline-code">~Base()</code> 输出 <code class="inline-code">~B </code>。
+            </div>
+            <p style="margin-top:8px;font-weight:600;color:var(--text-primary);">输出结果：</p>
+            <div class="output-block">B Base::show D Derived::show ~D ~B</div>
+        </section>
+
+        <!-- ========== 第三部分：运算符重载 ========== -->
+        <section class="section" id="section3">
+            <div class="section-header">
+                <div class="section-icon">③</div>
+                <h2>运算符重载</h2>
+                <span class="badge badge-syntax">核心语法</span>
+            </div>
+
+            <!-- 语法说明 -->
+            <div class="card" id="section3-syntax">
+                <h3><span class="indicator indicator-syntax"></span>关键语法说明</h3>
+                <ul>
+                    <li><strong>成员函数重载：</strong><code class="inline-code">返回类型 operator运算符(参数表) { }</code>。左操作数是对象自身（this）。如 <code class="inline-code">Complex operator+(const Complex&amp; other) const;</code> 表示 <code class="inline-code">c1 + c2</code>。</li>
+                    <li><strong>友元函数重载：</strong><code class="inline-code">friend 返回类型 operator运算符(参数1, 参数2);</code> 常用于左操作数不是本类对象的场景，或需要访问私有成员。如 <code class="inline-code">friend Complex operator+(double d, const Complex&amp; c);</code> 支持 <code class="inline-code">3.5 + c1</code>。</li>
+                    <li><strong>重载规则：</strong>不能创建新运算符，不能改变优先级和结合性；<code class="inline-code">::</code> <code class="inline-code">.</code> <code class="inline-code">.*</code> <code class="inline-code">?:</code> 等不能重载。<code class="inline-code">=</code> <code class="inline-code">[]</code> <code class="inline-code">()</code> <code class="inline-code">-&gt;</code> 只能重载为成员函数。</li>
+                    <li><strong>自增/自减：</strong>前置 <code class="inline-code">++obj</code> 为 <code class="inline-code">T&amp; operator++()</code>，后置 <code class="inline-code">obj++</code> 为 <code class="inline-code">T operator++(int)</code>（int 为标记，仅用于区分）。</li>
+                    <li><strong>输入输出运算符：</strong><code class="inline-code">&gt;&gt;</code> 和 <code class="inline-code">&lt;&lt;</code> 通常重载为非成员函数（友元），如 <code class="inline-code">istream&amp; operator&gt;&gt;(istream&amp; in, MyClass&amp; obj);</code></li>
+                </ul>
+            </div>
+
+            <!-- 例题3 -->
+            <div class="card" id="section3-example1">
+                <h3><span class="indicator indicator-example"></span>例题3：复数类加法重载</h3>
+                <p>请实现一个 <code class="inline-code">Complex</code> 类，包含实部 <code class="inline-code">real</code> 和虚部 <code class="inline-code">imag</code>（<code class="inline-code">double</code>），重载 <code class="inline-code">+</code>、<code class="inline-code">-</code> 运算符（成员函数或友元），并重载 <code class="inline-code">&lt;&lt;</code> 输出运算符以 <code class="inline-code">(a, b)</code> 形式打印。</p>
+                <div class="code-block-wrapper">
+                    <div class="code-block-header">
+                        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+                        <span class="filename">complex.cpp</span>
+                    </div>
+                    <div class="code-block-body">
+                        <pre><code><span class="pp">#include</span> <span class="str">&lt;iostream&gt;</span>
+                            <span class="kw">using</span> <span class="kw">namespace</span> std;
+
+                            <span class="kw">class</span> <span class="dt">Complex</span> {
+                            <span class="kw">private</span>:
+                            <span class="dt">double</span> real, imag;
+                            <span class="kw">public</span>:
+                            <span class="fn">Complex</span>(<span class="dt">double</span> r = <span class="num">0</span>, <span class="dt">double</span> i = <span class="num">0</span>) : <span class="fn">real</span>(r), <span class="fn">imag</span>(i) {}
+
+                            <span class="cm">// 成员函数重载 +</span>
+                            <span class="dt">Complex</span> <span class="kw">operator</span>+(<span class="kw">const</span> <span class="dt">Complex</span>&amp; other) <span class="kw">const</span> {
+                                <span class="kw">return</span> <span class="fn">Complex</span>(real + other.real, imag + other.imag);
+                            }
+
+                            <span class="cm">// 成员函数重载 -  (this - other)</span>
+                            <span class="dt">Complex</span> <span class="kw">operator</span>-(<span class="kw">const</span> <span class="dt">Complex</span>&amp; other) <span class="kw">const</span> {
+                                <span class="kw">return</span> <span class="fn">Complex</span>(real - other.real, imag - other.imag);
+                            }
+
+                            <span class="cm">// 友元重载 &lt;&lt;</span>
+                            <span class="kw">friend</span> ostream&amp; <span class="kw">operator</span>&lt;&lt;(ostream&amp; os, <span class="kw">const</span> <span class="dt">Complex</span>&amp; c) {
+                                os &lt;&lt; <span class="str">"("</span> &lt;&lt; c.real &lt;&lt; <span class="str">", "</span> &lt;&lt; c.imag &lt;&lt; <span class="str">")"</span>;
+                                <span class="kw">return</span> os;
+                            }
+                        };
+
+                        <span class="dt">int</span> <span class="fn">main</span>() {
+                            <span class="dt">Complex</span> <span class="fn">a</span>(<span class="num">3</span>, <span class="num">4</span>), <span class="fn">b</span>(<span class="num">1</span>, <span class="num">2</span>);
+                            cout &lt;&lt; a + b &lt;&lt; endl;   <span class="cm">// (4, 6)</span>
+                            cout &lt;&lt; a - b &lt;&lt; endl;   <span class="cm">// (2, 2)</span>
+                            <span class="kw">return</span> <span class="num">0</span>;
+                        }</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 例题4 -->
+            <div class="card" id="section3-example2">
+                <h3><span class="indicator indicator-example"></span>例题4：自增运算符重载</h3>
+                <p>写出 <code class="inline-code">Counter</code> 类，包含 <code class="inline-code">int count;</code>，重载前置 <code class="inline-code">++</code> 和后置 <code class="inline-code">++</code>，并测试。</p>
+                <div class="code-block-wrapper">
+                    <div class="code-block-header">
+                        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+                        <span class="filename">counter.cpp</span>
+                    </div>
+                    <div class="code-block-body">
+                        <pre><code><span class="kw">class</span> <span class="dt">Counter</span> {
+                            <span class="dt">int</span> count;
+                            <span class="kw">public</span>:
+                            <span class="fn">Counter</span>(<span class="dt">int</span> c = <span class="num">0</span>) : <span class="fn">count</span>(c) {}
+                            <span class="cm">// 前置++</span>
+                            <span class="dt">Counter</span>&amp; <span class="kw">operator</span>++() {
+                                ++count;
+                                <span class="kw">return</span> *<span class="kw">this</span>;
+                            }
+                            <span class="cm">// 后置++ (int 仅用于区分)</span>
+                            <span class="dt">Counter</span> <span class="kw">operator</span>++(<span class="dt">int</span>) {
+                                <span class="dt">Counter</span> temp = *<span class="kw">this</span>;
+                                ++count;   <span class="cm">// 或 count++;</span>
+                                <span class="kw">return</span> temp;
+                            }
+                            <span class="dt">int</span> <span class="fn">getCount</span>() <span class="kw">const</span> { <span class="kw">return</span> count; }
+                        };</code></pre>
+                    </div>
+                </div>
+                <div class="analysis-block">
+                    <strong>⚠️ 注意：</strong>后置 <code class="inline-code">++</code> 返回的是<strong>旧值</strong>，并且返回的是对象本身而<strong>不是引用</strong>（因为局部变量 <code class="inline-code">temp</code> 在函数结束时销毁，不能返回引用）。前置 <code class="inline-code">++</code> 返回引用 <code class="inline-code">Counter&amp;</code>，支持链式调用如 <code class="inline-code">++(++c)</code>。
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== 第四部分：模板 ========== -->
+        <section class="section" id="section4">
+            <div class="section-header">
+                <div class="section-icon">④</div>
+                <h2>模板</h2>
+                <span class="badge badge-syntax">核心语法</span>
+            </div>
+
+            <!-- 语法说明 -->
+            <div class="card" id="section4-syntax">
+                <h3><span class="indicator indicator-syntax"></span>关键语法说明</h3>
+                <ul>
+                    <li><strong>函数模板：</strong><code class="inline-code">template &lt;typename T&gt;</code> 或 <code class="inline-code">template &lt;class T&gt;</code>，使函数能适应多种类型。如：<code class="inline-code">template &lt;typename T&gt; T max(T a, T b) { return a &gt; b ? a : b; }</code></li>
+                    <li><strong>类模板：</strong><code class="inline-code">template &lt;typename T&gt; class ClassName { ... };</code>，成员函数在类外定义时需要加上模板声明和 <code class="inline-code">&lt;T&gt;</code>。如：<code class="inline-code">template&lt;typename T&gt; void Stack&lt;T&gt;::push(const T&amp; val) {...}</code></li>
+                    <li><strong>模板特化：</strong>可对特定类型提供特殊实现，如全特化 <code class="inline-code">template&lt;&gt; class Stack&lt;bool&gt; { ... };</code></li>
+                    <li><strong>默认模板参数：</strong><code class="inline-code">template&lt;typename T = int&gt; class Array { ... };</code></li>
+                    <li><strong>非类型模板参数：</strong><code class="inline-code">template&lt;typename T, int SIZE&gt; class Buffer { T data[SIZE]; };</code>，<code class="inline-code">SIZE</code> 是<strong>编译期常量</strong>。</li>
+                </ul>
+            </div>
+
+            <!-- 例题5 -->
+            <div class="card" id="section4-example1">
+                <h3><span class="indicator indicator-example"></span>例题5：函数模板比较大小</h3>
+                <p>实现函数模板 <code class="inline-code">myMax</code>，返回两个同类型中的较大者。并测试 <code class="inline-code">int</code>、<code class="inline-code">double</code>、<code class="inline-code">string</code> 类型。</p>
+                <div class="code-block-wrapper">
+                    <div class="code-block-header">
+                        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+                        <span class="filename">mymax.cpp</span>
+                    </div>
+                    <div class="code-block-body">
+                        <pre><code><span class="pp">#include</span> <span class="str">&lt;iostream&gt;</span>
+                            <span class="pp">#include</span> <span class="str">&lt;string&gt;</span>
+                            <span class="kw">using</span> <span class="kw">namespace</span> std;
+
+                            <span class="kw">template</span> &lt;<span class="kw">typename</span> <span class="dt">T</span>&gt;
+                            <span class="dt">T</span> <span class="fn">myMax</span>(<span class="dt">T</span> a, <span class="dt">T</span> b) {
+                                <span class="kw">return</span> (a &gt; b) ? a : b;
+                            }
+
+                            <span class="dt">int</span> <span class="fn">main</span>() {
+                                cout &lt;&lt; <span class="fn">myMax</span>(<span class="num">3</span>, <span class="num">7</span>) &lt;&lt; endl;           <span class="cm">// 7</span>
+                                cout &lt;&lt; <span class="fn">myMax</span>(<span class="num">2.5</span>, <span class="num">1.8</span>) &lt;&lt; endl;        <span class="cm">// 2.5</span>
+                                string s1 = <span class="str">"apple"</span>, s2 = <span class="str">"banana"</span>;
+                                cout &lt;&lt; <span class="fn">myMax</span>(s1, s2) &lt;&lt; endl;          <span class="cm">// banana (字典序)</span>
+                                <span class="kw">return</span> <span class="num">0</span>;
+                            }</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 例题6 -->
+                <div class="card" id="section4-example2">
+                    <h3><span class="indicator indicator-example"></span>例题6：简单栈类模板</h3>
+                    <p>定义一个类模板 <code class="inline-code">Stack&lt;T&gt;</code>，内部用 <code class="inline-code">vector&lt;T&gt;</code> 存储，提供 <code class="inline-code">push</code>、<code class="inline-code">pop</code>、<code class="inline-code">top</code> 和 <code class="inline-code">empty</code> 方法，并写一个 <code class="inline-code">main</code> 测试 <code class="inline-code">int</code> 和 <code class="inline-code">string</code> 栈。</p>
+                    <div class="code-block-wrapper">
+                        <div class="code-block-header">
+                            <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+                            <span class="filename">stack_template.cpp</span>
+                        </div>
+                        <div class="code-block-body">
+                            <pre><code><span class="pp">#include</span> <span class="str">&lt;iostream&gt;</span>
+                                <span class="pp">#include</span> <span class="str">&lt;vector&gt;</span>
+                                <span class="pp">#include</span> <span class="str">&lt;string&gt;</span>
+                                <span class="pp">#include</span> <span class="str">&lt;stdexcept&gt;</span>
+                                <span class="kw">using</span> <span class="kw">namespace</span> std;
+
+                                <span class="kw">template</span> &lt;<span class="kw">typename</span> <span class="dt">T</span>&gt;
+                                <span class="kw">class</span> <span class="dt">Stack</span> {
+                                vector&lt;<span class="dt">T</span>&gt; elems;
+                                <span class="kw">public</span>:
+                                <span class="dt">void</span> <span class="fn">push</span>(<span class="kw">const</span> <span class="dt">T</span>&amp; val) { elems.<span class="fn">push_back</span>(val); }
+                                <span class="dt">void</span> <span class="fn">pop</span>() {
+                                    <span class="kw">if</span> (elems.<span class="fn">empty</span>()) <span class="kw">throw</span> <span class="fn">out_of_range</span>(<span class="str">"Stack empty"</span>);
+                                    elems.<span class="fn">pop_back</span>();
+                                }
+                                <span class="dt">T</span> <span class="fn">top</span>() <span class="kw">const</span> {
+                                    <span class="kw">if</span> (elems.<span class="fn">empty</span>()) <span class="kw">throw</span> <span class="fn">out_of_range</span>(<span class="str">"Stack empty"</span>);
+                                    <span class="kw">return</span> elems.<span class="fn">back</span>();
+                                }
+                                <span class="dt">bool</span> <span class="fn">empty</span>() <span class="kw">const</span> { <span class="kw">return</span> elems.<span class="fn">empty</span>(); }
+                            };
+
+                            <span class="dt">int</span> <span class="fn">main</span>() {
+                                Stack&lt;<span class="dt">int</span>&gt; intStack;
+                                intStack.<span class="fn">push</span>(<span class="num">10</span>);
+                                intStack.<span class="fn">push</span>(<span class="num">20</span>);
+                                cout &lt;&lt; intStack.<span class="fn">top</span>() &lt;&lt; endl;  <span class="cm">// 20</span>
+                                intStack.<span class="fn">pop</span>();
+                                cout &lt;&lt; intStack.<span class="fn">top</span>() &lt;&lt; endl;  <span class="cm">// 10</span>
+
+                                Stack&lt;string&gt; strStack;
+                                strStack.<span class="fn">push</span>(<span class="str">"hello"</span>);
+                                strStack.<span class="fn">push</span>(<span class="str">"world"</span>);
+                                cout &lt;&lt; strStack.<span class="fn">top</span>() &lt;&lt; endl;  <span class="cm">// world</span>
+                                <span class="kw">return</span> <span class="num">0</span>;
+                            }</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 底部提示 -->
+            <div style="text-align:center;padding:30px 0 10px;color:var(--text-muted);font-size:0.85rem;">
+                <p>💡 建议动手把代码敲一遍，并尝试修改参数、增加继承层次或重载运算符，加深理解。</p>
+                <p>⚠️ 考试时特别注意<strong>虚函数表在构造/析构阶段的行为</strong>、<strong>模板编译期的特性</strong>，以及<strong>运算符重载返回引用的时机</strong>。</p>
+                <p style="margin-top:12px;font-weight:600;color:var(--accent);">🎯 祝考试顺利！</p>
+            </div>
+        </main>
+
+        <!-- 返回顶部按钮 -->
+        <button class="back-to-top" id="backToTopBtn" aria-label="返回顶部">↑</button>
+
+        <script>
+            // ========== DOM 元素 ==========
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const mobileBtn = document.getElementById('mobileMenuBtn');
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            const navLinks = sidebar.querySelectorAll('a');
+
+            // ========== 移动端菜单切换 ==========
+            function openSidebar() {
+                sidebar.classList.add('open');
+                overlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            mobileBtn.addEventListener('click', () => {
+                if (sidebar.classList.contains('open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+            overlay.addEventListener('click', closeSidebar);
+            // 点击导航链接后关闭移动端侧边栏
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 860) {
+                        closeSidebar();
+                    }
+                });
+            });
+
+            // ========== 返回顶部按钮 ==========
+            function updateBackToTop() {
+                if (window.scrollY > 500) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            }
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            window.addEventListener('scroll', updateBackToTop, { passive: true });
+
+            // ========== 滚动高亮导航 ==========
+            function getCurrentSectionId() {
+                const scrollPos = window.scrollY + 100; // 偏移量，让高亮更自然
+                const allTargets = [];
+                navLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        const target = document.getElementById(href.substring(1));
+                        if (target) {
+                            allTargets.push({ id: href.substring(1), top: target.offsetTop, link: link });
+                        }
+                    }
+                });
+                // 按位置排序
+                allTargets.sort((a, b) => a.top - b.top);
+                let currentId = null;
+                for (let i = 0; i < allTargets.length; i++) {
+                    if (scrollPos >= allTargets[i].top) {
+                        currentId = allTargets[i].id;
+                    } else {
+                        break;
+                    }
+                }
+                return currentId;
+            }
+
+            function updateActiveNav() {
+                const currentId = getCurrentSectionId();
+                navLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href.substring(1) === currentId) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+            window.addEventListener('scroll', updateActiveNav, { passive: true });
+
+            // ========== 初始状态 ==========
+            updateBackToTop();
+            updateActiveNav();
+
+            // ========== 窗口大小变化时处理 ==========
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 860) {
+                    closeSidebar();
+                }
+            });
+        </script>
+    </body>
+    </html>
