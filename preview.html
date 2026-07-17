@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🍎 苹果果 · AI 学习伙伴</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   AppleGo Demo v3 — 会成长的伙伴
+   核心：活记忆引擎 + 时间维度 + 工具打通 + AI 主动
+   守 Manifesto：四页主导 + 更多聚合 + 建模隐藏叙事
+   ═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500&display=swap');
+
+:root {
+  --color-page:#f5f5f7; --color-page-secondary:#eeeef0;
+  --color-surface:#ffffff; --color-surface-alt:#fafafa; --color-surface-hover:#e8e8ec;
+  --color-ink-primary:#1c1c1e; --color-ink-secondary:#6c6c78; --color-ink-muted:#a0a0ab; --color-ink-link:#0a84ff;
+  --color-accent:#0a84ff; --color-accent-hover:#0070e0; --color-accent-soft:rgba(10,132,255,.08); --color-accent-glow:rgba(10,132,255,.12);
+  --color-success:#34c759; --color-success-soft:rgba(52,199,89,.12);
+  --color-warning:#ff9f0a; --color-warning-soft:rgba(255,159,10,.12);
+  --color-danger:#ff3b30; --color-danger-soft:rgba(255,59,48,.10);
+  --color-purple:#af52de; --color-purple-soft:rgba(175,82,222,.10);
+  --color-teal:#5ac8fa; --color-teal-soft:rgba(90,200,250,.12);
+  --color-pink:#ff2d92; --color-pink-soft:rgba(255,45,146,.10);
+  --color-divider:#e5e5ea; --color-divider-hover:#d1d1d6; --color-divider-soft:#f0f0f2;
+  --color-ai-msg:#f7f3ea; --color-ai-msg-strong:#efe9d8; --color-user-msg:#ebe7dd;
+  --radius-sm:8px; --radius-md:14px; --radius-lg:18px; --radius-xl:24px; --radius-full:9999px;
+  --space-1:4px; --space-2:8px; --space-3:14px; --space-4:18px; --space-5:28px; --space-6:36px; --space-8:56px;
+  --font-sans:'Inter','Noto Sans SC',system-ui,-apple-system,sans-serif;
+  --font-serif:'Noto Serif SC','Iowan Old Style',serif;
+  --font-mono:'SF Mono','JetBrains Mono',monospace;
+  --ease-out:cubic-bezier(0,0,0.2,1); --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --bottom-nav-height:68px; --content-max:560px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{font-family:var(--font-sans);background:var(--color-page);color:var(--color-ink-primary);min-height:100vh;line-height:1.6;overflow-x:hidden;padding-bottom:var(--bottom-nav-height)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea{font-family:inherit}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-ink-muted);border-radius:3px}
+::selection{background:rgba(10,132,255,.15)}
+
+/* 演示控制条 */
+#demo-bar{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(28,28,30,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius-full);padding:6px 8px;display:flex;align-items:center;gap:4px;box-shadow:0 4px 24px rgba(0,0,0,.18);font-size:12px;color:#e5e5ea;max-width:calc(100vw - 24px);transition:all .2s var(--ease-out)}
+#demo-bar.collapsed{padding:6px 10px}#demo-bar.collapsed .demo-bar-content{display:none}
+.demo-bar-content{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
+.demo-bar-label{color:#8e8e93;padding:0 6px;font-size:11px;white-space:nowrap}
+.demo-chip{padding:5px 11px;border-radius:var(--radius-full);font-size:11.5px;color:#c7c7cc;transition:all .15s var(--ease-out);white-space:nowrap;font-weight:500}
+.demo-chip:hover{background:rgba(255,255,255,.08);color:#fff}
+.demo-chip.active{background:var(--color-accent);color:#fff}
+.demo-bar-toggle{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#8e8e93;font-size:13px;flex-shrink:0}
+.demo-bar-toggle:hover{background:rgba(255,255,255,.08);color:#fff}
+.demo-bar-divider{width:1px;height:16px;background:rgba(255,255,255,.12);margin:0 2px}
+
+/* 底部导航 */
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--bottom-nav-height);background:rgba(255,255,255,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--color-divider);display:flex;justify-content:center;align-items:center;gap:var(--space-6);z-index:100;padding-bottom:env(safe-area-inset-bottom,0)}
+.nav-tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--color-ink-muted);font-size:10.5px;font-weight:500;padding:8px 10px;border-radius:var(--radius-md);transition:color .15s var(--ease-out);min-width:56px}
+.nav-tab:hover{color:var(--color-ink-secondary)}
+.nav-tab.active{color:var(--color-accent)}
+.nav-tab svg{width:24px;height:24px}
+
+/* 主区 */
+#app{max-width:var(--content-max);margin:0 auto;padding:76px var(--space-4) var(--space-6);min-height:100vh}
+.card{background:var(--color-surface);border-radius:var(--radius-lg);box-shadow:0 1px 3px rgba(0,0,0,.04),0 0 0 1px var(--color-divider-soft);padding:var(--space-5)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 28px;font-size:15px;font-weight:600;border-radius:var(--radius-full);transition:all .15s var(--ease-out);min-height:48px}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--color-accent);color:#fff;box-shadow:0 4px 14px var(--color-accent-glow)}
+.btn-primary:hover{background:var(--color-accent-hover)}.btn-primary:disabled{opacity:.6}
+.btn-outline{background:transparent;color:var(--color-ink-primary);box-shadow:inset 0 0 0 1.5px var(--color-divider)}
+.btn-outline:hover{background:var(--color-surface-alt)}
+.btn-lg{padding:15px 36px;font-size:16px}
+.text-link{color:var(--color-ink-muted);font-size:13px;padding:8px 12px;transition:color .15s;background:none}
+.text-link:hover{color:var(--color-ink-secondary)}
+.input-field{width:100%;background:var(--color-surface);border:1.5px solid var(--color-divider);border-radius:var(--radius-md);padding:14px 16px;font-size:15px;color:var(--color-ink-primary);transition:border-color .15s;outline:none}
+.input-field:focus{border-color:var(--color-accent)}.input-field::placeholder{color:var(--color-ink-muted)}
+
+/* TODAY */
+.today-quote{font-family:var(--font-serif);font-size:13px;color:var(--color-ink-muted);text-align:center;margin-bottom:var(--space-4);font-style:italic;line-height:1.7}
+.today-greeting{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.today-date{font-size:14px;color:var(--color-ink-muted);margin-bottom:var(--space-5)}
+.today-observation{font-size:15px;line-height:1.7;color:var(--color-ink-secondary);margin-bottom:var(--space-5)}
+.focus-card{margin-bottom:var(--space-5)}
+.focus-card .focus-label{font-size:12px;color:var(--color-ink-muted);margin-bottom:6px;font-weight:500}
+.focus-card .focus-title{font-size:20px;font-weight:600;margin-bottom:8px;line-height:1.3}
+.focus-card .focus-desc{font-size:14px;color:var(--color-ink-secondary);margin-bottom:12px}
+.focus-meta{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--color-ink-muted)}
+.focus-meta svg{width:14px;height:14px}
+.after-plan{font-size:14px;color:var(--color-ink-secondary);margin-bottom:var(--space-6);line-height:1.7}
+.cta-block{display:flex;flex-direction:column;align-items:center;gap:10px}
+.cta-hint{font-size:12px;color:var(--color-ink-muted)}
+.today-tools{display:flex;gap:10px;margin:var(--space-5) 0;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.today-tools::-webkit-scrollbar{display:none}
+.tool-quick{flex-shrink:0;display:flex;align-items:center;gap:8px;background:var(--color-surface);border-radius:var(--radius-md);padding:12px 14px;box-shadow:0 0 0 1px var(--color-divider-soft);transition:all .15s}
+.tool-quick:hover{box-shadow:0 0 0 1.5px var(--color-divider-hover);transform:translateY(-1px)}
+.tool-quick .tq-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.tool-quick .tq-text strong{display:block;font-weight:600;color:var(--color-ink-primary);font-size:13px}
+.tool-quick .tq-text span{color:var(--color-ink-muted);font-size:11.5px}
+.welcome-hero{text-align:center;padding:var(--space-8) var(--space-4)}
+.welcome-hero .apple{font-size:56px;margin-bottom:var(--space-4);display:block}
+.welcome-hero h1{font-size:26px;font-weight:700;margin-bottom:var(--space-3);letter-spacing:-.02em}
+.welcome-hero p{font-size:15px;color:var(--color-ink-secondary);line-height:1.7;max-width:360px;margin:0 auto var(--space-6)}
+/* 记忆变化提示(学完后苹果果说的新洞察) */
+.memory-pulse{margin:var(--space-4) 0;padding:14px 16px;background:linear-gradient(135deg,var(--color-accent-soft),transparent);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);display:flex;gap:10px;align-items:flex-start;animation:msgIn .4s var(--ease-spring)}
+.memory-pulse .mp-icon{font-size:18px;flex-shrink:0}
+.memory-pulse .mp-text{font-size:13.5px;line-height:1.6;color:var(--color-ink-primary)}
+.memory-pulse .mp-text strong{color:var(--color-accent)}
+
+/* SESSION */
+#session-overlay{position:fixed;inset:0;background:var(--color-page);z-index:200;display:none;flex-direction:column;animation:sessionEnter .3s var(--ease-out)}
+#session-overlay.active{display:flex}
+@keyframes sessionEnter{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.session-topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--color-divider);padding:14px var(--space-4);display:flex;align-items:center;gap:var(--space-3);padding-top:calc(14px + env(safe-area-inset-top,0))}
+.session-back{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--color-ink-secondary);flex-shrink:0;transition:background .15s}
+.session-back:hover{background:var(--color-surface-hover)}
+.session-title{flex:1;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-tools-trigger{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--color-ink-secondary);transition:all .15s;position:relative}
+.session-tools-trigger:hover{background:var(--color-surface-hover);color:var(--color-ink-primary)}
+.session-tools-trigger.active{background:var(--color-accent-soft);color:var(--color-accent)}
+.session-tools-trigger .nudge{position:absolute;top:-2px;right:-2px;background:var(--color-accent);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:none;place-items:center;animation:pulse 1.5s infinite}
+.session-tools-trigger .nudge.show{display:grid}
+.pomodoro-badge{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--color-danger);display:none}
+.pomodoro-badge.running{display:block;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.session-stages{display:flex;gap:4px;align-items:center}
+.stage-dot{width:6px;height:6px;border-radius:50%;background:var(--color-divider);transition:all .3s var(--ease-out)}
+.stage-dot.active{background:var(--color-accent);width:18px;border-radius:3px}
+.stage-dot.done{background:var(--color-accent)}
+.session-progress{height:3px;background:var(--color-divider-soft);position:relative}
+.session-progress-fill{position:absolute;left:0;top:0;bottom:0;background:var(--color-accent);border-radius:0 3px 3px 0;transition:width .5s var(--ease-out)}
+.session-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.stage-center{flex:1;display:flex;flex-direction:column;justify-content:center;padding:var(--space-6) var(--space-5);max-width:var(--content-max);margin:0 auto;width:100%}
+.stage-center .ai-quote{font-size:19px;line-height:1.6;font-weight:500;margin-bottom:var(--space-5);letter-spacing:-.01em}
+.last-session-card{background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-5);margin-bottom:var(--space-6);box-shadow:0 0 0 1px var(--color-divider-soft)}
+.last-session-card .label{font-size:12px;color:var(--color-ink-muted);margin-bottom:6px}
+.last-session-card .title{font-size:18px;font-weight:600;margin-bottom:8px}
+.last-session-card .skills{font-size:12px;color:var(--color-ink-muted)}
+.conversation{flex:1;display:flex;flex-direction:column;max-width:var(--content-max);margin:0 auto;width:100%;padding:var(--space-5) var(--space-5) var(--space-3)}
+.msg-list{flex:1;display:flex;flex-direction:column;gap:var(--space-4);padding-bottom:var(--space-4)}
+.msg{display:flex;gap:10px;align-items:flex-end;animation:msgIn .3s var(--ease-out)}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:13px;font-weight:600}
+.msg.ai .msg-avatar{background:linear-gradient(135deg,#c4a3d4 0%,#7a5a8c 100%);color:#fff}
+.msg.user{flex-direction:row-reverse}
+.msg.user .msg-avatar{border-radius:8px;background:var(--color-accent);color:#fff}
+.msg-bubble{max-width:80%;padding:13px 16px;font-size:15px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--color-ai-msg);border-radius:3px 18px 18px 18px}
+.msg.user .msg-bubble{background:var(--color-user-msg);border-radius:18px 18px 3px 18px}
+.typing-cursor{display:inline-block;width:2px;height:1em;background:var(--color-ink-secondary);margin-left:2px;vertical-align:text-bottom;animation:blink .8s infinite}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+.thinking{display:flex;gap:4px;padding:4px 0}
+.thinking span{width:7px;height:7px;border-radius:50%;background:var(--color-ink-muted);animation:thinking 1.2s infinite}
+.thinking span:nth-child(2){animation-delay:.2s}.thinking span:nth-child(3){animation-delay:.4s}
+@keyframes thinking{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.embed-tool-card{margin-top:10px;background:var(--color-surface);border:1.5px dashed var(--color-divider);border-radius:var(--radius-md);padding:12px 14px;display:flex;align-items:center;gap:10px;animation:msgIn .3s var(--ease-out)}
+.embed-tool-card .et-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font-size:17px;flex-shrink:0}
+.embed-tool-card .et-text{flex:1;font-size:13px;color:var(--color-ink-secondary);line-height:1.5}
+.embed-tool-card .et-text strong{color:var(--color-ink-primary);display:block;font-size:13.5px;font-weight:600;margin-bottom:2px}
+.embed-tool-card .et-btn{font-size:12px;font-weight:600;color:var(--color-accent);padding:6px 12px;border-radius:var(--radius-full);background:var(--color-accent-soft);white-space:nowrap}
+.learn-input-bar{display:flex;gap:8px;padding:var(--space-3) var(--space-5);background:rgba(255,255,255,.88);backdrop-filter:blur(20px);border-top:1px solid var(--color-divider);max-width:var(--content-max);margin:0 auto;width:100%}
+.learn-input-bar input{flex:1;background:var(--color-surface);border:1.5px solid var(--color-divider);border-radius:var(--radius-full);padding:12px 18px;font-size:14px;outline:none;transition:border-color .15s}
+.learn-input-bar input:focus{border-color:var(--color-accent)}
+.learn-send{width:42px;height:42px;border-radius:50%;background:var(--color-accent);color:#fff;display:grid;place-items:center;flex-shrink:0;transition:all .15s}
+.learn-send:hover{background:var(--color-accent-hover)}
+.suggestion-row{display:flex;gap:8px;padding:0 var(--space-5) var(--space-3);flex-wrap:wrap;max-width:var(--content-max);margin:0 auto;width:100%}
+.suggestion-pill{background:var(--color-surface);border:1px solid var(--color-divider);border-radius:var(--radius-full);padding:8px 14px;font-size:13px;color:var(--color-ink-secondary);transition:all .15s}
+.suggestion-pill:hover{border-color:var(--color-ink-muted);color:var(--color-ink-primary)}
+.practice-box{padding:var(--space-4) var(--space-5) var(--space-3);max-width:var(--content-max);margin:0 auto;width:100%}
+.practice-question{background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-5);box-shadow:0 0 0 1px var(--color-divider-soft);margin-bottom:var(--space-4);animation:msgIn .3s var(--ease-out)}
+.practice-question .q-label{font-size:12px;color:var(--color-ink-muted);margin-bottom:8px;font-weight:500}
+.practice-question .q-text{font-size:16px;line-height:1.6;margin-bottom:var(--space-4)}
+.practice-question .q-code{font-family:var(--font-mono);background:var(--color-page-secondary);padding:14px;border-radius:var(--radius-md);font-size:13.5px;margin-bottom:var(--space-4);white-space:pre;overflow-x:auto}
+.q-options{display:flex;flex-direction:column;gap:10px}
+.q-option{background:var(--color-surface);border:1.5px solid var(--color-divider);border-radius:var(--radius-md);padding:14px 16px;font-size:15px;text-align:left;transition:all .15s var(--ease-out);font-family:var(--font-mono)}
+.q-option:hover:not(.locked){border-color:var(--color-ink-muted);background:var(--color-surface-alt)}
+.q-option.locked{cursor:default}
+.q-option.correct{border-color:var(--color-success);background:var(--color-success-soft)}
+.q-option.wrong{border-color:var(--color-danger);background:var(--color-danger-soft)}
+.feedback-bubble .verdict{font-weight:600;margin-bottom:4px}
+.feedback-bubble.ok .verdict{color:var(--color-success)}
+.feedback-bubble.nope .verdict{color:var(--color-warning)}
+.reflect-box{padding:var(--space-5);max-width:var(--content-max);margin:0 auto;width:100%}
+.reflect-prompt{font-size:19px;font-weight:500;margin-bottom:var(--space-2);letter-spacing:-.01em}
+.reflect-sub{font-size:14px;color:var(--color-ink-muted);margin-bottom:var(--space-5)}
+.reflect-textarea{width:100%;min-height:160px;background:var(--color-surface);border:1.5px solid var(--color-divider);border-radius:var(--radius-md);padding:16px;font-size:15px;font-family:var(--font-serif);line-height:1.8;resize:vertical;outline:none;transition:border-color .15s;margin-bottom:var(--space-4)}
+.reflect-textarea:focus{border-color:var(--color-accent)}
+.reflect-textarea::placeholder{color:var(--color-ink-muted);font-family:var(--font-sans)}
+.reflect-draft-btn{display:inline-flex;align-items:center;gap:6px;color:var(--color-accent);font-size:13px;font-weight:500;padding:8px 0;transition:opacity .15s}
+.reflect-draft-btn:hover{opacity:.7}
+.reflect-actions{display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-5)}
+.finish-hero{text-align:center}
+.finish-hero .ai-quote{font-family:var(--font-serif);font-size:21px;line-height:1.7;margin-bottom:var(--space-6);font-weight:400}
+
+/* 工具面板/托盘/全屏工具页(沿用 v2,精简) */
+.tool-tray-menu{position:fixed;top:60px;right:16px;background:var(--color-surface);border-radius:var(--radius-md);box-shadow:0 8px 32px rgba(0,0,0,.18);padding:6px;z-index:250;display:none;min-width:180px;animation:msgIn .2s var(--ease-out)}
+.tool-tray-menu.active{display:block}
+.tray-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:var(--radius-sm);transition:background .15s;width:100%;text-align:left}
+.tray-item:hover{background:var(--color-surface-hover)}
+.tray-item .ti-ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;flex-shrink:0}
+.tray-item .ti-tx{font-size:14px;font-weight:500}.tray-item .ti-tx span{display:block;font-size:11.5px;color:var(--color-ink-muted);font-weight:400}
+.tool-page{position:fixed;inset:0;background:var(--color-page);z-index:300;display:none;flex-direction:column;animation:sessionEnter .3s var(--ease-out)}
+.tool-page.active{display:flex}
+.tool-page-topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--color-divider);padding:14px var(--space-4);display:flex;align-items:center;gap:var(--space-3);padding-top:calc(14px + env(safe-area-inset-top,0))}
+.tool-page-title{flex:1;font-size:16px;font-weight:600}
+.tool-page-body{flex:1;overflow-y:auto}
+
+/* 「更多」工具箱 */
+.more-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.more-card{background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-5) var(--space-4);box-shadow:0 0 0 1px var(--color-divider-soft);transition:all .2s var(--ease-out);text-align:left;display:flex;flex-direction:column;gap:10px}
+.more-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06),0 0 0 1.5px var(--color-divider-hover);transform:translateY(-2px)}
+.more-card .mc-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px}
+.more-card .mc-title{font-size:15px;font-weight:600}
+.more-card .mc-desc{font-size:12.5px;color:var(--color-ink-muted);line-height:1.5}
+.more-section-title{font-size:12px;font-weight:600;color:var(--color-ink-muted);text-transform:uppercase;letter-spacing:.05em;margin:var(--space-5) 0 var(--space-3)}
+
+/* 闪卡 */
+.flashcard-stage{flex:1;display:flex;flex-direction:column;padding:var(--space-5);max-width:var(--content-max);margin:0 auto;width:100%}
+.flashcard-counter{text-align:center;font-size:13px;color:var(--color-ink-muted);margin-bottom:var(--space-4)}
+.flashcard{flex:1;display:flex;align-items:center;justify-content:center;perspective:1200px;cursor:pointer}
+.flashcard-inner{width:100%;min-height:280px;position:relative;transition:transform .6s var(--ease-out);transform-style:preserve-3d}
+.flashcard.flipped .flashcard-inner{transform:rotateY(180deg)}
+.flashcard-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--color-surface);border-radius:var(--radius-xl);box-shadow:0 4px 24px rgba(0,0,0,.08),0 0 0 1px var(--color-divider-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-6);text-align:center}
+.flashcard-face.back{transform:rotateY(180deg);background:var(--color-ai-msg)}
+.flashcard-face .fc-label{font-size:11px;color:var(--color-ink-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;font-weight:600}
+.flashcard-face .fc-content{font-size:19px;line-height:1.6;font-weight:500}
+.flashcard-face.back .fc-content{font-family:var(--font-serif);font-size:17px}
+.flashcard-actions{display:flex;gap:10px;padding-top:var(--space-5)}
+.fc-grade{flex:1;padding:13px;border-radius:var(--radius-md);font-size:14px;font-weight:600;transition:all .15s}
+.fc-grade:hover{transform:translateY(-1px)}
+.fc-grade.again{background:var(--color-danger-soft);color:var(--color-danger)}
+.fc-grade.hard{background:var(--color-warning-soft);color:var(--color-warning)}
+.fc-grade.good{background:var(--color-success-soft);color:var(--color-success)}
+.fc-grade.easy{background:var(--color-accent-soft);color:var(--color-accent)}
+.flashcard-done{text-align:center;padding:var(--space-8) var(--space-5)}
+.flashcard-done .fd-icon{font-size:48px;margin-bottom:20px}
+.flashcard-done h2{font-size:22px;font-weight:700;margin-bottom:10px}
+.flashcard-done p{font-size:15px;color:var(--color-ink-secondary);margin-bottom:var(--space-6);line-height:1.7}
+
+/* 阅读 */
+.reader{max-width:680px;margin:0 auto;padding:var(--space-6) var(--space-5)}
+.reader-meta{font-size:13px;color:var(--color-ink-muted);margin-bottom:8px}
+.reader h1.read-title{font-size:26px;font-weight:700;margin-bottom:var(--space-3);letter-spacing:-.01em;line-height:1.3}
+.reader .read-body{font-family:var(--font-serif);font-size:17px;line-height:1.9;color:var(--color-ink-primary)}
+.reader .read-body p{margin-bottom:var(--space-4)}
+.reader .read-body .highlighted{background:linear-gradient(transparent 60%,rgba(255,159,10,.25) 60%);padding:0 2px;cursor:pointer;position:relative}
+.reader .read-body .highlighted::after{content:'＋卡';position:absolute;top:-8px;right:-8px;background:var(--color-purple);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:none;place-items:center;font-family:var(--font-sans)}
+.reader .read-body .highlighted:hover::after{display:grid}
+.reader-ai-note{background:var(--color-ai-msg);border-radius:3px var(--radius-md) var(--radius-md) var(--radius-md);padding:var(--space-4);margin:var(--space-5) 0;font-family:var(--font-sans);font-size:14.5px;line-height:1.7;animation:msgIn .4s var(--ease-out)}
+.reader-ai-note .ran-head{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-ink-muted);margin-bottom:8px;font-weight:600}
+
+/* 语音 */
+.voice-room{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-6);text-align:center}
+.voice-orb{width:140px;height:140px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--color-accent),var(--color-accent-hover));display:grid;place-items:center;margin-bottom:var(--space-6);position:relative;transition:all .3s}
+.voice-orb::before,.voice-orb::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--color-accent);opacity:0}
+.voice-orb.speaking::before{animation:voiceRing 1.8s infinite}
+.voice-orb.speaking::after{animation:voiceRing 1.8s infinite .6s}
+@keyframes voiceRing{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.5);opacity:0}}
+.voice-orb .vo-icon{font-size:48px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.2))}
+.voice-status{font-size:16px;font-weight:600;margin-bottom:6px}
+.voice-hint{font-size:13px;color:var(--color-ink-muted);margin-bottom:var(--space-5)}
+.voice-wave{display:flex;align-items:center;gap:3px;height:32px;margin-bottom:var(--space-5)}
+.voice-wave span{width:3px;background:var(--color-accent);border-radius:2px}
+.voice-wave.idle span{height:4px;opacity:.3}
+.voice-wave.active span{animation:waveBar .9s infinite var(--ease-out)}
+@keyframes waveBar{0%,100%{height:6px}50%{height:28px}}
+.voice-transcript{max-width:420px;width:100%;text-align:left;background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:var(--space-4);min-height:80px;box-shadow:0 0 0 1px var(--color-divider-soft)}
+.voice-transcript .vt-line{font-size:14px;line-height:1.6;margin-bottom:8px}
+.voice-transcript .vt-line.ai strong{color:var(--color-accent)}
+.voice-transcript .vt-line.user strong{color:var(--color-ink-secondary)}
+.voice-controls{display:flex;gap:12px}
+.voice-btn{padding:12px 24px;border-radius:var(--radius-full);font-size:14px;font-weight:600;transition:all .15s}
+.voice-btn.primary{background:var(--color-accent);color:#fff}.voice-btn.primary:hover{background:var(--color-accent-hover)}
+.voice-btn.ghost{background:var(--color-surface);color:var(--color-ink-secondary);box-shadow:inset 0 0 0 1.5px var(--color-divider)}
+.voice-quick{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:420px;margin-top:var(--space-3)}
+
+/* 画布 */
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--color-page-secondary);background-image:radial-gradient(circle,var(--color-divider) 1px,transparent 1px);background-size:24px 24px}
+.canvas-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.canvas-svg path{stroke:var(--color-ink-muted);stroke-width:1.5;fill:none;stroke-dasharray:4 3}
+.canvas-node{position:absolute;background:var(--color-surface);border-radius:var(--radius-md);padding:12px 14px;box-shadow:0 2px 12px rgba(0,0,0,.08),0 0 0 1px var(--color-divider);cursor:grab;min-width:120px;transition:box-shadow .15s,transform .1s;user-select:none}
+.canvas-node:hover{box-shadow:0 4px 20px rgba(0,0,0,.12),0 0 0 1.5px var(--color-accent)}
+.canvas-node:active{cursor:grabbing}
+.canvas-node .cn-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.canvas-node .cn-icon{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-size:13px}
+.canvas-node .cn-title{font-size:13px;font-weight:600}
+.canvas-node .cn-sub{font-size:11.5px;color:var(--color-ink-muted)}
+.canvas-node.linked{border-left:3px solid var(--color-accent)}
+.canvas-node.new-node{animation:nodePop .4s var(--ease-spring);border-color:var(--color-success)}
+@keyframes nodePop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+.canvas-add{position:absolute;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--color-accent);color:#fff;display:grid;place-items:center;font-size:26px;box-shadow:0 4px 16px var(--color-accent-glow);z-index:5;transition:transform .15s}
+.canvas-add:hover{transform:scale(1.08)}
+.canvas-hint{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,.85);color:#fff;padding:7px 14px;border-radius:var(--radius-full);font-size:12px;backdrop-filter:blur(10px)}
+
+/* 手写 */
+.handwrite-pad{flex:1;background:var(--color-surface);position:relative;overflow:hidden}
+#handwrite-canvas{width:100%;height:100%;touch-action:none;cursor:crosshair;display:block}
+.handwrite-tools{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,.9);border-radius:var(--radius-full);padding:6px;display:flex;gap:4px;backdrop-filter:blur(10px)}
+.hw-tool{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#c7c7cc;transition:all .15s}
+.hw-tool:hover{background:rgba(255,255,255,.1);color:#fff}
+.hw-tool.active{background:var(--color-accent);color:#fff}
+.hw-color{width:24px;height:24px;border-radius:50%;border:2px solid #fff}
+
+/* 文件 */
+.file-list{padding:var(--space-4) var(--space-5);max-width:var(--content-max);margin:0 auto}
+.file-item{display:flex;align-items:center;gap:14px;background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-4);margin-bottom:10px;box-shadow:0 0 0 1px var(--color-divider-soft);transition:all .15s}
+.file-item:hover{box-shadow:0 0 0 1.5px var(--color-divider-hover);transform:translateY(-1px)}
+.file-item .fi-icon{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.file-item .fi-name{font-size:14.5px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-item .fi-meta{font-size:12px;color:var(--color-ink-muted)}
+
+/* 番茄 */
+.pomo-wrap{padding:var(--space-5);max-width:var(--content-max);margin:0 auto}
+.pomo-timer{text-align:center;padding:var(--space-6) 0}
+.pomo-clock{width:200px;height:200px;border-radius:50%;margin:0 auto var(--space-5);position:relative;background:var(--color-surface);box-shadow:0 0 0 1px var(--color-divider-soft),0 8px 32px rgba(0,0,0,.06);display:grid;place-items:center}
+.pomo-progress-ring{position:absolute;inset:0;transform:rotate(-90deg)}
+.pomo-progress-ring circle{fill:none;stroke-width:6}
+.pomo-progress-ring .track{stroke:var(--color-divider-soft)}
+.pomo-progress-ring .bar{stroke:var(--color-accent);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.pomo-time{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.pomo-label{font-size:13px;color:var(--color-ink-muted);margin-top:4px}
+.pomo-controls{display:flex;gap:10px;justify-content:center}
+.task-list-title{font-size:13px;font-weight:600;color:var(--color-ink-muted);text-transform:uppercase;letter-spacing:.05em;margin:var(--space-5) 0 var(--space-3)}
+.task-item{display:flex;align-items:center;gap:12px;background:var(--color-surface);border-radius:var(--radius-md);padding:14px var(--space-4);margin-bottom:8px;box-shadow:0 0 0 1px var(--color-divider-soft)}
+.task-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--color-divider);flex-shrink:0;display:grid;place-items:center;transition:all .15s;cursor:pointer}
+.task-check.done{background:var(--color-accent);border-color:var(--color-accent)}
+.task-check.done svg{display:block}
+.task-check svg{display:none;width:13px;height:13px;color:#fff}
+.task-item.done .task-text{text-decoration:line-through;color:var(--color-ink-muted)}
+.task-text{flex:1;font-size:14.5px}
+.task-tag{font-size:11px;padding:3px 8px;border-radius:var(--radius-full);background:var(--color-accent-soft);color:var(--color-accent);font-weight:600}
+
+/* 偏好 */
+.pref-group{background:var(--color-surface);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 0 0 1px var(--color-divider-soft);margin-bottom:var(--space-4)}
+.pref-row2{display:flex;justify-content:space-between;align-items:center;padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--color-divider-soft)}
+.pref-row2:last-child{border-bottom:none}
+.pref-row2 .pr-label{font-size:15px}
+.toggle{width:44px;height:26px;border-radius:var(--radius-full);background:var(--color-divider);position:relative;transition:background .2s;cursor:pointer}
+.toggle.on{background:var(--color-success)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s var(--ease-spring);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{transform:translateX(18px)}
+.quote-source-card{display:flex;align-items:flex-start;gap:10px;padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);margin-bottom:8px;box-shadow:0 0 0 1px var(--color-divider-soft)}
+.quote-source-card .qs-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:15px;flex-shrink:0}
+.quote-source-card .qs-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.quote-source-card .qs-desc{font-size:12px;color:var(--color-ink-muted)}
+
+/* Growth / Profile */
+.page-title{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-bottom:var(--space-5)}
+.growth-narrative{font-size:17px;line-height:1.7;font-family:var(--font-serif);padding:var(--space-5);background:var(--color-surface);border-radius:var(--radius-lg);box-shadow:0 0 0 1px var(--color-divider-soft);margin-bottom:var(--space-6)}
+.timeline{display:flex;flex-direction:column;gap:var(--space-3)}
+.timeline-item{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-4);box-shadow:0 0 0 1px var(--color-divider-soft);animation:msgIn .3s var(--ease-out)}
+.timeline-item.new-item{box-shadow:0 0 0 1.5px var(--color-accent),0 4px 14px var(--color-accent-glow)}
+.timeline-item .ti-time{font-size:12px;color:var(--color-ink-muted);margin-bottom:6px}
+.timeline-item .ti-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.timeline-item .ti-summary{font-size:14px;color:var(--color-ink-secondary);line-height:1.6}
+.profile-mirror{font-family:var(--font-serif);font-size:17px;line-height:1.85;padding:var(--space-5);background:var(--color-surface);border-radius:var(--radius-lg);box-shadow:0 0 0 1px var(--color-divider-soft);margin-bottom:var(--space-6)}
+.profile-mirror .highlight{background:linear-gradient(transparent 60%,var(--color-accent-soft) 60%);padding:0 2px}
+.profile-section{margin-bottom:var(--space-5)}
+.profile-section h3{font-size:13px;font-weight:600;color:var(--color-ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:var(--space-3)}
+.pref-grid{display:flex;flex-direction:column;gap:10px}
+.pref-row{display:flex;justify-content:space-between;align-items:center;background:var(--color-surface);padding:var(--space-4);border-radius:var(--radius-md);box-shadow:0 0 0 1px var(--color-divider-soft)}
+.pref-row .pref-label{font-size:14px;color:var(--color-ink-secondary)}
+.pref-row .pref-value{font-size:14px;font-weight:600}
+
+@media(max-width:480px){
+  #app{padding:72px var(--space-3) var(--space-5)}
+  .today-greeting{font-size:26px}.stage-center .ai-quote{font-size:17px}.finish-hero .ai-quote{font-size:19px}
+  .demo-chip{padding:4px 9px;font-size:11px}.demo-bar-label{padding:0 4px}.btn-lg{padding:14px 30px;font-size:15px}
+  #bottom-nav{gap:var(--space-3)}.nav-tab{min-width:50px;padding:8px 6px}
+}
+.fade-in{animation:fadeIn .4s var(--ease-out)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- 演示控制条:学科 + 时间维度 + 情景 -->
+<div id="demo-bar">
+  <button class="demo-bar-toggle" id="bar-toggle">▾</button>
+  <div class="demo-bar-content">
+    <span class="demo-bar-label">学科</span>
+    <button class="demo-chip active" data-subject="linear">线代</button>
+    <button class="demo-chip" data-subject="recursion">递归</button>
+    <span class="demo-bar-divider"></span>
+    <span class="demo-bar-label">时间</span>
+    <button class="demo-chip active" data-era="week1">第一周</button>
+    <button class="demo-chip" data-era="month1">一个月</button>
+    <button class="demo-chip" data-era="month3">三个月</button>
+    <span class="demo-bar-divider"></span>
+    <span class="demo-bar-label">情景</span>
+    <button class="demo-chip active" data-scene="continue">继续昨天</button>
+    <button class="demo-chip" data-scene="return">中断回来</button>
+  </div>
+</div>
+
+<main id="app"></main>
+
+<!-- Session 覆盖层 -->
+<div id="session-overlay">
+  <div class="session-topbar">
+    <button class="session-back" id="session-back"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="session-title" id="session-title">学习</div>
+    <button class="session-tools-trigger" id="tools-trigger" title="学习工具">
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2-2 2.5-2.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span class="nudge" id="tool-nudge">1</span>
+      <span class="pomodoro-badge" id="pomo-badge"></span>
+    </button>
+    <div class="session-stages" id="session-stages"></div>
+  </div>
+  <div class="session-progress"><div class="session-progress-fill" id="progress-fill"></div></div>
+  <div class="session-body" id="session-body"></div>
+</div>
+
+<div class="tool-tray-menu" id="tool-tray-menu"></div>
+<div id="tool-page-host"></div>
+
+<nav id="bottom-nav">
+  <button class="nav-tab active" data-page="today"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Today</span></button>
+  <button class="nav-tab" data-page="growth"><svg viewBox="0 0 24 24" fill="none"><path d="M3 17l6-6 4 4 8-8M14 7h7v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Growth</span></button>
+  <button class="nav-tab" data-page="profile"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Profile</span></button>
+  <button class="nav-tab" data-page="more"><svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="12" r="2" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="12" r="2" stroke="currentColor" stroke-width="1.8"/></svg><span>更多</span></button>
+</nav>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   活记忆引擎 (核心) —— 苹果果对你的理解,会真实演化
+   ═══════════════════════════════════════════════════════════════ */
+
+// 时间维度的记忆模板:不同时期,苹果果理解你的深度不同
+const ERA_MEMORY = {
+  week1: {
+    label: '第一周',
+    sessionsDone: 2,
+    streakWeeks: 1,
+    topics: { '矩阵': { mastery: 0.25, visits: 2, status: '刚开始' }, '矩阵乘法': { mastery: 0.15, visits: 1, status: '新朋友' } },
+    mood: '好奇', pressure: 0.2,
+    insights: [],
+    growthHistory: [
+      { time: '3 天前', title: '第一次学习', summary: '你打开了苹果果，从矩阵的基本概念开始。' },
+      { time: '昨天', title: '矩阵的定义', summary: '你理解了矩阵就是一组数的排列。' }
+    ]
+  },
+  month1: {
+    label: '一个月',
+    sessionsDone: 9,
+    streakWeeks: 4,
+    topics: { '矩阵': { mastery: 0.7, visits: 6, status: '比较熟了' }, '矩阵乘法': { mastery: 0.55, visits: 4, status: '正在巩固' }, '矩阵求逆': { mastery: 0.2, visits: 1, status: '新朋友' } },
+    mood: '稳定', pressure: 0.35,
+    insights: ['你对矩阵运算的感觉在变——从觉得抽象，到能自己算出来。', '你更喜欢先动手算一遍，再回来看定义。'],
+    growthHistory: [
+      { time: '4 周前', title: '矩阵的基本概念', summary: '你第一次接触矩阵。' },
+      { time: '3 周前', title: '矩阵的加减法', summary: '你觉得这部分比较直觉。' },
+      { time: '上周三', title: '矩阵乘法：从定义开始', summary: '你理解了行×列不是逐元素相乘。' },
+      { time: '昨天', title: '矩阵乘法的应用', summary: '你把规则亲手算了一遍。' }
+    ]
+  },
+  month3: {
+    label: '三个月',
+    sessionsDone: 28,
+    streakWeeks: 11,
+    topics: { '矩阵': { mastery: 0.9, visits: 18, status: '很稳' }, '矩阵乘法': { mastery: 0.85, visits: 12, status: '熟练' }, '矩阵求逆': { mastery: 0.6, visits: 5, status: '比较熟了' }, '行列式': { mastery: 0.5, visits: 4, status: '正在巩固' }, '特征值': { mastery: 0.2, visits: 1, status: '新朋友' } },
+    mood: '自信', pressure: 0.25,
+    insights: ['还记得你第一天说"我数学很差"吗。三个月，你完成了高数、线代的大半。', '你从绕着走，到现在会主动追问"为什么"。', '你每周二和周四学习时间最长。', '你最近状态比较稳，适合往深里走。'],
+    growthHistory: [
+      { time: '3 个月前', title: '你说：我数学很差', summary: '你带着不自信打开了苹果果。' },
+      { time: '2 个月前', title: '矩阵乘法', summary: '你理解了行×列的本质。' },
+      { time: '6 周前', title: '矩阵求逆', summary: '你开始觉得线性代数没那么可怕。' },
+      { time: '3 周前', title: '行列式', summary: '你把几何意义和代数规则连起来了。' },
+      { time: '昨天', title: '迈向特征值', summary: '你主动问起了下一步。' }
+    ]
+  }
+};
+
+// 当前活动记忆(深拷贝当前 era,演示中会演化)
+let mem = null;
+function loadEra(era) {
+  state.era = era;
+  mem = JSON.parse(JSON.stringify(ERA_MEMORY[era]));
+  // 深拷贝学科相关补充
+  applySubjectToMem();
+}
+function applySubjectToMem() {
+  // 递归学科时,把主题换成递归的(演示用)
+  if (state.subject === 'recursion' && mem) {
+    if (state.era === 'week1') {
+      mem.topics = { '函数': { mastery: 0.3, visits: 2, status: '刚开始' }, '递归': { mastery: 0.1, visits: 1, status: '完全不懂' } };
+      mem.insights = [];
+      mem.growthHistory = [
+        { time: '3 天前', title: '第一次学习', summary: '你从函数的基本概念开始。' },
+        { time: '昨天', title: '递归：完全不懂', summary: '你说递归"完全不懂"。没关系，从头开始。' }
+      ];
+    } else if (state.era === 'month1') {
+      mem.topics = { '函数': { mastery: 0.75, visits: 7, status: '熟练' }, '递归': { mastery: 0.5, visits: 4, status: '正在巩固' }, '递归优化': { mastery: 0.15, visits: 1, status: '新朋友' } };
+      mem.insights = ['还记得你第一天说递归"完全不懂"吗。这一个月，你能自己算出 fib(5) 了。', '你更喜欢用具体例子学抽象概念。'];
+      mem.growthHistory = [
+        { time: '4 周前', title: '函数基础', summary: '你弄清了参数和返回值。' },
+        { time: '2 周前', title: '递归：从完全不懂开始', summary: '你理解了基线条件。' },
+        { time: '昨天', title: '用斐波那契理解递归', summary: '你亲手算出了 fib(5)。' }
+      ];
+    } else {
+      mem.topics = { '函数': { mastery: 0.9, visits: 20, status: '很稳' }, '递归': { mastery: 0.8, visits: 14, status: '熟练' }, '递归优化': { mastery: 0.55, visits: 5, status: '比较熟了' }, '动态规划': { mastery: 0.2, visits: 1, status: '新朋友' } };
+      mem.insights = ['三个月前你说递归"完全不懂"。今天你在用递归帮别人解题。', '你从绕着走，到主动用递归思考。', '你最近压力小了一些，节奏可以放慢点。'];
+      mem.growthHistory = [
+        { time: '3 个月前', title: '你说：递归完全不懂', summary: '你从零开始。' },
+        { time: '2 个月前', title: '理解基线条件', summary: '递归在你眼里不再神秘。' },
+        { time: '6 周前', title: '斐波那契与递归树', summary: '你看到了递归怎么拆开。' },
+        { time: '昨天', title: '迈向动态规划', summary: '你主动问起递归的下一步。' }
+      ];
+    }
+  }
+}
+
+/* 叙事生成器:从记忆生成 Today/Profile/Growth 的文案 */
+const Narrative = {
+  todayObservation(subject, scene) {
+    const d = DATA[subject];
+    // 新用户场景
+    if (scene === 'new' || mem.sessionsDone === 0) return `你想从什么开始？我还不太了解你，学几次就熟了。`;
+    // 中断回来
+    if (scene === 'return') {
+      const lastTopic = subject === 'linear' ? '梯度下降' : '循环';
+      return `好久不见。上次我们在学${lastTopic}。我一直在这里。`;
+    }
+    // 基于记忆深度生成
+    const topic = subject === 'linear' ? '矩阵乘法' : '递归';
+    const t = mem.topics[topic] || { mastery: 0, status: '新朋友' };
+    if (mem.sessionsDone <= 2) {
+      return `昨天我们刚一起接触了${topic}。今天从这里继续吗？`;
+    }
+    if (t.mastery < 0.4) {
+      return `昨天我们一起开始了${topic}。这是个新朋友，慢慢来。`;
+    }
+    if (t.mastery < 0.7) {
+      return `昨天你在${topic}上又近了一步。今天继续巩固吗？`;
+    }
+    return `昨天你又练了${topic}，已经很稳了。今天往深走一步？`;
+  },
+  profileMirror(subject) {
+    const lines = [];
+    const topic = subject === 'linear' ? '矩阵乘法' : '递归';
+    // 起点对比(深度越深,对比越强烈)
+    if (mem.sessionsDone <= 2) {
+      lines.push(`我们刚开始。你最近在学<span class="highlight">${topic}</span>，我还在慢慢了解你的节奏。`);
+    } else if (mem.sessionsDone < 15) {
+      if (subject === 'linear') {
+        lines.push(`你<span class="highlight">一开始觉得矩阵乘法很抽象</span>，到现在能自己算出结果。`);
+      } else {
+        lines.push(`还记得你第一天说递归<span class="highlight">"完全不懂"</span>吗。这一个月，你能自己算出 fib(5)。`);
+      }
+      lines.push(`你更喜欢${subject === 'linear' ? '先动手算一遍，再回来看定义' : '用具体例子学抽象概念'}。`);
+    } else {
+      if (subject === 'linear') {
+        lines.push(`三个月前你说<span class="highlight">"我数学很差"</span>。今天你完成了高数、线代的大半。`);
+      } else {
+        lines.push(`三个月前你说递归<span class="highlight">"完全不懂"</span>。今天你在用递归帮别人解题。`);
+      }
+      lines.push(`你从绕着走，到现在会主动追问"为什么"。你每周二和周四学习时间最长。`);
+    }
+    // 心情/压力(学习状态·隐藏建模)
+    if (mem.pressure > 0.5) lines.push(`你最近好像有点紧，节奏可以放慢一点。`);
+    else if (mem.sessionsDone > 5) lines.push(`你最近状态比较稳，适合往深里走。`);
+    return lines.join(' ');
+  },
+  growthNarrative(subject) {
+    const topic = subject === 'linear' ? '矩阵运算' : '递归';
+    if (mem.sessionsDone <= 2) return `这是我们刚开始的样子。每一次学习，我都会更了解你一点。`;
+    if (mem.sessionsDone < 15) return `这一个月，你对${topic}的感觉在变。从觉得难，到慢慢上手。`;
+    return `三个月。你对${topic}的感觉完全不一样了。这不是分数能说的，是你真真切切走过来的。`;
+  },
+  profilePrefs(subject) {
+    const style = subject === 'linear' ? '先实践，再看理论' : '先看例子，再看定义';
+    return [
+      { label: '学习方式', value: style },
+      { label: '学习节奏', value: `本周 ${Math.min(mem.streakWeeks, 5)} 天左右` },
+      { label: '最近在学', value: subject === 'linear' ? '线性代数' : '编程·递归' },
+      { label: '已经一起走过', value: `${mem.sessionsDone} 次学习` }
+    ];
+  },
+  newInsightAfterSession(subject) {
+    // 学完后生成一句新洞察,体现"又懂你一点"
+    const topic = subject === 'linear' ? '矩阵乘法' : '递归';
+    const pool = [
+      `这次你对${topic}又熟了一点。我记下了。`,
+      `你今天在${topic}上没有卡太久，比上次顺。`,
+      `我注意到你今天主动追问了"为什么"。这个习惯很好。`,
+      `今天的${topic}，你算得更稳了。`
+    ];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   全局状态
+   ═══════════════════════════════════════════════════════════════ */
+const state = {
+  page: 'today', subject: 'linear', scene: 'continue', era: 'week1',
+  session: { active: false, stage: null, practiceAnswered: false, reflectionText: '', learnTurn: 0, toolNudged: false, cardCreatedThisSession: false, stuckSignal: false },
+  flashcards: { idx: 0 },
+  voice: { speaking: false },
+  pomo: { running: false, seconds: 25*60 },
+  tasks: [
+    { text: '继续矩阵乘法练习', tag: '数学', done: false },
+    { text: '复习闪卡', tag: '记忆', done: true },
+    { text: '读《线性代数》第 3 章', tag: '阅读', done: false }
+  ],
+  prefs: { quote: true, serif: true, source: true },
+  customCards: [],   // 用户从阅读/练习创建的闪卡
+  newInsight: null   // 学完后要展示的新洞察
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   学科数据(对话/题目/卡片素材)
+   ═══════════════════════════════════════════════════════════════ */
+const DATA = {
+  linear: {
+    name: '线性代数', missionTitle: '理解矩阵乘法',
+    learnConversation: [
+      { text: '昨天我们停在矩阵乘法的定义。今天我想和你一起把它用起来。' },
+      { text: '矩阵乘法不是把对应位置的数字相乘。它是「用一个矩阵的行，去乘另一个矩阵的列」。' }
+    ],
+    learnSuggestions: ['为什么是行乘列？', '能举个具体例子吗', '我懂了'],
+    learnReply: {
+      '为什么是行乘列？': '行代表一组系数，列代表一组被组合的量。行乘列，本质是在做线性组合。这也是为什么矩阵乘法不可交换。有道理吗？',
+      '能举个具体例子吗': '比如 A 是 1×3、B 是 3×1。结果是一个数，等于 A 的第一行点乘 B 的第一列。有道理吗？',
+      'default': '矩阵乘法的几何意义是空间的线性变换。先把代数规则弄熟，几何直觉会慢慢长出来。有道理吗？'
+    },
+    practice: { question: 'C = A × B 的左上角 C₁₁ 是多少？', code: 'A = [1 2]    B = [5 6]\n    [3 4]        [7 8]\n\nC₁₁ = 第一行点乘第一列', options: ['5','19','12','23'], correct: 1, okFeedback: '对。C₁₁ = 1×5 + 2×7 = 19。', nopeFeedback: 'C₁₁ 是 A 第一行 [1,2] 点乘 B 第一列 [5,7]，即 1×5+2×7=19。不是逐元素相乘。' },
+    reflectionDraft: '今天把矩阵乘法的「行×列」规则弄清楚了。之前以为是逐元素相乘，原来是线性组合。',
+    flashcards: [
+      { front: '矩阵乘法 C₁₁ 怎么算？', back: 'A 的第一行点乘 B 的第一列。\n不是逐元素相乘。' },
+      { front: '矩阵乘法满足交换律吗？', back: '通常不满足。\nA×B ≠ B×A。' },
+      { front: '什么情况下两个矩阵可以相乘？', back: 'A 的列数 = B 的行数。' }
+    ],
+    cardFromPractice: { front: '矩阵乘法 C₁₁ 怎么算？', back: 'A 第一行点乘 B 第一列。' },
+    cardFromReader: { front: '矩阵乘法的几何意义？', back: '线性变换的复合。\n所以不满足交换律。' },
+    readerTitle: '矩阵乘法的几何意义',
+    canvasStarterNodes: [
+      { icon:'📐', ic:'var(--color-accent-soft)', title:'矩阵', sub:'一组数的排列' },
+      { icon:'✖️', ic:'var(--color-purple-soft)', title:'矩阵乘法', sub:'行 × 列', linked:true },
+      { icon:'🔁', ic:'var(--color-warning-soft)', title:'线性变换', sub:'空间的改变' }
+    ]
+  },
+  recursion: {
+    name: '编程', missionTitle: '理解递归',
+    learnConversation: [
+      { text: '上次你说递归"完全不懂"。没关系，我们从一个最小的例子重新开始。' },
+      { text: '递归就是「一个函数，调用它自己」。它有一个出口，叫基线条件。到了基线条件，就不再调用自己。' }
+    ],
+    learnSuggestions: ['为什么不会无限循环？', '举斐波那契的例子', '我懂了'],
+    learnReply: {
+      '为什么不会无限循环？': '因为每次调用自己，问题都在变小。小到基线条件时直接返回——这就是递归停下来的地方。有道理吗？',
+      '举斐波那契的例子': 'fib(n) = fib(n-1) + fib(n-2)。基线是 fib(1)=fib(2)=1。算 fib(5) 会一路拆到 fib(1)，再一层层加回来。有道理吗？',
+      'default': '递归的妙处：你不用关心怎么算，只需要定义它和更小的自己什么关系。计算机替你重复。有道理吗？'
+    },
+    practice: { question: 'fib(1)=1, fib(2)=1, fib(n)=fib(n-1)+fib(n-2)。fib(5) 是多少？', code: 'fib(3)=2, fib(4)=3\nfib(5) = ?', options: ['3','5','8','13'], correct: 1, okFeedback: '对。fib(5)=fib(4)+fib(3)=3+2=5。', nopeFeedback: 'fib(5)=fib(4)+fib(3)=3+2=5。关键不是背结果，是看到它怎么拆开的。' },
+    reflectionDraft: '今天终于明白递归不是无限循环——每次调用问题都在变小，小到基线条件就停了。',
+    flashcards: [
+      { front: '递归的两个要素？', back: '1. 函数调用自己\n2. 基线条件（出口）' },
+      { front: 'fib(5) 等于多少？', back: '5\n= fib(4)+fib(3) = 3+2' },
+      { front: '为什么递归不会无限循环？', back: '每次调用问题都在变小，\n小到基线条件就返回。' }
+    ],
+    cardFromPractice: { front: '递归的两个要素？', back: '调用自己 + 基线条件。' },
+    cardFromReader: { front: '递归树是什么？', back: '把递归调用画成树状，\n能看出重复计算。' },
+    readerTitle: '递归树：把调用画出来',
+    canvasStarterNodes: [
+      { icon:'fn', ic:'var(--color-accent-soft)', title:'函数', sub:'参数与返回值' },
+      { icon:'🔁', ic:'var(--color-purple-soft)', title:'递归', sub:'自己调用自己', linked:true },
+      { icon:'🛑', ic:'var(--color-danger-soft)', title:'基线条件', sub:'递归的出口' }
+    ]
+  }
+};
+
+const SCENE_GREETING = { continue: '下午好', return: '好久不见', new: '' };
+const QUOTES = ['理解一个概念，比记住一百个更重要。','学习的节奏，是你自己的节奏。','今天少做一点，也是向前。','困惑是理解的开始。'];
+
+/* ═══════════════════════════════════════════════════════════════
+   TODAY
+   ═══════════════════════════════════════════════════════════════ */
+function renderToday() {
+  const d = DATA[state.subject];
+  const app = document.getElementById('app');
+  const dateStr = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const quote = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  const observation = Narrative.todayObservation(state.subject, state.scene);
+  const greeting = SCENE_GREETING[state.scene] || '下午好';
+  const isNew = state.scene === 'new' || mem.sessionsDone === 0;
+
+  // 苹果果主动准备的工具建议(基于记忆)
+  const topic = state.subject === 'linear' ? '矩阵乘法' : '递归';
+  const t = mem.topics[topic] || { status:'新朋友' };
+
+  const toolsHtml = `
+    <div class="today-tools">
+      <button class="tool-quick" onclick="openToolPage('flashcards')">
+        <div class="tq-icon" style="background:var(--color-purple-soft)">🧠</div>
+        <div class="tq-text"><strong>复习卡片</strong><span>${3 + state.customCards.length} 张待复习</span></div>
+      </button>
+      <button class="tool-quick" onclick="openToolPage('reader')">
+        <div class="tq-icon" style="background:var(--color-teal-soft)">📖</div>
+        <div class="tq-text"><strong>继续阅读</strong><span>还剩 12 分钟</span></div>
+      </button>
+      <button class="tool-quick" onclick="openToolPage('voice')">
+        <div class="tq-icon" style="background:var(--color-pink-soft)">🗣️</div>
+        <div class="tq-text"><strong>练口语</strong><span>10 分钟房间</span></div>
+      </button>
+    </div>`;
+
+  // 学完后的新洞察提示(体现"又懂你一点")
+  const insightHtml = state.newInsight ? `
+    <div class="memory-pulse">
+      <div class="mp-icon">🍎</div>
+      <div class="mp-text">${state.newInsight}</div>
+    </div>` : '';
+
+  if (isNew) {
+    app.innerHTML = `
+      ${state.prefs.quote ? `<p class="today-quote">「${quote}」</p>` : ''}
+      <div class="welcome-hero fade-in">
+        <span class="apple">🍎</span>
+        <h1>欢迎来到苹果果</h1>
+        <p>我是你的 AI 学习伙伴。开始第一次学习后，我会越来越了解你。</p>
+        <div class="cta-block">
+          <button class="btn btn-primary btn-lg" onclick="startSession('intro')">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            开始第一次学习
+          </button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const lastTitle = state.scene === 'return' ? (state.subject==='linear'?'梯度下降':'循环') : (state.subject==='linear'?'矩阵乘法：从定义到应用':'递归：从完全不懂开始');
+  const cta = state.scene === 'return' ? '从这里继续' : '继续昨天';
+
+  app.innerHTML = `
+    ${state.prefs.quote ? `<p class="today-quote">「${quote}」</p>` : ''}
+    <div class="fade-in">
+      <h1 class="today-greeting">🍎 ${greeting}</h1>
+      <p class="today-date">${dateStr}</p>
+      <p class="today-observation">${observation}</p>
+      ${insightHtml}
+      <div class="last-session-card">
+        <p class="label">${state.scene==='return'?'上次的学习':'昨天的学习'}</p>
+        <h2 class="title">${lastTitle}</h2>
+        <p class="skills">苹果果对你的理解：${t.status}</p>
+      </div>
+      ${toolsHtml}
+      <div class="cta-block">
+        <button class="btn btn-primary btn-lg" onclick="startSession('intro')">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          ${cta}
+        </button>
+        <button class="text-link" onclick="startSession('intro',true)">今天想学点别的</button>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SESSION
+   ═══════════════════════════════════════════════════════════════ */
+function startSession(stage, switchTopic) {
+  Object.assign(state.session, { active:true, stage: stage||'intro', practiceAnswered:false, reflectionText:'', learnTurn:0, toolNudged:false, cardCreatedThisSession:false, stuckSignal:false });
+  document.getElementById('session-overlay').classList.add('active');
+  document.getElementById('session-title').textContent = DATA[state.subject].missionTitle;
+  document.getElementById('tool-nudge').classList.remove('show');
+  renderSession();
+}
+function exitSession() {
+  Object.assign(state.session, { active:false, stage:null });
+  closeToolTray();
+  document.getElementById('session-overlay').classList.remove('active');
+  renderPage();
+}
+function renderSession() {
+  const stages = ['intro','learn','practice','reflect','finish'];
+  const idx = stages.indexOf(state.session.stage);
+  document.getElementById('session-stages').innerHTML = stages.slice(0,4).map((s,i)=>`<div class="stage-dot ${i<idx?'done':''} ${i===idx?'active':''}"></div>`).join('');
+  document.getElementById('progress-fill').style.width = (idx/4*100)+'%';
+  document.getElementById('session-body').innerHTML = '';
+  ({intro:renderIntro, learn:renderLearn, practice:renderPractice, reflect:renderReflect, finish:renderFinish}[state.session.stage]||renderIntro)();
+  document.getElementById('session-body').scrollTop = 0;
+}
+function renderIntro() {
+  const d = DATA[state.subject];
+  let firstLine;
+  if (state.scene==='new' || mem.sessionsDone===0) firstLine = '你想从什么开始？';
+  else if (state.scene==='return') firstLine = `好久不见。上次我们在做${state.subject==='linear'?'梯度下降':'循环'}。我一直在这里。`;
+  else {
+    const topic = state.subject==='linear'?'矩阵乘法':'递归';
+    const t = mem.topics[topic]||{status:'新朋友'};
+    firstLine = mem.sessionsDone<=2 ? `昨天我们刚接触了${topic}。今天从这里继续吗？` : `昨天你在${topic}上又近了一步（${t.status}）。今天继续吗？`;
+  }
+  document.getElementById('session-body').innerHTML = `
+    <div class="stage-center fade-in">
+      <p class="ai-quote">${firstLine}</p>
+      <div class="cta-block">
+        <button class="btn btn-primary btn-lg" onclick="goStage('learn')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>继续</button>
+        <button class="text-link" onclick="renderIntroSwitch()">今天想学点别的</button>
+      </div>
+    </div>`;
+}
+function renderIntroSwitch() {
+  document.getElementById('session-body').innerHTML = `
+    <div class="stage-center fade-in">
+      <p class="ai-quote">今天想学什么？</p>
+      <input type="text" class="input-field" placeholder="输入你想学的……（不填也行）" style="margin-bottom:20px;">
+      <div class="cta-block">
+        <button class="btn btn-primary btn-lg" onclick="goStage('learn')">开始学习</button>
+        <button class="text-link" onclick="renderIntro()">还是继续昨天</button>
+      </div>
+    </div>`;
+}
+function renderLearn() {
+  const d = DATA[state.subject];
+  document.getElementById('session-body').innerHTML = `
+    <div class="conversation">
+      <div class="msg-list" id="msg-list"></div>
+      <div class="suggestion-row" id="suggestions"></div>
+      <div class="learn-input-bar">
+        <input type="text" id="learn-input" placeholder="问苹果果……" onkeydown="if(event.key==='Enter')sendLearnMsg()">
+        <button class="learn-send" onclick="sendLearnMsg()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>`;
+  let i = 0;
+  const play = () => {
+    if (i < d.learnConversation.length) { appendTypingAI(d.learnConversation[i].text, ()=>{ i++; setTimeout(play, 400); }); }
+    else { showSuggestions(); scheduleToolNudge(); }
+  };
+  play();
+}
+// 苹果果主动递工具:Learn 开始一段时间后,工具按钮出现红点提示
+function scheduleToolNudge() {
+  if (state.session.toolNudged) return;
+  setTimeout(() => {
+    if (state.session.stage === 'learn' && !state.session.toolNudged) {
+      state.session.toolNudged = true;
+      document.getElementById('tool-nudge').classList.add('show');
+    }
+  }, 6000);
+}
+function showSuggestions() {
+  const d = DATA[state.subject];
+  document.getElementById('suggestions').innerHTML = d.learnSuggestions.map(s=>`<button class="suggestion-pill" onclick="sendLearnMsg('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
+}
+function appendTypingAI(text, onDone) {
+  const ml = document.getElementById('msg-list'); if (!ml) return;
+  const m = document.createElement('div'); m.className='msg ai';
+  m.innerHTML = `<div class="msg-avatar">🍎</div><div class="msg-bubble"><span class="thinking"><span></span><span></span><span></span></span></div>`;
+  ml.appendChild(m); ml.scrollTop = ml.scrollHeight;
+  const b = m.querySelector('.msg-bubble');
+  setTimeout(() => {
+    b.innerHTML=''; let i=0;
+    const type = () => {
+      if (i<=text.length) { b.innerHTML = text.slice(0,i)+'<span class="typing-cursor"></span>'; ml.scrollTop=ml.scrollHeight; i+=2; setTimeout(type, 22); }
+      else { b.innerHTML=text; if (onDone) onDone(); }
+    };
+    type();
+  }, 500);
+}
+function appendUserMsg(text) {
+  const ml = document.getElementById('msg-list'); if (!ml) return;
+  const m = document.createElement('div'); m.className='msg user';
+  m.innerHTML = `<div class="msg-avatar">你</div><div class="msg-bubble">${escapeHtml(text)}</div>`;
+  ml.appendChild(m); ml.scrollTop = ml.scrollHeight;
+}
+function sendLearnMsg(preset) {
+  const input = document.getElementById('learn-input');
+  const text = preset || input.value.trim(); if (!text) return;
+  if (!preset) input.value='';
+  document.getElementById('suggestions').innerHTML='';
+  appendUserMsg(text);
+  const d = DATA[state.subject];
+  const reply = d.learnReply[text] || d.learnReply['default'];
+  state.session.learnTurn++;
+  appendTypingAI(reply, () => {
+    // 第三轮后,苹果果主动建议用画布把概念摆开(工具打通)
+    if (state.session.learnTurn >= 2 && !state.session.toolNudged) {
+      state.session.toolNudged = true;
+      appendTypingAI('这个概念有点抽象。要不要把它在画布上摆开看？', () => {
+        document.getElementById('tool-nudge').classList.add('show');
+        const pr = document.getElementById('suggestions');
+        pr.innerHTML = `
+          <button class="suggestion-pill" onclick="goStage('practice')" style="border-color:var(--color-accent);color:var(--color-accent);font-weight:600">去练习</button>
+          <button class="suggestion-pill" onclick="openToolPage('canvas')">打开画布看看</button>
+          <button class="suggestion-pill" onclick="goStage('reflect')">今天就到这里</button>`;
+      });
+    } else {
+      const pr = document.getElementById('suggestions');
+      pr.innerHTML = `
+        <button class="suggestion-pill" onclick="goStage('practice')" style="border-color:var(--color-accent);color:var(--color-accent);font-weight:600">去练习</button>
+        <button class="suggestion-pill" onclick="goStage('reflect')">今天就到这里</button>`;
+    }
+  });
+}
+function renderPractice() {
+  const d = DATA[state.subject];
+  document.getElementById('session-body').innerHTML = `
+    <div class="practice-box">
+      <div class="practice-question">
+        <p class="q-label">练一练</p>
+        <p class="q-text">${d.practice.question}</p>
+        ${d.practice.code?`<pre class="q-code">${escapeHtml(d.practice.code)}</pre>`:''}
+        <div class="q-options">${d.practice.options.map((o,i)=>`<button class="q-option" onclick="answerPractice(${i})">${o}</button>`).join('')}</div>
+      </div>
+      <div id="feedback-area"></div>
+    </div>`;
+}
+function answerPractice(idx) {
+  if (state.session.practiceAnswered) return;
+  state.session.practiceAnswered = true;
+  const d = DATA[state.subject];
+  document.querySelectorAll('.q-option').forEach(o=>o.classList.add('locked'));
+  document.querySelectorAll('.q-option')[d.practice.correct].classList.add('correct');
+  const ok = idx === d.practice.correct;
+  if (!ok) document.querySelectorAll('.q-option')[idx].classList.add('wrong');
+  // 更新记忆:答对熟练度+,答错标记为"正在巩固"
+  updateMemoryFromPractice(ok);
+  const area = document.getElementById('feedback-area');
+  setTimeout(() => {
+    const m = document.createElement('div'); m.className='msg ai';
+    m.innerHTML = `<div class="msg-avatar">🍎</div><div class="msg-bubble feedback-bubble ${ok?'ok':'nope'}"><div class="verdict">${ok?'算对了。':'这里有点绕。'}</div>${ok?d.practice.okFeedback:d.practice.nopeFeedback}</div>`;
+    area.appendChild(m);
+    setTimeout(() => {
+      // 嵌入"做成卡片"(工具打通:练习→闪卡)
+      const embed = document.createElement('div'); embed.className='embed-tool-card';
+      embed.innerHTML = `
+        <div class="et-icon" style="background:var(--color-purple-soft)">🧠</div>
+        <div class="et-text"><strong>做成一张卡记住它</strong>${ok?'':'这个点容易绕，值得记住'}</div>
+        <button class="et-btn" onclick="createCardFromPractice(this)">＋ 创建</button>`;
+      area.appendChild(embed);
+      const actions = document.createElement('div'); actions.className='suggestion-row'; actions.style.paddingTop='8px';
+      actions.innerHTML = `<button class="suggestion-pill" onclick="state.session.practiceAnswered=false;renderPractice()">再来一道</button><button class="suggestion-pill" onclick="goStage('reflect')" style="border-color:var(--color-accent);color:var(--color-accent);font-weight:600">去反思</button>`;
+      area.appendChild(actions);
+      actions.scrollIntoView({behavior:'smooth',block:'end'});
+    }, 700);
+  }, 400);
+}
+function createCardFromPractice(btn) {
+  if (state.session.cardCreatedThisSession) return;
+  state.session.cardCreatedThisSession = true;
+  const d = DATA[state.subject];
+  state.customCards.push(d.cardFromPractice);
+  const card = btn.closest('.embed-tool-card');
+  card.innerHTML = `<div class="et-icon" style="background:var(--color-success-soft)">✓</div><div class="et-text" style="color:var(--color-success)">已经加进你的卡片了。下次复习会再见到。</div>`;
+}
+function renderReflect() {
+  document.getElementById('session-body').innerHTML = `
+    <div class="reflect-box fade-in">
+      <p class="reflect-prompt">今天你学到了什么？</p>
+      <p class="reflect-sub">写下你自己的理解。不写也行。</p>
+      <textarea class="reflect-textarea" id="reflect-text" placeholder="今天我对……有了新的理解……">${escapeHtml(state.session.reflectionText)}</textarea>
+      <button class="reflect-draft-btn" id="draft-btn" onclick="fillDraft()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>苹果果帮你整理</button>
+      <div class="reflect-actions"><button class="text-link" onclick="goStage('finish')">跳过</button><button class="btn btn-primary" onclick="submitReflection()">完成今天</button></div>
+    </div>`;
+}
+function fillDraft() {
+  const d = DATA[state.subject]; const ta = document.getElementById('reflect-text'); const btn = document.getElementById('draft-btn');
+  const text = d.reflectionDraft; ta.value=''; ta.focus(); let i=0;
+  const fill = () => { if (i<=text.length) { ta.value=text.slice(0,i); i+=2; setTimeout(fill, 14); } };
+  fill(); btn.style.opacity='0.4'; btn.onclick=null;
+}
+function submitReflection() { state.session.reflectionText = document.getElementById('reflect-text').value; goStage('finish'); }
+function renderFinish() {
+  document.getElementById('session-body').innerHTML = `
+    <div class="stage-center fade-in finish-hero">
+      <div style="font-size:48px;margin-bottom:24px">🍎</div>
+      <p class="ai-quote">今天就到这里。我会记住今天。</p>
+      <button class="btn btn-outline btn-lg" onclick="finishSession()">返回首页</button>
+    </div>`;
+}
+function finishSession() {
+  // 完成学习:更新记忆(这是"活记忆"的关键时刻)
+  updateMemoryFromSession();
+  state.newInsight = Narrative.newInsightAfterSession(state.subject);
+  exitSession();
+  navigateTo('today');
+}
+function goStage(s) { state.session.stage=s; renderSession(); }
+
+/* ═══════════════════════════════════════════════════════════════
+   记忆更新(活记忆核心)
+   ═══════════════════════════════════════════════════════════════ */
+function updateMemoryFromPractice(correct) {
+  const topic = state.subject==='linear'?'矩阵乘法':'递归';
+  if (!mem.topics[topic]) mem.topics[topic] = { mastery:0.1, visits:1, status:'新朋友' };
+  mem.topics[topic].mastery = Math.min(0.95, mem.topics[topic].mastery + (correct?0.08:0.02));
+  mem.topics[topic].visits = (mem.topics[topic].visits||0) + 1;
+  // 状态叙事更新
+  const m = mem.topics[topic].mastery;
+  mem.topics[topic].status = m<0.3?'新朋友':m<0.6?'正在巩固':m<0.85?'比较熟了':'很稳';
+  if (!correct) mem.pressure = Math.min(0.7, mem.pressure + 0.05);
+}
+function updateMemoryFromSession() {
+  const topic = state.subject==='linear'?'矩阵乘法':'递归';
+  if (!mem.topics[topic]) mem.topics[topic] = { mastery:0.15, visits:0, status:'新朋友' };
+  mem.topics[topic].visits = (mem.topics[topic].visits||0) + 1;
+  mem.sessionsDone = (mem.sessionsDone||0) + 1;
+  // 加一条新的 growth 记录(真实出现在 Growth 页)
+  const newRecord = {
+    time: '刚才',
+    title: state.subject==='linear' ? '矩阵乘法的练习' : '用斐波那契理解递归',
+    summary: state.subject==='linear' ? '你把行×列的规则亲手算了一遍。' : '你亲手算出了 fib(5)。'
+  };
+  // 避免重复加
+  if (!mem.growthHistory.find(g => g.time === '刚才')) mem.growthHistory.unshift(newRecord);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Session 工具托盘
+   ═══════════════════════════════════════════════════════════════ */
+function openToolTray() {
+  const menu = document.getElementById('tool-tray-menu');
+  if (menu.classList.contains('active')) { closeToolTray(); return; }
+  menu.innerHTML = `
+    <button class="tray-item" onclick="closeToolTray();openToolPage('pomodoro')"><div class="ti-ic" style="background:var(--color-danger-soft)">⏱️</div><div class="ti-tx">番茄钟<span>专注 25 分钟</span></div></button>
+    <button class="tray-item" onclick="closeToolTray();openToolPage('canvas')"><div class="ti-ic" style="background:var(--color-accent-soft)">🧩</div><div class="ti-tx">无限画布<span>把概念摆开看</span></div></button>
+    <button class="tray-item" onclick="closeToolTray();openToolPage('handwrite')"><div class="ti-ic" style="background:var(--color-warning-soft)">✏️</div><div class="ti-tx">手写笔记<span>随手演算</span></div></button>
+    <button class="tray-item" onclick="closeToolTray();openToolPage('files')"><div class="ti-ic" style="background:var(--color-teal-soft)">📄</div><div class="ti-tx">知识文件<span>相关资料</span></div></button>`;
+  menu.classList.add('active');
+}
+function closeToolTray() { document.getElementById('tool-tray-menu').classList.remove('active'); }
+
+/* ═══════════════════════════════════════════════════════════════
+   「更多」
+   ═══════════════════════════════════════════════════════════════ */
+function renderMore() {
+  document.getElementById('app').innerHTML = `
+    <div class="fade-in">
+      <h1 class="page-title">我的学习工具箱</h1>
+      <div class="more-grid">
+        <button class="more-card" onclick="openToolPage('reader')"><div class="mc-icon" style="background:var(--color-teal-soft)">📖</div><div><div class="mc-title">阅读</div><div class="mc-desc">划线就能做卡片</div></div></button>
+        <button class="more-card" onclick="openToolPage('voice')"><div class="mc-icon" style="background:var(--color-pink-soft)">🗣️</div><div><div class="mc-title">语音房间</div><div class="mc-desc">和 AI 练口语</div></div></button>
+        <button class="more-card" onclick="openToolPage('flashcards')"><div class="mc-icon" style="background:var(--color-purple-soft)">🧠</div><div><div class="mc-title">卡片</div><div class="mc-desc">FSRS 记忆调度</div></div></button>
+        <button class="more-card" onclick="openToolPage('canvas')"><div class="mc-icon" style="background:var(--color-accent-soft)">🧩</div><div><div class="mc-title">画布</div><div class="mc-desc">把概念连起来</div></div></button>
+        <button class="more-card" onclick="openToolPage('handwrite')"><div class="mc-icon" style="background:var(--color-warning-soft)">✏️</div><div><div class="mc-title">手写</div><div class="mc-desc">随手演算</div></div></button>
+        <button class="more-card" onclick="openToolPage('files')"><div class="mc-icon" style="background:var(--color-teal-soft)">📄</div><div><div class="mc-title">文件</div><div class="mc-desc">知识文件</div></div></button>
+        <button class="more-card" onclick="openToolPage('pomodoro')"><div class="mc-icon" style="background:var(--color-danger-soft)">⏱️</div><div><div class="mc-title">番茄钟</div><div class="mc-desc">规划与追踪</div></div></button>
+        <button class="more-card" onclick="openToolPage('preferences')"><div class="mc-icon" style="background:var(--color-divider-soft)">⚙️</div><div><div class="mc-title">偏好</div><div class="mc-desc">一言、信息源</div></div></button>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   全屏工具页
+   ═══════════════════════════════════════════════════════════════ */
+function openToolPage(type) {
+  const host = document.getElementById('tool-page-host');
+  host.innerHTML = `<div class="tool-page active"><div class="tool-page-topbar"><button class="session-back" onclick="closeToolPage()"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="tool-page-title" id="tp-title"></div><div style="width:36px"></div></div><div class="tool-page-body" id="tp-body"></div></div>`;
+  ({flashcards:initFlashcards, reader:initReader, voice:initVoice, canvas:initCanvas, handwrite:initHandwrite, files:initFiles, pomodoro:initPomodoro, preferences:initPreferences}[type]||(()=>{}))();
+}
+function closeToolPage() { document.getElementById('tool-page-host').innerHTML=''; }
+
+/* 闪卡(含用户自建卡片) */
+function initFlashcards() {
+  state.flashcards.idx = 0;
+  document.getElementById('tp-title').textContent = '复习卡片';
+  renderFlashcard();
+}
+function getAllCards() {
+  const d = DATA[state.subject];
+  const userCards = state.customCards.map(c => ({ front:c.front, back:c.back, custom:true }));
+  return [...d.flashcards, ...userCards];
+}
+function renderFlashcard() {
+  const cards = getAllCards();
+  if (state.flashcards.idx >= cards.length) {
+    document.getElementById('tp-body').innerHTML = `
+      <div class="flashcard-done fade-in">
+        <div class="fd-icon">🍎</div>
+        <h2>今天的卡片复习完了</h2>
+        <p>我会记住哪些你还不熟。下次这些卡片会再回来。</p>
+        <button class="btn btn-outline" onclick="closeToolPage()">返回</button>
+      </div>`;
+    return;
+  }
+  const c = cards[state.flashcards.idx];
+  document.getElementById('tp-body').innerHTML = `
+    <div class="flashcard-stage fade-in">
+      <div class="flashcard-counter">第 ${state.flashcards.idx+1} / ${cards.length} 张${c.custom?' · 你创建的':''}</div>
+      <div class="flashcard" id="fc" onclick="flipFlashcard()">
+        <div class="flashcard-inner">
+          <div class="flashcard-face front"><div class="fc-label">正面</div><div class="fc-content">${escapeHtml(c.front)}</div></div>
+          <div class="flashcard-face back"><div class="fc-label">记得吗</div><div class="fc-content">${escapeHtml(c.back).replace(/\n/g,'<br>')}</div></div>
+        </div>
+      </div>
+      <div class="flashcard-actions" id="fc-actions" style="display:none">
+        <button class="fc-grade again" onclick="gradeFlashcard()">忘了</button>
+        <button class="fc-grade hard" onclick="gradeFlashcard()">模糊</button>
+        <button class="fc-grade good" onclick="gradeFlashcard()">记得</button>
+        <button class="fc-grade easy" onclick="gradeFlashcard()">很熟</button>
+      </div>
+      <p style="text-align:center;font-size:12px;color:var(--color-ink-muted);margin-top:14px">点卡片翻面</p>
+    </div>`;
+}
+function flipFlashcard() {
+  const fc = document.getElementById('fc'); fc.classList.toggle('flipped');
+  document.getElementById('fc-actions').style.display = fc.classList.contains('flipped') ? 'flex' : 'none';
+}
+function gradeFlashcard() { state.flashcards.idx++; renderFlashcard(); }
+
+/* 阅读(划线→做卡片) */
+function initReader() {
+  const d = DATA[state.subject];
+  document.getElementById('tp-title').textContent = d.readerTitle;
+  document.getElementById('tp-body').innerHTML = `
+    <div class="reader fade-in">
+      <p class="reader-meta">还剩 12 分钟的阅读量</p>
+      <h1 class="read-title">${d.readerTitle}</h1>
+      <div class="read-body">
+        <p>${state.subject==='linear'?'矩阵乘法最容易被理解成「逐元素相乘」，但这是一个常见的误解。'+'它的真正含义，是<span class="highlighted" data-card="1">用一个矩阵的行，去乘另一个矩阵的列</span>。':'递归调用看起来像无限循环，其实不是。'+'每次调用，<span class="highlighted" data-card="1">问题都在变小</span>，小到基线条件就返回。'}</p>
+        <p>${state.subject==='linear'?'这种运算对应着线性变换的复合。这也解释了为什么矩阵乘法<span class="highlighted" data-card="2">不满足交换律</span>。':'把递归调用画成树状，能看出哪些计算是重复的。这就是<span class="highlighted" data-card="2">递归树</span>。'}</p>
+        <div class="reader-ai-note"><div class="ran-head">🍎 苹果果注意到你划了这段</div>这正是你之前卡过的地方。要不要做成一张卡，下次复习？</div>
+      </div>
+    </div>`;
+  // 划线→做卡片(工具打通)
+  setTimeout(() => {
+    document.querySelectorAll('.read-body .highlighted').forEach(el => {
+      el.addEventListener('click', () => {
+        if (el.dataset.used) return;
+        el.dataset.used = '1';
+        const d = DATA[state.subject];
+        state.customCards.push(d.cardFromReader);
+        el.style.background = 'linear-gradient(transparent 60%, rgba(175,82,222,.25) 60%)';
+        showToast('加进你的卡片了。下次复习会见到。');
+      });
+    });
+  }, 100);
+}
+
+/* 语音房间 */
+function initVoice() {
+  document.getElementById('tp-title').textContent = '口语练习房间';
+  document.getElementById('tp-body').innerHTML = `
+    <div class="voice-room fade-in">
+      <div class="voice-orb" id="voice-orb"><div class="vo-icon">🍎</div></div>
+      <div class="voice-status" id="voice-status">点下面开始对话</div>
+      <div class="voice-hint" id="voice-hint">苹果果会先说一句，你来接</div>
+      <div class="voice-wave idle" id="voice-wave">${'<span></span>'.repeat(9)}</div>
+      <div class="voice-transcript" id="voice-transcript"><div class="vt-line ai"><strong>苹果果：</strong>还没开始。准备好了点下面的按钮。</div></div>
+      <div class="voice-controls">
+        <button class="voice-btn primary" id="voice-toggle" onclick="toggleVoice()">开始对话</button>
+        <button class="voice-btn ghost" onclick="closeToolPage()">结束</button>
+      </div>
+      <div class="voice-quick" id="voice-quick" style="display:none">
+        <button class="suggestion-pill" onclick="voiceReply('我想介绍一下我自己')">介绍我自己</button>
+        <button class="suggestion-pill" onclick="voiceReply('今天天气怎么样')">聊聊天气</button>
+        <button class="suggestion-pill" onclick="voiceReply('我最近在学线性代数')">说说在学什么</button>
+      </div>
+    </div>`;
+}
+function toggleVoice() {
+  state.voice.speaking = !state.voice.speaking;
+  const orb=document.getElementById('voice-orb'), wave=document.getElementById('voice-wave'), status=document.getElementById('voice-status'), hint=document.getElementById('voice-hint'), btn=document.getElementById('voice-toggle'), quick=document.getElementById('voice-quick');
+  if (state.voice.speaking) {
+    orb.classList.add('speaking'); wave.classList.remove('idle'); wave.classList.add('active');
+    status.textContent='苹果果在说……'; hint.textContent='它在等你接话'; btn.textContent='我说一句'; quick.style.display='flex';
+    appendVoiceLine('ai', 'Hello. Tell me, what are you studying these days?');
+  } else {
+    orb.classList.remove('speaking'); wave.classList.add('idle'); wave.classList.remove('active');
+    status.textContent='暂停了'; hint.textContent='点按钮继续'; btn.textContent='继续对话';
+  }
+}
+function voiceReply(text) {
+  appendVoiceLine('user', text);
+  const replies = { '我想介绍一下我自己':'Nice. It takes courage to introduce yourself in a new language. Where are you from?','今天天气怎么样':'Good icebreaker. Do you prefer sunny or rainy days when you study?','我最近在学线性代数':'Linear algebra. What part feels hardest right now?' };
+  setTimeout(() => appendVoiceLine('ai', replies[text]||'Interesting. Tell me more.'), 800);
+}
+function appendVoiceLine(role, text) {
+  const t=document.getElementById('voice-transcript'); const l=document.createElement('div'); l.className='vt-line '+role;
+  l.innerHTML = role==='ai' ? `<strong>苹果果：</strong>${escapeHtml(text)}` : `<strong>你：</strong>${escapeHtml(text)}`;
+  t.appendChild(l); t.scrollTop=t.scrollHeight;
+}
+
+/* 画布(全屏,节点可拖,连Session) */
+function initCanvas() {
+  document.getElementById('tp-title').textContent = '概念画布';
+  const d = DATA[state.subject];
+  document.getElementById('tp-body').innerHTML = `
+    <div class="canvas-wrap" id="canvas-full">
+      <div class="canvas-hint">拖动节点重新摆 · 点 ＋ 添加</div>
+      <svg class="canvas-svg"><path d="M120,70 C180,100 200,140 220,170" /><path d="M110,230 C160,200 200,180 220,180" /></svg>
+      ${d.canvasStarterNodes.map((n,i)=>`<div class="canvas-node ${n.linked?'linked':''}" data-id="n${i}" style="left:${30+i*160}px;top:${50+i*100}px"><div class="cn-head"><div class="cn-icon" style="background:${n.ic}">${n.icon}</div><div class="cn-title">${n.title}</div></div><div class="cn-sub">${n.sub}</div></div>`).join('')}
+      <div class="canvas-node linked" data-id="nlink" style="left:50px;top:280px"><div class="cn-head"><div class="cn-icon" style="background:var(--color-teal-soft)">🔗</div><div class="cn-title">昨天的学习</div></div><div class="cn-sub">链接到 Session</div></div>
+      <button class="canvas-add" onclick="addCanvasNode()">＋</button>
+    </div>`;
+  enableCanvasDrag();
+}
+let canvasCount = 10;
+function addCanvasNode() {
+  const wrap = document.getElementById('canvas-full');
+  const n = document.createElement('div'); n.className='canvas-node new-node'; n.dataset.id='n'+(++canvasCount);
+  n.style.left=(60+Math.random()*200)+'px'; n.style.top=(60+Math.random()*200)+'px';
+  n.innerHTML=`<div class="cn-head"><div class="cn-icon" style="background:var(--color-divider-soft)">✨</div><div class="cn-title">新概念</div></div><div class="cn-sub">点我编辑</div>`;
+  wrap.appendChild(n); enableCanvasDrag();
+}
+function enableCanvasDrag() {
+  document.querySelectorAll('#canvas-full .canvas-node').forEach(node => {
+    if (node.dataset.bound) return; node.dataset.bound='1';
+    let sx,sy,ox,oy,drag=false;
+    const down=(e)=>{drag=true;const p=pt(e);sx=p.x;sy=p.y;ox=parseInt(node.style.left);oy=parseInt(node.style.top);e.preventDefault();};
+    const move=(e)=>{if(!drag)return;const p=pt(e);node.style.left=(ox+p.x-sx)+'px';node.style.top=(oy+p.y-sy)+'px';};
+    const up=()=>{drag=false;};
+    node.addEventListener('mousedown',down); node.addEventListener('touchstart',down,{passive:false});
+    document.addEventListener('mousemove',move); document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('mouseup',up); document.addEventListener('touchend',up);
+  });
+}
+function pt(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY};}
+
+/* 手写 */
+let hwCtx,hwDrawing=false,hwLast;
+function initHandwrite() {
+  document.getElementById('tp-title').textContent='手写演算';
+  document.getElementById('tp-body').innerHTML=`<div class="handwrite-pad"><canvas id="handwrite-canvas"></canvas><div class="handwrite-tools"><button class="hw-tool active" onclick="setHwColor(this,'1c1c1e')"><span class="hw-color" style="background:#1c1c1e"></span></button><button class="hw-tool" onclick="setHwColor(this,'0a84ff')"><span class="hw-color" style="background:#0a84ff"></span></button><button class="hw-tool" onclick="setHwColor(this,'ff3b30')"><span class="hw-color" style="background:#ff3b30"></span></button><button class="hw-tool" onclick="clearHw()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>`;
+  setTimeout(()=>{
+    const c=document.getElementById('handwrite-canvas');if(!c)return;
+    const rz=()=>{c.width=c.offsetWidth;c.height=c.offsetHeight;};rz();
+    hwCtx=c.getContext('2d');hwCtx.lineCap='round';hwCtx.lineJoin='round';hwCtx.lineWidth=2.5;hwCtx.strokeStyle='#1c1c1e';
+    const p=(e)=>{const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};};
+    c.addEventListener('mousedown',e=>{hwDrawing=true;hwLast=p(e);e.preventDefault();});
+    c.addEventListener('touchstart',e=>{hwDrawing=true;hwLast=p(e);e.preventDefault();},{passive:false});
+    c.addEventListener('mousemove',e=>{if(!hwDrawing)return;const cur=p(e);hwCtx.beginPath();hwCtx.moveTo(hwLast.x,hwLast.y);hwCtx.lineTo(cur.x,cur.y);hwCtx.stroke();hwLast=cur;e.preventDefault();});
+    c.addEventListener('touchmove',e=>{if(!hwDrawing)return;const cur=p(e);hwCtx.beginPath();hwCtx.moveTo(hwLast.x,hwLast.y);hwCtx.lineTo(cur.x,cur.y);hwCtx.stroke();hwLast=cur;e.preventDefault();},{passive:false});
+    c.addEventListener('mouseup',()=>{hwDrawing=false;});c.addEventListener('touchend',()=>{hwDrawing=false;});
+    window.addEventListener('resize',rz);
+  },50);
+}
+function setHwColor(btn,color){document.querySelectorAll('.hw-tool').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(hwCtx)hwCtx.strokeStyle='#'+color;}
+function clearHw(){const c=document.getElementById('handwrite-canvas');if(c&&hwCtx)hwCtx.clearRect(0,0,c.width,c.height);}
+
+/* 文件 */
+function initFiles() {
+  document.getElementById('tp-title').textContent='知识文件';
+  const files=[
+    {icon:'📄',ic:'var(--color-teal-soft)',name:state.subject==='linear'?'矩阵乘法笔记.md':'递归笔记.md',meta:'昨天 · 你写的'},
+    {icon:'📕',ic:'var(--color-danger-soft)',name:state.subject==='linear'?'线性代数及其应用.pdf':'算法图解.pdf',meta:'还在读'},
+    {icon:'🧠',ic:'var(--color-purple-soft)',name:'闪卡合集',meta:`${3+state.customCards.length} 张 · FSRS 调度中`},
+    {icon:'🔗',ic:'var(--color-accent-soft)',name:'昨天的学习 Session',meta:'链接 · '+DATA[state.subject].missionTitle}
+  ];
+  document.getElementById('tp-body').innerHTML=`<div class="file-list fade-in">${files.map(f=>`<div class="file-item"><div class="fi-icon" style="background:${f.ic}">${f.icon}</div><div style="flex:1;min-width:0"><div class="fi-name">${f.name}</div><div class="fi-meta">${f.meta}</div></div></div>`).join('')}</div>`;
+}
+
+/* 番茄钟 */
+let pomoTimer;
+function initPomodoro() {
+  document.getElementById('tp-title').textContent='番茄钟 · 今日规划';
+  renderPomodoro();
+}
+function renderPomodoro() {
+  const total=25*60, remain=state.pomo.seconds, offset=565.48*(1-remain/total);
+  const mm=String(Math.floor(remain/60)).padStart(2,'0'), ss=String(remain%60).padStart(2,'0');
+  document.getElementById('tp-body').innerHTML=`
+    <div class="pomo-wrap fade-in">
+      <div class="pomo-timer">
+        <div class="pomo-clock">
+          <svg class="pomo-progress-ring" viewBox="0 0 200 200"><circle class="track" cx="100" cy="100" r="90"></circle><circle class="bar" cx="100" cy="100" r="90" stroke-dasharray="565.48" stroke-dashoffset="${offset}"></circle></svg>
+          <div><div class="pomo-time">${mm}:${ss}</div><div class="pomo-label">${state.pomo.running?'专注中':'准备专注'}</div></div>
+        </div>
+        <div class="pomo-controls"><button class="btn btn-primary" onclick="togglePomo()">${state.pomo.running?'暂停':'开始 25 分钟'}</button><button class="btn btn-outline" onclick="resetPomo()">重置</button></div>
+      </div>
+      <div class="task-list-title">今天的安排</div>
+      <div id="task-list">${state.tasks.map((t,i)=>`<div class="task-item ${t.done?'done':''}"><div class="task-check ${t.done?'done':''}" onclick="toggleTask(${i})"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-text">${t.text}</div><span class="task-tag">${t.tag}</span></div>`).join('')}</div>
+    </div>`;
+}
+function toggleTask(i){state.tasks[i].done=!state.tasks[i].done;document.getElementById('task-list').innerHTML=state.tasks.map((t,i)=>`<div class="task-item ${t.done?'done':''}"><div class="task-check ${t.done?'done':''}" onclick="toggleTask(${i})"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-text">${t.text}</div><span class="task-tag">${t.tag}</span></div>`).join('');}
+function togglePomo() {
+  state.pomo.running=!state.pomo.running;
+  const badge=document.getElementById('pomo-badge');
+  if(state.pomo.running){badge.classList.add('running');pomoTimer=setInterval(()=>{state.pomo.seconds--;if(state.pomo.seconds<=0){state.pomo.seconds=25*60;state.pomo.running=false;clearInterval(pomoTimer);badge.classList.remove('running');}updatePomoDisplay();},1000);}
+  else{clearInterval(pomoTimer);badge.classList.remove('running');}
+  updatePomoDisplay();
+  const btn=document.querySelector('.pomo-controls .btn-primary');if(btn)btn.textContent=state.pomo.running?'暂停':'开始 25 分钟';
+}
+function updatePomoDisplay(){const total=25*60,remain=state.pomo.seconds,offset=565.48*(1-remain/total);const mm=String(Math.floor(remain/60)).padStart(2,'0'),ss=String(remain%60).padStart(2,'0');const t=document.querySelector('.pomo-time');if(t)t.textContent=`${mm}:${ss}`;const b=document.querySelector('.pomo-progress-ring .bar');if(b)b.style.strokeDashoffset=offset;const l=document.querySelector('.pomo-label');if(l)l.textContent=state.pomo.running?'专注中':'准备专注';}
+function resetPomo(){state.pomo.running=false;state.pomo.seconds=25*60;clearInterval(pomoTimer);document.getElementById('pomo-badge').classList.remove('running');renderPomodoro();}
+
+/* 偏好 */
+function initPreferences() {
+  document.getElementById('tp-title').textContent='偏好';
+  document.getElementById('tp-body').innerHTML=`
+    <div style="max-width:var(--content-max);margin:0 auto;padding:var(--space-5)">
+      <div class="more-section-title" style="margin-top:0">氛围</div>
+      <div class="pref-group">
+        <div class="pref-row2"><span class="pr-label">首页一言</span><div class="toggle ${state.prefs.quote?'on':''}" onclick="togglePref(this,'quote')"></div></div>
+        <div class="pref-row2"><span class="pr-label">信息源推送</span><div class="toggle ${state.prefs.source?'on':''}" onclick="togglePref(this,'source')"></div></div>
+      </div>
+      <div class="more-section-title">已订阅信息源</div>
+      <div class="quote-source-card"><div class="qs-icon" style="background:var(--color-teal-soft)">📰</div><div style="flex:1"><div class="qs-name">每日数学</div><div class="qs-desc">每天一个小概念</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="quote-source-card"><div class="qs-icon" style="background:var(--color-purple-soft)">💡</div><div style="flex:1"><div class="qs-name">编程灵感</div><div class="qs-desc">每周三推送</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+    </div>`;
+}
+function togglePref(el,key){state.prefs[key]=!state.prefs[key];el.classList.toggle('on');if(key==='quote'&&state.page==='today')renderToday();}
+
+/* ═══════════════════════════════════════════════════════════════
+   Growth / Profile(从记忆动态生成)
+   ═══════════════════════════════════════════════════════════════ */
+function renderGrowth() {
+  const items = mem.growthHistory;
+  document.getElementById('app').innerHTML = `
+    <div class="fade-in">
+      <h1 class="page-title">你的成长</h1>
+      <p class="growth-narrative">${Narrative.growthNarrative(state.subject)}</p>
+      <div class="timeline">${items.map(it=>`<div class="timeline-item ${it.time==='刚才'?'new-item':''}"><div class="ti-time">${it.time}</div><div class="ti-title">${it.title}</div><div class="ti-summary">${it.summary}</div></div>`).join('')}</div>
+    </div>`;
+}
+function renderProfile() {
+  document.getElementById('app').innerHTML = `
+    <div class="fade-in">
+      <h1 class="page-title">苹果果眼中的你</h1>
+      <div class="profile-mirror">${Narrative.profileMirror(state.subject)}</div>
+      <div class="profile-section">
+        <h3>关于你的学习</h3>
+        <div class="pref-grid">${Narrative.profilePrefs(state.subject).map(p=>`<div class="pref-row"><span class="pref-label">${p.label}</span><span class="pref-value">${p.value}</span></div>`).join('')}</div>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   通用
+   ═══════════════════════════════════════════════════════════════ */
+function navigateTo(page){state.page=page;document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.page===page));renderPage();}
+function renderPage(){if(state.session.active)return;({today:renderToday,growth:renderGrowth,profile:renderProfile,more:renderMore}[state.page]||renderToday)();}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function showToast(msg){
+  const t=document.createElement('div');t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:9999px;font-size:13px;z-index:500;backdrop-filter:blur(10px);animation:msgIn .3s var(--ease-out)';
+  document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},2200);
+}
+
+/* 事件 */
+document.querySelectorAll('.nav-tab').forEach(tab=>tab.addEventListener('click',()=>navigateTo(tab.dataset.page)));
+document.getElementById('session-back').addEventListener('click',exitSession);
+document.getElementById('tools-trigger').addEventListener('click',openToolTray);
+document.getElementById('bar-toggle').addEventListener('click',()=>{const b=document.getElementById('demo-bar');b.classList.toggle('collapsed');document.getElementById('bar-toggle').textContent=b.classList.contains('collapsed')?'▸':'▾';});
+document.addEventListener('click',(e)=>{const m=document.getElementById('tool-tray-menu');if(m.classList.contains('active')&&!m.contains(e.target)&&!document.getElementById('tools-trigger').contains(e.target))closeToolTray();});
+
+// 学科切换:重置记忆到当前 era
+document.querySelectorAll('[data-subject]').forEach(btn=>btn.addEventListener('click',()=>{
+  state.subject=btn.dataset.subject;
+  document.querySelectorAll('[data-subject]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  state.newInsight=null; state.customCards=[];
+  loadEra(state.era);
+  if(state.session.active)exitSession();closeToolPage();renderPage();
+}));
+// 时间维度切换:加载对应深度的记忆
+document.querySelectorAll('[data-era]').forEach(btn=>btn.addEventListener('click',()=>{
+  state.era=btn.dataset.era;
+  document.querySelectorAll('[data-era]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  state.newInsight=null; state.customCards=[];
+  loadEra(state.era);
+  if(state.session.active)exitSession();closeToolPage();renderPage();
+}));
+// 情景切换
+document.querySelectorAll('[data-scene]').forEach(btn=>btn.addEventListener('click',()=>{
+  state.scene=btn.dataset.scene;
+  document.querySelectorAll('[data-scene]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  renderPage();
+}));
+
+// 初始化:从浅记忆(第一周)开始
+loadEra('week1');
+renderToday();
+</script>
+</body>
+</html>
