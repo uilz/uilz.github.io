@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppleGo · 活空间</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   AppleGo 活空间
+   Layer 0: Landing（启动页）→ Layer 1: Workspace（工作区）→ Layer 2: Session（对话）
+   三层记忆：全局 / 工作区 / 会话
+   全局搜索 + RAG 跨工作区关联
+   ═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500&display=swap');
+
+:root {
+  /* Foundation */
+  --page: #f7f3ed; --page-alt: #efe9e1;
+  --surface: #fff; --surface-alt: #f3eee7; --surface-hover: #e8e1d8;
+  --ink: #2a2420; --ink-2: #7a7068; --ink-3: #a69c8f;
+  --accent: #8f7a62; --accent-hover: #7d6952; --accent-soft: rgba(143,122,98,.1);
+  --accent-soft-2: rgba(143,122,98,.16);
+  --success: #5a8f6b; --success-soft: rgba(90,143,107,.1); --challenge: #c8503c;
+  --warm: #c8a05f; --warm-soft: rgba(200,160,95,.1);
+  --divider: #dcd0c2; --divider-strong: #cec1b1; --divider-soft: #e6dcd0;
+  /* Radius */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-full: 9999px;
+  /* Shadow */
+  --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 0 0 1px var(--divider-soft);
+  --shadow-card-hover: 0 2px 8px rgba(0,0,0,.06), 0 0 0 1px var(--divider-strong);
+  --shadow-overlay: 0 8px 32px rgba(0,0,0,.08);
+  /* Spacing */
+  --g-xs: 4px; --g-sm: 8px; --g-md: 12px; --g-lg: 16px; --g-xl: 20px; --g-2xl: 24px; --g-3xl: 32px;
+  /* Typography */
+  --font: 'Inter','Noto Sans SC',system-ui,sans-serif;
+  --font-serif: 'Noto Serif SC','Iowan Old Style',serif;
+  --text-xs: 11px; --text-sm: 13px; --text-base: 14px; --text-md: 15px; --text-lg: 17px; --text-xl: 20px; --text-2xl: 30px; --text-hero: 34px;
+  /* Motion */
+  --ease: cubic-bezier(.4,0,.2,1); --ease-spring: cubic-bezier(.34,1.56,.64,1);
+  --duration-fast: .12s; --duration: .15s; --duration-slow: .25s; --duration-l: .35s;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;font-family:var(--font)}
+body{background:var(--page);color:var(--ink);min-height:100vh;overflow:hidden}
+a{color:var(--accent);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;font-size:inherit;outline:none}
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+   ═══════════════════════════════════════════════════════════════ */
+.badge {
+  font-size:var(--text-xs); padding:3px 8px; border-radius:var(--r-full);
+  font-weight:500; line-height:1;
+}
+.badge-accent { background:var(--accent-soft); color:var(--accent); }
+.badge-success { background:var(--success-soft); color:var(--success); }
+.badge-warm { background:var(--warm-soft); color:var(--warm); }
+.badge-muted { background:var(--divider-soft); color:var(--ink-3); }
+
+.interactive {
+  transition: all var(--duration) var(--ease);
+}
+.interactive:hover { transform:translateY(-1px); }
+.interactive:active { transform:scale(.97); }
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYER 0: LANDING
+   ═══════════════════════════════════════════════════════════════ */
+#landing {
+  position:fixed; inset:0; z-index:100;
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; min-height:100vh;
+  padding:40px 24px;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+}
+#landing.hidden { opacity:0; transform:translateY(-20px); pointer-events:none; }
+
+.l-container { max-width:480px; width:100%; }
+.l-greeting {
+  font-size:var(--text-hero); font-weight:700; letter-spacing:-.02em;
+  margin-bottom:4px; animation:fadeIn .5s var(--ease);
+}
+.l-date {
+  font-size:var(--text-sm); color:var(--ink-3); margin-bottom:var(--g-3xl);
+  animation:fadeIn .5s var(--ease) .1s both;
+}
+.l-memory {
+  font-family:var(--font-serif); font-size:var(--text-md); line-height:1.8;
+  color:var(--ink-2); margin-bottom:var(--g-3xl);
+  animation:fadeIn .5s var(--ease) .15s both;
+}
+.l-memory strong { color:var(--accent); font-weight:600; }
+
+/* CTA */
+.l-cta { margin-bottom:var(--g-3xl); animation:fadeIn .5s var(--ease) .2s both; }
+.l-cta .btn-main {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:14px 32px; font-size:var(--text-base); font-weight:600;
+  border-radius:var(--r-full); background:var(--accent); color:#fff;
+  transition:all var(--duration) var(--ease);
+}
+.l-cta .btn-main:hover { background:var(--accent-hover); }
+.l-cta .btn-main:active { transform:scale(.97); }
+.btn-arrow { font-size:15px; }
+.l-cta-hint { font-size:var(--text-xs); color:var(--ink-3); margin-top:8px; }
+
+/* Divider */
+.l-divider { height:1px; background:var(--divider-soft); margin-bottom:var(--g-2xl); animation:fadeIn .5s var(--ease) .25s both; }
+
+/* Section label */
+.l-section-label {
+  font-size:9px; font-weight:600; color:var(--ink-3);
+  letter-spacing:.02em; margin-bottom:var(--g-md);
+  animation:fadeIn .5s var(--ease) .28s both;
+}
+
+/* Workspace rows */
+.l-workspaces { margin-bottom:var(--g-2xl); animation:fadeIn .5s var(--ease) .3s both; }
+.l-ws-row {
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; padding:var(--g-md) 0;
+  text-align:left; border-bottom:1px solid var(--divider-soft);
+  transition:opacity var(--duration-fast);
+}
+.l-ws-row:last-child { border-bottom:none; }
+.l-ws-row:hover { opacity:.7; }
+.l-ws-name { font-size:var(--text-base); font-weight:500; }
+.l-ws-meta { font-size:var(--text-xs); color:var(--ink-3); }
+
+/* Search */
+.l-search { animation:fadeIn .5s var(--ease) .33s both; }
+.l-search input {
+  width:100%; padding:12px 16px;
+  border-radius:var(--r-full); border:1.5px solid var(--divider);
+  font-size:var(--text-sm); font-family:inherit; background:var(--surface);
+  outline:none; transition:border-color var(--duration), box-shadow var(--duration);
+}
+.l-search input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.l-search input::placeholder,
+.l-search input::-webkit-input-placeholder,
+.l-search input::-moz-placeholder,
+#landing-search::placeholder { color:var(--ink-3); opacity:1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   STUDIO GRID (Layers 1+2)
+   ═══════════════════════════════════════════════════════════════ */
+#studio {
+  display:none;
+  grid-template-columns:236px 1fr 280px;
+  grid-template-rows:54px 1fr 50px;
+  grid-template-areas:"header header header" "sidebar canvas companion" "dock dock dock";
+  height:100vh; max-width:1440px; margin:0 auto;
+  opacity:0; transform:translateY(20px);
+  transition:opacity .45s var(--ease), transform .45s var(--ease), grid-template-columns .35s var(--ease);
+}
+#studio.visible { opacity:1; transform:translateY(0); }
+#studio.mode-dialogue { grid-template-columns:50px 1fr 280px; }
+#studio.mode-dialogue #sidebar .st-section-label,
+#studio.mode-dialogue #sidebar .st-items,
+#studio.mode-dialogue #sidebar .st-row { display:none; }
+#studio.mode-dialogue #sidebar .sb-timeline::before { display:none; }
+#studio.mode-dialogue #sidebar .st-section-header { justify-content:center; padding:4px 0; }
+#studio.mode-dialogue #sidebar .st-dot { margin:0; }
+#studio.mode-focus { grid-template-columns:1fr; }
+#studio.mode-focus #sidebar,
+#studio.mode-focus #companion,
+#studio.mode-focus #dock { display:none; }
+
+/* ── HEADER ── */
+#header {
+  grid-area:header; display:flex; align-items:center; gap:var(--g-md);
+  padding:0 var(--g-lg); background:var(--page);
+  border-bottom:1px solid var(--divider-soft); z-index:10;
+}
+.sh-home { font-size:18px; padding:6px 8px; border-radius:var(--r-sm); color:var(--ink-3); transition:all var(--duration-fast) var(--ease); flex-shrink:0; }
+.sh-home:hover { background:var(--surface-hover); color:var(--ink); }
+
+.sh-ws-selector { position:relative; flex-shrink:0; }
+.sh-ws-btn {
+  display:flex; align-items:center; gap:6px; padding:7px 14px;
+  border-radius:var(--r-sm); font-size:var(--text-base); font-weight:600;
+  background:var(--surface-alt); transition:background var(--duration-fast) var(--ease);
+}
+.sh-ws-btn:hover { background:var(--surface-hover); }
+.sh-ws-dropdown {
+  display:none; position:absolute; top:100%; left:0; margin-top:6px;
+  background:var(--surface); border-radius:var(--r-md); min-width:190px; overflow:hidden;
+  box-shadow:var(--shadow-overlay); z-index:20;
+}
+.sh-ws-selector.open .sh-ws-dropdown { display:block; animation:fadeInUp .15s var(--ease); }
+.sh-ws-option {
+  display:flex; align-items:center; gap:10px; padding:11px 16px; width:100%;
+  font-size:var(--text-sm); text-align:left; transition:background var(--duration-fast);
+}
+.sh-ws-option:hover { background:var(--surface-hover); }
+.sh-ws-option.active { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+.sh-ws-option .ws-emoji { font-size:18px; }
+
+.sh-mission { flex:1; min-width:0; }
+.sh-mission .sh-m-label { font-size:9px; color:var(--ink-3); letter-spacing:.03em; }
+.sh-mission .sh-m-title { font-size:var(--text-sm); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ── Right controls group ── */
+.sh-controls {
+  display:flex; align-items:center; gap:6px; flex-shrink:0;
+}
+
+/* Stage dots + progress: visible only in session */
+.sh-session-indicators {
+  display:flex; align-items:center; gap:10px; flex-shrink:0;
+}
+.sh-stage-dots { display:flex; gap:4px; align-items:center; }
+.sh-stage-dots .dot { width:6px; height:6px; border-radius:50%; background:var(--divider); transition:all var(--duration-slow) var(--ease); }
+.sh-stage-dots .dot.active { background:var(--accent); width:18px; border-radius:3px; }
+.sh-stage-dots .dot.done { background:var(--accent); }
+.sh-progress-bar { width:72px; height:4px; background:var(--divider); border-radius:2px; overflow:hidden; }
+.sh-progress-fill { height:100%; width:0; background:var(--accent); border-radius:2px; transition:width .5s var(--ease); }
+
+/* Mode toggle: pill-style group */
+.sh-mode-toggle {
+  display:flex; background:var(--surface-alt); border-radius:var(--r-sm);
+  padding:2px; gap:1px;
+}
+.sh-mode-btn {
+  padding:5px 10px; border-radius:6px; display:flex; align-items:center; gap:4px;
+  font-size:12px; font-weight:500; color:var(--ink-3);
+  transition:all var(--duration-fast) var(--ease);
+}
+.sh-mode-btn:hover { color:var(--ink-2); }
+.sh-mode-btn.active {
+  background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.06);
+}
+
+/* Search: simple icon button */
+.sh-search-btn {
+  width:32px; height:32px; border-radius:var(--r-sm);
+  display:grid; place-items:center;
+  font-size:15px; color:var(--ink-3);
+  transition:all var(--duration-fast) var(--ease);
+}
+.sh-search-btn:hover { background:var(--surface-hover); color:var(--ink); }
+
+/* ── CANVAS ── */
+#canvas {
+  grid-area:canvas; overflow-y:auto;
+  display:flex; flex-direction:column; background:var(--page);
+}
+
+/* ── Canvas view tabs ── */
+.cv-tabs {
+  display:flex; gap:0; padding:var(--g-md) var(--g-3xl) 0; border-bottom:1px solid var(--divider-soft);
+  flex-shrink:0; position:sticky; top:0; z-index:1; background:var(--page);
+}
+.cv-tab {
+  padding:10px 18px 10px 16px; font-size:12px; font-weight:500; color:var(--ink-3);
+  border-bottom:2px solid transparent; cursor:pointer;
+  transition:all var(--duration-fast) var(--ease);
+  display:flex; align-items:center; gap:5px;
+}
+.cv-tab:hover { color:var(--ink-2); }
+.cv-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* Canvas: sessions list view */
+.canvas-sessions {
+  flex:1; max-width:700px; margin:0 auto; width:100%;
+}
+.canvas-sessions#flow-view { padding:0; }
+.canvas-sessions#sessions-view { padding:var(--g-3xl) var(--g-3xl); }
+.cs-title { font-size:var(--text-xs); font-weight:600; color:var(--ink-3); letter-spacing:.02em; margin-bottom:var(--g-lg); display:flex; align-items:center; justify-content:space-between; }
+.cs-title .cs-new-btn {
+  padding:7px 16px; border-radius:var(--r-full);
+  font-size:var(--text-sm); font-weight:500; border:1.5px solid var(--divider);
+  background:var(--surface); transition:all var(--duration-fast) var(--ease); color:var(--ink);
+}
+.cs-title .cs-new-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.cs-session-card {
+  background:var(--surface); border-radius:var(--r-lg); padding:var(--g-xl);
+  margin-bottom:var(--g-sm); box-shadow:var(--shadow-card);
+  display:flex; align-items:center; gap:var(--g-md); cursor:pointer;
+  transition:all var(--duration) var(--ease);
+}
+.cs-session-card:hover { transform:translateY(-1px); box-shadow:var(--shadow-card-hover); }
+.cs-session-card:active { transform:scale(.985); }
+.cs-session-card .csc-status { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.cs-session-card .csc-status.active { background:var(--accent); }
+.cs-session-card .csc-status.done { background:var(--success); }
+.cs-session-card .csc-status.new { background:var(--ink-3); }
+.cs-session-card .csc-info { flex:1; min-width:0; }
+.cs-session-card .csc-name { font-size:var(--text-md); font-weight:600; }
+.cs-session-card .csc-desc { font-size:var(--text-sm); color:var(--ink-2); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cs-session-card .csc-meta { display:flex; align-items:center; gap:10px; margin-top:var(--g-xs); font-size:var(--text-xs); color:var(--ink-3); }
+.cs-session-card .csc-progress { width:52px; height:4px; background:var(--divider); border-radius:2px; overflow:hidden; flex-shrink:0; }
+.cs-session-card .csc-progress-fill { height:100%; border-radius:2px; background:var(--accent); }
+.cs-session-card .csc-progress-fill.complete { background:var(--success); }
+.cs-session-card .csc-arrow { font-size:12px; color:var(--ink-3); flex-shrink:0; opacity:.5; transition:opacity var(--duration-fast); }
+.cs-session-card:hover .csc-arrow { opacity:1; }
+
+/* Canvas: plan / roadmap view */
+.canvas-plan { display:none; flex:1; flex-direction:column; padding:var(--g-lg) var(--g-3xl); max-width:700px; margin:0 auto; width:100%; }
+.canvas-plan.active { display:flex; }
+.cp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--g-xl); }
+.cp-h-main { font-size:var(--text-base); font-weight:600; }
+.cp-h-progress { font-size:var(--text-xs); color:var(--ink-3); }
+.cp-h-progress strong { color:var(--accent); font-weight:600; }
+
+.cp-timeline { position:relative; padding-left:32px; flex:1; }
+.cp-timeline::before {
+  content:''; position:absolute; left:9px; top:8px; bottom:8px;
+  width:2px; background:var(--divider-soft); border-radius:1px;
+}
+
+.cp-stage { position:relative; padding-bottom:var(--g-xl); }
+.cp-stage:last-child { padding-bottom:0; }
+
+.cps-marker { position:absolute; left:-32px; top:2px; display:flex; flex-direction:column; align-items:center; }
+.cps-dot {
+  width:20px; height:20px; border-radius:50%; display:grid; place-items:center;
+  font-size:9px; border:2px solid var(--divider); background:var(--page); z-index:1; flex-shrink:0;
+  transition:all var(--duration) var(--ease);
+}
+.cps-dot.done { border-color:var(--success); background:var(--success-soft); }
+.cps-dot.active { border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 4px var(--accent-soft); }
+.cps-dot.future { border-color:var(--divider-strong); background:var(--surface-alt); }
+.cps-line { width:2px; flex:1; min-height:20px; background:var(--divider-soft); margin-top:4px; }
+
+.cps-body { padding-top:0; }
+.cps-badge {
+  display:inline-flex; font-size:9px; font-weight:600;
+  letter-spacing:.02em; padding:2px 8px; border-radius:4px;
+  color:var(--ink-3); background:var(--divider-soft); margin-bottom:4px;
+}
+.cps-badge.active { color:var(--accent); background:var(--accent-soft); }
+.cps-badge.done { color:var(--success); background:var(--success-soft); }
+.cps-badge.future { color:var(--ink-3); background:var(--divider-soft); }
+.cps-name { font-size:var(--text-base); font-weight:600; margin-bottom:2px; }
+.cps-desc { font-size:var(--text-sm); color:var(--ink-2); line-height:1.5; }
+.cps-stats { font-size:var(--text-xs); color:var(--ink-3); margin-top:4px; }
+
+/* Canvas: active session (dialogue) */
+.canvas-dialogue { flex:1; display:none; flex-direction:column; }
+.canvas-dialogue.active { display:flex; }
+.cd-messages { flex:1; overflow-y:auto; padding:var(--g-2xl) var(--g-3xl); display:flex; flex-direction:column; gap:var(--g-lg); max-width:680px; margin:0 auto; width:100%; }
+.cd-msg { display:flex; gap:10px; align-items:flex-end; animation:fadeIn .35s var(--ease); }
+.cd-msg.ai .msg-avatar { width:30px;height:30px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-size:14px;color:#fff;flex-shrink:0; }
+.cd-msg.user { flex-direction:row-reverse; }
+.cd-msg.user .msg-avatar { width:30px;height:30px;border-radius:var(--r-sm);background:var(--accent);display:grid;place-items:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0; }
+.msg-bubble { max-width:85%;padding:var(--g-md) var(--g-lg);font-size:var(--text-base);line-height:1.7; }
+.cd-msg.ai .msg-bubble { background:var(--surface-alt);border-radius:4px var(--r-lg) var(--r-lg) var(--r-lg); }
+.cd-msg.user .msg-bubble { background:var(--page-alt);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg); }
+.msg-bubble .rag-hint {
+  margin-top:var(--g-sm); padding:var(--g-sm) var(--g-md);
+  background:var(--accent-soft); border-radius:var(--r-sm);
+  font-size:var(--text-xs); color:var(--accent); border-left:2px solid var(--accent);
+  line-height:1.5;
+}
+.cd-suggestions { display:flex; gap:var(--g-sm); padding:0 var(--g-3xl) var(--g-sm); flex-wrap:wrap; max-width:680px; margin:0 auto; width:100%; }
+.cd-suggestion {
+  padding:8px 16px; border-radius:var(--r-full);
+  background:var(--surface); border:1.5px solid var(--divider-strong);
+  font-size:var(--text-sm); color:var(--ink-2); cursor:pointer;
+  transition:all var(--duration-fast) var(--ease);
+}
+.cd-suggestion:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.cd-input-bar { display:flex; gap:var(--g-sm); padding:var(--g-md) var(--g-3xl) var(--g-lg); border-top:1px solid var(--divider-soft); max-width:680px; margin:0 auto; width:100%; }
+.cd-input { flex:1;padding:var(--g-md) var(--g-lg);border-radius:var(--r-full);border:1.5px solid var(--divider-strong);font-size:var(--text-base);font-family:inherit;outline:none;transition:all var(--duration-fast) var(--ease);background:var(--surface); }
+.cd-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.cd-send { width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;transition:all var(--duration-fast) var(--ease);flex-shrink:0; cursor:pointer; }
+.cd-send:hover { opacity:.85; transform:scale(1.05); }
+
+/* Canvas: RAG results view */
+.canvas-rag { flex:1; display:none; flex-direction:column; padding:var(--g-3xl) var(--g-3xl); max-width:700px; margin:0 auto; width:100%; }
+.canvas-rag.active { display:flex; }
+.cr-search { display:flex; gap:var(--g-sm); margin-bottom:var(--g-xl); }
+.cr-search input { flex:1;padding:var(--g-md) var(--g-lg);border-radius:var(--r-md);border:1.5px solid var(--divider-strong);font-size:var(--text-base);font-family:inherit;outline:none;background:var(--surface);transition:all var(--duration-fast); }
+.cr-search input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.cr-result-card {
+  background:var(--surface);border-radius:var(--r-md);padding:var(--g-md) var(--g-lg);
+  margin-bottom:var(--g-sm); box-shadow:var(--shadow-card); cursor:pointer;
+  transition:all var(--duration-fast) var(--ease);
+  display:flex; gap:12px; align-items:flex-start;
+}
+.cr-result-card:hover { transform:translateY(-1px); box-shadow:var(--shadow-card-hover); }
+.cr-result-card .rr-icon { font-size:9px; font-weight:600; color:var(--ink-3); letter-spacing:.02em; flex-shrink:0; width:32px; text-align:center; }
+.cr-result-card .rr-info { flex:1; min-width:0; }
+.cr-result-card .rr-title { font-size:var(--text-sm); font-weight:600; }
+.cr-result-card .rr-snippet { font-size:var(--text-sm); color:var(--ink-2); margin-top:3px; line-height:1.5; }
+.cr-result-card .rr-meta { font-size:var(--text-xs); color:var(--ink-3); margin-top:4px; }
+.cr-result-card .rr-badge { font-size:9px; padding:2px 8px; border-radius:var(--r-full); flex-shrink:0; font-weight:500; }
+.cr-result-card .rr-badge.ws { background:var(--divider-soft);color:var(--ink-2); }
+.cr-result-card .rr-badge.card { background:var(--divider-soft);color:var(--ink-2); }
+.cr-result-card .rr-badge.msg { background:var(--divider-soft);color:var(--ink-2); }
+
+/* Canvas: back button */
+.canvas-back-row { display:flex; align-items:center; gap:10px; margin-bottom:var(--g-lg); padding:0 var(--g-3xl); max-width:700px; margin-left:auto; margin-right:auto; width:100%; }
+.canvas-back-row button { font-size:var(--text-sm); color:var(--ink-2); transition:color var(--duration-fast) var(--ease); padding:4px 8px; border-radius:var(--r-sm); }
+.canvas-back-row button:hover { color:var(--ink); background:var(--surface-hover); }
+
+/* ═══ SIDEBAR — Timeline ═══ */
+#sidebar {
+  grid-area:sidebar; background:var(--surface-alt);
+  border-right:1px solid var(--divider-soft); overflow-y:auto;
+  display:flex; flex-direction:column;
+}
+.sb-timeline {
+  position:relative; padding:var(--g-lg) 0 var(--g-lg) var(--g-lg);
+  flex:1;
+}
+.sb-timeline::before {
+  content:''; position:absolute; left:18px; top:0; bottom:0;
+  width:1px; background:var(--divider);
+}
+.st-section { margin-bottom:var(--g-lg); }
+.st-section-header {
+  display:flex; align-items:center; gap:8px;
+  margin-bottom:6px; position:relative; z-index:1;
+}
+.st-dot {
+  width:7px;height:7px;border-radius:50%;
+  background:var(--divider-strong); flex-shrink:0;
+  margin-left:-2px; transition:background var(--duration-fast);
+}
+.st-dot.active { background:var(--accent); }
+.st-section-label {
+  font-size:9px; font-weight:600; color:var(--ink-3);
+  letter-spacing:.02em;
+}
+.st-items { padding-left:15px; }
+.st-item {
+  display:flex; align-items:flex-start; gap:8px;
+  padding:5px 8px; margin:1px 0; border-radius:var(--r-sm);
+  cursor:pointer; width:100%; text-align:left;
+  transition:background var(--duration-fast);
+}
+.st-item:hover { background:var(--surface-hover); }
+.st-item.active { background:var(--accent-soft); }
+.st-item.static { cursor:default; }
+.st-item.static:hover { background:transparent; }
+.st-marker {
+  width:3px;height:3px;border-radius:50%;
+  background:var(--ink-3); flex-shrink:0;
+  margin-top:7px; margin-left:2px;
+}
+.st-item.active .st-marker { background:var(--accent); }
+.st-content { min-width:0; flex:1; }
+.st-row { display:flex; align-items:baseline; gap:5px; }
+.st-type {
+  font-size:9px; font-weight:500; color:var(--ink-3);
+  white-space:nowrap; letter-spacing:.02em;
+}
+.st-title {
+  font-size:var(--text-sm); font-weight:500;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.st-meta {
+  font-size:10px; color:var(--ink-3);
+  margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ═══ WORKSPACE INTELLIGENCE ═══ */
+#intelligence {
+  grid-area:companion; border-left:1px solid var(--divider-soft);
+  background:var(--surface-alt); display:flex; flex-direction:column; overflow:hidden;
+}
+.wi-header {
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px; border-bottom:1px solid var(--divider-soft);
+}
+.wi-avatar {
+  width:32px;height:32px;border-radius:50%;
+  background:var(--accent);
+  display:grid;place-items:center;font-size:14px;color:#fff;font-weight:600;flex-shrink:0;
+}
+.wi-header-info { flex:1; }
+.wi-name { font-size:13px;font-weight:600; }
+.wi-status { font-size:10px;color:var(--ink-3);display:flex;align-items:center;gap:5px; }
+.wi-dot { width:5px;height:5px;border-radius:50%;background:var(--success); }
+
+/* ── Intelligence sections ── */
+.wi-section {
+  padding:12px 16px; border-bottom:1px solid var(--divider-soft);
+}
+.wi-section:last-child { border-bottom:none; }
+
+.wi-section-label {
+  font-size:9px; font-weight:600; color:var(--ink-3);
+  letter-spacing:.02em; margin-bottom:8px;
+  display:flex; align-items:center; gap:5px;
+}
+
+.wi-activity { display:flex; flex-direction:column; gap:5px; }
+.wi-activity-item {
+  display:flex; align-items:flex-start; gap:7px;
+  font-size:12px; line-height:1.5; color:var(--ink-2);
+  padding:4px 0;
+}
+.wi-activity-item .wi-ai-check {
+  width:16px;height:16px;border-radius:50%;background:var(--divider-soft);
+  display:grid;place-items:center;font-size:8px;color:var(--ink-3);flex-shrink:0;margin-top:2px;
+}
+.wi-activity-item .wi-ai-spin {
+  width:16px;height:16px;border-radius:50%;border:2px solid var(--divider-soft);
+  border-top-color:var(--ink-3); animation:spin .8s linear infinite;flex-shrink:0;margin-top:2px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.wi-activity-item .wi-ai-bullet { font-size:14px; flex-shrink:0; margin-top:1px; }
+.wi-activity-item strong { color:var(--accent); font-weight:600; }
+
+/* ── Intelligence insights ── */
+.wi-insight {
+  background:var(--accent-soft); border-radius:var(--r-sm);
+  padding:9px 12px; font-size:12px; line-height:1.6; color:var(--ink);
+  margin-bottom:6px;
+}
+.wi-insight:last-child { margin-bottom:0; }
+.wi-insight .wi-insight-label {
+  font-size:9px; font-weight:600;
+  letter-spacing:.03em; color:var(--accent); display:block; margin-bottom:2px;
+}
+
+/* ── Learning Flow (inside canvas) ── */
+.lf-root { flex:1; display:flex; flex-direction:column; overflow-y:auto; }
+
+/* Today progress card */
+.lf-today {
+  display:flex; flex-direction:column; gap:var(--g-md);
+  padding:var(--g-xl) var(--g-3xl); max-width:700px; margin:0 auto; width:100%;
+}
+.lf-today-header { font-size:var(--text-xs); font-weight:600; color:var(--ink-3); letter-spacing:.02em; display:flex; align-items:center; gap:6px; }
+.lf-today-card {
+  background:var(--surface); border-radius:var(--r-lg); padding:var(--g-xl);
+  box-shadow:var(--shadow-card); display:flex; align-items:center; gap:var(--g-md);
+}
+.lf-tc-icon { font-size:28px; flex-shrink:0; }
+.lf-tc-info { flex:1; }
+.lf-tc-title { font-size:var(--text-md); font-weight:600; }
+.lf-tc-desc { font-size:var(--text-sm); color:var(--ink-2); margin-top:2px; }
+.lf-tc-progress { margin-top:var(--g-sm); display:flex; align-items:center; gap:8px; }
+.lf-tc-bar { flex:1; height:4px; background:var(--divider); border-radius:2px; overflow:hidden; }
+.lf-tc-fill { height:100%; background:var(--accent); border-radius:2px; transition:width .5s var(--ease); }
+.lf-tc-pct { font-size:var(--text-xs); color:var(--ink-3); font-weight:500; }
+.lf-tc-status { font-size:var(--text-xs); color:var(--ink-3); display:flex; align-items:center; gap:4px; }
+
+/* AI greeting in learning flow */
+.lf-ai-greeting {
+  display:flex; gap:var(--g-md); align-items:flex-start;
+  padding:var(--g-lg) var(--g-3xl); max-width:700px; margin:0 auto; width:100%;
+}
+.lf-ai-avatar {
+  width:36px;height:36px;border-radius:50%;
+  background:var(--accent);
+  display:grid;place-items:center;font-size:16px;color:#fff;font-weight:600;flex-shrink:0;
+  margin-top:2px;
+}
+.lf-ai-bubble {
+  background:var(--surface); border-radius:var(--r-lg); padding:var(--g-lg) var(--g-xl);
+  box-shadow:var(--shadow-card); flex:1; font-size:var(--text-base); line-height:1.8;
+  color:var(--ink-2);
+}
+.lf-ai-bubble strong { color:var(--ink); font-weight:600; }
+.lf-ai-bubble .lf-ai-auto {
+  margin-top:var(--g-md); padding:var(--g-sm) var(--g-md);
+  background:var(--success-soft); border-radius:var(--r-sm); border-left:2px solid var(--success);
+  font-size:var(--text-sm); color:var(--ink);
+}
+.lf-ai-bubble .lf-ai-auto span { display:block; padding:2px 0; }
+
+/* Learning surface: active content area */
+.lf-surface {
+  flex:1; display:flex; flex-direction:column;
+  padding:var(--g-lg) var(--g-3xl) var(--g-3xl); max-width:700px; margin:0 auto; width:100%;
+}
+.lf-surface-tabs {
+  display:flex; gap:2px; margin-bottom:var(--g-md);
+}
+.lf-surface-tab {
+  padding:7px 14px; border-radius:var(--r-sm) var(--r-sm) 0 0;
+  font-size:12px; font-weight:500; color:var(--ink-3); cursor:pointer;
+  transition:all var(--duration-fast) var(--ease); border-bottom:2px solid transparent;
+}
+.lf-surface-tab:hover { color:var(--ink-2); background:var(--surface-hover); }
+.lf-surface-tab.active { color:var(--accent); border-bottom-color:var(--accent); background:var(--accent-soft); }
+
+.lf-surface-panel {
+  background:var(--surface); border-radius:0 var(--r-md) var(--r-md) var(--r-md);
+  box-shadow:var(--shadow-card); flex:1; display:none; padding:var(--g-xl);
+  min-height:200px; overflow-y:auto;
+}
+.lf-surface-panel.active { display:block; }
+
+/* ── Tool Flow Demo ── */
+.tool-flow {
+  padding:var(--g-lg) var(--g-3xl); max-width:700px; margin:0 auto; width:100%;
+}
+.tf-label { font-size:9px; font-weight:600; color:var(--ink-3); letter-spacing:.03em; margin-bottom:var(--g-md); display:flex; align-items:center; gap:5px; }
+.tf-chain {
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.tf-link {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:6px 14px; border-radius:var(--r-full); font-size:12px; font-weight:500;
+  background:var(--surface); border:1.5px solid var(--divider-strong);
+  cursor:pointer; transition:all var(--duration-fast) var(--ease);
+  color:var(--ink-2);
+}
+.tf-link:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.tf-link.done { border-color:var(--success); color:var(--success); background:var(--success-soft); }
+.tf-link.active { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.tf-arrow { font-size:12px; color:var(--ink-3); opacity:.4; flex-shrink:0; }
+
+/* ── Header: avatar + status ── */
+.sc-header { display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--divider-soft); }
+.sc-avatar {
+  width:34px;height:34px;border-radius:50%;
+  background:var(--accent);
+  display:grid;place-items:center;font-size:17px;flex-shrink:0;
+}
+.sc-header-info { flex:1; }
+.sc-name { font-size:14px;font-weight:600;line-height:1.2; }
+.sc-status { font-size:11px;color:var(--ink-3); }
+
+/* ── Live observation: "苹果果正在观察..." ── */
+.sc-observation {
+  padding:10px 16px; display:flex; align-items:center; gap:8px;
+  background:var(--accent-soft); border-bottom:1px solid var(--divider-soft);
+}
+.sc-obs-dot { width:5px;height:5px;border-radius:50%;background:var(--success);flex-shrink:0; }
+.sc-obs-text { font-size:11px;color:var(--ink-2);line-height:1.4; }
+
+/* ── Memory narrative: "苹果果对你的理解" ── */
+.sc-narrative {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:14px 16px; border-bottom:1px solid var(--divider-soft);
+}
+.sc-narrative .sn-icon { font-size:22px; flex-shrink:0; margin-top:1px; }
+.sc-narrative .sn-label { font-size:9px;color:var(--ink-3);letter-spacing:.02em;margin-bottom:3px; }
+.sc-narrative .sn-level {
+  font-size:15px;font-weight:600;color:var(--accent);
+  display:flex; align-items:center; gap:8px;
+}
+.sc-narrative .sn-level .sn-arrow { font-size:11px;color:var(--ink-3);opacity:.5; }
+
+/* ── Observation tabs ── */
+.sc-obs-tabs { display:flex; border-bottom:1px solid var(--divider-soft); }
+.sc-obs-tab {
+  flex:1; padding:10px; font-size:11px; font-weight:500; color:var(--ink-3);
+  text-align:center; cursor:pointer; transition:all var(--duration-fast) var(--ease);
+  border-bottom:2px solid transparent;
+}
+.sc-obs-tab:hover { color:var(--ink-2); background:var(--surface-hover); }
+.sc-obs-tab.active { color:var(--accent); border-bottom-color:var(--accent); background:transparent; }
+
+.sc-obs-panels { flex:1; overflow-y:auto; }
+.sc-obs-panel { display:none; padding:8px 0; }
+.sc-obs-panel.active { display:block; }
+
+/* ── Timeline ── */
+.sc-timeline { position:relative; padding-left:28px; }
+.sc-timeline::before {
+  content:''; position:absolute; left:11px; top:6px; bottom:6px;
+  width:1.5px; background:var(--divider-soft); border-radius:1px;
+}
+
+.st-item { position:relative; padding-bottom:14px; }
+.st-item:last-child { padding-bottom:0; }
+
+.st-dot {
+  position:absolute; left:-17px; top:5px;
+  width:9px; height:9px; border-radius:50%;
+  background:var(--accent-soft); border:2px solid var(--accent);
+  flex-shrink:0; z-index:1;
+}
+.st-dot.progress { background:var(--success-soft); border-color:var(--success); }
+.st-dot.rag { background:rgba(91,141,184,.12); border-color:rgba(91,141,184,.6); }
+.st-dot.challenge { background:rgba(200,80,60,.1); border-color:var(--challenge); }
+
+.st-body { min-width:0; }
+.st-time { font-size:9px; color:var(--ink-3); letter-spacing:.02em; margin-bottom:3px; }
+.st-text { font-size:12px; line-height:1.55; color:var(--ink); }
+.st-text strong { color:var(--accent); font-weight:600; }
+
+.st-text.rag-link { cursor:pointer; transition:color var(--duration-fast) var(--ease); }
+.st-text.rag-link:hover { color:var(--accent); }
+.st-rag-hint { display:block; font-size:10px; color:var(--ink-3); margin-top:3px; }
+
+/* ── Smart suggestions (replaces quick actions) ── */
+.sc-suggestions {
+  padding:10px 12px; border-top:1px solid var(--divider-soft);
+  display:flex; flex-direction:column; gap:4px;
+}
+.sc-suggestion {
+  padding:9px 12px; border-radius:var(--r-sm);
+  font-size:12px; font-weight:500; text-align:left;
+  background:var(--accent-soft); color:var(--accent);
+  transition:all var(--duration-fast) var(--ease); cursor:pointer;
+  display:flex; align-items:center; gap:6px;
+}
+.sc-suggestion:hover { background:var(--accent-soft-2); }
+.sc-suggestion .su-icon { font-size:14px; flex-shrink:0; }
+.sc-suggestion.muted {
+  background:transparent; color:var(--ink-2); border:1px solid var(--divider-strong);
+}
+.sc-suggestion.muted:hover { border-color:var(--ink-3); }
+
+/* ═══ DOCK ═══ */
+#dock {
+  grid-area:dock; display:flex; align-items:center; justify-content:center; gap:0;
+  padding:4px var(--g-lg); border-top:1px solid var(--divider-soft);
+  background:var(--page); overflow-x:auto;
+}
+.dock-group { display:flex; align-items:center; gap:2px; }
+.dock-divider { width:1px; height:24px; background:var(--divider-soft); margin:0 6px; flex-shrink:0; }
+
+.dock-item {
+  position:relative; display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:5px 12px; border-radius:var(--r-sm); cursor:pointer;
+  color:var(--ink-3); font-size:10px; font-weight:500;
+  transition:all var(--duration-fast) var(--ease); flex-shrink:0; min-width:48px;
+}
+.dock-item:hover { color:var(--ink); background:var(--surface-hover); }
+.dock-item:active { transform:scale(.94); }
+.dock-item.active { color:var(--accent); background:var(--accent-soft); }
+.dock-item .di-icon { font-size:17px; line-height:1; }
+.dock-item .di-count {
+  position:absolute; top:2px; right:8px; min-width:14px; height:14px;
+  border-radius:7px; background:var(--ink-3); color:#fff;
+  font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center;
+  line-height:1; padding:0 4px;
+}
+.dock-item .di-badge {
+  font-size:7px; font-weight:700;
+  background:var(--ink-3); color:#fff; border-radius:3px;
+  padding:1px 4px; line-height:1.2;
+  margin-top:-2px;
+}
+
+/* ═══ SEARCH OVERLAY ═══ */
+#search-overlay {
+  position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.25);
+  display:none; align-items:flex-start; justify-content:center;
+  padding-top:14vh;
+}
+#search-overlay.open { display:flex; }
+.so-panel {
+  background:var(--surface); border-radius:var(--r-lg); width:540px; overflow:hidden;
+  box-shadow:var(--shadow-overlay); animation:fadeIn .2s var(--ease);
+}
+.so-input-row { display:flex; align-items:center; gap:10px; padding:var(--g-lg); border-bottom:1px solid var(--divider-soft); }
+.so-input-row input {
+  flex:1; border:none; outline:none; font-size:var(--text-lg); font-family:inherit;
+  background:transparent;
+}
+.so-input-row .so-close { font-size:18px; color:var(--ink-3); cursor:pointer; padding:6px; border-radius:var(--r-sm); transition:all var(--duration-fast); }
+.so-input-row .so-close:hover { background:var(--surface-hover); color:var(--ink); }
+.so-results { max-height:400px; overflow-y:auto; padding:var(--g-sm) 0; }
+.so-results .cr-result-card { margin:2px var(--g-sm); }
+.so-empty { padding:var(--g-3xl); text-align:center; font-size:var(--text-base); color:var(--ink-3); }
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--divider); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--divider-strong); }
+
+/* ═══ TOAST ═══ */
+.toast {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  background:var(--ink); color:#fff; padding:var(--g-md) var(--g-2xl);
+  border-radius:var(--r-full); font-size:var(--text-base); z-index:300;
+  animation:fadeIn .3s var(--ease);
+  pointer-events:none; box-shadow:0 8px 30px rgba(0,0,0,.15);
+}
+.toast.hide { opacity:0; transition:opacity .3s var(--ease); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LAYER 0: LANDING
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="landing">
+  <div class="l-container">
+    <div class="l-greeting">下午好，小新</div>
+    <div class="l-date">2026年7月18日 · 星期六</div>
+
+    <div class="l-memory">
+      上次在 <strong>数学基础</strong> 里，你停在了 ε-δ 定义。<br>
+      今天要继续吗？
+    </div>
+
+    <div class="l-cta">
+      <button class="btn-main" onclick="enterWorkspace('math','极限与连续')">
+        继续学习
+        <span class="btn-arrow">→</span>
+      </button>
+      <div class="l-cta-hint">数学基础 · 极限与连续</div>
+    </div>
+
+    <div class="l-divider"></div>
+
+    <div class="l-workspaces">
+      <div class="l-section-label">工作区</div>
+      <button class="l-ws-row" onclick="enterWorkspace('math')">
+        <span class="l-ws-name">数学基础</span>
+        <span class="l-ws-meta">1 进行中 · 2 已完成</span>
+      </button>
+      <button class="l-ws-row" onclick="enterWorkspace('network')">
+        <span class="l-ws-name">计算机网络</span>
+        <span class="l-ws-meta">1 进行中 · 1 已完成</span>
+      </button>
+      <button class="l-ws-row" onclick="showToast('机器学习工作区即将开放')">
+        <span class="l-ws-name">机器学习</span>
+        <span class="l-ws-meta" style="color:var(--ink-3)">即将开放</span>
+      </button>
+    </div>
+
+    <div class="l-divider"></div>
+
+    <div class="l-search">
+      <input type="text" placeholder="搜索资源、对话、闪卡…" id="landing-search"
+             onfocus="openSearch()" onkeydown="if(event.key==='Enter')doSearch(this.value)">
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     STUDIO GRID (Layers 1+2)
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="studio">
+
+  <!-- ── HEADER ── -->
+  <header id="header">
+    <button class="sh-home" onclick="goLanding()" title="返回启动页">←</button>
+    <div class="sh-ws-selector" id="ws-selector">
+      <button class="sh-ws-btn" onclick="toggleWsDropdown()">
+        <span id="ws-current-icon" style="font-size:10px;font-weight:700;color:var(--ink-2)">M</span>
+        <span id="ws-current-name">数学基础</span>
+        <span style="font-size:8px;color:var(--ink-3)">▾</span>
+      </button>
+      <div class="sh-ws-dropdown">
+        <button class="sh-ws-option active" onclick="switchWorkspace('math')"><span class="ws-emoji">M</span>数学基础</button>
+        <button class="sh-ws-option" onclick="switchWorkspace('network')"><span class="ws-emoji">N</span>计算机网络</button>
+        <button class="sh-ws-option" onclick="showToast('机器学习工作区即将开放')"><span class="ws-emoji">L</span>机器学习</button>
+        <div style="border-top:1px solid var(--divider-soft);margin:4px 0"></div>
+        <button class="sh-ws-option" onclick="showToast('新建工作区')"><span class="ws-emoji">+</span>新建工作区</button>
+      </div>
+    </div>
+    <div class="sh-mission" id="header-mission">
+      <div class="sh-m-label" id="h-m-label">会话列表</div>
+      <div class="sh-m-title" id="h-m-title">3 个会话</div>
+    </div>
+    <!-- Header right controls group -->
+    <div class="sh-controls">
+      <div class="sh-session-indicators" id="session-indicators" style="display:none">
+        <div class="sh-stage-dots" id="stage-dots">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <div class="sh-progress-bar" id="h-progress-bar">
+          <div class="sh-progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+      <div class="sh-mode-toggle">
+        <button class="sh-mode-btn active" data-mode="explore" title="浏览模式 — 完整工作区">浏览</button>
+        <button class="sh-mode-btn" data-mode="dialogue" title="对话模式 — 聚焦对话">对话</button>
+        <button class="sh-mode-btn" data-mode="focus" title="专注模式 — 沉浸学习">专注</button>
+      </div>
+      <button class="sh-search-btn" onclick="openSearch()" title="全局搜索">⌕</button>
+    </div>
+  </header>
+
+  <!-- ── SIDEBAR: Timeline ── -->
+  <nav id="sidebar">
+    <div class="sb-timeline">
+      <!-- 今天 -->
+      <div class="st-section">
+        <div class="st-section-header">
+          <span class="st-dot active"></span>
+          <span class="st-section-label">今天</span>
+        </div>
+        <div class="st-items">
+          <button class="st-item active" data-item="session-limits" onclick="openSession('limits')">
+            <span class="st-marker"></span>
+            <div class="st-content">
+              <div class="st-row">
+                <span class="st-type">会话</span>
+                <span class="st-title">极限与连续</span>
+              </div>
+              <div class="st-meta">42% · 还剩 15 分钟</div>
+            </div>
+          </button>
+          <div class="st-item static">
+            <span class="st-marker"></span>
+            <div class="st-content">
+              <div class="st-row">
+                <span class="st-type">笔记</span>
+                <span class="st-title">新增 3 条标注</span>
+              </div>
+              <div class="st-meta">含 ε-δ 要点</div>
+            </div>
+          </div>
+          <div class="st-item static">
+            <span class="st-marker"></span>
+            <div class="st-content">
+              <div class="st-row">
+                <span class="st-type">视频</span>
+                <span class="st-title">3Blue1Brown · 12:34</span>
+              </div>
+              <div class="st-meta">微积分系列 · 上次播放到 12:34</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3天前 -->
+      <div class="st-section">
+        <div class="st-section-header">
+          <span class="st-dot"></span>
+          <span class="st-section-label">3天前</span>
+        </div>
+        <div class="st-items">
+          <button class="st-item" data-item="session-derivatives" onclick="openSession('derivatives')">
+            <span class="st-marker"></span>
+            <div class="st-content">
+              <div class="st-row">
+                <span class="st-type">会话</span>
+                <span class="st-title">导数与微分</span>
+              </div>
+              <div class="st-meta">已完成 · 学会了基本求导法则</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 5天前 -->
+      <div class="st-section">
+        <div class="st-section-header">
+          <span class="st-dot"></span>
+          <span class="st-section-label">5天前</span>
+        </div>
+        <div class="st-items">
+          <div class="st-item static">
+            <span class="st-marker"></span>
+            <div class="st-content">
+              <div class="st-row">
+                <span class="st-type">教材</span>
+                <span class="st-title">高等数学</span>
+              </div>
+              <div class="st-meta">同济 7 版 · 第 2 章</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 未开始 -->
+      <div class="st-section">
+        <div class="st-section-header">
+          <span class="st-dot"></span>
+          <span class="st-section-label">未开始</span>
+        </div>
+        <div class="st-items">
+          <button class="st-item" data-item="session-integrals" onclick="openSession('integrals')">
+            <span class="st-marker"></span>
+            <div class="st-content">
+              <div class="st-row">
+                <span class="st-type">会话</span>
+                <span class="st-title">积分入门</span>
+              </div>
+              <div class="st-meta">定积分 · 预计 25 分钟</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── CANVAS ── -->
+  <main id="canvas">
+    <!-- View: Learning Flow (default) -->
+    <div class="canvas-sessions" id="flow-view">
+      <div class="lf-root">
+
+        <!-- ── Today Progress ── -->
+        <div class="lf-today">
+          <div class="lf-today-header">今天正在进行</div>
+          <div class="lf-today-card">
+            <div class="lf-tc-icon" style="font-size:22px;font-weight:700;color:var(--accent)">→</div>
+            <div class="lf-tc-info">
+              <div class="lf-tc-title">极限与连续</div>
+              <div class="lf-tc-desc">用 ε-δ 语言验证函数的连续性</div>
+              <div class="lf-tc-progress">
+                <div class="lf-tc-bar"><div class="lf-tc-fill" style="width:42%"></div></div>
+                <span class="lf-tc-status">剩余 ~15min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── AI Companion in Learning Flow ── -->
+        <div class="lf-ai-greeting">
+          <div class="lf-ai-avatar" style="background:var(--accent)">果</div>
+          <div class="lf-ai-bubble">
+            <strong>今天继续昨天那个极限。</strong><br>
+            昨天你停在 ε-δ 定义。<br>
+            我发现你不是不会，而是当尝试证明存在性的时候，容易把 δ 和 ε 的关系搞混。<br>
+            今天我们继续这里。
+            <div class="lf-ai-auto">
+              <span>已打开「高等数学」第 2 章</span>
+              <span>Canvas 保留了你昨天的图</span>
+              <span>聊天已回滚到昨天结束的位置</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tool Flow: interconnectivity demo ── -->
+        <div class="tool-flow">
+          <div class="tf-label">工具之间的流动</div>
+          <div class="tf-chain" id="tool-flow-chain">
+            <span class="tf-link done" onclick="showToast('已经在教材上划选了「ε-δ 定义」')">划选文本</span>
+            <span class="tf-arrow">→</span>
+            <span class="tf-link done" onclick="showToast('ε-δ 定义已加入思维导图')">加入导图</span>
+            <span class="tf-arrow">→</span>
+            <span class="tf-link active" onclick="showToast('正在生成 ε-δ 定义的练习')">生成练习</span>
+            <span class="tf-arrow">→</span>
+            <span class="tf-link" onclick="showToast('成长记录已更新——ε-δ 理解加深')">更新成长</span>
+          </div>
+        </div>
+
+        <!-- ── Learning Surface ── -->
+        <div class="lf-surface">
+          <div class="lf-surface-tabs">
+            <button class="lf-surface-tab active" data-stab="chat" onclick="switchSurfaceTab('chat')">对话</button>
+            <button class="lf-surface-tab" data-stab="canvas" onclick="switchSurfaceTab('canvas')">画布</button>
+            <button class="lf-surface-tab" data-stab="pdf" onclick="switchSurfaceTab('pdf')">教材</button>
+            <button class="lf-surface-tab" data-stab="video" onclick="switchSurfaceTab('video')">视频</button>
+          </div>
+          <!-- Chat panel -->
+          <div class="lf-surface-panel active" id="stab-chat">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="cd-msg ai">
+                <div class="msg-avatar" style="width:28px;height:28px;font-size:13px">果</div>
+                <div class="msg-bubble" style="background:var(--surface-alt);border-radius:4px 12px 12px 12px;padding:10px 14px;font-size:13px;line-height:1.6">
+                  好，先看一个简单的：<strong>f(x) = x 在 x=2</strong><br>
+                  要证明连续，我们得找 δ 使得当 |x-2| < δ 时 |f(x)-2| < ε。<br>
+                  <strong>你觉得 δ 应该取什么？</strong>
+                </div>
+              </div>
+              <div class="cd-msg user" style="flex-direction:row-reverse">
+                <div class="msg-avatar" style="width:28px;height:28px;border-radius:6px;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:600;flex-shrink:0">小</div>
+                <div class="msg-bubble" style="background:var(--page-alt);border-radius:12px 12px 4px 12px;padding:10px 14px;font-size:13px;line-height:1.6">δ = ε 就行吧？因为 |x-2| 直接等于 |f(x)-2|</div>
+              </div>
+            </div>
+          </div>
+          <!-- Canvas panel -->
+          <div class="lf-surface-panel" id="stab-canvas">
+            <div style="background:var(--page-alt);border-radius:8px;height:160px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:13px;flex-direction:column;gap:6px">
+              昨天的 Canvas 图：ε-δ 关系图解
+              <span style="font-size:10px;color:var(--ink-3)">点击恢复编辑</span>
+            </div>
+          </div>
+          <!-- PDF panel -->
+          <div class="lf-surface-panel" id="stab-pdf">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;font-weight:600;color:var(--ink-2)">高等数学 · 同济 7 版 · 第 2 章</div>
+              <div style="background:var(--page-alt);border-radius:4px;height:140px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:12px">
+                第 45-47 页 · ε-δ 定义
+              </div>
+              <div style="font-size:11px;color:var(--ink-3)">上次看到第 45 页 · 自动滚动到上次位置</div>
+            </div>
+          </div>
+          <!-- Video panel -->
+          <div class="lf-surface-panel" id="stab-video">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;font-weight:600;color:var(--ink-2)">3Blue1Brown · 微积分的本质</div>
+              <div style="background:#222;border-radius:4px;height:140px;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px">
+                12:34 / 28:00 · 极限部分
+              </div>
+              <div style="font-size:11px;color:var(--ink-3)">上次播放到 12:34</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Action: go to sessions ── -->
+        <div style="text-align:center;padding:var(--g-lg) 0 var(--g-3xl)">
+          <button onclick="showSessionsList()" style="padding:8px 20px;border-radius:var(--r-full);font-size:13px;font-weight:500;border:1.5px solid var(--divider-strong);background:var(--surface);color:var(--ink-2);transition:all var(--duration-fast) var(--ease);cursor:pointer">
+            查看所有会话 →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Sessions List -->
+    <div class="canvas-sessions" id="sessions-view">
+      <div class="cs-title">
+        所有会话
+        <button class="cs-new-btn" onclick="showToast('新建会话')">＋ 新建</button>
+      </div>
+      <div class="cs-session-card" onclick="openSession('limits')">
+        <div class="csc-status active"></div>
+        <div class="csc-info">
+          <div class="csc-name">极限与连续</div>
+          <div class="csc-desc">用极限验证函数的连续性，掌握 ε-δ 语言</div>
+          <div class="csc-meta">
+            <span>42%</span><span>剩余 ~15min</span><span>今天</span>
+          </div>
+        </div>
+        <div class="csc-progress"><div class="csc-progress-fill" style="width:42%"></div></div>
+        <div class="csc-arrow">→</div>
+      </div>
+      <div class="cs-session-card" onclick="openSession('derivatives')">
+        <div class="csc-status done"></div>
+        <div class="csc-info">
+          <div class="csc-name">导数与微分</div>
+          <div class="csc-desc">从切线斜率理解导数，学会基本求导法则</div>
+          <div class="csc-meta">
+            <span>完成</span><span>3天前</span>
+          </div>
+        </div>
+        <div class="csc-progress"><div class="csc-progress-fill complete" style="width:100%"></div></div>
+        <div class="csc-arrow">→</div>
+      </div>
+      <div class="cs-session-card" onclick="showToast('积分入门即将开始')">
+        <div class="csc-status new"></div>
+        <div class="csc-info">
+          <div class="csc-name">积分入门</div>
+          <div class="csc-desc">从面积问题理解定积分，建立微积分基本定理</div>
+          <div class="csc-meta">
+            <span>未开始</span><span>预计 25min</span>
+          </div>
+        </div>
+        <div class="csc-progress"><div class="csc-progress-fill purple" style="width:0%"></div></div>
+        <div class="csc-arrow">→</div>
+      </div>
+    </div>
+
+    <!-- View: Plan / Roadmap -->
+    <div class="canvas-plan" id="plan-view">
+      <div class="cp-header">
+        <div class="cp-h-main">数学基础 学习路线</div>
+        <div class="cp-h-progress">总体进度 <strong>47%</strong></div>
+      </div>
+      <div class="cp-timeline">
+        <!-- Stage 1: Foundation -->
+        <div class="cp-stage done">
+          <div class="cps-marker">
+            <div class="cps-dot done"></div>
+            <div class="cps-line"></div>
+          </div>
+          <div class="cps-body">
+            <div class="cps-badge done">已掌握</div>
+            <div class="cps-name">导数与微分</div>
+            <div class="cps-desc">3 天前完成 · 基本求导法则已学会</div>
+            <div class="cps-stats">25 分钟 · 正确率 92%</div>
+          </div>
+        </div>
+        <!-- Stage 2: In progress -->
+        <div class="cp-stage active">
+          <div class="cps-marker">
+            <div class="cps-dot active"></div>
+            <div class="cps-line"></div>
+          </div>
+          <div class="cps-body">
+            <div class="cps-badge active">进行中</div>
+            <div class="cps-name">极限与连续</div>
+            <div class="cps-desc">ε-δ 定义 · 42% 完成 · 当前卡点在「存在性证明」</div>
+            <div class="cps-stats">剩余约 15 分钟 · 建议换个角度讲解</div>
+          </div>
+        </div>
+        <!-- Stage 3: Next up -->
+        <div class="cp-stage next">
+          <div class="cps-marker">
+            <div class="cps-dot"></div>
+            <div class="cps-line"></div>
+          </div>
+          <div class="cps-body">
+            <div class="cps-badge">下一个</div>
+            <div class="cps-name">积分入门</div>
+            <div class="cps-desc">定积分 · 预计 25 分钟 · 导数学完后适合推进</div>
+            <div class="cps-stats">需要前置：导数基础</div>
+          </div>
+        </div>
+        <!-- Stage 4: Future -->
+        <div class="cp-stage future">
+          <div class="cps-marker">
+            <div class="cps-dot future"></div>
+            <div class="cps-line"></div>
+          </div>
+          <div class="cps-body">
+            <div class="cps-badge future">之后</div>
+            <div class="cps-name">微分方程 · 多元微积分</div>
+            <div class="cps-desc">预计还需要 2-3 周，基于当前节奏</div>
+            <div class="cps-stats">全部完成后，数学基础工作区进度达 100%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Active Session (dialogue) -->
+    <div class="canvas-dialogue" id="dialogue-view">
+      <div class="canvas-back-row"><button onclick="backToSessions()">← 回到会话列表</button></div>
+      <div class="cd-messages" id="msg-list"></div>
+      <div class="cd-suggestions" id="suggestions"></div>
+      <div class="cd-input-bar">
+        <input class="cd-input" id="input-field" placeholder="跟苹果果说说你的想法……" onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="cd-send" onclick="sendMessage()">↑</button>
+      </div>
+    </div>
+
+    <!-- View: RAG Search Results -->
+    <div class="canvas-rag" id="rag-view">
+      <div class="canvas-back-row"><button onclick="backToSessions()">← 回到会话列表</button></div>
+      <div class="cr-search">
+        <input type="text" placeholder="搜索当前工作区……" id="ws-search" onkeydown="if(event.key==='Enter')doWsSearch(this.value)">
+      </div>
+      <div id="ws-results"></div>
+    </div>
+  </main>
+
+  <!-- ── WORKSPACE INTELLIGENCE ── -->
+  <aside id="intelligence">
+    <div class="wi-header">
+      <div class="wi-avatar" style="background:var(--accent)">果</div>
+      <div class="wi-header-info">
+        <div class="wi-name">苹果果</div>
+        <div class="wi-status" id="intelligence-status"><span class="wi-dot"></span>正在工作</div>
+      </div>
+    </div>
+
+    <!-- ── Live Observation ── -->
+    <div class="wi-section">
+      <div class="wi-section-label">正在观察</div>
+      <div class="wi-activity">
+        <div class="wi-activity-item">
+          <span class="wi-ai-check">✓</span>
+          <span>你在 <strong>ε-δ 定义</strong> 停留了 4 分钟，可能遇到卡点</span>
+        </div>
+        <div class="wi-activity-item">
+          <span class="wi-ai-check">✓</span>
+          <span>你习惯先看例子再理解定义</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Connecting Knowledge ── -->
+    <div class="wi-section">
+      <div class="wi-section-label">正在连接知识</div>
+      <div class="wi-insight">
+        <span class="wi-insight-label">跨工作区关联</span>
+        指数退避 ← 指数函数 ← 极限连续<br>
+        <span style="font-size:10px;color:var(--ink-3);margin-top:4px;display:block">你在计算机网络中学过指数退避，它的数学基础就是指数函数的连续性</span>
+      </div>
+      <div class="wi-insight">
+        <span class="wi-insight-label">本工作区关联</span>
+        导数定义中的极限思想，和当前 ε-δ 定义相通
+      </div>
+    </div>
+
+    <!-- ── Generating ── -->
+    <div class="wi-section">
+      <div class="wi-section-label">正在生成</div>
+      <div class="wi-activity">
+        <div class="wi-activity-item">
+          <span class="wi-ai-spin"></span>
+          <span>基于你的理解进度生成练习题</span>
+        </div>
+        <div class="wi-activity-item">
+          <span class="wi-ai-check">✓</span>
+          <span>更新 <strong>成长记录</strong>——添加今日学习洞察</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Memory Snapshot ── -->
+    <div class="wi-section">
+      <div class="wi-section-label">对你的理解</div>
+      <div class="wi-activity">
+        <div class="wi-activity-item">
+          <span class="wi-ai-bullet">·</span>
+          <span><strong>学习风格：</strong>喜欢先理解原理再做题</span>
+        </div>
+        <div class="wi-activity-item">
+          <span class="wi-ai-bullet">·</span>
+          <span>下午学习效率最高，连续专注平均 22 分钟</span>
+        </div>
+        <div class="wi-activity-item">
+          <span class="wi-ai-bullet">·</span>
+          <span>本周完成 <strong>2 个会话</strong>，数学直觉在提升</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Smart Actions ── -->
+    <div style="margin-top:auto;padding:10px 12px;border-top:1px solid var(--divider-soft);display:flex;flex-direction:column;gap:4px;">
+      <button class="sc-suggestion" onclick="openSession('limits')">
+        回到 ε-δ 定义
+      </button>
+      <button class="sc-suggestion muted" onclick="handleSuggest('做几道巩固练习')">
+        做几道巩固练习
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── DOCK ── -->
+  <footer id="dock">
+    <div class="dock-group">
+      <button class="dock-item" onclick="openTool('flashcard', this)">
+        <span class="di-icon">◇</span>闪卡
+        <span class="di-count">3</span>
+      </button>
+      <button class="dock-item" onclick="openTool('mindmap', this)">
+        <span class="di-icon">⊕</span>导图
+      </button>
+      <button class="dock-item" onclick="openTool('canvas', this)">
+        <span class="di-icon">△</span>画布
+      </button>
+      <button class="dock-item" onclick="openTool('practice', this)">
+        <span class="di-icon">✓</span>练习
+      </button>
+    </div>
+    <div class="dock-divider"></div>
+    <div class="dock-group">
+      <button class="dock-item" onclick="openTool('voice', this)">
+        <span class="di-icon">♪</span>语音
+      </button>
+      <button class="dock-item" onclick="openTool('handwriting', this)">
+        <span class="di-icon">✎</span>手写
+      </button>
+      <button class="dock-item" onclick="openTool('files', this)">
+        <span class="di-icon">≡</span>文件
+      </button>
+    </div>
+    <div class="dock-divider"></div>
+    <div class="dock-group">
+      <button class="dock-item" onclick="openTool('pomodoro', this)">
+        <span class="di-icon">◐</span>番茄钟
+      </button>
+      <button class="dock-item" onclick="openTool('project', this)">
+        <span class="di-icon">⊞</span>项目
+        <span class="di-badge">新</span>
+      </button>
+      <button class="dock-item" onclick="togglePlanView()">
+        <span class="di-icon">◎</span>规划
+      </button>
+    </div>
+    <div class="dock-divider"></div>
+    <div class="dock-group">
+      <button class="dock-item" onclick="openSearch()">
+        <span class="di-icon">⌕</span>搜索
+      </button>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SEARCH OVERLAY
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="search-overlay">
+  <div class="so-panel">
+    <div class="so-input-row">
+      <input type="text" placeholder="搜索所有资源、对话、闪卡……" id="overlay-search"
+             onkeydown="if(event.key==='Enter')doSearch(this.value)" autofocus>
+      <button class="so-close" onclick="closeSearch()">✕</button>
+    </div>
+    <div class="so-results" id="search-results">
+      <div class="so-empty">开始输入以搜索……</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+// ── State ──
+let currentWorkspace = null;
+let currentSession = null;
+let inSession = false;
+let messageCount = 0;
+
+// ── Workspaces data ──
+const workspaces = {
+  math: { icon:'M', name:'数学基础', sessions:['limits','derivatives','integrals'] },
+  network: { icon:'N', name:'计算机网络', sessions:['tcp','http'] }
+};
+
+const sessionData = {
+  limits: { name:'极限与连续', desc:'用极限验证函数的连续性', progress:42, ws:'math' },
+  derivatives: { name:'导数与微分', desc:'从切线斜率理解导数', progress:100, ws:'math' },
+  integrals: { name:'积分入门', desc:'从面积问题理解定积分', progress:0, ws:'math' }
+};
+
+// ── Landing → Studio ──
+function enterWorkspace(ws, session) {
+  document.getElementById('landing').classList.add('hidden');
+  const studio = document.getElementById('studio');
+  studio.style.display = 'grid';
+  setTimeout(() => studio.classList.add('visible'), 50);
+
+  currentWorkspace = ws;
+  const wsInfo = workspaces[ws];
+  document.getElementById('ws-current-icon').textContent = wsInfo.icon;
+  document.getElementById('ws-current-name').textContent = wsInfo.name;
+  document.getElementById('h-m-label').textContent = '学习流';
+  document.getElementById('h-m-title').textContent = wsInfo.name;
+  document.getElementById('intelligence-status').textContent = '正在工作';
+
+  // Hide session overlay elements
+  document.getElementById('session-indicators').style.display = 'none';
+
+  // Show learning flow (default)
+  document.getElementById('flow-view').style.display = '';
+  document.getElementById('sessions-view').style.display = 'none';
+  document.getElementById('plan-view').classList.remove('active');
+  document.getElementById('dialogue-view').classList.remove('active');
+  document.getElementById('rag-view').classList.remove('active');
+  document.getElementById('live-context').style.display = 'flex';
+  inSession = false;
+  currentSession = null;
+
+  // Update sidebar active
+  document.querySelectorAll('#sidebar .st-item').forEach(el => el.classList.remove('active'));
+
+  // Close dropdown
+  document.getElementById('ws-selector').classList.remove('open');
+}
+
+function goLanding() {
+  const studio = document.getElementById('studio');
+  studio.classList.remove('visible');
+  studio.style.display = 'none';
+  document.getElementById('landing').classList.remove('hidden');
+  currentWorkspace = null;
+  currentSession = null;
+  inSession = false;
+}
+
+// ── Workspace selector ──
+function toggleWsDropdown() {
+  document.getElementById('ws-selector').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#ws-selector')) {
+    document.getElementById('ws-selector').classList.remove('open');
+  }
+});
+
+function switchWorkspace(ws) {
+  document.getElementById('ws-selector').classList.remove('open');
+  enterWorkspace(ws);
+  // Update dropdown active
+  document.querySelectorAll('.sh-ws-option').forEach(o => o.classList.remove('active'));
+  const opt = document.querySelector(`.sh-ws-option .ws-emoji`);
+  if (opt) {
+    document.querySelectorAll('.sh-ws-option').forEach(o => {
+      if (o.querySelector('.ws-emoji')?.textContent === workspaces[ws]?.icon) o.classList.add('active');
+    });
+  }
+}
+
+// ── Mode Switching ──
+document.querySelectorAll('.sh-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sh-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    const studio = document.getElementById('studio');
+    if (mode === 'explore') studio.className = 'visible';
+    else studio.className = `mode-${mode} visible`;
+  });
+});
+
+// ── Open Session ──
+function openSession(sessionId) {
+  const sd = sessionData[sessionId];
+  if (!sd) { showToast('会话数据不存在'); return; }
+
+  currentSession = sessionId;
+  inSession = true;
+  messageCount = 0;
+  replyIndex = 0;
+
+  // Hide flow / sessions / plan view, show dialogue
+  document.getElementById('flow-view').style.display = 'none';
+  document.getElementById('sessions-view').style.display = 'none';
+  document.getElementById('plan-view').classList.remove('active');
+  document.getElementById('rag-view').classList.remove('active');
+  const dv = document.getElementById('dialogue-view');
+  dv.classList.add('active');
+  document.getElementById('live-context').style.display = 'flex';
+
+  // Update header
+  document.getElementById('h-m-label').textContent = '学习中';
+  document.getElementById('h-m-title').textContent = sd.name;
+  document.getElementById('session-indicators').style.display = 'flex';
+  document.getElementById('stage-dots').style.display = 'flex';
+  document.getElementById('h-progress-bar').style.display = '';
+  document.getElementById('progress-fill').style.width = sd.progress + '%';
+  updateStageDots(sd.progress >= 100 ? 3 : 1);
+  document.getElementById('intelligence-status').innerHTML = '<span class="wi-dot"></span>观察中';
+
+  // Update sidebar active
+  document.querySelectorAll('#sidebar .st-item').forEach(el => el.classList.remove('active'));
+  const sid = document.querySelector(`#sidebar [data-item="session-${sessionId}"]`);
+  if (sid) sid.classList.add('active');
+
+  // Init messages
+  const msgList = document.getElementById('msg-list');
+  const suggestions = document.getElementById('suggestions');
+  if (sessionId === 'limits') {
+    msgList.innerHTML = `
+      <div class="cd-msg ai">
+        <div class="msg-avatar">果</div>
+        <div class="msg-bubble">
+          今天继续学极限与连续。<br><br>上次你理解极限的概念很顺利，今天来用极限验证函数的连续性。<br><br><strong>准备好了吗？</strong>
+        </div>
+      </div>
+    `;
+    suggestions.innerHTML = `
+      <button class="cd-suggestion" onclick="sendMessage('准备好了，开始吧')">准备好了，开始吧</button>
+      <button class="cd-suggestion" onclick="sendMessage('我想先复习一下')">我想先复习一下</button>
+      <button class="cd-suggestion" onclick="sendMessage('换个例子讲')">换个例子讲</button>`;
+  } else if (sessionId === 'derivatives') {
+    msgList.innerHTML = `
+      <div class="cd-msg ai">
+        <div class="msg-avatar">果</div>
+        <div class="msg-bubble">
+          恭喜！你已经完成了导数与微分的学习<br><br>你对切线斜率和基本求导法则都掌握了。<br>想回顾一下，还是进入下一个主题？
+        </div>
+      </div>
+    `;
+    suggestions.innerHTML = `
+      <button class="cd-suggestion" onclick="sendMessage('回顾一下')">回顾一下</button>
+      <button class="cd-suggestion" onclick="sendMessage('进入积分入门')">进入积分入门</button>`;
+  } else {
+    msgList.innerHTML = `
+      <div class="cd-msg ai">
+        <div class="msg-avatar">果</div>
+        <div class="msg-bubble">
+          积分入门是一个全新的主题。我们从最简单的面积问题开始。<br><br><strong>准备好了吗？</strong>
+        </div>
+      </div>
+    `;
+    suggestions.innerHTML = `
+      <button class="cd-suggestion" onclick="sendMessage('开始吧')">开始吧</button>`;
+  }
+
+  setTimeout(() => document.getElementById('input-field')?.focus(), 300);
+}
+
+function backToSessions() {
+  inSession = false;
+  currentSession = null;
+  document.getElementById('flow-view').style.display = '';
+  document.getElementById('sessions-view').style.display = 'none';
+  document.getElementById('plan-view').classList.remove('active');
+  document.getElementById('dialogue-view').classList.remove('active');
+  document.getElementById('rag-view').classList.remove('active');
+  document.getElementById('h-m-label').textContent = '学习流';
+  document.getElementById('h-m-title').textContent = workspaces[currentWorkspace]?.name || '';
+  document.getElementById('session-indicators').style.display = 'none';
+  document.getElementById('intelligence-status').innerHTML = '<span class="wi-dot"></span>正在工作';
+  document.getElementById('msg-list').innerHTML = '';
+}
+
+// ── Session Chat ──
+const aiReplies = [
+  '好，我们从一个具体的函数开始：<br><br><strong style="font-family:var(--font-serif)">f(x) = 1 / (x - 2)</strong><br><br>你觉得这个函数在 x=2 处连续吗？为什么？',
+  '完全正确。x=2 不在定义域内，所以谈不上连续。<br><br>那换一个：<strong>f(x) = x²</strong> 在 x=1 处，怎么验证？',
+  '很好！极限等于函数值，这就是连续的核心。<br><br>要不要一起画一张图，把连续和不连续的情况对比看看？<div class="rag-hint"><strong>关联提示：</strong>你在计算机网络中学过指数退避——它的底层就是指数函数的连续性。要聊聊这个关联吗？</div>',
+  '收到。能用自己的话说出来，说明这个点已经变成你自己的理解了。<br><br><strong>今天进度：</strong>极限定义 · 连续性条件 · ε-δ 语言'
+];
+let replyIndex = 0;
+
+function sendMessage(text) {
+  if (!inSession) return;
+  const inputField = document.getElementById('input-field');
+  const msg = text || inputField?.value?.trim();
+  if (!msg) return;
+
+  const msgList = document.getElementById('msg-list');
+  msgList.innerHTML += `<div class="cd-msg user">
+    <div class="msg-avatar">小</div>
+    <div class="msg-bubble">${msg}</div>
+  </div>`;
+  if (inputField) inputField.value = '';
+  messageCount++;
+
+  const pct = Math.min(42 + messageCount * 12, 90);
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  if (messageCount >= 3) {
+    document.getElementById('intelligence-status').innerHTML = '<span class="wi-dot"></span>分析中';
+  }
+
+  setTimeout(() => {
+    const reply = aiReplies[Math.min(replyIndex, aiReplies.length - 1)];
+    msgList.innerHTML += `<div class="cd-msg ai">
+      <div class="msg-avatar">果</div>
+      <div class="msg-bubble">${reply}</div>
+    </div>`;
+    replyIndex++;
+    msgList.scrollTop = msgList.scrollHeight;
+
+    if (replyIndex >= 4) {
+      document.getElementById('intelligence-status').innerHTML = '<span class="wi-dot"></span>陪伴中';
+    }
+    if (replyIndex >= 2) document.getElementById('suggestions').style.display = 'none';
+  }, 800 + Math.random() * 600);
+
+  document.getElementById('suggestions').style.display = 'none';
+}
+
+// ── RAG link ──
+function showRagLink(title, content) {
+  showToast(title + '：' + content);
+  document.getElementById('intelligence-status').innerHTML = '<span class="wi-dot"></span>正在关联知识...';
+  setTimeout(() => { document.getElementById('intelligence-status').innerHTML = '<span class="wi-dot"></span>正在工作'; }, 2000);
+}
+
+// ── View switching ──
+function showSessionsList() {
+  document.getElementById('flow-view').style.display = 'none';
+  document.getElementById('sessions-view').style.display = '';
+  document.getElementById('plan-view').classList.remove('active');
+  document.getElementById('h-m-label').textContent = '会话列表';
+  document.getElementById('h-m-title').textContent = (workspaces[currentWorkspace]?.sessions?.length || 0) + ' 个会话';
+}
+
+function switchSurfaceTab(tab) {
+  document.querySelectorAll('.lf-surface-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.lf-surface-tab[data-stab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.lf-surface-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`stab-${tab}`).classList.add('active');
+}
+
+// ── Plan view toggle ──
+function togglePlanView() {
+  const fv = document.getElementById('flow-view');
+  const sv = document.getElementById('sessions-view');
+  const pv = document.getElementById('plan-view');
+  const isOpen = pv.classList.contains('active');
+  if (isOpen) {
+    pv.classList.remove('active');
+    if (fv && fv.style.display !== 'none') { fv.style.display = ''; }
+    else { sv.style.display = ''; }
+    document.querySelectorAll('.dock-item').forEach(i => i.classList.remove('active'));
+  } else {
+    if (fv) fv.style.display = 'none';
+    sv.style.display = 'none';
+    pv.classList.add('active');
+    document.querySelectorAll('.dock-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.dock-item').forEach(i => {
+      if (i.textContent.includes('规划')) i.classList.add('active');
+    });
+  }
+}
+
+// ── Session tools ──
+function openTool(tool, el) {
+  document.querySelectorAll('.dock-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const msgs = {
+    flashcard: '打开闪卡 — 3 张待复习',
+    mindmap: '思维导图 — 可以从这里开始整理结构',
+    canvas: '画布已打开，可以自由画图',
+    practice: '生成练习题中……',
+    voice: '语音输入已就绪',
+    handwriting: '手写板已打开',
+    files: '打开文件管理',
+    pomodoro: '番茄钟 — 25 分钟专注',
+    project: '项目模式 — 将学习成果组织为项目'
+  };
+  showToast(msgs[tool] || tool);
+}
+
+function handleSuggest(action) {
+  showToast(action);
+}
+
+// ── Search ──
+function openSearch() { document.getElementById('search-overlay').classList.add('open'); setTimeout(() => document.getElementById('overlay-search')?.focus(), 100); }
+function closeSearch() { document.getElementById('search-overlay').classList.remove('open'); }
+
+function doSearch(query) {
+  if (!query.trim()) return;
+  closeSearch();
+
+  const sampleResults = [
+    { icon:'对话', title:'对话: 极限与连续', snippet:'"你觉得这个函数在 x=2 处连续吗？为什么？"', meta:'数学基础 · 今天', badge:'对话', badgeClass:'msg' },
+    { icon:'教材', title:'高等数学（同济7版）', snippet:'第二章 极限与连续 §1 极限的概念', meta:'数学基础 · 教材', badge:'资源', badgeClass:'ws' },
+    { icon:'笔记', title:'TCP笔记', snippet:'三次握手的关键是 SYN 和 ACK 标志位...', meta:'计算机网络 · 2天前', badge:'笔记', badgeClass:'msg' },
+    { icon:'闪卡', title:'闪卡: 极限定义', snippet:'对于任意 ε 0，存在 δ 0 使得 |f(x)-L| ε', meta:'数学基础 · 3天前', badge:'闪卡', badgeClass:'card' },
+    { icon:'视频', title:'3Blue1Brown 微积分系列', snippet:'用几何直觉理解极限和连续', meta:'数学基础 · 视频', badge:'资源', badgeClass:'ws' }
+  ];
+
+  if (query.toLowerCase().includes('极限') || query.toLowerCase().includes('连续')) {
+    document.getElementById('search-results').innerHTML = sampleResults.slice(0,5).map(r => `
+      <div class="cr-result-card">
+        <div class="rr-icon">${r.icon}</div>
+        <div class="rr-info">
+          <div class="rr-title">${r.title}</div>
+          <div class="rr-snippet">${r.snippet}</div>
+          <div class="rr-meta">${r.meta}</div>
+        </div>
+        <span class="rr-badge ${r.badgeClass}">${r.badge}</span>
+      </div>`).join('');
+  } else {
+    document.getElementById('search-results').innerHTML =
+      '<div class="so-empty">试试搜索"极限"、"TCP"或"导数"</div>';
+  }
+  document.getElementById('search-overlay').classList.add('open');
+}
+
+function doWsSearch(query) {
+  if (!query.trim()) return;
+  document.getElementById('ws-results').innerHTML = `
+    <div class="cr-result-card">
+      <div class="rr-icon">教材</div>
+      <div class="rr-info">
+        <div class="rr-title">高等数学（同济7版）</div>
+        <div class="rr-snippet">第二章 极限与连续 §1 极限的概念</div>
+        <div class="rr-meta">数学基础 · 教材</div>
+      </div>
+      <span class="rr-badge ws">资源</span>
+    </div>`;
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+// ── Helpers ──
+function updateStageDots(idx) {
+  const dots = document.querySelectorAll('#stage-dots .dot');
+  dots.forEach((d, i) => { d.classList.toggle('active', i===idx); d.classList.toggle('done', i<idx); });
+}
+</script>
+</body>
+</html>
