@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Stroop 注意力测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #161b22;
+            font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+            color: #d0d4dc;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 24px 12px 60px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #app {
+            width: min(720px, 100%);
+            background: #1c2128;
+            border: 1px solid #2a3038;
+            border-radius: 14px;
+            padding: 24px 20px 20px;
+        }
+
+        /* 标题弱化 */
+        h1 {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            margin-bottom: 2px;
+            color: #555c66;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 10px;
+            color: #3a4048;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        /* 统计卡片弱化 */
+        .top {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #22272e;
+            border-radius: 6px;
+            padding: 8px 4px;
+            text-align: center;
+        }
+
+        .label {
+            font-size: 9px;
+            color: #484f58;
+            letter-spacing: .5px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .value {
+            font-size: 20px;
+            font-weight: 500;
+            color: #8b949e;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: .5px;
+        }
+
+        /* 中心单词区突出 */
+        #wordArea {
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 8px 0 16px;
+            border-radius: 10px;
+            background: #21262d;
+            border: 1px solid #3a434f;
+            cursor: pointer;
+            user-select: none;
+            transition: border-color .15s;
+            position: relative;
+        }
+        #wordArea:hover {
+            border-color: #539bf5;
+        }
+        #wordArea:active {
+            background: #1e2329;
+        }
+
+        #stroopWord {
+            font-size: 90px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            transition: color .1s;
+        }
+
+        .feedbackGreen {
+            animation: greenFlash .3s ease-out;
+        }
+        .feedbackRed {
+            animation: redFlash .3s ease-out;
+        }
+        @keyframes greenFlash {
+            0% {
+                background: #1a3c2a;
+            }
+            100% {
+                background: #21262d;
+            }
+        }
+        @keyframes redFlash {
+            0% {
+                background: #3c1f1f;
+            }
+            100% {
+                background: #21262d;
+            }
+        }
+
+        /* 按钮区域突出 */
+        #buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .colorBtn {
+            height: 50px;
+            border: 1px solid #3a434f;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            background: #21262d;
+            color: #d0d4dc;
+            transition: background .15s, border-color .15s, transform .1s;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .colorBtn:hover {
+            background: #2a3038;
+            border-color: #539bf5;
+            transform: translateY(-1px);
+        }
+        .colorBtn:active {
+            transform: scale(.97);
+            background: #1c2128;
+        }
+
+        /* 设置区弱化 */
+        #setting {
+            margin-top: 18px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #22272e;
+        }
+        #setting h2 {
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #555c66;
+            letter-spacing: 1px;
+        }
+        .checks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 14px;
+        }
+        .checks label {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: #6e7681;
+            user-select: none;
+        }
+        input[type=checkbox] {
+            accent-color: #539bf5;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        /* 提示弱化 */
+        #hint {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11px;
+            color: #3a4048;
+            letter-spacing: .5px;
+        }
+
+        /* 结算区在测试结束才显示，稍微恢复一些视觉权重，但保持干净 */
+        #result {
+            margin-top: 20px;
+            display: none;
+            padding: 24px 20px;
+            border-radius: 10px;
+            background: #21262d;
+            border: 1px solid #3a434f;
+        }
+        #result h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #8b949e;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        #score {
+            font-size: 56px;
+            font-weight: 700;
+            margin: 8px 0;
+            text-align: center;
+            color: #e6e8ec;
+            letter-spacing: 2px;
+        }
+        #weather {
+            font-size: 15px;
+            margin-top: 14px;
+            line-height: 1.7;
+            color: #c0c7d0;
+            text-align: center;
+        }
+        #animal {
+            font-size: 15px;
+            margin-top: 8px;
+            line-height: 1.7;
+            color: #c0c7d0;
+            text-align: center;
+        }
+        #evaluation {
+            margin-top: 16px;
+            line-height: 1.8;
+            font-size: 13px;
+            color: #9099a4;
+            white-space: pre-wrap;
+            text-align: center;
+            border-top: 1px solid #2a3038;
+            padding-top: 14px;
+        }
+        .result-divider {
+            margin: 16px 0;
+            border: none;
+            border-top: 1px solid #2a3038;
+        }
+        #downloadCSV {
+            display: block;
+            margin: 18px auto 0;
+            padding: 10px 22px;
+            font-size: 13px;
+            border: 1px solid #3a434f;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #21262d;
+            color: #b0b7c0;
+            letter-spacing: .5px;
+            transition: background .15s, border-color .15s;
+        }
+        #downloadCSV:hover {
+            background: #2a3038;
+            border-color: #539bf5;
+            color: #e6e8ec;
+        }
+
+        @media(max-width: 600px) {
+            body {
+                padding: 8px 4px 40px;
+            }
+            #app {
+                padding: 16px 10px 14px;
+                border-radius: 8px;
+            }
+            h1 {
+                font-size: 14px;
+            }
+            #wordArea {
+                height: 140px;
+            }
+            #stroopWord {
+                font-size: 64px;
+                letter-spacing: 3px;
+            }
+            .top {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 4px;
+            }
+            .card {
+                padding: 6px 2px;
+            }
+            .value {
+                font-size: 16px;
+            }
+            .label {
+                font-size: 8px;
+            }
+            #buttons {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            .colorBtn {
+                height: 44px;
+                font-size: 15px;
+                border-radius: 6px;
+            }
+            #score {
+                font-size: 42px;
+            }
+            #result {
+                padding: 16px 12px;
+            }
+        }
+
+        @media(max-width: 380px) {
+            .top {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            #buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            #stroopWord {
+                font-size: 50px;
+            }
+            #wordArea {
+                height: 110px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Stroop</h1>
+        <div class="subtitle">注意力冲突测试</div>
+
+        <div class="top">
+            <div class="card"><div class="label">耗时</div><div id="time" class="value">00:00</div></div>
+            <div class="card"><div class="label">正确</div><div id="correct" class="value">0</div></div>
+            <div class="card"><div class="label">错误</div><div id="wrong" class="value">0</div></div>
+            <div class="card"><div class="label">平均RT</div><div id="avg" class="value">0ms</div></div>
+        </div>
+
+        <div id="wordArea">
+            <div id="stroopWord">开始</div>
+        </div>
+
+        <div id="buttons"></div>
+
+        <div id="setting">
+            <h2>颜色池</h2>
+            <div class="checks">
+                <label><input checked type="checkbox" value="red">红</label>
+                <label><input checked type="checkbox" value="blue">蓝</label>
+                <label><input checked type="checkbox" value="green">绿</label>
+                <label><input checked type="checkbox" value="yellow">黄</label>
+                <label><input checked type="checkbox" value="purple">紫</label>
+                <label><input checked type="checkbox" value="white">白</label>
+            </div>
+        </div>
+
+        <div id="hint">空格键 或 点击上方文字区域 开始测试</div>
+
+        <div id="result">
+            <h2>注意力报告</h2>
+            <div id="score">—</div>
+            <div id="weather"></div>
+            <div id="animal"></div>
+            <div id="evaluation"></div>
+            <hr class="result-divider">
+            <button id="downloadCSV">导出 CSV 数据</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const COLOR_POOL = {
+                red: { text: "红", color: "#e5534b" },
+                blue: { text: "蓝", color: "#539bf5" },
+                green: { text: "绿", color: "#46954a" },
+                yellow: { text: "黄", color: "#e5c648" },
+                purple: { text: "紫", color: "#986ee2" },
+                white: { text: "白", color: "#e8e8e8" }
+            };
+
+            let enabledColors = [];
+            let currentWord = null,
+                currentColor = null;
+            let started = false;
+            let startTime = 0,
+                questionStart = 0;
+            let timer = null;
+            let totalCorrect = 0,
+                totalWrong = 0,
+                totalQuestions = 0;
+            let reactionTimes = [];
+            let combo = 0,
+                maxCombo = 0;
+            let fastestRT = Infinity,
+                slowestRT = 0;
+
+            const wordEl = document.getElementById("stroopWord");
+            const btnBox = document.getElementById("buttons");
+            const wordArea = document.getElementById("wordArea");
+            const timeDOM = document.getElementById("time");
+            const correctDOM = document.getElementById("correct");
+            const wrongDOM = document.getElementById("wrong");
+            const avgDOM = document.getElementById("avg");
+            const resultPanel = document.getElementById("result");
+            const checks = document.querySelectorAll("#setting input[type=checkbox]");
+            const hintEl = document.getElementById("hint");
+
+            (function addCards() {
+                const top = document.querySelector(".top");
+                const comboCard = document.createElement("div");
+                comboCard.className = "card";
+                comboCard.innerHTML = '<div class="label">连击</div><div id="combo" class="value">0</div>';
+                top.appendChild(comboCard);
+                const bestCard = document.createElement("div");
+                bestCard.className = "card";
+                bestCard.innerHTML = '<div class="label">最快</div><div id="fastest" class="value">—</div>';
+                top.appendChild(bestCard);
+            })();
+
+            function buildButtons() {
+                btnBox.innerHTML = "";
+                enabledColors.forEach(key => {
+                    const btn = document.createElement("button");
+                    btn.className = "colorBtn";
+                    btn.textContent = COLOR_POOL[key].text;
+                    btn.onclick = () => chooseColor(key);
+                    btn.addEventListener("keydown", e => {
+                        if (e.code === "Space") {
+                            e.preventDefault();
+                        }
+                    });
+                    btnBox.appendChild(btn);
+                });
+            }
+
+            function updatePool() {
+                enabledColors = [];
+                checks.forEach(c => { if (c.checked) enabledColors.push(c.value); });
+                if (enabledColors.length < 2) {
+                    alert("至少选择两种颜色");
+                    return;
+                }
+                buildButtons();
+            }
+
+            function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+            function nextQuestion() {
+                let wordKey = rand(enabledColors);
+                let colorKey = rand(enabledColors);
+                while (wordKey === colorKey && enabledColors.length > 1) {
+                    colorKey = rand(enabledColors);
+                }
+                currentWord = wordKey;
+                currentColor = colorKey;
+                wordEl.innerHTML = COLOR_POOL[wordKey].text;
+                wordEl.style.color = COLOR_POOL[colorKey].color;
+                questionStart = performance.now();
+            }
+
+            function updateTimer() {
+                const sec = Math.floor((Date.now() - startTime) / 1000);
+                const m = Math.floor(sec / 60),
+                    s = sec % 60;
+                timeDOM.innerHTML = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+            }
+
+            function resetStats() {
+                totalCorrect = 0;
+                totalWrong = 0;
+                totalQuestions = 0;
+                reactionTimes = [];
+                combo = 0;
+                maxCombo = 0;
+                fastestRT = Infinity;
+                slowestRT = 0;
+                correctDOM.innerHTML = 0;
+                wrongDOM.innerHTML = 0;
+                avgDOM.innerHTML = "0ms";
+                const comboEl = document.getElementById("combo");
+                const fastestEl = document.getElementById("fastest");
+                if (comboEl) comboEl.innerHTML = 0;
+                if (fastestEl) fastestEl.innerHTML = "—";
+            }
+
+            function startGame() {
+                started = true;
+                resultPanel.style.display = "none";
+                resetStats();
+                startTime = Date.now();
+                updateTimer();
+                nextQuestion();
+                timer = setInterval(updateTimer, 100);
+                hintEl.textContent = "空格键 或 点击文字区域 停止测试";
+                wordArea.style.cursor = "pointer";
+            }
+
+            function stopGame() {
+                started = false;
+                clearInterval(timer);
+                showResult();
+                hintEl.textContent = "空格键 或 点击文字区域 开始新测试";
+                wordArea.style.cursor = "pointer";
+            }
+
+            document.addEventListener("keydown", e => {
+                if (e.code !== "Space") return;
+                const tag = document.activeElement?.tagName;
+                if (tag === "INPUT" || tag === "TEXTAREA") return;
+                e.preventDefault();
+                if (!started) {
+                    startGame();
+                } else {
+                    stopGame();
+                }
+            });
+
+            wordArea.addEventListener("click", () => {
+                if (!started) {
+                    startGame();
+                } else {
+                    stopGame();
+                }
+            });
+
+            function flashGreen() {
+                wordArea.classList.remove("feedbackGreen");
+                void wordArea.offsetWidth;
+                wordArea.classList.add("feedbackGreen");
+            }
+
+            function flashRed() {
+                wordArea.classList.remove("feedbackRed");
+                void wordArea.offsetWidth;
+                wordArea.classList.add("feedbackRed");
+            }
+
+            function chooseColor(key) {
+                if (!started) return;
+                const rt = Math.round(performance.now() - questionStart);
+                reactionTimes.push(rt);
+                totalQuestions++;
+                fastestRT = Math.min(fastestRT, rt);
+                slowestRT = Math.max(slowestRT, rt);
+                const fastestEl = document.getElementById("fastest");
+                if (fastestEl) fastestEl.innerHTML = fastestRT === Infinity ? "—" : fastestRT + "ms";
+
+                if (key === currentColor) {
+                    totalCorrect++;
+                    combo++;
+                    maxCombo = Math.max(maxCombo, combo);
+                    correctDOM.innerHTML = totalCorrect;
+                    const comboEl = document.getElementById("combo");
+                    if (comboEl) comboEl.innerHTML = combo;
+                    flashGreen();
+                } else {
+                    totalWrong++;
+                    combo = 0;
+                    wrongDOM.innerHTML = totalWrong;
+                    const comboEl = document.getElementById("combo");
+                    if (comboEl) comboEl.innerHTML = 0;
+                    flashRed();
+                }
+
+                avgDOM.innerHTML =
+                    Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length) + "ms";
+                nextQuestion();
+            }
+
+            function getAccuracy() {
+                if (totalQuestions === 0) return 0;
+                return Math.round(totalCorrect / totalQuestions * 100);
+            }
+
+            function calculateScore() {
+                const accuracy = getAccuracy();
+                const avg = reactionTimes.length ?
+                    reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length :
+                    1500;
+                let score = accuracy - Math.max(0, (avg - 500) / 18) + maxCombo * 0.5;
+                return Math.round(Math.max(0, Math.min(100, score)));
+            }
+
+            function saveHistory(score) {
+                const bestScore = Math.max(Number(localStorage.bestScore || 0), score);
+                const bestAccuracy = Math.max(Number(localStorage.bestAccuracy || 0), getAccuracy());
+                const bestRT = Math.min(Number(localStorage.bestRT || 999999), fastestRT === Infinity ? 999999 :
+                    fastestRT);
+                localStorage.bestScore = bestScore;
+                localStorage.bestAccuracy = bestAccuracy;
+                localStorage.bestRT = bestRT;
+            }
+
+            function exportCSV() {
+                let csv = "ReactionTime(ms)\n";
+                reactionTimes.forEach(rt => csv += rt + "\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "stroop_data.csv";
+                a.click();
+            }
+
+            const WEATHER = {
+                sun: { name: "晴空", icon: "☀", desc: "大脑里的天空没有一片多余的云。" },
+                aurora: { name: "极光", icon: "🌌", desc: "注意力像极光一样安静，却照亮整个夜晚。" },
+                cloud: { name: "多云", icon: "☁", desc: "偶尔有杂念飘过，但没有停留太久。" },
+                fog: { name: "迷雾", icon: "🌫", desc: "颜色就在眼前，世界却总慢半拍。" },
+                storm: { name: "风暴", icon: "⛈", desc: "文字与颜色不断争吵，注意力疲于奔命。" },
+                meteor: { name: "流星雨", icon: "☄", desc: "思维快得像划过夜空，却也容易擦肩而过。" }
+            };
+            const ANIMAL = {
+                hawk: { name: "猎鹰", desc: "目标出现后，其余世界自动失焦。" },
+                owl: { name: "猫头鹰", desc: "慢一点，但每一次俯冲都精准。" },
+                wolf: { name: "狼", desc: "节奏稳定，从不轻易偏离方向。" },
+                whale: { name: "鲸", desc: "思维缓慢而深邃，不被噪音左右。" },
+                fox: { name: "狐狸", desc: "聪明，但偶尔会相信自己的第一直觉。" },
+                cat: { name: "猫", desc: "世界里的每一样东西，都值得看一眼。" },
+                butterfly: { name: "蝴蝶", desc: "注意力今天停留在每一朵花上。" }
+            };
+
+            function pickWeather(score, accuracy, avgRT) {
+                if (score > 90 && accuracy >= 95) return WEATHER.aurora;
+                if (accuracy >= 90 && avgRT < 600) return WEATHER.sun;
+                if (avgRT < 550 && accuracy >= 80) return WEATHER.meteor;
+                if (accuracy >= 70) return WEATHER.cloud;
+                if (avgRT > 900) return WEATHER.storm;
+                return WEATHER.fog;
+            }
+
+            function pickAnimal(comboVal, avgRT, accuracy) {
+                if (comboVal > 15) return ANIMAL.hawk;
+                if (avgRT < 500 && accuracy > 90) return ANIMAL.owl;
+                if (accuracy >= 85) return ANIMAL.wolf;
+                if (avgRT > 800) return ANIMAL.whale;
+                if (comboVal < 5 && accuracy < 70) return ANIMAL.fox;
+                if (accuracy < 60) return ANIMAL.cat;
+                return ANIMAL.butterfly;
+            }
+
+            function literaryLine(score, accuracy, comboVal) {
+                if (score > 90) return "今天，文字试图欺骗你。\n颜色没有说一句话。\n你却相信了颜色。";
+                if (accuracy >= 85 && comboVal > 10)
+                    return "注意力像一把手术刀。\n没有犹豫，没有偏移，\n只有切开真相。";
+                if (accuracy >= 70) return "世界一直在制造噪音。\n而你，只回应真正重要的那一个。";
+                if (accuracy >= 50) return "有些文字，今天成功吸引了你的目光。\n但它们终究没有带走你的方向。";
+                return "颜色和文字一直在争论。\n你的注意力站在它们中间，\n一时不知道该相信谁。";
+            }
+
+            function showResult() {
+                resultPanel.style.display = "block";
+                const score = calculateScore();
+                saveHistory(score);
+                const accuracy = getAccuracy();
+                const avgRT = reactionTimes.length ?
+                    Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length) :
+                    0;
+
+                document.getElementById("score").innerHTML = score;
+                const w = pickWeather(score, accuracy, avgRT);
+                const a = pickAnimal(maxCombo, avgRT, accuracy);
+                document.getElementById("weather").innerHTML =
+                    `${w.icon} 今日注意力天气：<strong>${w.name}</strong><br><span style="font-size:12px;color:#7a828e;">${w.desc}</span>`;
+                document.getElementById("animal").innerHTML =
+                    `🐾 注意力动物：<strong>${a.name}</strong><br><span style="font-size:12px;color:#7a828e;">${a.desc}</span>`;
+                document.getElementById("evaluation").innerHTML =
+                    literaryLine(score, accuracy, maxCombo) + "\n\n" +
+                    `准确率 ${accuracy}%　·　平均 RT ${avgRT}ms　·　得分 ${score}\n` +
+                    `最快 ${fastestRT === Infinity ? '—' : fastestRT + 'ms'}　·　最慢 ${slowestRT === 0 ? '—' : slowestRT + 'ms'}　·　最大连击 ${maxCombo}\n` +
+                    `历史最佳 ${localStorage.bestScore || '—'}`;
+
+                document.getElementById("downloadCSV").onclick = exportCSV;
+
+                setTimeout(() => {
+                    resultPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 120);
+            }
+
+            checks.forEach(c => c.addEventListener("change", updatePool));
+            updatePool();
+
+            wordArea.style.cursor = "pointer";
+            hintEl.textContent = "空格键 或 点击上方文字区域 开始测试";
+        })();
+    </script>
+</body>
+</html>
