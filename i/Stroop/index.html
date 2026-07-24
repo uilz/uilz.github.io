@@ -31,7 +31,6 @@
             padding: 24px 20px 20px;
         }
 
-        /* 标题弱化 */
         h1 {
             text-align: center;
             font-size: 16px;
@@ -50,7 +49,6 @@
             margin-bottom: 16px;
         }
 
-        /* 统计卡片弱化 */
         .top {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
@@ -82,7 +80,6 @@
             letter-spacing: .5px;
         }
 
-        /* 中心单词区突出 */
         #wordArea {
             height: 180px;
             display: flex;
@@ -109,6 +106,8 @@
             font-weight: 700;
             letter-spacing: 6px;
             transition: color .1s;
+            /* 默认颜色，停止后恢复 */
+            color: #8b949e;
         }
 
         .feedbackGreen {
@@ -134,7 +133,16 @@
             }
         }
 
-        /* 按钮区域突出 */
+        #countdownDisplay {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: #e5534b;
+            margin: 4px 0 10px;
+            display: none;
+            letter-spacing: 2px;
+        }
+
         #buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -166,7 +174,27 @@
             background: #1c2128;
         }
 
-        /* 设置区弱化 */
+        #stopBtn {
+            display: none;
+            width: 100%;
+            margin-top: 12px;
+            height: 44px;
+            border: 1px solid #2a3038;
+            border-radius: 8px;
+            background: #21262d;
+            color: #8b949e;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background .15s, border-color .15s, color .15s;
+        }
+        #stopBtn:hover {
+            background: #2a3038;
+            border-color: #539bf5;
+            color: #c0c7d0;
+        }
+
         #setting {
             margin-top: 18px;
             padding: 10px 14px;
@@ -181,12 +209,15 @@
             color: #555c66;
             letter-spacing: 1px;
         }
-        .checks {
+        .checks,
+        .mode-select {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px 14px;
+            gap: 10px 18px;
+            margin-bottom: 10px;
         }
-        .checks label {
+        .checks label,
+        .mode-select label {
             display: flex;
             gap: 5px;
             align-items: center;
@@ -195,14 +226,14 @@
             color: #6e7681;
             user-select: none;
         }
-        input[type=checkbox] {
+        input[type=checkbox],
+        input[type=radio] {
             accent-color: #539bf5;
             width: 14px;
             height: 14px;
             cursor: pointer;
         }
 
-        /* 提示弱化 */
         #hint {
             margin-top: 14px;
             text-align: center;
@@ -211,7 +242,6 @@
             letter-spacing: .5px;
         }
 
-        /* 结算区在测试结束才显示，稍微恢复一些视觉权重，但保持干净 */
         #result {
             margin-top: 20px;
             display: none;
@@ -236,16 +266,10 @@
             color: #e6e8ec;
             letter-spacing: 2px;
         }
-        #weather {
-            font-size: 15px;
-            margin-top: 14px;
-            line-height: 1.7;
-            color: #c0c7d0;
-            text-align: center;
-        }
+        #weather,
         #animal {
             font-size: 15px;
-            margin-top: 8px;
+            margin-top: 14px;
             line-height: 1.7;
             color: #c0c7d0;
             text-align: center;
@@ -364,7 +388,11 @@
             <div id="stroopWord">开始</div>
         </div>
 
+        <div id="countdownDisplay">15</div>
+
         <div id="buttons"></div>
+
+        <button id="stopBtn">停止测试</button>
 
         <div id="setting">
             <h2>颜色池</h2>
@@ -375,6 +403,11 @@
                 <label><input checked type="checkbox" value="yellow">黄</label>
                 <label><input checked type="checkbox" value="purple">紫</label>
                 <label><input checked type="checkbox" value="white">白</label>
+            </div>
+            <h2 style="margin-top:12px;">模式</h2>
+            <div class="mode-select">
+                <label><input type="radio" name="mode" value="free" checked> 自由模式</label>
+                <label><input type="radio" name="mode" value="timed"> 15秒挑战</label>
             </div>
         </div>
 
@@ -408,7 +441,8 @@
             let started = false;
             let startTime = 0,
                 questionStart = 0;
-            let timer = null;
+            let timer = null,
+                countdownTimer = null;
             let totalCorrect = 0,
                 totalWrong = 0,
                 totalQuestions = 0;
@@ -417,6 +451,8 @@
                 maxCombo = 0;
             let fastestRT = Infinity,
                 slowestRT = 0;
+            let mode = 'free';
+            let countdownValue = 15;
 
             const wordEl = document.getElementById("stroopWord");
             const btnBox = document.getElementById("buttons");
@@ -427,8 +463,12 @@
             const avgDOM = document.getElementById("avg");
             const resultPanel = document.getElementById("result");
             const checks = document.querySelectorAll("#setting input[type=checkbox]");
+            const modeRadios = document.querySelectorAll("input[name='mode']");
             const hintEl = document.getElementById("hint");
+            const stopBtn = document.getElementById("stopBtn");
+            const countdownDisplay = document.getElementById("countdownDisplay");
 
+            /* 添加连击和最快RT卡片 */
             (function addCards() {
                 const top = document.querySelector(".top");
                 const comboCard = document.createElement("div");
@@ -441,6 +481,16 @@
                 top.appendChild(bestCard);
             })();
 
+            /* 工具：随机打乱数组 */
+            function shuffleArray(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            /* 构建按钮结构（只在颜色池变更时调用） */
             function buildButtons() {
                 btnBox.innerHTML = "";
                 enabledColors.forEach(key => {
@@ -449,12 +499,20 @@
                     btn.textContent = COLOR_POOL[key].text;
                     btn.onclick = () => chooseColor(key);
                     btn.addEventListener("keydown", e => {
-                        if (e.code === "Space") {
-                            e.preventDefault();
-                        }
+                        if (e.code === "Space") e.preventDefault();
                     });
                     btnBox.appendChild(btn);
                 });
+            }
+
+            /* 高性能按钮随机化：仅重排现有DOM节点 */
+            function shuffleButtons() {
+                const buttons = Array.from(btnBox.children);
+                if (buttons.length === 0) return;
+                const shuffled = shuffleArray(buttons);
+                const fragment = document.createDocumentFragment();
+                shuffled.forEach(btn => fragment.appendChild(btn));
+                btnBox.appendChild(fragment);
             }
 
             function updatePool() {
@@ -465,6 +523,7 @@
                     return;
                 }
                 buildButtons();
+                shuffleButtons();
             }
 
             function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -489,6 +548,16 @@
                 timeDOM.innerHTML = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
             }
 
+            function updateCountdown() {
+                countdownValue--;
+                countdownDisplay.textContent = countdownValue;
+                if (countdownValue <= 0) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                    stopGame();
+                }
+            }
+
             function resetStats() {
                 totalCorrect = 0;
                 totalWrong = 0;
@@ -507,26 +576,59 @@
                 if (fastestEl) fastestEl.innerHTML = "—";
             }
 
+            function clearAllTimers() {
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+                if (countdownTimer) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+            }
+
             function startGame() {
                 started = true;
                 resultPanel.style.display = "none";
                 resetStats();
+                clearAllTimers();
                 startTime = Date.now();
                 updateTimer();
-                nextQuestion();
                 timer = setInterval(updateTimer, 100);
-                hintEl.textContent = "空格键 或 点击文字区域 停止测试";
+
+                if (mode === 'timed') {
+                    countdownValue = 15;
+                    countdownDisplay.textContent = countdownValue;
+                    countdownDisplay.style.display = "block";
+                    countdownTimer = setInterval(updateCountdown, 1000);
+                    hintEl.textContent = "倒计时中… 点击停止或按空格提前结束";
+                } else {
+                    countdownDisplay.style.display = "none";
+                    hintEl.textContent = "点击停止按钮、按空格或点击文字区域结束测试";
+                }
+
+                stopBtn.style.display = "block";
                 wordArea.style.cursor = "pointer";
+                nextQuestion();
+                shuffleButtons();
             }
 
             function stopGame() {
                 started = false;
-                clearInterval(timer);
+                clearAllTimers();
+                // 恢复中心单词为初始状态
+                wordEl.innerHTML = "开始";
+                wordEl.style.color = "#8b949e";
+                // 隐藏倒计时和停止按钮
+                countdownDisplay.style.display = "none";
+                stopBtn.style.display = "none";
+                // 显示结算结果
                 showResult();
-                hintEl.textContent = "空格键 或 点击文字区域 开始新测试";
+                hintEl.textContent = "空格键 或 点击上方文字区域 开始新测试";
                 wordArea.style.cursor = "pointer";
             }
 
+            /* 全局空格键 */
             document.addEventListener("keydown", e => {
                 if (e.code !== "Space") return;
                 const tag = document.activeElement?.tagName;
@@ -539,12 +641,18 @@
                 }
             });
 
+            /* 点击文字区域 */
             wordArea.addEventListener("click", () => {
                 if (!started) {
                     startGame();
                 } else {
                     stopGame();
                 }
+            });
+
+            /* 停止按钮 */
+            stopBtn.addEventListener("click", () => {
+                if (started) stopGame();
             });
 
             function flashGreen() {
@@ -589,6 +697,7 @@
                 avgDOM.innerHTML =
                     Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length) + "ms";
                 nextQuestion();
+                shuffleButtons();
             }
 
             function getAccuracy() {
@@ -699,6 +808,13 @@
                     resultPanel.scrollIntoView({ behavior: "smooth", block: "center" });
                 }, 120);
             }
+
+            /* 模式切换监听 */
+            modeRadios.forEach(radio => {
+                radio.addEventListener("change", (e) => {
+                    if (e.target.checked) mode = e.target.value;
+                });
+            });
 
             checks.forEach(c => c.addEventListener("change", updatePool));
             updatePool();
