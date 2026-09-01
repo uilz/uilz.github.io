@@ -291,7 +291,7 @@ class ThemeController {
         } catch (e) {
             console.warn("Failed to load theme from localStorage", e);
         }
-        return "dark";
+        return "zen";
     }
 
     _saveTheme(theme) {

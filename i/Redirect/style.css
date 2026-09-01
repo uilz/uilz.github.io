@@ -1,4 +1,35 @@
-:root,
+:root {
+    color-scheme: light;
+    --bg-color: #ffffff;
+    --panel-bg: rgba(250, 250, 250, 0.95);
+    --accent: #1a1a1a;
+    --accent-light: #4a4a4a;
+    --text-primary: #1a1a1a;
+    --text-secondary: #999999;
+    --success: #2d8a56;
+    --danger: #c23a2b;
+    --border-color: rgba(0, 0, 0, 0.06);
+    --mode-bar-bg: rgba(245, 245, 245, 0.95);
+    --mode-active-bg: rgba(26, 26, 26, 0.08);
+    --mode-active-border: rgba(26, 26, 26, 0.2);
+    --hover-bg: rgba(26, 26, 26, 0.05);
+    --hover-border: rgba(26, 26, 26, 0.15);
+    --active-bg: rgba(26, 26, 26, 0.1);
+    --focus-border: rgba(26, 26, 26, 0.3);
+    --focus-shadow: rgba(26, 26, 26, 0.1);
+    --node-stroke: rgba(26, 26, 26, 0.2);
+    --node-fill: rgba(255, 255, 255, 0.95);
+    --node-root-fill: rgba(26, 26, 26, 0.05);
+    --node-selected-stroke: var(--success);
+    --link-primary: rgba(26, 26, 26, 0.3);
+    --link-association: rgba(45, 138, 86, 0.35);
+    --link-temp: rgba(26, 26, 26, 0.25);
+    --node-shadow: none;
+    --node-radius: 2;
+    --font-family: "Georgia", "STSong", "SimSun", "Noto Serif SC", serif;
+    --theme-label: "水墨";
+}
+
 [data-theme="dark"] {
     color-scheme: dark;
     --bg-color: #11141a;
@@ -94,39 +125,6 @@
     --font-family: "Inter", "Segoe UI", sans-serif;
     --theme-label: "星图";
 }
-
-[data-theme="zen"] {
-    color-scheme: light;
-    --bg-color: #ffffff;
-    --panel-bg: rgba(250, 250, 250, 0.95);
-    --accent: #1a1a1a;
-    --accent-light: #4a4a4a;
-    --text-primary: #1a1a1a;
-    --text-secondary: #999999;
-    --success: #2d8a56;
-    --danger: #c23a2b;
-    --border-color: rgba(0, 0, 0, 0.06);
-    --mode-bar-bg: rgba(245, 245, 245, 0.95);
-    --mode-active-bg: rgba(26, 26, 26, 0.08);
-    --mode-active-border: rgba(26, 26, 26, 0.2);
-    --hover-bg: rgba(26, 26, 26, 0.05);
-    --hover-border: rgba(26, 26, 26, 0.15);
-    --active-bg: rgba(26, 26, 26, 0.1);
-    --focus-border: rgba(26, 26, 26, 0.3);
-    --focus-shadow: rgba(26, 26, 26, 0.1);
-    --node-stroke: rgba(26, 26, 26, 0.2);
-    --node-fill: rgba(255, 255, 255, 0.95);
-    --node-root-fill: rgba(26, 26, 26, 0.05);
-    --node-selected-stroke: var(--success);
-    --link-primary: rgba(26, 26, 26, 0.3);
-    --link-association: rgba(45, 138, 86, 0.35);
-    --link-temp: rgba(26, 26, 26, 0.25);
-    --node-shadow: none;
-    --node-radius: 2;
-    --font-family: "Georgia", "STSong", "SimSun", "Noto Serif SC", serif;
-    --theme-label: "水墨";
-}
-
 * {
     margin: 0;
     padding: 0;
