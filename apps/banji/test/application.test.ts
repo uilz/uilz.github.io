@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { deleteDatabase, openRepo } from '../src/repository/repo'
 import type { Repo } from '../src/repository/types'
 import { createBanjiApp, CardNotFoundError, InvalidDateError } from '../src/application'
+import { sha256Hex } from '../src/archive/hash'
 import { exportArchive } from '../src/archive/exportArchive'
 import { isUuidV7Shape } from '../src/domain/id'
 import { containerCard, fileCard, imageCard, isoAt, textCard, tid } from './helpers'
@@ -152,5 +153,73 @@ describe('application: 日历与归档用例', () => {
     const app = appOf(repo)
     app.close()
     await expect(repo.journals.list()).rejects.toThrow()
+  })
+})
+
+describe('application: 资产 / 设置 / 月摘要用例（T0 缝）', () => {
+  it('addAsset 按内容寻址存入；字节原样往返（Blob 对象不降级为 ArrayBuffer）', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const bytes = utf8.encode('手札里的一小段字节')
+    const rec = await app.addAsset(new Blob([bytes], { type: 'text/plain' }))
+    expect(rec.hash).toBe(await sha256Hex(bytes))
+    expect(rec.mime).toBe('text/plain')
+    expect(rec.size).toBe(bytes.byteLength)
+    expect(rec.addedAt).toBe(ISO)
+    expect('name' in rec).toBe(false)
+
+    const back = await app.getAsset(rec.hash)
+    if (back === undefined) throw new Error('getAsset 应取回刚落库的资产')
+    expect(back.blob).toBeInstanceOf(Blob)
+    expect(new Uint8Array(await back.blob.arrayBuffer())).toEqual(bytes)
+    expect(await app.getAsset('f'.repeat(64))).toBeUndefined()
+  })
+
+  it('addAsset 去重：同字节两次只落一条记录，File.name 随首次记录保留', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const bytes = utf8.encode('同一张图片')
+    const first = await app.addAsset(new File([bytes], '照片 1.png', { type: 'image/png' }))
+    expect(first.name).toBe('照片 1.png')
+    const second = await app.addAsset(new File([bytes], '改名.png', { type: 'image/png' }))
+    expect(second).toEqual(first)
+    const all = await repo.assets.list()
+    expect(all).toHaveLength(1)
+    expect(all[0]?.hash).toBe(first.hash)
+  })
+
+  it('setSetting/getSetting：值形状入 settings store，覆盖写刷新 updatedAt（注入时钟）', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    expect(await app.getSetting('theme')).toBeUndefined()
+    await app.setSetting('theme', 'night')
+    expect(await app.getSetting('theme')).toBe('night')
+    const rec = await repo.settings.get('theme')
+    if (rec === undefined) throw new Error('设置应落在 settings store')
+    expect(rec).toEqual({ key: 'theme', value: 'night', updatedAt: ISO })
+    await app.setSetting('theme', 'light')
+    expect(await app.getSetting('theme')).toBe('light')
+    const late = new Date(Date.UTC(2026, 5, 5)).toISOString()
+    await createBanjiApp(repo, { now: () => new Date(late) }).setSetting('theme', { nested: true })
+    expect(await app.getSetting('theme')).toEqual({ nested: true })
+    const rec2 = await repo.settings.get('theme')
+    expect(rec2?.updatedAt).toBe(late)
+  })
+
+  it('getMonthSummary：返回当月有内容日期的卡数（升序），空文档不计', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    await repo.journals.put({ date: '2026-01-20', cards: [], updatedAt: isoAt() })
+    await repo.journals.put({ date: '2026-01-02', cards: [textCard('a')], updatedAt: isoAt() })
+    await repo.journals.put({ date: '2026-01-11', cards: [textCard('b'), textCard('c'), textCard('d')], updatedAt: isoAt() })
+    await repo.journals.put({ date: '2026-02-01', cards: [textCard('串月')], updatedAt: isoAt() })
+    expect(await appOf(repo).getMonthSummary(2026, 1)).toEqual([
+      { date: '2026-01-02', cardCount: 1 },
+      { date: '2026-01-11', cardCount: 3 },
+    ])
+    expect(await appOf(repo).getMonthSummary(2025, 12)).toEqual([])
   })
 })

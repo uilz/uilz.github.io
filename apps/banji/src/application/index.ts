@@ -1,16 +1,17 @@
 // 应用层：UI 单元消费的唯一用例入口。薄——只做“取文档 → 改卡片 → 戳 updatedAt → 写回”
 // 的编排，零 React/DOM 依赖（importFromFile 收 Blob 只因 File 天然继承它）。
 // 表单级校验属 UI 边界：直接用 domain/validate 的同一套纯校验器。
-import type { Card, CardId, CardKind, CardPos, CardSize, JournalDoc } from '../domain/types'
+import type { AssetRecord, Card, CardId, CardKind, CardPos, CardSize, JournalDoc } from '../domain/types'
 import { newCardId } from '../domain/id'
 import { isValidDateString } from '../domain/date'
 import { cardsByIdOf, collectSubtreeIds } from '../domain/gc'
+import { hashBlob } from '../archive/hash'
 import type { Repo } from '../repository/types'
 import { exportArchive, type ExportResult } from '../archive/exportArchive'
 import { importArchive, type ImportArchiveOptions, type ImportResult } from '../archive/importArchive'
 import type { SchemaMigration } from '../archive/migration'
 
-export type { Card, CardId, CardKind, JournalDoc }
+export type { AssetRecord, Card, CardId, CardKind, JournalDoc }
 export { isValidDateString, monthMatrix, monthOf, todayLocal, addDays } from '../domain/date'
 export { newCardId } from '../domain/id'
 export type { ExportResult, ImportResult }
@@ -63,9 +64,20 @@ export interface AppOptions {
   readonly migrationTable?: readonly SchemaMigration[]
 }
 
+/** 月历打点：某日有内容的卡片数（墨点分层用）。 */
+export interface MonthMark {
+  readonly date: string
+  readonly cardCount: number
+}
+
+/** File 即 Blob+名字；type 缺省时落 application/octet-stream。 */
+export type AssetInput = Blob & { readonly name?: string; readonly type?: string }
+
 export interface BanjiApp {
   /** 当月“有内容”的日期（该日 journal.cards 非空），升序 'YYYY-MM-DD'。月历打点用。 */
   getMonth(year: number, month: number): Promise<string[]>
+  /** 同 getMonth 的口径，但带上每日卡片数（月历墨点分层）。 */
+  getMonthSummary(year: number, month: number): Promise<MonthMark[]>
   getJournal(date: string): Promise<JournalDoc | undefined>
   /** 当天无文档则自动创建；返回写入后的卡片（id/时间戳已填充）。 */
   addCard(date: string, draft: NewCardInput): Promise<Card>
@@ -74,6 +86,11 @@ export interface BanjiApp {
   resizeCard(date: string, id: CardId, size: CardSize): Promise<Card>
   /** 容器级联删除整棵子树；资产永不自动删除（GC 只发生在导出环节）。 */
   deleteCardCascade(date: string, id: CardId): Promise<void>
+  /** 不落库的文件字节 → assets store（内容寻址 sha256；同字节复用既有记录，改名不去重失效）。 */
+  addAsset(file: AssetInput): Promise<AssetRecord>
+  getAsset(hash: string): Promise<AssetRecord | undefined>
+  getSetting(key: string): Promise<unknown>
+  setSetting(key: string, value: unknown): Promise<void>
   /** 不碰 DOM：返回字节+建议文件名，下载由 UI 层完成。 */
   exportToFile(): Promise<ExportFileResult>
   importFromFile(source: Blob | Uint8Array, opts?: Pick<ImportArchiveOptions, 'estimate' | 'batchLimit'>): Promise<ImportResult>
@@ -135,6 +152,37 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
         .filter((d) => d.date.startsWith(prefix) && d.cards.length > 0)
         .map((d) => d.date)
         .sort()
+    },
+    async getMonthSummary(year, month) {
+      const prefix = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}`
+      const all = await repo.journals.list()
+      return all
+        .filter((d) => d.date.startsWith(prefix) && d.cards.length > 0)
+        .map((d) => ({ date: d.date, cardCount: d.cards.length }))
+        .sort((a, b) => (a.date < b.date ? -1 : 1))
+    },
+    async addAsset(file) {
+      const hash = await hashBlob(file)
+      const existing = await repo.assets.get(hash)
+      if (existing !== undefined) return existing
+      const record: AssetRecord = {
+        hash,
+        mime: file.type === '' ? 'application/octet-stream' : file.type,
+        size: file.size,
+        addedAt: stamp(),
+        blob: file,
+      }
+      if (file.name !== undefined) record.name = file.name
+      await repo.assets.put(record)
+      return record
+    },
+    getAsset: (hash) => repo.assets.get(hash),
+    async getSetting(key) {
+      const rec = await repo.settings.get(key)
+      return rec?.value
+    },
+    async setSetting(key, value) {
+      await repo.settings.put({ key, value, updatedAt: stamp() })
     },
     async getJournal(date) {
       requireDate(date)
