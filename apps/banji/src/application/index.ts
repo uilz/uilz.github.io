@@ -5,6 +5,7 @@ import type { AssetRecord, Card, CardId, CardKind, CardPos, CardSize, JournalDoc
 import { newCardId } from '../domain/id'
 import { isValidDateString } from '../domain/date'
 import { cardsByIdOf, collectSubtreeIds } from '../domain/gc'
+import { validateJournalDoc, type ValidationIssue } from '../domain/validate'
 import { hashBlob } from '../archive/hash'
 import type { Repo } from '../repository/types'
 import { exportArchive, type ExportResult } from '../archive/exportArchive'
@@ -59,6 +60,31 @@ export class CardNotFoundError extends Error {
   }
 }
 
+/** 删除撤销的完整快照：撕下的卡片群 + 幸存卡片 children[] 里被删引用的原位记录。 */
+export interface DeleteSnapshot {
+  /** 被删卡片的逐字副本：ids、createdAt/updatedAt、props、children、pos、size、z、meta —— 恢复时一件不重生。 */
+  readonly cards: readonly Card[]
+  /** 被幸存卡片 children[] 引用过的被删卡：undo 时按记录 index 重插入（越界则钳制）。 */
+  readonly parentPatches: readonly ParentPatch[]
+}
+
+export interface ParentPatch {
+  readonly parentId: CardId
+  readonly childId: CardId
+  readonly index: number
+}
+
+/** undo 恢复时快照未过校验（理论上不该发生，UI 侧构造，纯防御）。 */
+export class InvalidRestoreError extends Error {
+  constructor(
+    readonly date: string,
+    readonly issues: readonly ValidationIssue[],
+  ) {
+    super(`恢复快照校验失败: ${date}; ${issues.map((i) => i.message).join(' | ')}`)
+    this.name = 'InvalidRestoreError'
+  }
+}
+
 export interface AppOptions {
   readonly now?: () => Date
   readonly migrationTable?: readonly SchemaMigration[]
@@ -86,6 +112,8 @@ export interface BanjiApp {
   resizeCard(date: string, id: CardId, size: CardSize): Promise<Card>
   /** 容器级联删除整棵子树；资产永不自动删除（GC 只发生在导出环节）。 */
   deleteCardCascade(date: string, id: CardId): Promise<void>
+  /** 删除撤销：快照逐字写回（无文档则建；id 已存在者跳过不重复），parentPatches 按原 index 重插，只 bump 文档 updatedAt。命令历史住 UI 内存，此为唯一过界缝。 */
+  restoreCards(date: string, snapshot: DeleteSnapshot): Promise<void>
   /** 不落库的文件字节 → assets store（内容寻址 sha256；同字节复用既有记录，改名不去重失效）。 */
   addAsset(file: AssetInput): Promise<AssetRecord>
   getAsset(hash: string): Promise<AssetRecord | undefined>
@@ -206,6 +234,31 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
       if (!byId.has(id)) throw new CardNotFoundError(date, id)
       const doomed = collectSubtreeIds(byId, id)
       await repo.journals.put({ ...doc, cards: doc.cards.filter((c) => !doomed.has(c.id)), updatedAt: stamp() })
+    },
+    async restoreCards(date, snapshot) {
+      requireDate(date)
+      const doc = await repo.journals.get(date)
+      let cards: Card[] = doc === undefined ? [] : [...doc.cards]
+      for (const card of structuredClone(snapshot.cards)) {
+        if (cards.some((c) => c.id === card.id)) continue
+        cards.push(card)
+      }
+      for (const patch of snapshot.parentPatches) {
+        const parentExists = cards.some((c) => c.id === patch.parentId)
+        if (!parentExists) continue
+        cards = cards.map((c) => {
+          if (c.id !== patch.parentId) return c
+          const children = c.children ?? []
+          if (children.includes(patch.childId)) return c
+          const next = [...children]
+          next.splice(Math.max(0, Math.min(next.length, Math.trunc(patch.index))), 0, patch.childId)
+          return { ...c, children: next }
+        })
+      }
+      const restored: JournalDoc = { date, cards, updatedAt: stamp() }
+      const v = validateJournalDoc(restored)
+      if (!v.ok) throw new InvalidRestoreError(date, v.issues)
+      await repo.journals.put(restored)
     },
     async exportToFile() {
       const day = stamp().slice(0, 10)

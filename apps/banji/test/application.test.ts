@@ -2,10 +2,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { deleteDatabase, openRepo } from '../src/repository/repo'
 import type { Repo } from '../src/repository/types'
-import { createBanjiApp, CardNotFoundError, InvalidDateError } from '../src/application'
+import { createBanjiApp, CardNotFoundError, InvalidDateError, InvalidRestoreError } from '../src/application'
 import { sha256Hex } from '../src/archive/hash'
 import { exportArchive } from '../src/archive/exportArchive'
 import { isUuidV7Shape } from '../src/domain/id'
+import type { CardId } from '../src/domain/types'
 import { containerCard, fileCard, imageCard, isoAt, textCard, tid } from './helpers'
 import { buildWorld, FIXED_NOW, seedRepoWorld, utf8, type World } from './archiveFixtures'
 
@@ -98,6 +99,115 @@ describe('application: 卡片用例', () => {
     const app = appOf(repo)
     await expect(app.getJournal('2026-13-01')).rejects.toBeInstanceOf(InvalidDateError)
     await expect(app.addCard('不是日期', { kind: 'text', props: { text: '' } })).rejects.toBeInstanceOf(InvalidDateError)
+    await expect(app.restoreCards('不是日期', { cards: [], parentPatches: [] })).rejects.toBeInstanceOf(InvalidDateError)
+  })
+})
+
+describe('application: restoreCards（删除撤销缝 —— 逐字写回，命令历史住 UI 内存）', () => {
+  it('级联删除后按快照恢复：ids/时间戳/props/z/pos/size 逐字自等，只 bump 文档 updatedAt', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const leaf = textCard('孙辈', { id: tid('leaf'), pos: { x: 660, y: 940 }, size: { w: 210, h: 88 }, z: 3.5 })
+    const box = containerCard([leaf.id], { id: tid('box'), pos: { x: 700, y: 900 }, z: 4 })
+    const stray = fileCard('b'.repeat(64), { id: tid('stray') })
+    await repo.journals.put({ date: T, cards: [box, leaf, stray], updatedAt: isoAt() })
+    const before = await repo.journals.get(T)
+    if (before === undefined) throw new Error('前置文档丢失')
+    const doomed = before.cards.filter((c) => c.id === box.id || c.id === leaf.id)
+    const parent = structuredClone(before.cards.find((c) => c.id === box.id))
+    if (parent === undefined) throw new Error('前置容器丢失')
+
+    await app.deleteCardCascade(T, box.id)
+    expect((await repo.journals.get(T))?.cards.map((c) => c.id)).toEqual([stray.id])
+
+    const late = new Date(Date.UTC(2026, 5, 5)).toISOString()
+    await createBanjiApp(repo, { now: () => new Date(late) }).restoreCards(T, { cards: doomed, parentPatches: [] })
+    const after = await repo.journals.get(T)
+    expect(after?.updatedAt).toBe(late)
+    const restored = after?.cards.filter((c) => c.id !== stray.id) ?? []
+    expect(structuredClone(restored)).toEqual(doomed.map((c) => structuredClone(c)))
+    expect(restored.find((c) => c.id === box.id)?.children).toEqual(parent.children)
+    expect(restored.find((c) => c.id === leaf.id)?.pos).toEqual({ x: 660, y: 940 })
+  })
+
+  it('parentPatches 把幸存父卡的引用按原 index 重插；index 越界钳制到末尾', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const keepA = textCard('甲', { id: tid('ka') })
+    const gone = textCard('乙', { id: tid('gone') })
+    const keepB = textCard('丙', { id: tid('kb') })
+    const parent = containerCard([keepA.id, gone.id, keepB.id], { id: tid('p') })
+    await repo.journals.put({ date: T, cards: [parent, keepA, gone, keepB], updatedAt: isoAt() })
+    await app.deleteCardCascade(T, gone.id)
+    // 级联只拔 gone 自身；父卡 children[] 留悬空引用（v1 无 UI 可造，此处手工修成删除后果）
+    const doc = await repo.journals.get(T)
+    if (doc === undefined) throw new Error('文档丢失')
+    await repo.journals.put({
+      ...doc,
+      cards: doc.cards.map((c) => (c.id === parent.id ? { ...c, children: [keepA.id, keepB.id] } : c)),
+    })
+
+    await app.restoreCards(T, {
+      cards: [structuredClone(gone)],
+      parentPatches: [{ parentId: parent.id, childId: gone.id, index: 1 }],
+    })
+    expect((await repo.journals.get(T))?.cards.find((c) => c.id === parent.id)?.children).toEqual([keepA.id, gone.id, keepB.id])
+
+    await app.deleteCardCascade(T, gone.id)
+    const shrunk = await repo.journals.get(T)
+    if (shrunk === undefined) throw new Error('文档丢失')
+    await repo.journals.put({
+      ...shrunk,
+      cards: shrunk.cards.map((c) => (c.id === parent.id ? { ...c, children: [keepA.id, keepB.id] } : c)),
+    })
+    await app.restoreCards(T, {
+      cards: [structuredClone(gone)],
+      parentPatches: [{ parentId: parent.id, childId: gone.id, index: 99 }],
+    })
+    const clamped = (await repo.journals.get(T))?.cards.find((c) => c.id === parent.id)?.children
+    expect(clamped).toEqual([keepA.id, keepB.id, gone.id])
+  })
+
+  it('双次 undo 幂等：卡不复制、children 引用不重复', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const leaf = textCard('孙辈', { id: tid('leaf2') })
+    const box = containerCard([leaf.id], { id: tid('box2') })
+    await repo.journals.put({ date: T, cards: [box, leaf], updatedAt: isoAt() })
+    const snapshot = { cards: [structuredClone(box), structuredClone(leaf)], parentPatches: [] }
+    await app.deleteCardCascade(T, box.id)
+    await app.restoreCards(T, snapshot)
+    await app.restoreCards(T, snapshot)
+    const ids = (await repo.journals.get(T))?.cards.map((c) => c.id) ?? []
+    expect(ids.sort()).toEqual([box.id, leaf.id].sort())
+  })
+
+  it('该日文档已被清空时 restoreCards 自动建档（与 addCard 同规）', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const card = textCard('独苗', { id: tid('only') })
+    await repo.journals.put({ date: T, cards: [card], updatedAt: isoAt() })
+    await app.deleteCardCascade(T, card.id)
+    expect((await repo.journals.get(T))?.cards).toEqual([])
+    await app.restoreCards(T, { cards: [structuredClone(card)], parentPatches: [] })
+    expect((await repo.journals.get(T))?.cards).toEqual([card])
+  })
+
+  it('坏快照不过校验：整个写回作废，库内文档保持删除后原样', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const card = textCard('好卡', { id: tid('ok1') })
+    await repo.journals.put({ date: T, cards: [card], updatedAt: isoAt() })
+    const broken = structuredClone(card)
+    broken.id = '' as CardId
+    const before = structuredClone(await repo.journals.get(T))
+    await expect(app.restoreCards(T, { cards: [broken], parentPatches: [] })).rejects.toBeInstanceOf(InvalidRestoreError)
+    expect(structuredClone(await repo.journals.get(T))).toEqual(before)
   })
 })
 

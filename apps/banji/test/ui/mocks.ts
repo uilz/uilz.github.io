@@ -9,6 +9,7 @@ import type {
   Card,
   CardId,
   CardPatch,
+  DeleteSnapshot,
   ExportFileResult,
   ImportResult,
   JournalDoc,
@@ -80,6 +81,25 @@ export function makeMockApp(): MockSeam {
       if (doc === undefined) throw new Error(`mock: 无日志 ${date}`)
       const doomed = collectSubtreeIds(cardsByIdOf(doc.cards), id)
       rewrite(date, (cards) => cards.filter((c) => !doomed.has(c.id)))
+    }),
+    restoreCards: vi.fn(async (date: string, snapshot: DeleteSnapshot): Promise<void> => {
+      let cards = [...(journals.get(date)?.cards ?? [])]
+      for (const card of structuredClone(snapshot.cards)) {
+        if (cards.some((c) => c.id === card.id)) continue
+        cards.push(card)
+      }
+      for (const patch of snapshot.parentPatches) {
+        if (!cards.some((c) => c.id === patch.parentId)) continue
+        cards = cards.map((c) => {
+          if (c.id !== patch.parentId) return c
+          const children = c.children ?? []
+          if (children.includes(patch.childId)) return c
+          const next = [...children]
+          next.splice(Math.max(0, Math.min(next.length, Math.trunc(patch.index))), 0, patch.childId)
+          return { ...c, children: next }
+        })
+      }
+      journals.set(date, { date, cards, updatedAt: iso() })
     }),
     addAsset: vi.fn(async (file: AssetInput): Promise<AssetRecord> => {
       const hash = await hashBlob(file)

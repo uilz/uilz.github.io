@@ -137,6 +137,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 | 1 | staging 键新增 `s:<key>`（契约只列了 j/a/e） | commit 阶段清空四个活动 store 后 settings 须可从 staging 复活；无第四前缀则该要求不可满足 | 纯内部草稿键；归档对外格式零变化 |
 | 2 | `settings.addedAt`/asset `addedAt` 在导入后 = manifest.exportedAt；settings `updatedAt` 同理 | 归档 settings.json 只存 `{key,value}`（资产 name/mime/size 已够重建） | 往返非逐字段自等，测试按"时间戳再生"预期断言 |
 | 3 | 归档 manifest 校验 `app === 'banji'`（契约暗示） | 拒收他 app 同形档案 | 更严不是更松 |
+| 4 | R4：应用缝新增 `restoreCards(date, snapshot)`（+ `DeleteSnapshot`/`ParentPatch`） | 删除撤销需要"逐字写回"（id/时间戳一件不重生），addCard 的重生语义给不了；卡片级操作在既有缝里也没有恢复之路。快照与撤销历史全部住 UI 内存（刷新即无、单级一格、导入成功即作废），数据契约不动 | §10 的 `BanjiApp` 接口加一员（additive，无既有签名改动）；写回仍走文档级校验器，只 bump 文档 `updatedAt`；对 IDB/store schema/归档格式零变化 |
 
 ## 9. 测试基线（`apps/banji/test/`，vitest + fake-indexeddb/auto）
 
