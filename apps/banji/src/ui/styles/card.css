@@ -304,6 +304,49 @@
   color: var(--bj-ink-soft);
 }
 
+/* —— 纸叠（容器）—— 垫在下面的半透纸，不是文件夹框：虚线发丝 40%、不投影（影是面上纸片的），
+   高亮只做纸色微抬（120ms ease-out），绝不发光。子纸永远压在垫纸上（渲染序在 DayView 派生）。 */
+.bj-card.be-container {
+  border-style: dashed;
+  border-color: var(--bj-mat-edge);
+  background: var(--bj-mat);
+  box-shadow: none;
+  transition:
+    background 120ms ease-out,
+    border-color 120ms ease-out;
+}
+
+.bj-card.be-container.is-sel {
+  border-color: var(--bj-hairline-strong);
+  box-shadow: var(--bj-shadow);
+}
+
+/* D3 拖入悬停：虚线收实 + 纸色微抬。 */
+.bj-card.be-container.is-dropon {
+  border-style: solid;
+  border-color: var(--bj-hairline-strong);
+  background: var(--bj-mat-on);
+}
+
+.bj-stack-whisper {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 18px;
+  text-align: center;
+  line-height: 1.8;
+  color: var(--bj-ink-faint);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.bj-stack-note {
+  font-size: 13px;
+  color: var(--bj-ink-faint);
+  letter-spacing: 0.08em;
+}
+
 .bj-file-ico {
   display: inline-grid;
   place-items: center;

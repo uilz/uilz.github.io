@@ -4,6 +4,7 @@ import type { CardRenderer } from './types'
 import { textRenderer } from './text'
 import { imageRenderer } from './image'
 import { fileRenderer } from './file'
+import { containerRenderer } from './container'
 import { fallbackRenderer } from './fallback'
 
 export type { CardRenderer, IconKind, RenderCtx } from './types'
@@ -13,6 +14,7 @@ const registry: ReadonlyMap<string, CardRenderer> = new Map([
   ['text', textRenderer],
   ['image', imageRenderer],
   ['file', fileRenderer],
+  ['container', containerRenderer],
 ])
 
 /** 已知 kind 返回其渲染器；未登记 kind 返回 undefined（调用方决定是否报错——显示层不要）。 */

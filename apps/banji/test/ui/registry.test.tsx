@@ -16,13 +16,15 @@ describe('卡片注册表', () => {
     expect(rendererFor('text')?.iconKind).toBe('text')
     expect(rendererFor('image')?.iconKind).toBe('image')
     expect(rendererFor('file')?.iconKind).toBe('file')
+    expect(rendererFor('container')?.iconKind).toBe('stack')
     expect(rendererFor('mystery-kind')).toBeUndefined()
     expect(resolveRenderer('image')).toBe(rendererFor('image'))
   })
 
-  it('未知 kind 解析到兜底渲染器（显示层永不拿到 undefined）', () => {
+  it('R5 起 container 有自己的渲染器；未登记 kind 仍走兜底、绝不遮蔽（显示层永不拿到 undefined）', () => {
+    expect(resolveRenderer('container')).toBe(rendererFor('container'))
     expect(resolveRenderer('mystery-kind')).toBe(fallbackRenderer)
-    expect(resolveRenderer('container')).toBe(fallbackRenderer)
+    expect(resolveRenderer('voice-note-2027')).toBe(fallbackRenderer)
   })
 })
 

@@ -99,7 +99,19 @@ export function IconFile({ size = 13 }: IconProps): ReactElement {
 export function IconUnknownShape({ size = 13 }: IconProps): ReactElement {
   return (
     <svg {...stroke(size)}>
-      <rect x="5" y="5" width="14" height="14" rx="1.6" strokeDasharray="2.6 2.4" />
+      <rect x="7.5" y="7.5" width="11" height="11" rx="1.6" strokeDasharray="2.6 2.4" />
+      <path d="M4.5 14.5c0 .8.7 1.5 1.5 1.5" opacity="0.55" />
+      <path d="M3.5 10.5c0 .8.7 1.5 1.5 1.5" opacity="0.35" />
+    </svg>
+  )
+}
+
+export function IconStack({ size = 17 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <rect x="6.5" y="6.5" width="12" height="12" rx="1.6" strokeDasharray="3 2.6" />
+      <path d="M4.2 16.2a1.8 1.8 0 0 0 1.8 1.8" opacity="0.6" />
+      <path d="M2.8 12.4a1.8 1.8 0 0 0 1.8 1.8" opacity="0.4" />
     </svg>
   )
 }
@@ -109,6 +121,7 @@ const KIND_ICONS: Record<IconKind, () => ReactElement> = {
   image: () => <IconImage />,
   file: () => <IconFile />,
   mystery: () => <IconUnknownShape />,
+  stack: () => <IconStack size={13} />,
 }
 
 export function CardTypeIcon({ kind }: { readonly kind: IconKind }): ReactElement {

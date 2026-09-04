@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { BanjiApp } from '../../application'
 import type { Card, CardPos } from '../../domain/types'
 
-export type IconKind = 'text' | 'image' | 'file' | 'mystery'
+export type IconKind = 'text' | 'image' | 'file' | 'mystery' | 'stack'
 
 /** 渲染器能向中介索取的全部能力。setProps 是增量合并，不是整包替换。 */
 export interface RenderCtx {
