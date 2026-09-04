@@ -256,6 +256,47 @@ await mpage.click(`.bj-cell[data-date="${today}"]`)
 await mpage.waitForSelector('.bj-card')
 await mpage.screenshot({ path: `${SHOTS}/11-mobile-day.png`, fullPage: true })
 check('mobile: day renders after import', true)
+
+// —— R3 主屏适配：手机是手札的主设备，全部断言在 390×844 真浏览器上过秤 ——
+// React 重渲染窗口内 locator 动作易 flake（"element is not attached"），几何一律页内 getBoundingClientRect 实测。
+const pngPhone = join(HERE, 'phone.png')
+await makePng(mpage, '#e5d5b0', pngPhone)
+const imgBefore = await mpage.locator('.bj-card.be-image').count()
+await mpage.setInputFiles('input[aria-label="夹带"]', pngPhone)
+await mpage.waitForFunction((n) => document.querySelectorAll('.bj-card.be-image').length === n + 1, imgBefore, { timeout: 8000 })
+await mpage.waitForTimeout(700) // 虚影熄灭 + settle 动画落定
+const imgGeom = await mpage.evaluate(() => {
+  const els = [...document.querySelectorAll('.bj-card.be-image')]
+  const el = els[els.length - 1]
+  el.scrollIntoView({ block: 'center' })
+  const r = el.getBoundingClientRect()
+  return { width: r.width, x: r.x, right: r.right, y: r.y, bottom: r.bottom }
+})
+check('mobile 夹带: 图片卡宽 ≤ 350 (390-40)', imgGeom.width <= 350)
+check('mobile 夹带: 滚动可达后完整在屏内（含 24px 呼吸）', imgGeom.x >= 0 && imgGeom.right <= 390 && imgGeom.y >= 0 && imgGeom.bottom <= 844)
+const d3 = await dump(mpage)
+const phoneCard = d3.journals.flatMap((j) => j.cards).find((c) => c.kind === 'image' && c.size?.w === 318)
+check('mobile 夹带: 存储即窄屏尺寸 size=318 props=290x218 pos.x=24', phoneCard !== undefined && phoneCard.w === 290 && phoneCard.h === 218 && phoneCard.pos?.x === 24)
+await mpage.screenshot({ path: `${SHOTS}/14-mobile-attach.png` })
+
+await mpage.tap('.bj-add')
+const taM = mpage.locator('textarea').first()
+await taM.waitFor({ timeout: 4000 })
+await taM.fill('手机上落的一笔。')
+const taGeom = await mpage.evaluate(() => {
+  const r = document.querySelector('textarea').getBoundingClientRect()
+  return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, focused: document.activeElement?.tagName === 'TEXTAREA' }
+})
+check('mobile 键盘避让: 聚焦编辑器被滚进视口且持有焦点', taGeom.focused && taGeom.y >= 0 && taGeom.bottom <= 844 && taGeom.right <= 390)
+await mpage.screenshot({ path: `${SHOTS}/15-mobile-editor.png` })
+await mpage.waitForTimeout(1200)
+await mpage.reload()
+await mpage.waitForSelector('.bj-card')
+await mpage.waitForFunction((n) => document.querySelectorAll('.bj-card.be-image').length === n, imgBefore + 1, { timeout: 8000 })
+const d4 = await dump(mpage)
+const stillPhone = d4.journals.flatMap((j) => j.cards).some((c) => c.kind === 'image' && c.size?.w === 318 && c.w === 290)
+const stillText = d4.journals.flatMap((j) => j.cards).some((c) => (c.text || '').includes('手机上落的一笔'))
+check('mobile reload: 窄屏图片卡与文字卡都还在', stillPhone && stillText)
 await mctx.close()
 
 await browser.close()

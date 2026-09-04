@@ -91,7 +91,7 @@ describe('夹带闭环（附件管线，缝=mock BanjiApp，无 IDB）', () => {
     })
     const f = mkFile('大照片.png', 'image/png')
     fireEvent.change(clipInput(), { target: { files: [f] } })
-    expect(await screen.findByText('这一份没夹上 · 纸面快满了')).toBeDefined()
+    expect(await screen.findByText('这一份没夹上 · 手机的存储空间不够了，先导出或清理一些吧')).toBeDefined()
     await new Promise((r) => setTimeout(r, 120))
     expect(seam.app.addCard).not.toHaveBeenCalled()
     expect(document.querySelector('.bj-ghost')).toBeNull()
