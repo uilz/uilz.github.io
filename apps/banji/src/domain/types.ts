@@ -103,5 +103,9 @@ export interface SettingsRecord {
   updatedAt: string
 }
 
-/** staging 仓库的 out-of-line 键（导入草稿区）。 */
-export type StagingKey = `j:${string}` | `a:${string}` | `e:${string}`
+/**
+ * staging 仓库的 out-of-line 键（导入草稿区）。
+ * 契约原文只列了 j/a/e 三类；设置也必须活过导入（HERO 要求），故内部补 s: 前缀。
+ * 见 docs/ARCHITECTURE.md 的偏差记录——这是对内部草稿键的扩展，不触碰对外格式。
+ */
+export type StagingKey = `j:${string}` | `a:${string}` | `e:${string}` | `s:${string}`
