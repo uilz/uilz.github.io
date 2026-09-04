@@ -47,7 +47,7 @@ async function dump(page) {
       const tj = db.transaction('journals', 'readonly')
       tj.objectStore('journals').getAll().onsuccess = (e1) => {
         out.journals = e1.target.result
-          .map((d) => ({ date: d.date, cards: d.cards.map((c) => ({ kind: c.kind, text: c.props?.text, hash: c.props?.hash, w: c.props?.w, h: c.props?.h, pos: c.pos, size: c.size })) }))
+          .map((d) => ({ date: d.date, cards: d.cards.map((c) => ({ id: c.id, kind: c.kind, text: c.props?.text, hash: c.props?.hash, w: c.props?.w, h: c.props?.h, pos: c.pos, size: c.size, children: c.children ?? null })) }))
           .sort((a, b) => a.date.localeCompare(b.date))
         const ta = db.transaction('assets', 'readonly')
         ta.objectStore('assets').getAll().onsuccess = (e2) => {
@@ -239,6 +239,112 @@ await page.reload()
 await page.waitForSelector('.bj-card')
 const dUndo = await dump(page)
 check('R4 桌面 再想想: 恢复已过真缝落库，reload 仍在', dUndo.journals.flatMap((j) => j.cards).some((c) => (c.text || '').includes('撕下又想起')))
+
+// —— R5 纸叠（桌面全流程）：造叠空垫纸+耳语 → 拖纸悬停落点态 → 释放收编过缝 → reload 嵌套在纸内
+//    → 空处拖垫纸整树平移 → 拖子纸出界断奶落库。几何全部页内 getBoundingClientRect 实测。 ——
+const btnDash = await page.evaluate(() => {
+  const r = document.querySelector('.bj-add-wrap button[aria-label="造叠"] svg rect')
+  return r !== null && String(r.getAttribute('stroke-dasharray') ?? '').length > 0
+})
+check('R5 D1 底栏第三枚把手：虚线矩形手绘 svg', btnDash)
+
+await page.click('.bj-add')
+await page.waitForSelector('textarea', { timeout: 4000 })
+await page.locator('textarea').first().fill('入叠帖')
+await page.click('.bj-scroll', { position: { x: 6, y: 6 } }) // 落笔结算
+await page.waitForTimeout(700)
+await page.click('button[aria-label="造叠"]')
+await page.waitForSelector('.bj-card.be-container', { timeout: 4000 })
+const matBorn = await page.evaluate(() => {
+  const m = document.querySelector('.bj-card.be-container')
+  return { sel: m.classList.contains('is-sel'), whisper: m.querySelector('.bj-stack-whisper')?.textContent ?? '' }
+})
+check('R5 D1+D2 造叠即落空垫纸且即刻选中：耳语候着', matBorn.sel === true && matBorn.whisper === '拖一张纸进来，它们就是一叠了')
+await page.screenshot({ path: `${SHOTS}/19-stack-mat.png`, fullPage: true })
+
+async function matKidRects() {
+  return page.evaluate(() => {
+    const m = document.querySelector('.bj-card.be-container')
+    const k = [...document.querySelectorAll('.bj-card:not(.be-container)')].find((e) => (e.textContent || '').includes('入叠帖'))
+    if (m === null || k === undefined) return null
+    const mr = m.getBoundingClientRect()
+    const kr = k.getBoundingClientRect()
+    return { mx: mr.x, my: mr.y, mw: mr.width, mh: mr.height, kx: kr.x, ky: kr.y, kidId: k.getAttribute('data-card-id') }
+  })
+}
+await page.evaluate(() => document.querySelector('.bj-card.be-container').scrollIntoView({ block: 'center' }))
+const g0 = await matKidRects()
+await page.mouse.move(g0.kx + 24, g0.ky + 14)
+await page.mouse.down()
+await page.mouse.move(g0.kx + 80, g0.ky + 120, { steps: 5 })
+await page.mouse.move(g0.mx + g0.mw / 2, g0.my + g0.mh / 2, { steps: 8 })
+await page.waitForTimeout(120) // pointermove 属 React 连续事件：让落点态一帧内上屏
+const droponMid = await page.evaluate(() => document.querySelectorAll('.bj-card.be-container.is-dropon').length)
+check('R5 D3 拖入悬停：指针下垫纸现落点态 is-dropon（瞬态）', droponMid === 1)
+await page.mouse.up()
+await page.waitForTimeout(1400) // debounce 450 + 串行链
+const noteLive = (await page.locator('.bj-stack-note').textContent().catch(() => '')) || ''
+check('R5 D2 收编后垫纸左上「1 张」铅笔小注', noteLive.trim() === '1 张')
+await page.reload()
+await page.waitForSelector('.bj-card.be-container')
+const dS = await dump(page)
+const dayS = dS.journals.find((j) => j.date === today)
+const matC = dayS.cards.find((c) => c.kind === 'container')
+const kidC = dayS.cards.find((c) => c.text === '入叠帖')
+check('R5 D3 reload 后 children 过缝落库（IDB 实dump）', matC.children?.includes(kidC.id) === true)
+const keyleak = await page.evaluate(() => new Promise((res) => {
+  const r = indexedDB.open('banji-journal')
+  r.onsuccess = () => {
+    const db = r.result
+    const tx = db.transaction('journals', 'readonly')
+    tx.objectStore('journals').getAll().onsuccess = (e) => {
+      db.close()
+      const keys = ['id', 'kind', 'pos', 'size', 'z', 'rot', 'children', 'meta', 'props', 'createdAt', 'updatedAt']
+      res(e.target.result.some((d) => d.cards.some((c) => Object.keys(c).some((k) => !keys.includes(k)))))
+    }
+    tx.onerror = () => res(true)
+  }
+  r.onerror = () => res(true)
+}))
+check('R5 D3 瞬态字段永不过缝：全部卡片键 ⊆ 契约字段', keyleak === false)
+await page.evaluate(() => document.querySelector('.bj-card.be-container').scrollIntoView({ block: 'center' }))
+const nest = await matKidRects()
+const insideAbove = await page.evaluate((n) => {
+  const m = document.querySelector('.bj-card.be-container')
+  const k = document.querySelector(`[data-card-id="${n.kidId}"]`)
+  const mr = m.getBoundingClientRect()
+  const kr = k.getBoundingClientRect()
+  return kr.x >= mr.x - 2 && kr.y >= mr.y - 2 && kr.right <= mr.right + 2 && kr.bottom <= mr.bottom + 2 && Number(k.style.zIndex) > Number(m.style.zIndex)
+}, nest)
+check('R5 D2 子纸渲染于垫纸界内且压在其上（渲染序派生）', insideAbove)
+await page.screenshot({ path: `${SHOTS}/20-stack-inside.png`, fullPage: true })
+
+const g1 = await matKidRects()
+await page.mouse.move(g1.mx + 10, g1.my + 10) // 垫纸空处（子纸永远在界内 ≥24px 之外才能落指）
+await page.mouse.down()
+await page.mouse.move(g1.mx + 150, g1.my + 70, { steps: 6 })
+await page.mouse.up()
+await page.waitForTimeout(900)
+const g2 = await matKidRects()
+const movedTree = Math.abs(g2.mx - (g1.mx + 140)) <= 2 && Math.abs(g2.kx - (g1.kx + 140)) <= 2
+check('R5 D5 空处拖垫纸：整棵子树同位移（子纸 ±2px 跟移）', movedTree)
+
+await page.mouse.move(g2.kx + 24, g2.ky + 14)
+await page.mouse.down()
+await page.mouse.move(g2.mx - 260, g2.my - 60, { steps: 8 }) // 出界：越过垫纸左缘与上缘之外
+await page.mouse.up()
+await page.waitForTimeout(1400)
+await page.reload()
+await page.waitForSelector('.bj-card.be-container')
+const dOut = await dump(page)
+const dayOut = dOut.journals.find((j) => j.date === today)
+const matOut = dayOut.cards.find((c) => c.kind === 'container')
+const kidOut = dayOut.cards.find((c) => c.text === '入叠帖')
+const backWhisper = ((await page.locator('.bj-card.be-container .bj-stack-whisper').textContent().catch(() => '')) || '').includes('拖一张纸进来')
+check('R5 D4 拖出垫纸界外：断奶过缝落库，垫纸退回耳语', (matOut.children === null || matOut.children?.includes(kidOut.id) === false) && backWhisper)
+check('R5 D4 出界位移持久：reload 后子纸仍在界外新位', Math.abs(kidOut.pos.x - matOut.pos.x) > 0 && kidOut.pos.x < matOut.pos.x)
+await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true })
+
 await page.click('.bj-back')
 await page.waitForSelector('.bj-cell')
 
@@ -383,6 +489,32 @@ await mpage.reload()
 await mpage.waitForSelector('.bj-card')
 await mpage.waitForTimeout(900)
 check('mobile 耳语: 记档之后终生不再扰（reload 不响）', (await mpage.locator('.bj-wide-hint').count()) === 0)
+
+// —— R5 手机真触摸造叠+拖入：CDP touch 走线上指针管线，390 屏上纸叠必须照样成立 ——
+await mpage.tap('button[aria-label="造叠"]')
+await mpage.waitForSelector('.bj-card.be-container', { timeout: 4000 })
+const mMat0 = await mpage.evaluate(() => {
+  document.querySelector('.bj-card.be-container').scrollIntoView({ block: 'end' })
+  const m = document.querySelector('.bj-card.be-container')
+  const k = [...document.querySelectorAll('.bj-card:not(.be-container)')].find((e) => (e.textContent || '').includes('手机上落的一笔'))
+  if (k === undefined) return null
+  const mr = m.getBoundingClientRect()
+  const kr = k.getBoundingClientRect()
+  return { mx: mr.x, my: mr.y, mw: mr.width, mh: mr.height, kx: kr.x, ky: kr.y, sel: m.classList.contains('is-sel'), whisper: (m.querySelector('.bj-stack-whisper')?.textContent || '') }
+})
+check('mobile R5 造叠：390 屏空垫纸即刻选中、耳语可见', mMat0 !== null && mMat0.sel === true && mMat0.whisper.includes('拖一张纸进来'))
+await touchDrag(mMat0.kx + 24, mMat0.ky + 14, mMat0.mx + mMat0.mw / 2, mMat0.my + mMat0.mh / 2)
+await mpage.waitForTimeout(1600) // debounce + 串行链
+const mNote = ((await mpage.locator('.bj-stack-note').textContent().catch(() => '')) || '').trim()
+check('mobile R5 真触摸拖入：小注「1 张」上纸', mNote === '1 张')
+await mpage.reload()
+await mpage.waitForSelector('.bj-card.be-container')
+const dM = await dump(mpage)
+const dayM = dM.journals.find((j) => j.date === today)
+const matM = dayM.cards.find((c) => c.kind === 'container')
+const kidM = dayM.cards.find((c) => (c.text || '').includes('手机上落的一笔'))
+check('mobile R5 拖入过缝：children 落库 reload 仍在', matM.children?.includes(kidM.id) === true)
+await mpage.screenshot({ path: `${SHOTS}/22-mobile-stack.png` })
 await mctx.close()
 
 await browser.close()
