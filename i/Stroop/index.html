@@ -466,6 +466,8 @@
             const MIN_QUESTIONS = 6;
             let mode = 'timed';
             let difficulty = 'medium';
+            /* 本局开局时冻结的模式/难度标签（结算报告用，防止中途切换污染标签） */
+            let runMode = null, runDifficulty = null;
             let countdownValue = 15;
             const IDLE_HINT = "空格键 或 点击上方文字区域 开始测试\n玩法：上面的颜色，对应下面的字。\n把字当成一幅画，画是什么颜色，你就点写有那个颜色名字的按钮。 玩的时候嘴里跟着念字的颜色（比如念“黄、黄、黄”），能帮你屏蔽掉字义的干扰，多试几次就顺手啦！\n模式：15秒挑战限时15秒、多答多得；自由模式不限时、可随时停止";
 
@@ -556,12 +558,14 @@
             }
 
             function updatePool() {
-                enabledColors = [];
-                checks.forEach(c => { if (c.checked) enabledColors.push(c.value); });
-                if (enabledColors.length < 2) {
+                const candidate = [];
+                checks.forEach(c => { if (c.checked) candidate.push(c.value); });
+                if (candidate.length < 2) {
                     alert("至少选择两种颜色");
+                    checks.forEach(c => { c.checked = enabledColors.includes(c.value); });
                     return;
                 }
+                enabledColors = candidate;
                 saveSettings();
                 buildButtons();
                 shuffleButtons();
@@ -571,6 +575,8 @@
             function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
             /* 档内随机取一条文案 */
             function pickText(list) { return list[Math.floor(Math.random() * list.length)]; }
+            /* HTML 转义：快照字符串可能来自被篡改的 localStorage */
+            function escAttr(s){ return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch])); }
 
             function nextQuestion() {
                 let wordKey = rand(enabledColors);
@@ -636,6 +642,8 @@
                     localStorage.removeItem('stroop.lastRun');
                 } catch (e) {}
                 started = true;
+                runMode = mode;
+                runDifficulty = difficulty;
                 resultPanel.style.display = "none";
                 resetStats();
                 clearAllTimers();
@@ -665,6 +673,7 @@
                 started = false;
                 clearAllTimers();
                 // 恢复中心单词为初始状态
+                wordArea.classList.remove("feedbackGreen", "feedbackRed");
                 wordEl.innerHTML = "开始";
                 wordEl.style.color = "#8b949e";
                 // 隐藏倒计时和停止按钮
@@ -676,12 +685,18 @@
                 wordArea.style.cursor = "pointer";
             }
 
-            /* 全局空格键 */
+            /* 全局空格键（radio/checkbox 聚焦时不劫持：先失焦再照常开始/结束） */
             document.addEventListener("keydown", e => {
                 if (e.code !== "Space") return;
-                const tag = document.activeElement?.tagName;
-                if (tag === "INPUT" || tag === "TEXTAREA") return;
-                e.preventDefault();
+                const ae = document.activeElement;
+                if (ae && ae.tagName === "INPUT" && (ae.type === "radio" || ae.type === "checkbox")) {
+                    ae.blur();
+                    e.preventDefault();
+                } else if ((ae && ae.tagName === "INPUT" && /text|search|email|url|number|password/i.test(ae.type || "")) || (ae && ae.tagName === "TEXTAREA")) {
+                    return;
+                } else {
+                    e.preventDefault();
+                }
                 if (!started) {
                     startGame();
                 } else {
@@ -704,13 +719,13 @@
             });
 
             function flashGreen() {
-                wordArea.classList.remove("feedbackGreen");
+                wordArea.classList.remove("feedbackGreen", "feedbackRed");
                 void wordArea.offsetWidth;
                 wordArea.classList.add("feedbackGreen");
             }
 
             function flashRed() {
-                wordArea.classList.remove("feedbackRed");
+                wordArea.classList.remove("feedbackGreen", "feedbackRed");
                 void wordArea.offsetWidth;
                 wordArea.classList.add("feedbackRed");
             }
@@ -762,6 +777,15 @@
                 return Math.max(0, lb);
             }
 
+            /* 反应时波动系数 cv = 标准差/均值（注意力稳定性指标，样本<3记0） */
+            function rtCV() {
+                const n = reactionTimes.length;
+                if (n < 3) return 0;
+                const m = reactionTimes.reduce((a, b) => a + b, 0) / n;
+                const sd = Math.sqrt(reactionTimes.reduce((a, b) => a + (b - m) * (b - m), 0) / n);
+                return m ? sd / m : 0;
+            }
+
             function calculateScore() {
                 const accuracy = Math.round(effectiveAccuracy() * 100);
                 const avg = reactionTimes.length ?
@@ -774,14 +798,17 @@
             }
 
             function saveHistory(score) {
-                const bestScore = Math.max(Number(localStorage.bestScore || 0), score);
-                /* 小样本按 Wilson 有效准度计入历史 */
-                const bestAccuracy = Math.max(Number(localStorage.bestAccuracy || 0), Math.round(effectiveAccuracy() * 100));
-                const bestRT = Math.min(Number(localStorage.bestRT || 999999), fastestRT === Infinity ? 999999 :
-                    fastestRT);
-                localStorage.bestScore = bestScore;
-                localStorage.bestAccuracy = bestAccuracy;
-                localStorage.bestRT = bestRT;
+                /* Safari 隐私模式等写失败不可阻断结算 */
+                try {
+                    const bestScore = Math.max(Number(localStorage.bestScore || 0), score);
+                    /* 小样本按 Wilson 有效准度计入历史 */
+                    const bestAccuracy = Math.max(Number(localStorage.bestAccuracy || 0), Math.round(effectiveAccuracy() * 100));
+                    const bestRT = Math.min(Number(localStorage.bestRT || 999999), fastestRT === Infinity ? 999999 :
+                        fastestRT);
+                    localStorage.bestScore = bestScore;
+                    localStorage.bestAccuracy = bestAccuracy;
+                    localStorage.bestRT = bestRT;
+                } catch (e) {}
             }
 
             function exportCSV(rts) {
@@ -803,14 +830,20 @@
                 storm: { name: "风暴", icon: "⛈", descs: ["文字与颜色不断争吵，注意力疲于奔命。", "今天颜色和字谁也不让谁，你被夹在中间。", "注意力不是没了，是打仗太累了。"], why: "平均RT（反应时）> 900ms" },
                 meteor: { name: "流星雨", icon: "☄", descs: ["思维快得像划过夜空，却也容易擦肩而过。", "你的直觉跑得比检查快。", "准度靠速度撑起来的时候，天空会有流星。"], why: "平均RT（反应时）< 550ms 且准确率 ≥ 80" }
             };
+            /* 风格分界阈值，可调 */
+            const RT_FAST = 550, RT_SLOW = 800, CV_UNSTABLE = 0.4;
             const ANIMAL = {
-                hawk: { name: "猎鹰", descs: ["目标出现后，其余世界自动失焦。", "你开始享受连击带来的专注本身了。", "每一击都没有多余动作，像经过训练。"], why: "连击 > 15" },
-                owl: { name: "猫头鹰", descs: ["慢一点，但每一次俯冲都精准。", "快不是优点，准才是。", "你在心里先确认了一遍，才让手指投票。"], why: "平均RT < 500ms 且准确率 > 90" },
-                wolf: { name: "狼", descs: ["节奏稳定，从不轻易偏离方向。", "你的准确率不是爆发，是维持。", "不冒进、不掉队，这就是狼的走法。"], why: "准确率 ≥ 85" },
-                whale: { name: "鲸", descs: ["思维缓慢而深邃，不被噪音左右。", "速度不是你的战场，稳才是。", "你在注意力水下慢慢转身，但从不撞错方向。"], why: "平均RT > 800ms" },
-                fox: { name: "狐狸", descs: ["聪明，但偶尔会相信自己的第一直觉。", "你离高分只差“多看一眼”。", "聪明已经在了，耐心也会到账。"], why: "连击 < 5 且准确率 < 70" },
-                cat: { name: "猫", descs: ["世界里的每一样东西，都值得看一眼。", "你不是没能力专注，只是好奇心更贵。", "注意力像猫，来了，蹭你一下，走了。"], why: "准确率 < 60" },
-                butterfly: { name: "蝴蝶", descs: ["注意力今天停留在每一朵花上。", "每一次犹豫都有原因，只是答案不在犹豫里。", "飞得久了会忘路，下次先落对那朵花。"], why: "各档未命中的兜底" }
+                hawk: { name: "猎鹰", descs: ["目标出现后，其余世界自动失焦。", "你开始享受连击带来的专注本身了。", "每一击都没有多余动作，像经过训练。"], why: "连击 > 15，动量型" },
+                butterfly: { name: "蝴蝶", descs: ["注意力今天停留在每一朵花上。", "每一次犹豫都有原因，只是答案不在犹豫里。", "飞得久了会忘路，下次先落对那朵花。"], why: "RT波动 cv ≥ 0.4 且准确率 ≥ 60" },
+                cat: { name: "猫", descs: ["世界里的每一样东西，都值得看一眼。", "你不是没能力专注，只是好奇心更贵。", "注意力像猫，来了，蹭你一下，走了。"], why: "RT波动 cv ≥ 0.4，注意力忽快忽慢" },
+                owl: { name: "猫头鹰", descs: ["枭的狩猎没有多余动作——看见，锁定，命中。", "快到别人以为你在猜，其实你每个都看清了。", "极致的快，是准的另一种写法。"], why: "平均RT < 550ms 且准确率 ≥ 90，快而极准" },
+                monkey: { name: "猴", descs: ["猴的手比眼睛快，抢在半拍之前。", "颜色还没看真，尾巴已经先点了。", "快是真的快，准是下局的事。"], why: "平均RT < 550ms 且准确率 < 70，手比眼快" },
+                hummingbird: { name: "蜂鸟", descs: ["高频振翅，偶尔采错花，但从不迟疑太久。", "速度已经在线，准度正在追上来。", "像蜂鸟一样悬停、出击，偶尔偏一偏，问题不大。"], why: "平均RT < 550ms，准确率 70~90" },
+                elephant: { name: "象", descs: ["每一步都慢，每一步都算数。", "象的记忆里没有侥幸——它把每一题都看清了才落脚。", "别人抢时间，你在攒确定性。"], why: "平均RT > 800ms 且准确率 ≥ 85，谨慎深思" },
+                whale: { name: "鲸", descs: ["思维缓慢而深邃，不被噪音左右。", "速度不是你的战场，稳才是。", "你在注意力水下慢慢转身，但从不撞错方向。"], why: "平均RT > 800ms，慢节奏" },
+                wolf: { name: "狼", descs: ["节奏稳定，从不轻易偏离方向。", "你的准确率不是爆发，是维持。", "不冒进、不掉队，这就是狼的走法。"], why: "中速且准确率 ≥ 85，节拍器" },
+                fox: { name: "狐狸", descs: ["聪明，但偶尔会相信自己的第一直觉。", "你离高分只差“多看一眼”。", "聪明已经在了，耐心也会到账。"], why: "中速且准确率 < 70" },
+                dolphin: { name: "海豚", descs: ["不紧不慢，该跃起的时候才跃起。", "海豚的专注像游泳：放松，但始终在水里。", "节奏是中速的，航线是清醒的。"], why: "中速、准确率中游" }
             };
 
             /* 模式 × 难度 × 得分七档判词（与诗句同分界：≥90/75/60/45/30/15/其余） */
@@ -884,14 +917,14 @@
                 return WEATHER.fog;
             }
 
-            function pickAnimal(comboVal, avgRT, accuracy) {
+            function pickAnimal(comboVal, avgRT, accuracy, cv) {
                 if (comboVal > 15) return ANIMAL.hawk;
-                if (avgRT < 500 && accuracy > 90) return ANIMAL.owl;
+                if (cv >= CV_UNSTABLE) return accuracy >= 60 ? ANIMAL.butterfly : ANIMAL.cat;
+                if (avgRT < RT_FAST) return accuracy >= 90 ? ANIMAL.owl : accuracy < 70 ? ANIMAL.monkey : ANIMAL.hummingbird;
+                if (avgRT > RT_SLOW) return accuracy >= 85 ? ANIMAL.elephant : ANIMAL.whale;
                 if (accuracy >= 85) return ANIMAL.wolf;
-                if (avgRT > 800) return ANIMAL.whale;
-                if (comboVal < 5 && accuracy < 70) return ANIMAL.fox;
-                if (accuracy < 60) return ANIMAL.cat;
-                return ANIMAL.butterfly;
+                if (accuracy < 70) return ANIMAL.fox;
+                return ANIMAL.dolphin;
             }
 
             /* 按得分 15 分一档的 7 档评语（纯 score 瀑布，附档位依据 why） */
@@ -909,16 +942,19 @@
                 const score = calculateScore();
                 saveHistory(score);
                 const accuracy = getAccuracy();
-                const verdictSet = VERDICT[mode][difficulty];
+                const rm = runMode || mode;
+                const rd = runDifficulty || difficulty;
+                const verdictSet = VERDICT[rm][rd];
                 const vt = score >= 90 ? 's90' : score >= 75 ? 's75' : score >= 60 ? 's60' : score >= 45 ? 's45' : score >= 30 ? 's30' : score >= 15 ? 's15' : 's0';
                 const verdict = pickText(verdictSet[vt]);
+                const cv = rtCV();
                 const avgRT = reactionTimes.length ?
                     Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length) :
                     0;
                 const w = pickWeather(score, accuracy, avgRT);
-                const a = pickAnimal(maxCombo, avgRT, accuracy);
+                const a = pickAnimal(maxCombo, avgRT, accuracy, cv);
                 const poemPick = literaryLine(score, accuracy, maxCombo);
-                const diffCN = { easy: '简单', medium: '中等', hard: '困难' }[difficulty];
+                const diffCN = { easy: '简单', medium: '中等', hard: '困难' }[rd];
                 const smallSample = totalQuestions < MIN_QUESTIONS ? `样本提示：本局只有 ${totalQuestions} 题，样本偏小，得分已按 ${totalQuestions}/6 折算。\n\n` : '';
                 /* 固化本局全部抽中文案，重载后可原样回放 */
                 const d = {
@@ -930,8 +966,8 @@
                     fastest: fastestRT === Infinity ? null : fastestRT,
                     slowest: slowestRT,
                     maxCombo: maxCombo,
-                    mode: mode,
-                    difficulty: difficulty,
+                    mode: rm,
+                    difficulty: rd,
                     reactionTimes: [...reactionTimes],
                     wIcon: w.icon,
                     wName: w.name,
@@ -943,7 +979,7 @@
                     poem: poemPick.line,
                     poemWhy: poemPick.why,
                     verdict: verdict,
-                    verdictWhy: `得分 ${score}，${{ s90: '≥90', s75: '≥75', s60: '≥60', s45: '≥45', s30: '≥30', s15: '≥15', s0: '<15' }[vt]} 段；模式 ${mode === 'timed' ? '15秒挑战' : '自由模式'} × 难度 ${diffCN}`,
+                    verdictWhy: `得分 ${score}，${{ s90: '≥90', s75: '≥75', s60: '≥60', s45: '≥45', s30: '≥30', s15: '≥15', s0: '<15' }[vt]} 段；模式 ${rm === 'timed' ? '15秒挑战' : '自由模式'} × 难度 ${diffCN}`,
                     sampleNote: smallSample
                 };
                 try {
@@ -957,11 +993,11 @@
                 resultPanel.style.display = "block";
                 document.getElementById("score").innerHTML = d.score;
                 document.getElementById("weather").innerHTML =
-                    `${d.wIcon} 今日注意力天气：<strong>${d.wName}</strong><br><span style="font-size:12px;color:#7a828e;">${d.wDesc}</span>`;
+                    `${escAttr(d.wIcon)} 今日注意力天气：<strong>${escAttr(d.wName)}</strong><br><span style="font-size:12px;color:#7a828e;">${escAttr(d.wDesc)}</span>`;
                 document.getElementById("animal").innerHTML =
-                    `🐾 注意力动物：<strong>${d.aName}</strong><br><span style="font-size:12px;color:#7a828e;">${d.aDesc}</span>`;
+                    `🐾 注意力动物：<strong>${escAttr(d.aName)}</strong><br><span style="font-size:12px;color:#7a828e;">${escAttr(d.aDesc)}</span>`;
                 document.getElementById("evaluation").innerHTML =
-                    d.poem + "\n\n" + d.verdict + "\n\n" + (d.sampleNote || '') +
+                    escAttr(d.poem) + "\n\n" + escAttr(d.verdict) + "\n\n" + escAttr(d.sampleNote || '') +
                     `准确率 ${d.accuracy}%　·　平均 RT（反应时）${d.avgRT}ms　·　得分 ${d.score}\n` +
                     `最快 ${d.fastest === null ? '—' : d.fastest + 'ms'}　·　最慢 ${d.slowest === 0 ? '—' : d.slowest + 'ms'}　·　最大连击 ${d.maxCombo}\n` +
                     `历史最佳 ${localStorage.bestScore || '—'}`;
@@ -1010,7 +1046,7 @@
                     const raw = localStorage.getItem('stroop.settings');
                     if (!raw) return;
                     const s = JSON.parse(raw);
-                    if (!s || s.v !== 1 || !Array.isArray(s.colors) || s.colors.length < 2 ||
+                    if (!s || s.v !== 1 || !Array.isArray(s.colors) || new Set(s.colors).size < 2 ||
                         !s.colors.every(k => Object.keys(COLOR_POOL).includes(k)) ||
                         !['timed', 'free'].includes(s.mode) || !['easy', 'medium', 'hard'].includes(s.difficulty)) {
                         localStorage.removeItem('stroop.settings');
@@ -1047,6 +1083,11 @@
                         localStorage.removeItem('stroop.lastRun');
                         return;
                     }
+                    /* 缺字段快照归一化：可选字符串/数值字段兜底，防 undefined 渲染 */
+                    ["wIcon", "wDesc", "aName", "aDesc", "wWhy", "aWhy", "poemWhy", "verdictWhy", "sampleNote"].forEach(k => { if (typeof d[k] !== "string") d[k] = ""; });
+                    if (d.fastest !== null && typeof d.fastest !== "number") d.fastest = null;
+                    if (typeof d.slowest !== "number") d.slowest = 0;
+                    if (typeof d.maxCombo !== "number") d.maxCombo = 0;
                     renderReport(d, true);
                 } catch (e) {}
             })();
