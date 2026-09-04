@@ -4,6 +4,7 @@ import {
   clampCardPos,
   dropAt,
   fitWithin,
+  hasOffscreenRight,
   imageCardSize,
   imageFitMaxW,
   scatterPos,
@@ -124,5 +125,29 @@ describe('新卡落纸位置学（纯函数）', () => {
     expect(attachKind('application/pdf')).toBe('file')
     expect(attachKind('')).toBe('file')
     expect(attachKind('application/x-unknown')).toBe('file')
+  })
+})
+
+describe('hasOffscreenRight：宽画布耳语的纯几何判据（右缘 > vw-48）', () => {
+  const at = (x: number, w: number): { pos: { x: number }; size: { w: number } } => ({ pos: { x }, size: { w } })
+
+  it('手机屏 390（可见纸宽 342）：桌面时代的越屏卡为真、屏内卡与恰贴右缘者为假', () => {
+    expect(hasOffscreenRight([at(300, 240)], 390)).toBe(true) // 540 > 342
+    expect(hasOffscreenRight([at(100, 260)], 390)).toBe(true) // 360 > 342
+    expect(hasOffscreenRight([at(24, 318)], 390)).toBe(false) // 342 = 342（手机图片卡封顶恰在界上）
+    expect(hasOffscreenRight([at(0, 300)], 390)).toBe(false)
+  })
+
+  it('桌面屏 1280（可见纸宽 1232）：同几何在该屏内者不误响', () => {
+    expect(hasOffscreenRight([at(300, 900)], 1280)).toBe(false) // 1200 ≤ 1232
+    expect(hasOffscreenRight([at(400, 900)], 1280)).toBe(true) // 1300 > 1232
+    expect(hasOffscreenRight([at(24, 318), at(400, 900)], 1280)).toBe(true) // 任一越界即响
+    expect(hasOffscreenRight([at(24, 318), at(100, 200)], 1280)).toBe(false)
+  })
+
+  it('边界口径：空画布恒假；非浏览器（vw=∞）恒假；只看横轴不看纵轴', () => {
+    expect(hasOffscreenRight([], 390)).toBe(false)
+    expect(hasOffscreenRight([at(9_999, 10)], Number.POSITIVE_INFINITY)).toBe(false)
+    expect(hasOffscreenRight([{ pos: { x: 0 }, size: { w: 10 } }], 12)).toBe(true)
   })
 })
