@@ -10,12 +10,14 @@
       // 首帧前定色：module 脚本是 deferred 的，先用主题镜像值落底色（夜读不闪白）。
       try {
         var night = localStorage.getItem("banji:theme") === "night";
+        var paper = night ? "#171310" : "#f2ecdf";
         document.documentElement.setAttribute("data-bj-theme", night ? "night" : "light");
-        document.documentElement.style.backgroundColor = night ? "#171310" : "#f2ecdf";
+        document.documentElement.style.backgroundColor = paper;
+        document.querySelector('meta[name="theme-color"]').setAttribute("content", paper);
       } catch (e) {}
     </script>
-    <script type="module" crossorigin src="/i/banji/assets/index-Dz79q4X1.js"></script>
-    <link rel="stylesheet" crossorigin href="/i/banji/assets/index-BAfll8wh.css">
+    <script type="module" crossorigin src="/i/banji/assets/index-BGbvyRSS.js"></script>
+    <link rel="stylesheet" crossorigin href="/i/banji/assets/index-DsBr6Zp_.css">
   </head>
   <body>
     <div id="root"></div>
