@@ -100,9 +100,10 @@
 /* 选中工具：铅笔 + ⋯，贴在卡内侧上角，不立标题栏。 */
 .bj-card-tools {
   position: absolute;
-  top: 2px;
+  top: 0;
   right: 4px;
   display: flex;
+  align-items: center;
   gap: 2px;
   opacity: 0;
   transition: opacity var(--bj-move) ease-out;
@@ -112,11 +113,20 @@
   opacity: 1;
 }
 
+.bj-kind-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 2px;
+  color: var(--bj-ink-faint);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
 .bj-tool {
   width: 44px;
   height: 44px;
-  margin-top: -8px;
-  margin-right: -8px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -132,7 +142,7 @@
 
 .bj-menu {
   position: absolute;
-  top: 30px;
+  top: 40px;
   right: 2px;
   min-width: 96px;
   padding: 4px;
@@ -234,16 +244,7 @@
 }
 
 .bj-unknown {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   letter-spacing: 0.08em;
-}
-
-.bj-unknown-ico {
-  opacity: 0.7;
-  display: inline-grid;
-  place-items: center;
 }
 
 .bj-file-chip {
@@ -338,7 +339,6 @@
 
 .bj-md-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.92em;
   background: var(--bj-wash);
   border-radius: 3px;
   padding: 1px 5px;
@@ -355,7 +355,6 @@
 
 .bj-md pre code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.9em;
 }
 
 .bj-md-a {

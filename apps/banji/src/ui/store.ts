@@ -46,7 +46,8 @@ function reducer(state: DayState, action: Action): DayState {
     case 'day/loaded':
       return { ...state, loaded: true, cards: action.cards }
     case 'card/added':
-      return { ...state, cards: [...state.cards, action.card], selectedId: action.card.id, lastAddedId: action.card.id }
+      // 新落的第一行就该能写：R1 的 add 只有文字卡，直接进编辑态。
+      return { ...state, cards: [...state.cards, action.card], selectedId: action.card.id, editingId: action.card.id, lastAddedId: action.card.id }
     case 'card/patched':
       return { ...state, cards: state.cards.map((c) => (c.id === action.id ? { ...c, ...action.patch } : c)) }
     case 'cards/removed': {
@@ -103,6 +104,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): 
   const timerRef = useRef<number | null>(null)
   // 串行队列：getJournal/addCard/updateCard/move… 全部排一条链，日文档永不并发读-改-写。
   const queueRef = useRef<Promise<unknown>>(Promise.resolve())
+  const loadGenRef = useRef(0)
   const chain = useCallback((fn: () => Promise<unknown>): void => {
     queueRef.current = queueRef.current.then(fn, fn).catch(() => undefined)
   }, [])
@@ -139,11 +141,15 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): 
   useEffect(() => {
     flushNow() // 换日前把上一天的未落盘编辑结算进队列
     if (date === null) return
+    const gen = ++loadGenRef.current
     dispatch({ type: 'day/open', date })
     chain(async () => {
       const doc = await app.getJournal(date)
-      if (stateRef.current.date === date) dispatch({ type: 'day/loaded', cards: doc?.cards ?? [] })
+      if (loadGenRef.current === gen) dispatch({ type: 'day/loaded', cards: doc?.cards ?? [] })
     })
+    return () => {
+      loadGenRef.current += 1 // 作废在途加载，只接受最新一次 open 的结果
+    }
   }, [date, reloadKey, app, chain, flushNow])
 
   useEffect(() => () => flushNow(), [flushNow])

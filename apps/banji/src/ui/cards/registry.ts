@@ -7,6 +7,7 @@ import { fileRenderer } from './file'
 import { fallbackRenderer } from './fallback'
 
 export type { CardRenderer, IconKind, RenderCtx } from './types'
+export { fallbackRenderer } from './fallback'
 
 const registry: ReadonlyMap<string, CardRenderer> = new Map([
   ['text', textRenderer],

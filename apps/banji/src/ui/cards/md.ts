@@ -41,9 +41,8 @@ export function parseInline(src: string): Inline[] {
     else if (m[3] !== undefined) out.push({ t: 'code', s: m[3] })
     else if (m[4] !== undefined && m[5] !== undefined) {
       const href = safeHref(m[5])
-      const label = parseInline(m[4])
-      if (href === null) out.push({ t: 'text', s: `${m[4]}(${m[5]})` })
-      else out.push({ t: 'a', href, c: label })
+      if (href === null) out.push({ t: 'text', s: m[0] })
+      else out.push({ t: 'a', href, c: parseInline(m[4]) })
     }
     rest = rest.slice(at + m[0].length)
   }

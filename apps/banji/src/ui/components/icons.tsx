@@ -1,5 +1,6 @@
 // 手绘细线 SVG 图标（禁 emoji）。统一 currentColor、圆角描边，呼应手札的细钢笔线。
 import type { ReactElement, SVGProps } from 'react'
+import type { IconKind } from '../cards/types'
 
 interface IconProps {
   readonly size?: number
@@ -92,5 +93,21 @@ export function IconUnknownShape({ size = 13 }: IconProps): ReactElement {
     <svg {...stroke(size)}>
       <rect x="5" y="5" width="14" height="14" rx="1.6" strokeDasharray="2.6 2.4" />
     </svg>
+  )
+}
+
+const KIND_ICONS: Record<IconKind, () => ReactElement> = {
+  text: () => <IconText />,
+  image: () => <IconImage />,
+  file: () => <IconFile />,
+  mystery: () => <IconUnknownShape />,
+}
+
+export function CardTypeIcon({ kind }: { readonly kind: IconKind }): ReactElement {
+  const icon = KIND_ICONS[kind]
+  return (
+    <span className="bj-kind-ico" aria-hidden>
+      {icon()}
+    </span>
   )
 }

@@ -5,7 +5,7 @@ import type { Card } from '../../domain/types'
 import type { DayActions } from '../store'
 import type { RenderCtx } from '../cards/types'
 import { resolveRenderer, rendererFor } from '../cards/registry'
-import { IconDots, IconPencil } from './icons'
+import { CardTypeIcon, IconDots, IconPencil } from './icons'
 
 interface CardFrameProps {
   readonly card: Card
@@ -139,6 +139,7 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
       <div className="bj-card-body">{renderer.render(card.props, ctx)}</div>
       {selected && !editing ? (
         <div className="bj-card-tools" data-nodrag>
+          <CardTypeIcon kind={renderer.iconKind} />
           {editable ? (
             <button type="button" className="bj-tool" aria-label="编辑卡片" onClick={() => actions.enterEdit(card.id)}>
               <IconPencil />
