@@ -91,3 +91,27 @@
 - restore 走同一条串行链不抢跑:undo 不是旁门左道,它排在用户自己的在途编辑之后执行;链头到达时若承诺已作废则静默弃权。
 - 耳语判据纯几何、记档以库内为准:宁可不响不错闪,换设备也记得"已见过"。
 - 触摸拖卡修复落在最深命中节点而非手势层兜圈:浏览器手势规则要求的最小诚实,代码侧零改动。
+
+## Round 5 — 2026-09-04 · 纸叠（容器拖入/拖出）(已完成,待发布)
+
+**完成**
+- 纸叠几何(T1):纯函数面 `stackGeometry.ts`(171 行,placement 同风)——认领索引(只有 container 的 children 算数)、可达子树(环安全)、`canNest`/`hitTestContainer`(D3 命中排除拖拽卡自身的整棵子树;「最上面」按派生渲染序算、不按存储 z)、`fitContainerBounds`(孩子+24px 呼吸收进最小纸面、地板 220×160、只扩不缩、左上钳进纸内)、`fitStacks`(叠中叠级联到不动点,**轮数封顶:病态环永不收敛即原样交出——扩边只是修饰,绝不让坏数据的无限膨胀落库**)、`subtreeTranslate`(拖垫纸=整树同 delta,坐标仍画布绝对)、`renderStackOrder`(沿祖先链前置垫纸,D2)。计划层 `stackOps.ts`:planAttach/planDetach/planMove/planResize 全是 cards→cards' 纯判别式,diffIntents 只点名真变了的字段。
+- 手势与中介(T2/T3):D1 底栏第三枚把手「造叠」(手绘虚线矩形 svg,与夹带/添一张卡同热区)→ 空垫纸(props {})散点落位、即刻选中、耳语候着,无对话。D3/D4 复用既有 pointer-drag:拖拽中 `hitTestContainer` 判落点、`dropTargetId` 住 dayState(纯瞬态,永不过缝——e2e 实 dump IDB 钉死「全部卡片键 ⊆ 契约字段」);释放→ attachChild(尾挂、旧叠让渡、B 自动扩边、A 保持画布绝对)或 detachChild(出界断奶、旧垫只扩不缩)或界内挪(同父幂等、children 一笔不许多写)。三式全走串行链 last-intent-wins 同一扇门;拓扑闸(containerIssues,复用 domain)拦下的意图丢弃+赭边便签给人话「这张纸没能放进去 · 别让叠套进自己的怀里」,落库零污染。
+- 容器视觉(T3):`be-container` = 半透深纸 `--bj-mat`(比 --bj-card 更深一档)+ 40% 虚线发丝 `--bj-mat-edge` + 不投影(影是面上纸片的);落点态 `is-dropon` = 虚线收实 + 纸色微抬 120ms ease-out,不发光;空叠耳语「拖一张纸进来，它们就是一叠了」居中,有叠左上「N 张」铅笔小注。子纸永远浮在垫纸上:渲染序派生(DayView),存储 z 一个字节不动(与「置顶」互不干涉)。拖垫纸时子纸实时跟移(dragFollow,抬手即熄)。
+- 删除与 undo(D6):垫纸 ⋯ 删除沿用 deleteCardCascade 级联,N>0 确认文案「连纸带叠，一起撕下？」;托盘计数=删除前子树快照大小(`collectSubtreeIds`),「已撕下 N 张」报的是整叠;撕内垫→再想想沿 parentPatches 把嵌套按出生 index 逐字复原(测试三面钉死:计数、复原、双次幂等)。
+- 承接中断工(T0):前一位 builder 的 partial 全部收编——registry 挂 container 但未知 kind 兜底不遮蔽(mystery→fallback 仍钉死);修其 hitTest 按存储 z 蒙序(叠中叠会点错垫纸)、fitStacks 无界环死循环、瞬态跟移缺失、**整套容器 CSS 一行没落笔(本笔补齐)**;对齐两枚陈锈断言(container≠fallback、连同卡内→连纸带叠,spec 改口径而非改产品)。
+- 测试(T4/T5):单测 164→198(+34:geometry 16、ops 10、手势过缝面 8, plus two rusty assertions aligned per spec)——叠护栏环数据双面(子树遍历终止/fit 到期原样)、attach/detach 过 mock 缝逐字、fit 钳制、子树平移、dropTargetId 永不在存储键、闸拒写+回执、容器删除→undo 嵌套复原、mat-below-children 派生零 z 改写、子树计数。e2e 36→49 全绿 0 console error:桌面 造叠图标/耳语/悬停 is-dropon/children 过缝落库 reload 仍在/键集 ⊆ 契约/界内压上渲染/空处拖垫整树 +140px 跟移/拖出断奶持久;手机 390 CDP 真 touch 造叠+拖入(「1 张」上纸、reload 仍在)。
+
+**已知债(R6 候选)**
+1. 单卡删除的幸存父卡悬空引用长尾(R4 记录语义):再想想当场复原;**过期不复活后引用留在库里**——「N 张」数到幽灵、含该日的档案再导入会 child_missing 被拒。候选:级联时顺手 prune 幸存引用(快照已记原位),待拍板。
+2. `store.ts` 360 纯行(HEAD 已 304,超 250 天花板):R6 拆 undo 托盘机与夹带管线为独立编排单元。
+3. 叠中叠手势已几何正确(D3 命中天然允许、cycle-guard 兜底)但零 UI 提示;跨屏远垫拖入不自动滚屏。
+4. 实机键盘/visualViewport 抽验(R3 起顺延)、undo 圈内导出字节回归(R4 债)、同字节改名第二张卡(R2 债)原样还在。
+5. 搜索/关系/线/图模式 = Phase 3+;设置键仍两枚。
+
+**决策记录(R5 增量)**
+- attach/detach 不入 undo 托盘:同一手势自我反悔(再拖进/再拖出即可),而托盘只有一格——低风险可逆行不许顶掉「撕下」的高风险承诺(任务书 D7,兑现为记录)。
+- 垫纸只扩不缩、手工 resize 也钳在「纸+呼吸」之上:缩到纸下=吞用户的纸;抽走一张也不回缩——用户亲手扩出来的纸面得留着(「N 张」缩排即谎言)。
+- 落点态与拖拽跟移住 dayState 瞬态,永不进 Card/props/meta:e2e 以「存储键集 ⊆ 契约字段全集」钉死,刷新即无痕。
+- 拖入命中按渲染序而非存储 z:D2 的「垫纸恒below子纸」使两个序本就不是一回事,按 z 蒙会在叠中叠上点错纸。
+- 环护栏分三道各司其职:hit-test 子树排除(手势)、canNest+stackIssues(写闸)、gc/fit 遍历去重(病态数据存活);域校验器仍是唯一真口径,UI 不自造第二套。
