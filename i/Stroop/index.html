@@ -240,6 +240,7 @@
             font-size: 11px;
             color: #3a4048;
             letter-spacing: .5px;
+            white-space: pre-line;
         }
 
         #result {
@@ -460,6 +461,7 @@
             let mode = 'timed';
             let difficulty = 'medium';
             let countdownValue = 15;
+            const IDLE_HINT = "空格键 或 点击上方文字区域 开始测试\n玩法：只看中央文字的显示颜色，点击文字为该颜色的按钮（忽略字义）。例：“红”显示成蓝色时，点“蓝”\n模式：15秒挑战限时15秒、多答多得；自由模式不限时、可随时停止";
 
             const wordEl = document.getElementById("stroopWord");
             const btnBox = document.getElementById("buttons");
@@ -651,7 +653,7 @@
                 stopBtn.style.display = "none";
                 // 显示结算结果
                 showResult();
-                hintEl.textContent = "空格键 或 点击上方文字区域 开始新测试";
+                hintEl.textContent = IDLE_HINT;
                 wordArea.style.cursor = "pointer";
             }
 
@@ -862,7 +864,7 @@
             updatePool();
 
             wordArea.style.cursor = "pointer";
-            hintEl.textContent = "空格键 或 点击上方文字区域 开始测试";
+            hintEl.textContent = IDLE_HINT;
         })();
     </script>
 </body>
