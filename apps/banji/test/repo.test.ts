@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { deleteDatabase, MAX_STAGE_BATCH, openRepo } from '../src/repository/repo'
+import { deleteDatabase, openRepo } from '../src/repository/repo'
+import { MAX_STAGE_BATCH } from '../src/repository/types'
 import type { Repo, StagedEntry } from '../src/repository/types'
 import type { SchemaMigration } from '../src/archive/migration'
 import { sha256Hex } from '../src/archive/hash'
@@ -146,16 +147,16 @@ describe('repository: staging 与提交事务', () => {
     expect(await repo.journals.get('2026-06-02')).toBeUndefined()
   })
 
-  it('onupgradeneeded 共用迁移表：v1→v2 记录转换落到每个 store', async () => {
+  it('高版本库无迁移行 → 版本闸直接拒绝打开，数据保持 v1 完好', async () => {
     const { repo, name } = await open()
     await repo.journals.put({ date: '2026-07-01', cards: [], updatedAt: isoAt() })
     repo.close()
     const table: readonly SchemaMigration[] = [
       { from: 1, to: 2, records: { journals: (raw) => ({ ...(raw as Record<string, unknown>), upgraded: true }) } },
     ]
-    const repo2 = await openRepo({ name, version: 2, migrationTable: table })
+    await expect(openRepo({ name, version: 2, migrationTable: table })).rejects.toThrow(/schemaVersion=2/)
+    const repo2 = await openRepo({ name, version: 1 })
     track(repo2, name)
-    const doc = await repo2.journals.get('2026-07-01')
-    expect((doc as unknown as Record<string, unknown>)?.['upgraded']).toBe(true)
+    expect(await repo2.journals.get('2026-07-01')).toBeDefined()
   })
 })
