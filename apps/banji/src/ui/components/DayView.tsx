@@ -8,7 +8,10 @@ import { weekdayMondayIndex } from '../../domain/date'
 import { WEEKDAYS_MONDAY } from '../labels'
 import { CardFrame } from './CardFrame'
 import { IconChevronLeft, IconGear, IconPaperclip } from './icons'
-import { viewportWidthNow } from '../placement'
+import { hasOffscreenRight, viewportWidthNow } from '../placement'
+
+/** 设置键一次读穿：耳语终生只耳语一次（“见过”以库内记录为准，换设备也记得）。 */
+export const WIDE_HINT_KEY = 'hint_wide_canvas'
 
 function dateTitle(date: string): string {
   const y = date.slice(0, 4)
@@ -45,13 +48,45 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
   const { state, actions } = store
   const fileRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const dragDepthRef = useRef(0)
   const [dragging, setDragging] = useState(false)
+  // 宽画布耳语：设置未读回前按“见过”处理（宁可不响，不错闪）。
+  const [whisper, setWhisper] = useState<'off' | 'on' | 'fading'>('off')
+  const [hintProbeTick, setHintProbeTick] = useState(0)
+  const whisperSeenRef = useRef(true)
+  const whisperBaseXRef = useRef(0)
   const sorted = [...state.cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
   // 空画布最小宽随视口收缩（390 屏上不再横向滚一条 600px 的"死纸边"），桌面 min 600 不变。
   const minCanvasW = Math.min(600, Math.max(320, viewportWidthNow() - 48))
   const canvasW = Math.max(minCanvasW, ...sorted.map((c) => c.pos.x + c.size.w + 200))
   const canvasH = Math.max(480, ...sorted.map((c) => c.pos.y + c.size.h + 200))
+
+  useEffect(() => {
+    let live = true
+    void app.getSetting(WIDE_HINT_KEY).then((v) => {
+      if (!live) return
+      whisperSeenRef.current = v === true
+      setHintProbeTick((t) => t + 1)
+    })
+    return () => {
+      live = false
+    }
+  }, [app])
+
+  useEffect(() => {
+    if (!state.loaded || whisper !== 'off' || whisperSeenRef.current) return
+    if (hasOffscreenRight(state.cards, viewportWidthNow())) {
+      whisperBaseXRef.current = scrollRef.current?.scrollLeft ?? 0
+      setWhisper('on')
+    }
+  }, [state.loaded, state.cards, hintProbeTick, whisper])
+
+  useEffect(() => {
+    if (whisper !== 'fading') return
+    const t = window.setTimeout(() => setWhisper('off'), 220)
+    return () => window.clearTimeout(t)
+  }, [whisper])
 
   // 桌面端粘贴：只劫持有文件的粘贴；纯文本粘贴原样交给 textarea 的本地行为。
   useEffect(() => {
@@ -98,12 +133,22 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
       </header>
       <div
         className="bj-scroll"
+        ref={scrollRef}
         onPointerDown={(e) => {
           const t = e.target
           if (t instanceof Element && t.closest('[data-card]') === null) {
             if (state.editingId !== null) actions.exitEdit()
             else actions.select(null)
           }
+        }}
+        onScroll={() => {
+          if (whisper !== 'on') return
+          const el = scrollRef.current
+          // 只认横移：键盘避让的纵向 scrollIntoView 不算“推移可看”。
+          if (el === null || Math.abs(el.scrollLeft - whisperBaseXRef.current) < 4) return
+          whisperSeenRef.current = true
+          void app.setSetting(WIDE_HINT_KEY, true)
+          setWhisper('fading')
         }}
       >
         <div
@@ -168,6 +213,11 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
         </button>
       </div>
       <input ref={fileRef} type="file" accept="*/*" multiple className="bj-attach-file" aria-label="夹带" onChange={onPicked} />
+      {whisper === 'off' ? null : (
+        <p className={`bj-wide-hint${whisper === 'fading' ? ' is-fading' : ''}`} aria-hidden>
+          纸比屏宽 · 左右推移可看
+        </p>
+      )}
     </div>
   )
 }

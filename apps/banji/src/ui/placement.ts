@@ -81,3 +81,16 @@ export function imageCardSize(natW: number, natH: number, maxW: number = MAX_CAR
 export function attachKind(mime: string): 'image' | 'file' {
   return mime.startsWith('image/') ? 'image' : 'file'
 }
+
+export interface CanvasSized {
+  readonly pos: { readonly x: number }
+  readonly size: { readonly w: number }
+}
+
+/** 宽画布耳语的判据（纯几何）：任一卡右缘（画布绝对系）越过视口可见纸宽 = 屏外还压着纸。
+ *  可见纸宽 = vw − 画布页缘 24 − 贴边呼吸 24；非浏览器（vw=∞）恒 false。 */
+export function hasOffscreenRight(cards: readonly CanvasSized[], viewportW: number): boolean {
+  if (!Number.isFinite(viewportW)) return false
+  const visibleW = viewportW - EDGE_MARGIN * 2
+  return cards.some((c) => c.pos.x + c.size.w > visibleW)
+}

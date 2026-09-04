@@ -117,6 +117,31 @@
   pointer-events: none;
 }
 
+/* 宽画布耳语（R3 顺延债）：绝对坐标契约下，桌面时代的纸贴到手机上右缘会越屏。
+   在纸的右边低声提一次“可推移”，横向推过第一次即归于纸面，设置里记档、终生不再扰。 */
+.bj-wide-hint {
+  position: absolute;
+  right: 12px;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  padding: 6px 12px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 999px;
+  background: var(--bj-surface);
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.85;
+  transition: opacity var(--bj-move) ease-out;
+  z-index: 5;
+}
+
+.bj-wide-hint.is-fading {
+  opacity: 0;
+}
+
 /* 夹带入口：一枚回形针浮在纸边，比主按钮安静一档。 */
 .bj-clip {
   pointer-events: auto;
