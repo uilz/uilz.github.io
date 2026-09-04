@@ -1,7 +1,9 @@
 // UI 测试的边界 = BanjiApp 缝：内存假实现，零 IndexedDB。
 // 假得诚实：update/move/resize/delete 真的改内存文档，级联走 domain/gc 同一套纯函数。
 import { vi } from 'vitest'
+import { hashBlob } from '../../src/archive/hash'
 import type {
+  AssetInput,
   AssetRecord,
   BanjiApp,
   Card,
@@ -79,8 +81,20 @@ export function makeMockApp(): MockSeam {
       const doomed = collectSubtreeIds(cardsByIdOf(doc.cards), id)
       rewrite(date, (cards) => cards.filter((c) => !doomed.has(c.id)))
     }),
-    addAsset: vi.fn(async (): Promise<AssetRecord> => {
-      throw new Error('mock: 本测试面不产资产')
+    addAsset: vi.fn(async (file: AssetInput): Promise<AssetRecord> => {
+      const hash = await hashBlob(file)
+      const found = assets.get(hash)
+      if (found !== undefined) return found
+      const rec: AssetRecord = {
+        hash,
+        mime: file.type === undefined || file.type === '' ? 'application/octet-stream' : file.type,
+        size: file.size,
+        addedAt: iso(),
+        blob: file,
+        ...(file.name === undefined ? {} : { name: file.name }),
+      }
+      assets.set(hash, rec)
+      return rec
     }),
     getAsset: vi.fn(async (hash: string) => assets.get(hash)),
     getSetting: vi.fn(async (key: string) => settings.get(key)),
