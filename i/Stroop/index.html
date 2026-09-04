@@ -406,8 +406,8 @@
             </div>
             <h2 style="margin-top:12px;">模式</h2>
             <div class="mode-select">
-                <label><input type="radio" name="mode" value="free" checked> 自由模式</label>
-                <label><input type="radio" name="mode" value="timed"> 15秒挑战</label>
+                <label><input type="radio" name="mode" value="free"> 自由模式</label>
+                <label><input type="radio" name="mode" value="timed" checked> 15秒挑战</label>
             </div>
         </div>
 
@@ -451,7 +451,7 @@
                 maxCombo = 0;
             let fastestRT = Infinity,
                 slowestRT = 0;
-            let mode = 'free';
+            let mode = 'timed';
             let countdownValue = 15;
 
             const wordEl = document.getElementById("stroopWord");
