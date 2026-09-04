@@ -17,6 +17,13 @@ export interface Note {
   readonly msg: string
 }
 
+/** 拖垫纸时子纸的实时跟移：纯视觉瞬态，抬手即熄（存储坐标要等落笔才动）。 */
+export interface DragFollow {
+  readonly rootId: CardId
+  readonly dx: number
+  readonly dy: number
+}
+
 /** 待撤销的"再想想"托盘：只有一格（单级 undo），住 UI 内存，刷新即无（契约决定，见 ROUNDS R4）。 */
 export interface UndoTray {
   readonly seq: number
@@ -39,6 +46,10 @@ export interface DayState {
   readonly note: Note | null
   /** null = 无待撤销删除；非 null = 撕下的纸片还在桌边等着。 */
   readonly undo: UndoTray | null
+  /** 拖拽进行中被指针压住的垫纸（D3）：瞬态视觉，永不过缝、永不落库。 */
+  readonly dropTargetId: CardId | null
+  /** 拖垫纸时子纸的实时跟移：瞬态视觉，抬手即熄。 */
+  readonly dragFollow: DragFollow | null
 }
 
 export const initialDayState: DayState = {
@@ -52,6 +63,8 @@ export const initialDayState: DayState = {
   saveFailed: 0,
   note: null,
   undo: null,
+  dropTargetId: null,
+  dragFollow: null,
 }
 
 export type Action =
@@ -64,6 +77,8 @@ export type Action =
   | { readonly type: 'cards/restored'; readonly cards: readonly Card[] }
   | { readonly type: 'ui/select'; readonly id: CardId | null }
   | { readonly type: 'ui/edit'; readonly id: CardId | null }
+  | { readonly type: 'ui/drop-target'; readonly id: CardId | null }
+  | { readonly type: 'ui/drag-follow'; readonly follow: DragFollow | null }
   | { readonly type: 'ghost/add'; readonly ghost: Ghost }
   | { readonly type: 'ghost/remove'; readonly token: number }
   | { readonly type: 'save/failed'; readonly count: number }
@@ -112,6 +127,16 @@ export function dayReducer(state: DayState, action: Action): DayState {
       return { ...state, selectedId: action.id }
     case 'ui/edit':
       return { ...state, editingId: action.id }
+    case 'ui/drop-target':
+      return state.dropTargetId === action.id ? state : { ...state, dropTargetId: action.id }
+    case 'ui/drag-follow': {
+      const same = (state.dragFollow === null && action.follow === null) ||
+        (state.dragFollow !== null && action.follow !== null &&
+          state.dragFollow.rootId === action.follow.rootId &&
+          state.dragFollow.dx === action.follow.dx &&
+          state.dragFollow.dy === action.follow.dy)
+      return same ? state : { ...state, dragFollow: action.follow }
+    }
     case 'ghost/add':
       return { ...state, ghosts: [...state.ghosts, action.ghost] }
     case 'ghost/remove':

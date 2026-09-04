@@ -13,6 +13,7 @@ import { attachFailureCopy, probeImageSize } from './probe'
 import { dayReducer, initialDayState } from './dayState'
 import type { Pending } from './dayState'
 import { buildDeleteSnapshot } from './undoSnapshot'
+import { ATTACH_REJECTED_COPY, DETACH_REJECTED_COPY, diffIntents, planAttach, planDetach, planMove, planResize } from './stackOps'
 import type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
 export type { DayState, Ghost, Note, UndoTray } from './dayState'
@@ -183,6 +184,25 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     }
   }, [])
 
+  const commitStack = useCallback(
+    (next: readonly Card[]): void => {
+      const prev = stateRef.current.cards
+      if (next === prev) return
+      dispatch({ type: 'cards/set', cards: next })
+      const prevById = new Map(prev.map((c) => [c.id, c]))
+      for (const delta of diffIntents(prev, next)) {
+        const old = prevById.get(delta.id)
+        if (old === undefined) continue
+        schedule(delta.id, (e) => {
+          if (delta.pos !== undefined && (e.pos === undefined || e.pos.x !== delta.pos.x || e.pos.y !== delta.pos.y)) e.pos = delta.pos
+          if (delta.size !== undefined && (e.size === undefined || e.size.w !== delta.size.w || e.size.h !== delta.size.h)) e.size = delta.size
+          if (delta.children !== undefined) e.patch = { ...e.patch, children: delta.children }
+        })
+      }
+    },
+    [schedule],
+  )
+
   /** 单级托盘：新的撕下直接顶替旧纸片（被顶掉的不另发声——它本就在倒计时）。 */
   const armUndo = useCallback(
     (day: string, snapshot: DeleteSnapshot): void => {
@@ -240,15 +260,52 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         })
       },
       move(id, pos) {
-        dispatch({ type: 'card/patched', id, patch: { pos } })
-        schedule(id, (e) => {
-          e.pos = pos
-        })
+        const plan = planMove(stateRef.current.cards, id, pos)
+        if (plan.ok) commitStack(plan.cards)
       },
       resize(id, size) {
-        dispatch({ type: 'card/patched', id, patch: { size } })
-        schedule(id, (e) => {
-          e.size = size
+        const plan = planResize(stateRef.current.cards, id, size)
+        if (plan.ok) commitStack(plan.cards)
+      },
+      attachChild(parentId, childId, childPos) {
+        const plan = planAttach(stateRef.current.cards, parentId, childId, childPos)
+        if (!plan.ok) {
+          if (plan.reason === 'nested-illegal') dispatch({ type: 'note/set', id: ++noteSeqRef.current, msg: ATTACH_REJECTED_COPY })
+          return
+        }
+        commitStack(plan.cards)
+      },
+      detachChild(childId, pos) {
+        const plan = planDetach(stateRef.current.cards, childId, pos)
+        if (!plan.ok) {
+          if (plan.reason === 'nested-illegal') dispatch({ type: 'note/set', id: ++noteSeqRef.current, msg: DETACH_REJECTED_COPY })
+          return
+        }
+        commitStack(plan.cards)
+      },
+      setDropTarget(id) {
+        dispatch({ type: 'ui/drop-target', id })
+      },
+      setDragFollow(follow) {
+        dispatch({ type: 'ui/drag-follow', follow })
+      },
+      createContainer() {
+        const current = stateRef.current
+        const day = current.date
+        if (day === null) return
+        flushNow()
+        const renderer = resolveRenderer('container')
+        const pos = scatterPos(current.cards.length + current.ghosts.length, viewportWidthNow())
+        const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
+        chain(async () => {
+          const card = await app.addCard(day, {
+            kind: 'container',
+            props: renderer.emptyDraft(pos),
+            pos,
+            size: renderer.defaultSize,
+            z: maxZ + 1,
+          })
+          if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit: false })
         })
       },
       remove(id) {
@@ -322,7 +379,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         dispatch({ type: 'note/clear' })
       },
     }),
-    [app, armUndo, attachOne, bringToFront, chain, disarmUndoTimer, flushNow, schedule],
+    [app, armUndo, attachOne, bringToFront, chain, commitStack, disarmUndoTimer, flushNow, schedule],
   )
 
   return { state, actions }

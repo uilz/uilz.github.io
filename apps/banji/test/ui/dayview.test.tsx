@@ -90,7 +90,7 @@ describe('当日手札视图', () => {
     tap(mustCard(container, 'box-1'), { x: 30, y: 20 })
     fireEvent.click(await screen.findByLabelText('卡片菜单'))
     fireEvent.click(screen.getByText('删除'))
-    expect(screen.getByText(/连同卡内的 1 张/)).toBeDefined()
+    expect(screen.getByText(/连纸带叠/)).toBeDefined()
     fireEvent.click(screen.getByText('确认删除'))
     await settle()
     expect(seam.app.deleteCardCascade).toHaveBeenCalledWith(DAY, box.id)

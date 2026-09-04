@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent as ReactDragEvent, ReactElement } from 'react'
 import type { DayStore } from '../store'
 import type { Ghost } from '../store'
 import type { BanjiApp } from '../../application'
-import type { CardPos } from '../../domain/types'
+import type { Card, CardPos } from '../../domain/types'
 import { weekdayMondayIndex } from '../../domain/date'
 import { WEEKDAYS_MONDAY } from '../labels'
 import { CardFrame } from './CardFrame'
-import { IconChevronLeft, IconGear, IconPaperclip } from './icons'
+import { IconChevronLeft, IconGear, IconPaperclip, IconStack } from './icons'
 import { hasOffscreenRight, viewportWidthNow } from '../placement'
+import { renderStackOrder, subtreeIds } from '../stackGeometry'
 
 /** 设置键一次读穿：耳语终生只耳语一次（“见过”以库内记录为准，换设备也记得）。 */
 export const WIDE_HINT_KEY = 'hint_wide_canvas'
@@ -56,7 +57,16 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
   const [hintProbeTick, setHintProbeTick] = useState(0)
   const whisperSeenRef = useRef(true)
   const whisperBaseXRef = useRef(0)
-  const sorted = [...state.cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
+  // 垫纸永远压在自己的纸下（D2）：渲染序由 z 升序 + 祖先链前置推导，存储的 z 原封不动。
+  const sorted = renderStackOrder(state.cards)
+  const followSet = useMemo<Set<string> | null>(
+    () => (state.dragFollow === null ? null : subtreeIds(state.cards, state.dragFollow.rootId)),
+    [state.dragFollow, state.cards],
+  )
+  const followFor = (id: Card['id']): { dx: number; dy: number } | null =>
+    state.dragFollow !== null && followSet?.has(id) === true && state.dragFollow.rootId !== id
+      ? { dx: state.dragFollow.dx, dy: state.dragFollow.dy }
+      : null
   // 空画布最小宽随视口收缩（390 屏上不再横向滚一条 600px 的"死纸边"），桌面 min 600 不变。
   const minCanvasW = Math.min(600, Math.max(320, viewportWidthNow() - 48))
   const canvasW = Math.max(minCanvasW, ...sorted.map((c) => c.pos.x + c.size.w + 200))
@@ -190,11 +200,14 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
             <CardFrame
               key={card.id}
               card={card}
+              cards={state.cards}
               app={app}
               date={date}
               actions={actions}
               selected={state.selectedId === card.id}
               editing={state.editingId === card.id}
+              dropOn={state.dropTargetId === card.id}
+              follow={followFor(card.id)}
               z={i + 1}
               justBorn={state.lastAddedId === card.id}
             />
@@ -207,6 +220,9 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
       <div className="bj-add-wrap">
         <button type="button" className="bj-clip" aria-label="夹带" title="夹带一张照片或文件" onClick={() => fileRef.current?.click()}>
           <IconPaperclip size={17} />
+        </button>
+        <button type="button" aria-label="造叠" className="bj-clip" title="造一叠：拖一张纸进来就是一叠" onClick={() => actions.createContainer()}>
+          <IconStack />
         </button>
         <button type="button" className="bj-add" onClick={() => actions.addTextCard()}>
           添一张卡

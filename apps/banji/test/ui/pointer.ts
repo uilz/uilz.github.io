@@ -19,6 +19,11 @@ function fire(el: Element, kind: 'pointerdown' | 'pointermove' | 'pointerup', in
   el.dispatchEvent(ev)
 }
 
+/** 单发指针事件：拆解拖拽中途断言（如 is-dropon 瞬态）用，走与 dragFrom 同一管线。 */
+export function pointer(el: Element, kind: 'pointerdown' | 'pointermove' | 'pointerup', at: { readonly x: number; readonly y: number }): void {
+  fire(el, kind, at)
+}
+
 /** 完整拖拽：按下 → 分步移动 → 抬起。threshold/commit 全走真实代码路径。 */
 export function dragFrom(el: Element, from: { readonly x: number; readonly y: number }, to: { readonly x: number; readonly y: number }, steps = 4): void {
   fire(el, 'pointerdown', { x: from.x, y: from.y })

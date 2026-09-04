@@ -5,15 +5,25 @@ import type { Card } from '../../domain/types'
 import type { DayActions } from '../store'
 import type { RenderCtx } from '../cards/types'
 import { resolveRenderer, rendererFor } from '../cards/registry'
+import { hitTestContainer, parentIdOf } from '../stackGeometry'
+import { clampCardPos } from '../placement'
 import { CardTypeIcon, IconDots, IconPencil } from './icons'
+
+interface Offset {
+  readonly dx: number
+  readonly dy: number
+}
 
 interface CardFrameProps {
   readonly card: Card
+  readonly cards: readonly Card[]
   readonly app: BanjiApp
   readonly date: string
   readonly actions: DayActions
   readonly selected: boolean
   readonly editing: boolean
+  readonly dropOn: boolean
+  readonly follow: Offset | null
   readonly z: number
   readonly justBorn: boolean
 }
@@ -24,19 +34,18 @@ interface DragBase {
   readonly sy: number
   readonly x: number
   readonly y: number
+  readonly ox: number
+  readonly oy: number
   moved: boolean
 }
 
 const DRAG_THRESHOLD_SQ = 25
 
-function clampPos(v: number): number {
-  return Math.max(0, Math.round(v))
-}
-
-export function CardFrame({ card, app, date, actions, selected, editing, z, justBorn }: CardFrameProps): ReactElement {
+export function CardFrame({ card, cards, app, date, actions, selected, editing, dropOn, follow, z, justBorn }: CardFrameProps): ReactElement {
   const renderer = resolveRenderer(card.kind)
   const editable = rendererFor(card.kind)?.editable ?? false
-  const [drag, setDrag] = useState<{ dx: number; dy: number } | null>(null)
+  const isMat = card.kind === 'container'
+  const [drag, setDrag] = useState<Offset | null>(null)
   const [size, setSize] = useState<{ w: number; h: number } | null>(null)
   const [menu, setMenu] = useState<'closed' | 'open' | 'confirm'>('closed')
   const dragRef = useRef<DragBase | null>(null)
@@ -61,7 +70,18 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
     e.stopPropagation()
     setMenu('closed')
     e.currentTarget.setPointerCapture?.(e.pointerId)
-    dragRef.current = { pid: e.pointerId, sx: e.clientX, sy: e.clientY, x: card.pos.x, y: card.pos.y, moved: false }
+    // 画布原点的屏幕位置在落指一瞬采样；卡片坐标即画布坐标（pos 为绝对纸面系）。
+    const host = e.currentTarget.parentElement?.getBoundingClientRect()
+    dragRef.current = {
+      pid: e.pointerId,
+      sx: e.clientX,
+      sy: e.clientY,
+      x: card.pos.x,
+      y: card.pos.y,
+      ox: host?.left ?? 0,
+      oy: host?.top ?? 0,
+      moved: false,
+    }
   }
 
   const onBackgroundMove = (e: ReactPointerEvent<HTMLDivElement>): void => {
@@ -74,6 +94,9 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
       d.moved = true
     }
     setDrag({ dx, dy })
+    actions.setDropTarget(hitTestContainer({ x: e.clientX - d.ox, y: e.clientY - d.oy }, cards, card.id))
+    // 拖着垫纸走 = 整棵子树实时跟移（纯视觉：存储坐标要等抬手落笔才动）。
+    if (isMat && (card.children?.length ?? 0) > 0) actions.setDragFollow({ rootId: card.id, dx, dy })
   }
 
   const onBackgroundUp = (e: ReactPointerEvent<HTMLDivElement>): void => {
@@ -81,8 +104,14 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
     if (d === null || d.pid !== e.pointerId) return
     dragRef.current = null
     setDrag(null)
+    actions.setDropTarget(null)
+    actions.setDragFollow(null)
     if (d.moved) {
-      actions.move(card.id, { x: clampPos(d.x + e.clientX - d.sx), y: clampPos(d.y + e.clientY - d.sy) })
+      const pos = clampCardPos({ x: d.x + e.clientX - d.sx, y: d.y + e.clientY - d.sy })
+      const target = hitTestContainer({ x: e.clientX - d.ox, y: e.clientY - d.oy }, cards, card.id)
+      if (target !== null) actions.attachChild(target, card.id, pos)
+      else if (parentIdOf(cards, card.id) !== null) actions.detachChild(card.id, pos)
+      else actions.move(card.id, pos)
       return
     }
     const now = Date.now()
@@ -112,21 +141,23 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
     actions.resize(card.id, next)
   }
 
-  const cascade = card.children !== undefined && card.children.length > 0 ? `连同卡内的 ${String(card.children.length)} 张卡片一起` : ''
+  const childCount = card.children?.length ?? 0
+  const confirmCopy = isMat && childCount > 0 ? '连纸带叠，一起撕下？' : `删掉这一张${childCount > 0 ? `，连同卡内的 ${String(childCount)} 张卡片一起` : ''}？`
+  const shift = drag ?? follow
   const shown = size ?? card.size
 
   return (
     <div
       data-card
       data-card-id={card.id}
-      className={`bj-card be-${card.kind}${selected ? ' is-sel' : ''}${justBorn ? ' bj-settle' : ''}`}
+      className={`bj-card be-${card.kind}${selected ? ' is-sel' : ''}${dropOn ? ' is-dropon' : ''}${justBorn ? ' bj-settle' : ''}`}
       style={{
         left: card.pos.x,
         top: card.pos.y,
         width: shown.w,
         height: shown.h,
         zIndex: z,
-        transform: drag !== null ? `translate3d(${String(drag.dx)}px, ${String(drag.dy)}px, 0)` : undefined,
+        transform: shift !== null ? `translate3d(${String(shift.dx)}px, ${String(shift.dy)}px, 0)` : undefined,
       }}
       onPointerDown={onBackgroundDown}
       onPointerMove={onBackgroundMove}
@@ -134,6 +165,8 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
       onPointerCancel={() => {
         dragRef.current = null
         setDrag(null)
+        actions.setDropTarget(null)
+        actions.setDragFollow(null)
       }}
     >
       <div className="bj-card-body">{renderer.render(card.props, ctx)}</div>
@@ -163,9 +196,7 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
           ) : null}
           {menu === 'confirm' ? (
             <div className="bj-menu bj-menu-confirm">
-              <p>
-                删掉这一张{cascade !== '' ? <>，{cascade}</> : null}？
-              </p>
+              <p>{confirmCopy}</p>
               <p className="bj-menu-note">撕下后十秒内可以再想想</p>
               <div className="bj-menu-row">
                 <button type="button" onClick={() => setMenu('closed')}>
