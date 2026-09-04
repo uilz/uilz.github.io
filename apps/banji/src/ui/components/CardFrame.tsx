@@ -166,7 +166,7 @@ export function CardFrame({ card, app, date, actions, selected, editing, z, just
               <p>
                 删掉这一张{cascade !== '' ? <>，{cascade}</> : null}？
               </p>
-              <p className="bj-menu-note">删除后无法找回</p>
+              <p className="bj-menu-note">撕下后十秒内可以再想想</p>
               <div className="bj-menu-row">
                 <button type="button" onClick={() => setMenu('closed')}>
                   取消

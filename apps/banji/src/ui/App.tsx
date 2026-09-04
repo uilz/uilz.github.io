@@ -21,14 +21,15 @@ interface ToastProps {
   readonly actionLabel: string | null
   readonly onAction: (() => void) | null
   readonly alert: boolean
-  readonly raised: boolean
+  readonly level: number
 }
 
-// 全应用唯一回执通道：夹带没夹上、导入导出回话、保存失败回执共用这只“便签”。
-// alert = 温赭描边（出事了但安静），plain = 发丝边（回话）。
-function Toast({ msg, actionLabel, onAction, alert, raised }: ToastProps): ReactElement {
+// 全应用唯一回执通道：撕下回执、夹带没夹上、导入导出回话、保存失败回执共用这只“便签”。
+// alert = 温赭描边（出事了但安静），plain = 发丝边（回话/邀请）；level 是叠放席位，至多各一枚，不堆墙。
+function Toast({ msg, actionLabel, onAction, alert, level }: ToastProps): ReactElement {
+  const up = level === 1 ? ' bj-toast-up1' : level >= 2 ? ' bj-toast-up2' : ''
   return (
-    <div className={`bj-toast${alert ? ' bj-toast-alert' : ''}${raised ? ' bj-toast-raised' : ''}`} role="status">
+    <div className={`bj-toast${alert ? ' bj-toast-alert' : ''}${up}`} role="status">
       <span>{msg}</span>
       {actionLabel !== null && onAction !== null ? (
         <button type="button" className="bj-toast-action" onClick={onAction}>
@@ -82,18 +83,37 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
 
   const onImported = useCallback((): void => {
     // 档案即宇宙：全量替换后，月历打点、当日文档、主题都以库内新状态为准。
+    // 待撤快照作废——把旧宇宙的纸片恢复进新宇宙，只会污染它（安全不变量，undo.test 钉死）。
+    store.actions.invalidateUndo()
     setReloadKey((k) => k + 1)
     void syncThemeFromStore(app).then((t) => {
       applyTheme(t)
       setTheme(t)
     })
-  }, [app])
+  }, [app, store.actions])
 
   const receipt =
     saveFailed > 0
       ? { msg: `${saveFailed === 1 ? '这一笔' : `这 ${String(saveFailed)} 笔`}没存上`, label: '再试' as const }
       : null
+  const undo = store.state.undo
+  const undoReceipt = undo === null ? null : { msg: `已撕下 ${String(undo.count)} 张，`, label: '再想想' as const }
   const transient = note !== null ? note.msg : toast !== null ? toast.msg : null
+
+  const pills: ReactElement[] = []
+  if (undoReceipt !== null) {
+    pills.push(
+      <Toast key="undo" msg={undoReceipt.msg} actionLabel={undoReceipt.label} onAction={store.actions.undoDelete} alert={false} level={pills.length} />,
+    )
+  }
+  if (receipt !== null) {
+    pills.push(
+      <Toast key="receipt" msg={receipt.msg} actionLabel={receipt.label} onAction={store.actions.retrySave} alert level={pills.length} />,
+    )
+  }
+  if (transient !== null) {
+    pills.push(<Toast key="transient" msg={transient} actionLabel={null} onAction={null} alert={note !== null} level={pills.length} />)
+  }
 
   return (
     <div className="bj-app" data-route={route.name}>
@@ -112,12 +132,7 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
           onClose={() => setDrawerOpen(false)}
         />
       ) : null}
-      {receipt !== null ? (
-        <Toast msg={receipt.msg} actionLabel={receipt.label} onAction={store.actions.retrySave} alert raised={false} />
-      ) : null}
-      {transient !== null ? (
-        <Toast msg={transient} actionLabel={null} onAction={null} alert={note !== null} raised={receipt !== null} />
-      ) : null}
+      {pills}
     </div>
   )
 }

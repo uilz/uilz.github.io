@@ -3,7 +3,7 @@
 // 文本/位置/尺寸编辑 debounce ≤600ms 后合并为一次 app.updateCard/moveCard/resizeCard。
 // 编排在此（夹带管线、失败意图陪跑）；状态形状与迁移在 dayState.ts，动作表在 storeTypes.ts。
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
-import type { BanjiApp } from '../application'
+import type { BanjiApp, DeleteSnapshot } from '../application'
 import type { Card, CardId, CardPos } from '../domain/types'
 import { cardsByIdOf, collectSubtreeIds } from '../domain/gc'
 import { isPlainObject } from '../domain/validation'
@@ -12,16 +12,26 @@ import { attachKind, clampCardPos, dropAt, fitWithin, imageCardSize, imageFitMax
 import { attachFailureCopy, probeImageSize } from './probe'
 import { dayReducer, initialDayState } from './dayState'
 import type { Pending } from './dayState'
+import { buildDeleteSnapshot } from './undoSnapshot'
 import type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
-export type { DayState, Ghost, Note } from './dayState'
+export type { DayState, Ghost, Note, UndoTray } from './dayState'
 export type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
 const DEBOUNCE_MS = 450
 const Z_CEILING = 500
+/** “再想想”的窗口：10 秒，之后纸片安静地归尘（无提醒、无残影）。 */
+const UNDO_TTL_MS = 10_000
 
 function sortByZ(cards: readonly Card[]): readonly Card[] {
   return [...cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
+}
+
+interface UndoTicket {
+  readonly seq: number
+  readonly date: string
+  readonly snapshot: DeleteSnapshot
+  claimed: boolean
 }
 
 export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, opts: DayStoreOptions = {}): DayStore {
@@ -31,6 +41,11 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   const pendingRef = useRef(new Map<CardId, Pending>())
   // 落盘失败的意图不丢：住这里，等下一次落盘陪跑（last-intent-wins——后到的编辑覆盖旧意图）。
   const failedRef = useRef(new Map<CardId, Pending>())
+  const undoSeqRef = useRef(0)
+  const undoTimerRef = useRef<number | null>(null)
+  const undoTicketRef = useRef<UndoTicket | null>(null)
+  // claimed（已按“再想想”）的 restore 在链上排队时也要保住：它是用户已出口的承诺，只被导入作废。
+  const undoIntentRef = useRef<UndoTicket | null>(null)
   const timerRef = useRef<number | null>(null)
   const ghostSeqRef = useRef(0)
   const noteSeqRef = useRef(0)
@@ -97,8 +112,6 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     }
   }, [date, reloadKey, app, chain, flushNow])
 
-  useEffect(() => () => flushNow(), [flushNow])
-
   const bringToFront = useCallback(
     (id: CardId): void => {
       const cards = sortByZ(stateRef.current.cards)
@@ -163,6 +176,44 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     [app, chain, probe],
   )
 
+  const disarmUndoTimer = useCallback((): void => {
+    if (undoTimerRef.current !== null) {
+      window.clearTimeout(undoTimerRef.current)
+      undoTimerRef.current = null
+    }
+  }, [])
+
+  /** 单级托盘：新的撕下直接顶替旧纸片（被顶掉的不另发声——它本就在倒计时）。 */
+  const armUndo = useCallback(
+    (day: string, snapshot: DeleteSnapshot): void => {
+      disarmUndoTimer()
+      const seq = ++undoSeqRef.current
+      const ticket: UndoTicket = { seq, date: day, snapshot, claimed: false }
+      undoTicketRef.current = ticket
+      dispatch({
+        type: 'undo/push',
+        tray: { seq, date: day, snapshot, count: snapshot.cards.length, expiresAt: Date.now() + UNDO_TTL_MS },
+      })
+      undoTimerRef.current = window.setTimeout(() => {
+        undoTimerRef.current = null
+        const t = undoTicketRef.current
+        if (t !== null && t.seq === seq && !t.claimed) {
+          undoTicketRef.current = null
+          dispatch({ type: 'undo/expire', seq })
+        }
+      }, UNDO_TTL_MS)
+    },
+    [disarmUndoTimer],
+  )
+
+  useEffect(
+    () => () => {
+      flushNow()
+      disarmUndoTimer()
+    },
+    [disarmUndoTimer, flushNow],
+  )
+
   const actions = useMemo<DayActions>(
     () => ({
       select(id) {
@@ -204,10 +255,14 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         const day = stateRef.current.date
         if (day === null) return
         flushNow()
-        const doomed = collectSubtreeIds(cardsByIdOf([...stateRef.current.cards]), id)
+        // 撕下前拍快照：级联之后磁盘只剩 filter 的结果，UI 状态是这批纸片的最后一份完整图景。
+        const all = [...stateRef.current.cards]
+        const doomed = collectSubtreeIds(cardsByIdOf(all), id)
+        const { snapshot } = buildDeleteSnapshot(all, doomed)
         chain(async () => {
           await app.deleteCardCascade(day, id)
           dispatch({ type: 'cards/removed', ids: [...doomed] })
+          armUndo(day, snapshot)
         })
       },
       addTextCard() {
@@ -242,11 +297,32 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       retrySave() {
         flushNow()
       },
+      undoDelete() {
+        const ticket = undoTicketRef.current
+        if (ticket === null || ticket.claimed) return
+        ticket.claimed = true
+        disarmUndoTimer()
+        undoTicketRef.current = null
+        undoIntentRef.current = ticket
+        dispatch({ type: 'undo/pop' })
+        chain(async () => {
+          if (undoIntentRef.current?.seq !== ticket.seq) return // 落笔前宇宙已被替换：这张承诺随作废作废
+          undoIntentRef.current = null
+          await app.restoreCards(ticket.date, ticket.snapshot)
+          if (stateRef.current.date === ticket.date) dispatch({ type: 'cards/restored', cards: ticket.snapshot.cards })
+        })
+      },
+      invalidateUndo() {
+        undoIntentRef.current = null
+        disarmUndoTimer()
+        undoTicketRef.current = null
+        dispatch({ type: 'undo/pop' })
+      },
       dismissNote() {
         dispatch({ type: 'note/clear' })
       },
     }),
-    [app, attachOne, bringToFront, chain, flushNow, schedule],
+    [app, armUndo, attachOne, bringToFront, chain, disarmUndoTimer, flushNow, schedule],
   )
 
   return { state, actions }

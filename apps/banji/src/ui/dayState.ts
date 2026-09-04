@@ -1,6 +1,6 @@
 // 日中介的状态层 —— 纯 reducer：形状、迁移、ghost/note/回执计数。零 React hooks 之外的编排。
 import type { Card, CardId, CardPos, CardSize } from '../domain/types'
-import type { CardPatch } from '../application'
+import type { CardPatch, DeleteSnapshot } from '../application'
 
 /** 夹带占位（ghost）：资产未落定前的安静虚影，只活在 UI 内存，刷新即无。 */
 export interface Ghost {
@@ -17,6 +17,15 @@ export interface Note {
   readonly msg: string
 }
 
+/** 待撤销的"再想想"托盘：只有一格（单级 undo），住 UI 内存，刷新即无（契约决定，见 ROUNDS R4）。 */
+export interface UndoTray {
+  readonly seq: number
+  readonly date: string
+  readonly snapshot: DeleteSnapshot
+  readonly count: number
+  readonly expiresAt: number
+}
+
 export interface DayState {
   readonly date: string | null
   readonly loaded: boolean
@@ -28,6 +37,8 @@ export interface DayState {
   /** >0 = 有未落盘的编辑意图（多次失败合并为一张回执，值为意图条数）。 */
   readonly saveFailed: number
   readonly note: Note | null
+  /** null = 无待撤销删除；非 null = 撕下的纸片还在桌边等着。 */
+  readonly undo: UndoTray | null
 }
 
 export const initialDayState: DayState = {
@@ -40,6 +51,7 @@ export const initialDayState: DayState = {
   ghosts: [],
   saveFailed: 0,
   note: null,
+  undo: null,
 }
 
 export type Action =
@@ -49,6 +61,7 @@ export type Action =
   | { readonly type: 'card/patched'; readonly id: CardId; readonly patch: Partial<Card> }
   | { readonly type: 'cards/removed'; readonly ids: readonly CardId[] }
   | { readonly type: 'cards/set'; readonly cards: readonly Card[] }
+  | { readonly type: 'cards/restored'; readonly cards: readonly Card[] }
   | { readonly type: 'ui/select'; readonly id: CardId | null }
   | { readonly type: 'ui/edit'; readonly id: CardId | null }
   | { readonly type: 'ghost/add'; readonly ghost: Ghost }
@@ -57,12 +70,15 @@ export type Action =
   | { readonly type: 'save/clear' }
   | { readonly type: 'note/set'; readonly id: number; readonly msg: string }
   | { readonly type: 'note/clear' }
+  | { readonly type: 'undo/push'; readonly tray: UndoTray }
+  | { readonly type: 'undo/pop' }
+  | { readonly type: 'undo/expire'; readonly seq: number }
 
 export function dayReducer(state: DayState, action: Action): DayState {
   switch (action.type) {
     case 'day/open':
-      // 未落盘意图（failedRef）跨日仍住在编排层，回执必须活着陪它。
-      return { ...initialDayState, date: action.date, saveFailed: state.saveFailed }
+      // 未落盘意图（failedRef）跨日仍住在编排层，回执必须活着陪它；待撤的纸片同理——undo 认的是出生日。
+      return { ...initialDayState, date: action.date, saveFailed: state.saveFailed, undo: state.undo }
     case 'day/loaded':
       return { ...state, loaded: true, cards: action.cards }
     case 'card/added':
@@ -87,6 +103,11 @@ export function dayReducer(state: DayState, action: Action): DayState {
     }
     case 'cards/set':
       return { ...state, cards: action.cards }
+    case 'cards/restored': {
+      const present = new Set(state.cards.map((c) => c.id))
+      const back = action.cards.filter((c) => !present.has(c.id))
+      return back.length === 0 ? state : { ...state, cards: [...state.cards, ...back] }
+    }
     case 'ui/select':
       return { ...state, selectedId: action.id }
     case 'ui/edit':
@@ -103,6 +124,12 @@ export function dayReducer(state: DayState, action: Action): DayState {
       return { ...state, note: { id: action.id, msg: action.msg } }
     case 'note/clear':
       return state.note === null ? state : { ...state, note: null }
+    case 'undo/push':
+      return { ...state, undo: action.tray }
+    case 'undo/pop':
+      return state.undo === null ? state : { ...state, undo: null }
+    case 'undo/expire':
+      return state.undo !== null && state.undo.seq === action.seq ? { ...state, undo: null } : state
   }
 }
 

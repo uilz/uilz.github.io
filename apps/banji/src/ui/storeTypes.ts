@@ -17,6 +17,10 @@ export interface DayActions {
   attach(files: readonly File[], at?: CardPos | null): void
   /** 保存失败回执上的“再试”：把未落盘意图重新推上串行链。 */
   retrySave(): void
+  /** “再想想”：把待撤快照沿同一条串行链送回 restoreCards（绝不与在途编辑抢跑）。 */
+  undoDelete(): void
+  /** 宇宙被整体替换（导入成功）：待撤快照作废——恢复进新宇宙只会污染它。 */
+  invalidateUndo(): void
   dismissNote(): void
 }
 

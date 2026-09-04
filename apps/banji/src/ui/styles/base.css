@@ -211,8 +211,13 @@ p {
   color: var(--bj-ink);
 }
 
-.bj-toast-raised {
+/* 叠放席位：撕下回执、保存失败回执、轻提示各一枚，自下而上错开，绝不堆墙。 */
+.bj-toast-up1 {
   bottom: calc(142px + env(safe-area-inset-bottom));
+}
+
+.bj-toast-up2 {
+  bottom: calc(198px + env(safe-area-inset-bottom));
 }
 
 .bj-toast-action {
