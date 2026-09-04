@@ -30,7 +30,7 @@ export interface ExportOptions {
 }
 
 export type ExportResult =
-  | { readonly ok: true; readonly zip: Uint8Array }
+  | { readonly ok: true; readonly zip: Uint8Array<ArrayBuffer> }
   | { readonly ok: false; readonly reason: 'missing_asset'; readonly userMessage: string; readonly missingHashes: readonly string[] }
 
 const utf8 = new TextEncoder()

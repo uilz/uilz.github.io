@@ -1,0 +1,364 @@
+/* 卡片 —— 贴在纸上的一小片纸：细发丝边、软纸影；类型图标与工具克制到只有选中才出现。 */
+
+.bj-card {
+  position: absolute;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--bj-surface) 78%, #fffdf6 22%);
+  box-shadow: var(--bj-shadow);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-size: 15.5px;
+  outline: none;
+}
+
+[data-bj-theme='night'] .bj-card {
+  background: color-mix(in srgb, var(--bj-surface) 82%, #3a3022 18%);
+}
+
+.bj-card.is-sel {
+  border-color: var(--bj-hairline-strong);
+  box-shadow: var(--bj-shadow-lift);
+}
+
+.bj-card.is-sel,
+.bj-card:active {
+  z-index: auto; /* 层级由内联 zIndex 决定；此行只表意 */
+}
+
+.bj-card-body {
+  position: absolute;
+  inset: 12px 14px 14px;
+  overflow: hidden;
+  color: var(--bj-ink);
+  word-break: break-word;
+}
+
+.bj-text-read {
+  height: 100%;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-variant-ligatures: none;
+}
+
+.bj-text-edit {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bj-textarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--bj-ink);
+  font-family: var(--bj-body);
+  font-size: 16px; /* ≥16 防 iOS 聚焦缩放 */
+  line-height: 1.6;
+  caret-color: var(--bj-accent);
+  touch-action: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.bj-textarea::placeholder {
+  color: var(--bj-ink-faint);
+}
+
+.bj-fmt-row {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.bj-fmt {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 999px;
+  font-size: 15px;
+  color: var(--bj-ink-faint);
+  background: var(--bj-surface);
+  transition:
+    color var(--bj-move) ease-out,
+    border-color var(--bj-move) ease-out;
+}
+
+.bj-fmt-on {
+  color: var(--bj-accent);
+  border-color: var(--bj-accent);
+}
+
+/* 选中工具：铅笔 + ⋯，贴在卡内侧上角，不立标题栏。 */
+.bj-card-tools {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--bj-move) ease-out;
+}
+
+.bj-card.is-sel .bj-card-tools {
+  opacity: 1;
+}
+
+.bj-tool {
+  width: 44px;
+  height: 44px;
+  margin-top: -8px;
+  margin-right: -8px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--bj-ink-faint);
+  background: transparent;
+  transition: color var(--bj-move) ease-out;
+}
+
+.bj-tool:active,
+.bj-tool[aria-expanded='true'] {
+  color: var(--bj-accent);
+}
+
+.bj-menu {
+  position: absolute;
+  top: 30px;
+  right: 2px;
+  min-width: 96px;
+  padding: 4px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 4px;
+  background: var(--bj-surface);
+  box-shadow: var(--bj-shadow-lift);
+}
+
+.bj-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 12px;
+  min-height: 40px;
+  border-radius: 3px;
+  font-size: 15px;
+  color: var(--bj-ink-soft);
+}
+
+.bj-menu-item:active {
+  background: var(--bj-wash);
+}
+
+.bj-menu-confirm {
+  width: 230px;
+  padding: 12px 12px 4px;
+}
+
+.bj-menu-confirm p {
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+.bj-menu-note {
+  font-size: 15px;
+  color: var(--bj-ink-faint);
+  margin-bottom: 8px !important;
+}
+
+/* 右下角小圆点：视觉小，热区 ≥44px。 */
+.bj-resize {
+  position: absolute;
+  right: -16px;
+  bottom: -16px;
+  width: 44px;
+  height: 44px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.bj-resize::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bj-accent);
+  opacity: 0.5;
+}
+
+/* 招牌动作：新卡如纸落定 —— 12px 沉降 + 影晕，180ms，仅一次。 */
+@keyframes bj-settle {
+  0% {
+    transform: translateY(-12px);
+    opacity: 0.5;
+    filter: drop-shadow(0 2px 2px rgba(120, 95, 60, 0));
+  }
+  70% {
+    transform: translateY(0);
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(140, 111, 74, 0.35));
+  }
+  100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 0 0 rgba(140, 111, 74, 0));
+  }
+}
+
+.bj-settle {
+  animation: bj-settle 180ms ease-out;
+}
+
+/* —— 渲染器内部 —— */
+.bj-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.bj-img-quiet,
+.bj-unknown {
+  color: var(--bj-ink-faint);
+}
+
+.bj-unknown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.08em;
+}
+
+.bj-unknown-ico {
+  opacity: 0.7;
+  display: inline-grid;
+  place-items: center;
+}
+
+.bj-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  min-height: 36px;
+  padding: 2px 6px 2px 2px;
+  color: var(--bj-ink-soft);
+}
+
+.bj-file-ico {
+  display: inline-grid;
+  place-items: center;
+  color: var(--bj-accent);
+  flex: none;
+}
+
+.bj-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  color: var(--bj-ink);
+}
+
+.bj-file-size {
+  flex: none;
+  font-size: 15px;
+  color: var(--bj-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.bj-file-save,
+.bj-file-quiet {
+  flex: none;
+  font-size: 15px;
+  padding: 2px 8px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 999px;
+  color: var(--bj-accent);
+}
+
+.bj-file-quiet {
+  color: var(--bj-ink-faint);
+}
+
+/* 迷你 md 排印 */
+.bj-md {
+  font-family: var(--bj-display);
+}
+
+.bj-md p {
+  margin: 0 0 0.6em;
+}
+
+.bj-md h3,
+.bj-md h4,
+.bj-md h5 {
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  margin: 0.4em 0 0.35em;
+}
+
+.bj-md h3 {
+  font-size: 19px;
+  border-bottom: 1px solid var(--bj-hairline);
+  padding-bottom: 2px;
+}
+
+.bj-md h4 {
+  font-size: 17px;
+}
+
+.bj-md h5 {
+  font-size: 15.5px;
+  color: var(--bj-ink-soft);
+}
+
+.bj-md ul,
+.bj-md ol {
+  margin: 0 0 0.6em;
+  padding-left: 1.4em;
+}
+
+.bj-md li {
+  margin-bottom: 0.15em;
+}
+
+.bj-md-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  background: var(--bj-wash);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.bj-md pre {
+  margin: 0 0 0.6em;
+  padding: 8px 10px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 3px;
+  background: var(--bj-wash);
+  overflow: auto;
+}
+
+.bj-md pre code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.bj-md-a {
+  color: var(--bj-accent);
+  border-bottom: 1px solid var(--bj-hairline);
+}

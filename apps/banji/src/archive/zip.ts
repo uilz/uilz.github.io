@@ -77,7 +77,7 @@ export interface ZipFileSpec {
   readonly store?: boolean // 资产已压缩/内容寻址，deflate 只做无谓的功
 }
 
-export function buildZip(files: readonly ZipFileSpec[]): Uint8Array {
+export function buildZip(files: readonly ZipFileSpec[]): Uint8Array<ArrayBuffer> {
   const entries: Record<string, ZippableFile> = {}
   for (const f of files) {
     entries[f.name] = [f.data, { level: f.store === true ? 0 : 6 }]
