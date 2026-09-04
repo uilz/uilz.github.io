@@ -213,7 +213,34 @@ check('HERO: re-imported image bytes sha256-equal the source PNG', clipBack === 
 await page.waitForFunction(() => document.querySelectorAll('.bj-card.be-image img.bj-img').length === 2, null, { timeout: 10000 })
 check('attachments visible after import: 2 image cards render', (await page.locator('.bj-card.be-image img.bj-img').count()) === 2)
 await page.screenshot({ path: `${SHOTS}/07-imported.png`, fullPage: true })
+
+// —— R4 桌面撕下→再想想：整回合过真 IDB（添卡 → ⋯ 删 → 行动回执 → 再想想 → 逐字回位 → reload 仍在）——
+await page.click('.bj-add')
+await page.waitForSelector('textarea', { timeout: 4000 })
+await page.locator('textarea').first().fill('撕下又想起')
+await page.click('.bj-scroll', { position: { x: 6, y: 6 } }) // 背景：exitEdit + flushNow（编辑当场结算）
+await page.waitForTimeout(700)
+const undoCard = page.locator('.bj-card', { hasText: '撕下又想起' }).first()
+const geom0 = await undoCard.evaluate((el) => [Number(el.style.left.replace('px', '')), Number(el.style.top.replace('px', '')), Number(el.style.width.replace('px', '')), Number(el.style.height.replace('px', ''))])
+await undoCard.click({ position: { x: 20, y: 12 } }) // 点选（角落避开便签浮层）
+await page.click('[aria-label="卡片菜单"]')
+await page.click('.bj-menu-item:has-text("删除")')
+await page.click('button:has-text("确认删除")')
+await page.waitForSelector('.bj-toast', { timeout: 4000 })
+const undoToastTxt = (await page.locator('.bj-toast').first().textContent()) || ''
+check('R4 桌面 撕下: 行动回执便签「已撕下 1 张，再想想」（发丝边）', undoToastTxt === '已撕下 1 张，再想想' && (await page.locator('.bj-toast.bj-toast-alert').count()) === 0)
+check('R4 桌面 撕下: 卡即刻离纸', (await undoCard.count()) === 0)
+await page.screenshot({ path: `${SHOTS}/16-toast-undo.png`, fullPage: true })
+await page.click('.bj-toast .bj-toast-action')
+await undoCard.waitFor({ timeout: 5000 })
+const geom1 = await undoCard.evaluate((el) => [Number(el.style.left.replace('px', '')), Number(el.style.top.replace('px', '')), Number(el.style.width.replace('px', '')), Number(el.style.height.replace('px', ''))])
+check('R4 桌面 再想想: 卡回到原位（pos/size 逐像素 ±2）', geom0.every((v, i) => Math.abs(v - geom1[i]) <= 2))
+await page.reload()
+await page.waitForSelector('.bj-card')
+const dUndo = await dump(page)
+check('R4 桌面 再想想: 恢复已过真缝落库，reload 仍在', dUndo.journals.flatMap((j) => j.cards).some((c) => (c.text || '').includes('撕下又想起')))
 await page.click('.bj-back')
+await page.waitForSelector('.bj-cell')
 
 // —— 夜读主题 + theme-color 翻转 + 持久化 ——
 await page.click('button[aria-label="设置"]')
@@ -297,6 +324,65 @@ const d4 = await dump(mpage)
 const stillPhone = d4.journals.flatMap((j) => j.cards).some((c) => c.kind === 'image' && c.size?.w === 318 && c.w === 290)
 const stillText = d4.journals.flatMap((j) => j.cards).some((c) => (c.text || '').includes('手机上落的一笔'))
 check('mobile reload: 窄屏图片卡与文字卡都还在', stillPhone && stillText)
+
+// —— R4 移动端：真触摸序列拖卡过缝落库；桌面时代日子在 390 屏的宽画布耳语 ——
+// headless 无手指：CDP Input.dispatchTouchEvent 是浏览器级真 touch（pointerType='touch'），
+// 卡片 CSS 有 touch-action:none，指针捕获与移动全走线上代码路径。
+const cdp = await mctx.newCDPSession(mpage)
+async function touchDrag(x0, y0, x1, y1, steps = 12) {
+  const p = (x, y) => ({ x, y, radiusX: 1, radiusY: 1, force: 1 })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [p(x0, y0)] })
+  for (let i = 1; i <= steps; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [p(x0 + ((x1 - x0) * i) / steps, y0 + ((y1 - y0) * i) / steps)] })
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+}
+const dragFrom = await mpage.evaluate(() => {
+  const els = [...document.querySelectorAll('.bj-card')].filter((e) => (e.textContent || '').includes('手机上落的一笔'))
+  const el = els[0]
+  if (el === undefined) return null
+  el.scrollIntoView({ block: 'center' })
+  const r = el.getBoundingClientRect()
+  return { x: r.x + 24, y: r.y + 14, left: Number(el.style.left.replace('px', '')), top: Number(el.style.top.replace('px', '')) }
+})
+await touchDrag(dragFrom.x, dragFrom.y, dragFrom.x + 40, dragFrom.y - 120)
+await mpage.waitForTimeout(1500) // debounce 450 + 串行链落库
+await mpage.reload()
+await mpage.waitForSelector('.bj-card')
+const dragNow = await mpage.evaluate(() => {
+  const els = [...document.querySelectorAll('.bj-card')].filter((e) => (e.textContent || '').includes('手机上落的一笔'))
+  const el = els[0]
+  if (el === undefined) return null
+  return { left: Number(el.style.left.replace('px', '')), top: Number(el.style.top.replace('px', '')) }
+})
+const moved = dragNow !== null && Math.abs(dragNow.left - (dragFrom.left + 40)) <= 2 && Math.abs(dragNow.top - (dragFrom.top - 120)) <= 2
+check('mobile 真触摸拖卡: (+40,-120) 位移过缝落库、reload 仍在', moved)
+await mpage.screenshot({ path: `${SHOTS}/17-mobile-touchmove.png` })
+
+const hint = await mpage.waitForSelector('.bj-wide-hint', { timeout: 6000 }).catch(() => null)
+const whisperOn = hint !== null && ((await hint.textContent()) || '').includes('纸比屏宽')
+check('mobile 宽画布耳语: 桌面时代日子在 390 屏低语', whisperOn)
+await mpage.screenshot({ path: `${SHOTS}/18-wide-whisper.png` })
+await mpage.evaluate(() => {
+  const s = document.querySelector('.bj-scroll')
+  s.scrollLeft += 200
+})
+await mpage.waitForTimeout(600) // is-fading ≤220ms 后撤场
+const hintFlag = await mpage.evaluate(() => new Promise((res) => {
+  const r = indexedDB.open('banji-journal')
+  r.onsuccess = () => {
+    const db = r.result
+    const tx = db.transaction('settings', 'readonly')
+    tx.objectStore('settings').get('hint_wide_canvas').onsuccess = (e) => { db.close(); res(e.target.result?.value === true) }
+    tx.onerror = () => { db.close(); res(false) }
+  }
+  r.onerror = () => res(false)
+}))
+check('mobile 耳语: 横向首推即淡出并 setSetting 记档', (await mpage.locator('.bj-wide-hint').count()) === 0 && hintFlag === true)
+await mpage.reload()
+await mpage.waitForSelector('.bj-card')
+await mpage.waitForTimeout(900)
+check('mobile 耳语: 记档之后终生不再扰（reload 不响）', (await mpage.locator('.bj-wide-hint').count()) === 0)
 await mctx.close()
 
 await browser.close()
