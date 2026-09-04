@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import type { CardRenderer, RenderCtx } from './types'
 import type { TextProps } from '../../domain/types'
 import { isPlainObject } from '../../domain/validation'
+import { revealInViewport } from '../focus'
 import { parseMd } from './md'
 import { MdView } from './MdView'
 
@@ -42,8 +43,12 @@ function TextView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx
           data-nodrag
           placeholder="落一笔…"
           autoFocus
+          onFocus={(e) => revealInViewport(e.currentTarget, 'center')}
+          onBlur={(e) => {
+            revealInViewport(e.currentTarget, 'nearest')
+            ctx.exitEdit()
+          }}
           onChange={(e) => ctx.setProps({ text: e.target.value })}
-          onBlur={() => ctx.exitEdit()}
         />
         {formatSwitch(ctx, p.format ?? 'plain')}
       </div>

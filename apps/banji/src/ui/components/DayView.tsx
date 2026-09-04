@@ -8,6 +8,7 @@ import { weekdayMondayIndex } from '../../domain/date'
 import { WEEKDAYS_MONDAY } from '../labels'
 import { CardFrame } from './CardFrame'
 import { IconChevronLeft, IconGear, IconPaperclip } from './icons'
+import { viewportWidthNow } from '../placement'
 
 function dateTitle(date: string): string {
   const y = date.slice(0, 4)
@@ -47,7 +48,9 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
   const dragDepthRef = useRef(0)
   const [dragging, setDragging] = useState(false)
   const sorted = [...state.cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
-  const canvasW = Math.max(600, ...sorted.map((c) => c.pos.x + c.size.w + 200))
+  // 空画布最小宽随视口收缩（390 屏上不再横向滚一条 600px 的"死纸边"），桌面 min 600 不变。
+  const minCanvasW = Math.min(600, Math.max(320, viewportWidthNow() - 48))
+  const canvasW = Math.max(minCanvasW, ...sorted.map((c) => c.pos.x + c.size.w + 200))
   const canvasH = Math.max(480, ...sorted.map((c) => c.pos.y + c.size.h + 200))
 
   // 桌面端粘贴：只劫持有文件的粘贴；纯文本粘贴原样交给 textarea 的本地行为。

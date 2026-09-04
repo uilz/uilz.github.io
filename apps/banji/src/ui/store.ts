@@ -8,7 +8,7 @@ import type { Card, CardId, CardPos } from '../domain/types'
 import { cardsByIdOf, collectSubtreeIds } from '../domain/gc'
 import { isPlainObject } from '../domain/validation'
 import { resolveRenderer } from './cards/registry'
-import { attachKind, clampCardPos, dropAt, fitWithin, imageCardSize, scatterPos } from './placement'
+import { attachKind, clampCardPos, dropAt, fitWithin, imageCardSize, imageFitMaxW, scatterPos, viewportWidthNow } from './placement'
 import { attachFailureCopy, probeImageSize } from './probe'
 import { dayReducer, initialDayState } from './dayState'
 import type { Pending } from './dayState'
@@ -143,9 +143,11 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
           if (kind === 'image') {
             const nat = await probe(file)
             if (nat !== null) {
-              const fit = fitWithin(nat.w, nat.h)
+              // 创建期定宽公式唯一住在 imageFitMaxW：手机收进屏内，桌面封顶不变。
+              const maxW = imageFitMaxW(viewportWidthNow())
+              const fit = fitWithin(nat.w, nat.h, maxW)
               props = { hash: record.hash, w: fit.w, h: fit.h }
-              size = imageCardSize(nat.w, nat.h)
+              size = imageCardSize(nat.w, nat.h, maxW)
             }
           }
           const maxZ = sortByZ(stateRef.current.cards).at(-1)?.z ?? 0
@@ -214,7 +216,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         if (day === null) return
         flushNow()
         const renderer = resolveRenderer('text')
-        const pos = scatterPos(current.cards.length + current.ghosts.length)
+        const pos = scatterPos(current.cards.length + current.ghosts.length, viewportWidthNow())
         const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
         chain(async () => {
           const card = await app.addCard(day, {
@@ -233,7 +235,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         if (day === null || files.length === 0) return
         flushNow()
         files.forEach((file, k) => {
-          const base = at !== null ? dropAt(clampCardPos(at), k) : scatterPos(current.cards.length + current.ghosts.length + k)
+          const base = at !== null ? dropAt(clampCardPos(at), k) : scatterPos(current.cards.length + current.ghosts.length + k, viewportWidthNow())
           attachOne(day, file, base, ++ghostSeqRef.current, k)
         })
       },

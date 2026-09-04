@@ -4,6 +4,7 @@ import type { CardRenderer, RenderCtx } from './types'
 import { isPlainObject } from '../../domain/validation'
 import { useAssetUrl } from './asset'
 import { deriveInitialSize } from './md'
+import { imageFitMaxW, viewportWidthNow } from '../placement'
 
 function readImage(raw: unknown): ImageProps {
   if (!isPlainObject(raw)) return { hash: '' }
@@ -31,7 +32,7 @@ function ImageView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCt
       onLoad={(e) => {
         const img = e.currentTarget
         if (p.w === undefined && p.h === undefined && img.naturalWidth > 0) {
-          ctx.setProps(deriveInitialSize(img.naturalWidth, img.naturalHeight, 520))
+          ctx.setProps(deriveInitialSize(img.naturalWidth, img.naturalHeight, imageFitMaxW(viewportWidthNow())))
         }
       }}
     />

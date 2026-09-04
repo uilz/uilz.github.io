@@ -37,9 +37,13 @@ export const probeImageSize: ImageProber = async (file) => {
   }
 }
 
-/** 夹带失败的安静人话（配额是这台浏览器最常见的失败，值得单列）。 */
+// FileReader 读盘失败在浏览器间以 name 或 TypeError 呈现，两种都归"读不进来"。
+const READ_FAIL_NAMES: ReadonlySet<string> = new Set(['NotReadableError', 'EncodingError'])
+
+/** 夹带失败回执：按根因分三条人话（配额给出路、读失败给重试、其余保守兜底）。 */
 export function attachFailureCopy(err: unknown): string {
   const name = err instanceof DOMException || err instanceof Error ? err.name : ''
-  if (name === 'QuotaExceededError') return '这一份没夹上 · 纸面快满了'
+  if (name === 'QuotaExceededError') return '这一份没夹上 · 手机的存储空间不够了，先导出或清理一些吧'
+  if (READ_FAIL_NAMES.has(name) || err instanceof TypeError) return '这一份没能读进来 · 再试一次'
   return '这一份没夹上 · 再试一次'
 }

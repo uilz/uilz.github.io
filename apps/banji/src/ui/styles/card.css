@@ -93,6 +93,13 @@
   border-color: var(--bj-accent);
 }
 
+/* 手机是手札的主设备：格式切换热区抬到 44px（桌面视觉不动）。 */
+@media (max-width: 479px) {
+  .bj-fmt {
+    min-height: 44px;
+  }
+}
+
 /* 选中工具：铅笔 + ⋯，贴在卡内侧上角，不立标题栏。 */
 .bj-card-tools {
   position: absolute;
