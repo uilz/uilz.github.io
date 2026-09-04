@@ -462,6 +462,8 @@
                 maxCombo = 0;
             let fastestRT = Infinity,
                 slowestRT = 0;
+            /* 生成评语所需最少题数 */
+            const MIN_QUESTIONS = 6;
             let mode = 'timed';
             let difficulty = 'medium';
             let countdownValue = 15;
@@ -752,18 +754,29 @@
                 return Math.round(totalCorrect / totalQuestions * 100);
             }
 
+            /* 有效准度：裸正确率的 Wilson 90%置信下界（z=1），小样本自动惩罚 */
+            function effectiveAccuracy() {
+                if (totalQuestions === 0) return 0;
+                const z = 1, n = totalQuestions, p = totalCorrect / n;
+                const lb = (p + z * z / (2 * n) - z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / (1 + z * z / n);
+                return Math.max(0, lb);
+            }
+
             function calculateScore() {
-                const accuracy = getAccuracy();
+                const accuracy = Math.round(effectiveAccuracy() * 100);
                 const avg = reactionTimes.length ?
                     reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length :
                     1500;
                 let score = accuracy - Math.max(0, (avg - 500) / 18) + maxCombo * 0.5;
+                // 小样本软惩罚：不足 6 题按比例折算
+                if (totalQuestions < MIN_QUESTIONS) score = score * totalQuestions / MIN_QUESTIONS;
                 return Math.round(Math.max(0, Math.min(100, score)));
             }
 
             function saveHistory(score) {
                 const bestScore = Math.max(Number(localStorage.bestScore || 0), score);
-                const bestAccuracy = Math.max(Number(localStorage.bestAccuracy || 0), getAccuracy());
+                /* 小样本按 Wilson 有效准度计入历史 */
+                const bestAccuracy = Math.max(Number(localStorage.bestAccuracy || 0), Math.round(effectiveAccuracy() * 100));
                 const bestRT = Math.min(Number(localStorage.bestRT || 999999), fastestRT === Infinity ? 999999 :
                     fastestRT);
                 localStorage.bestScore = bestScore;
@@ -800,40 +813,64 @@
                 butterfly: { name: "蝴蝶", descs: ["注意力今天停留在每一朵花上。", "每一次犹豫都有原因，只是答案不在犹豫里。", "飞得久了会忘路，下次先落对那朵花。"], why: "各档未命中的兜底" }
             };
 
-            /* 模式 × 难度 × 得分分档评语（15 分一档：≥60 high / ≥30 mid / 否则 low） */
+            /* 模式 × 难度 × 得分七档判词（与诗句同分界：≥90/75/60/45/30/15/其余） */
             const VERDICT = {
                 timed: {
                     easy: {
-                        high: ["模式：15 秒里，你把最安静的模式打成了节拍器。", "15 秒 + 简单 = 手速的体检报告。"],
-                        mid: ["模式：静态题也能失手，开局手还没热。", "模式：15 秒太短，短到状态没来得及上线。"],
-                        low: ["模式：题目没动、颜色没骗，15 秒输给了手速。", "简单模式限时翻车——是紧张，不是注意力的锅。"]
+                        s90: ["模式：15 秒里，你把最安静的模式打成了节拍器。", "模式：限时+简单也要打满才配低调，这一局配了。"],
+                        s75: ["模式：15 秒 + 简单 = 手速的体检报告。", "模式：离满速只差一两下犹豫，手指先别踩刹车。"],
+                        s60: ["模式：静态题也能失手，开局手还没热。", "模式：及格线上的节拍器，偶尔抢一拍。"],
+                        s45: ["模式：15 秒太短，短到状态没来得及上线。", "模式：对半开的一局，时钟不偏不帮。"],
+                        s30: ["模式：题目没动、颜色没骗，15 秒输给了手速。", "模式：简单题卡壳，多半是眼睛没跟上手。"],
+                        s15: ["模式：简单模式限时翻车——是紧张，不是注意力的锅。", "模式：开局没热收尾没稳，15 秒一晃就没。"],
+                        s0: ["模式：静态题垫底——今天不是你的天气。", "模式：关掉页面休息三分钟，比连开十局都管用。"]
                     },
                     medium: {
-                        high: ["模式：字在乱跑，你比它更快，还先到终点。", "乱序 + 限时，中等模式被你跑成了直线。"],
-                        mid: ["模式：乱序里丢了准头，但框架没散。", "模式：时钟没收住你，先收住眼睛。"],
-                        low: ["模式：位置一晃，15 秒就不够用了。", "先回静态题稳住准度，再来挑战时钟？"]
+                        s90: ["模式：字在乱跑，你比它更快，还先到终点。", "模式：乱序限时双开花，你是踩着风跑的。"],
+                        s75: ["模式：乱序 + 限时，中等模式被你跑成了直线。", "模式：离顶只隔一两次'再看一眼'。"],
+                        s60: ["模式：乱序里丢了准头，但框架没散。", "模式：乱阵里守住及格，眼神开始跟得上字。"],
+                        s45: ["模式：时钟没收住你，先收住眼睛。", "模式：一半准一半乱，差的只是稳。"],
+                        s30: ["模式：位置一晃，15 秒就不够用了。", "模式：位置一换节奏就断，练的是让眼睛归位。"],
+                        s15: ["模式：先回静态题稳住准度，再来挑战时钟？", "模式：15 秒加乱序，这局一直在追自己。"],
+                        s0: ["模式：限时+中等还垫底，先回简单找手感。", "模式：乱序不是敌人，抢拍才是。"]
                     },
                     hard: {
-                        high: ["模式：15 秒加困难双重 debuff（减益），你居然没亏。", "限时和障眼法一起开，你两个都赢了。"],
-                        mid: ["模式：困难局里没崩盘，这就是及格。", "模式：困难模式要一局一局喂，15 秒算开胃。"],
-                        low: ["模式：困难模式本来就是用来输的，15 秒更是。", "下次从中等开始攒准度，再回来复仇。"]
+                        s90: ["模式：15 秒加困难双重 debuff（减益），你居然没亏。", "模式：困难限时双 debuff（减益）下打满，这句不掺水。"],
+                        s75: ["模式：限时和障眼法一起开，你两个都赢了。", "模式：障眼法没挡住你，时钟反成了助攻。"],
+                        s60: ["模式：困难局里没崩盘，这就是及格。", "模式：困难里及格就是本事，速度还在爬坡。"],
+                        s45: ["模式：困难模式要一局一局喂，15 秒算开胃。", "模式：骗术有三层，你破了两层。"],
+                        s30: ["模式：困难模式本来就是用来输的，15 秒更是。", "模式：双重干扰下丢分正常，别开始靠猜。"],
+                        s15: ["模式：下次从中等开始攒准度，再回来复仇。", "模式：这局的难点不在颜色，在你没来得及看。"],
+                        s0: ["模式：困难限时垫底不亏，这一局本来就是硬仗。", "模式：先把中等跑的 15 秒顺了，再回来填坑。"]
                     }
                 },
                 free: {
                     hard: {
-                        high: ["模式：困难模式的自由局，每一题都是硬仗。", "颜色在按钮上跳了一整局，你都接住了。"],
-                        mid: ["模式：困难模式输得有章法——先输位置，再输颜色。", "模式：能撑完全场，就算训练量达标。"],
-                        low: ["模式：没人掐表，但困难模式自己会施压。", "这一局的敌人是颜色自己。"]
+                        s90: ["模式：困难模式的自由局，每一题都是硬仗。", "模式：困难局打到顶，颜色从今天起认识你。"],
+                        s75: ["模式：颜色在按钮上跳了一整局，你都接住了。", "模式：障眼法拆了一半，另一半正在改邪归正。"],
+                        s60: ["模式：困难模式输得有章法——先输位置，再输颜色。", "模式：困难模式及格就是真勋章，别催速度。"],
+                        s45: ["模式：能撑完全场，就算训练量达标。", "模式：输一半赢一半，困难已经口下留情。"],
+                        s30: ["模式：没人掐表，但困难模式自己会施压。", "模式：双层晃眼的时候，先盯字别看色。"],
+                        s15: ["模式：这一局的敌人是颜色自己。", "模式：这局欺骗层太厚，回中场歇脚再战。"],
+                        s0: ["模式：困难垫底是学费，别交重复的。", "模式：先在中等活下来，再回困难谈感情。"]
                     },
                     easy: {
-                        high: ["模式：不限时的一局，简单模式像散步——你走得很稳。", "慢下来也没偷分，这就是自由模式的诚实。"],
-                        mid: ["模式：散步也能踩空——状态还在路上。", "模式：不限时，失误反而更像态度问题。"],
-                        low: ["模式：题没动、色没骗——纯属状态没上线。", "下一局：站起来，深呼吸，再按空格。"]
+                        s90: ["模式：不限时的一局，简单模式像散步——你走得很稳。", "模式：不限时还能打满，安静被你变成武器。"],
+                        s75: ["模式：慢下来也没偷分，这就是自由模式的诚实。", "模式：散步没踩空，只是终点前慢了几步。"],
+                        s60: ["模式：散步也能踩空——状态还在路上。", "模式：状态在线一大半，剩下那半在打盹。"],
+                        s45: ["模式：不限时，失误反而更像态度问题。", "模式：题没骗你，你也没赢——平局收场。"],
+                        s30: ["模式：题没动、色没骗——纯属状态没上线。", "模式：不限时也丢分，走神开始有名字。"],
+                        s15: ["模式：下一局：站起来，深呼吸，再按空格。", "模式：自由模式也能迷路，方向要在眼睛不在手。"],
+                        s0: ["模式：静态题垫底——先把呼吸放平再开局。", "模式：每一题多看半秒，这一课简单模式就够。"]
                     },
                     medium: {
-                        high: ["模式：不限时还乱序，你练的是持久专注。", "自己叫停也算一种准度。"],
-                        mid: ["模式：乱序保住了半局，另一半输给了犹豫。", "模式：慢慢来可以，慢还错就要复盘了。"],
-                        low: ["模式：慢慢答也能答错，说明不是时间问题。", "把速度先放下，眼睛跟着颜色走一遍。"]
+                        s90: ["模式：不限时还乱序，你练的是持久专注。", "模式：自由节奏下把乱序理成了直线，罕见。"],
+                        s75: ["模式：自己叫停也算一种准度。", "模式：离顶隔着几次'确定一下'。"],
+                        s60: ["模式：乱序保住了半局，另一半输给了犹豫。", "模式：乱了脚步没乱节奏，这已经算赢。"],
+                        s45: ["模式：慢慢来可以，慢还错就要复盘了。", "模式：一半看清一半抢拍，差的是耐心。"],
+                        s30: ["模式：慢慢答也能答错，说明不是时间问题。", "模式：不限时也打滑，乱序得慢慢磨。"],
+                        s15: ["模式：把速度先放下，眼睛跟着颜色走一遍。", "模式：慢和错一起来，说明都没进入状态。"],
+                        s0: ["模式：先回简单把'看清再点'练熟。", "模式：乱序练眼睛，慢练心，这局两样都欠。"]
                     }
                 }
             };
@@ -873,7 +910,8 @@
                 saveHistory(score);
                 const accuracy = getAccuracy();
                 const verdictSet = VERDICT[mode][difficulty];
-                const verdict = pickText(score >= 60 ? verdictSet.high : score >= 30 ? verdictSet.mid : verdictSet.low);
+                const vt = score >= 90 ? 's90' : score >= 75 ? 's75' : score >= 60 ? 's60' : score >= 45 ? 's45' : score >= 30 ? 's30' : score >= 15 ? 's15' : 's0';
+                const verdict = pickText(verdictSet[vt]);
                 const avgRT = reactionTimes.length ?
                     Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length) :
                     0;
@@ -881,6 +919,7 @@
                 const a = pickAnimal(maxCombo, avgRT, accuracy);
                 const poemPick = literaryLine(score, accuracy, maxCombo);
                 const diffCN = { easy: '简单', medium: '中等', hard: '困难' }[difficulty];
+                const smallSample = totalQuestions < MIN_QUESTIONS ? `样本提示：本局只有 ${totalQuestions} 题，样本偏小，得分已按 ${totalQuestions}/6 折算。\n\n` : '';
                 /* 固化本局全部抽中文案，重载后可原样回放 */
                 const d = {
                     v: 1,
@@ -904,7 +943,8 @@
                     poem: poemPick.line,
                     poemWhy: poemPick.why,
                     verdict: verdict,
-                    verdictWhy: `得分 ${score} ` + (score >= 60 ? "≥ 60 → 高段" : score >= 30 ? "≥ 30 → 中段" : "→ 低段") + `；模式 ${mode === 'timed' ? '15秒挑战' : '自由模式'} × 难度 ${diffCN}`
+                    verdictWhy: `得分 ${score}，${{ s90: '≥90', s75: '≥75', s60: '≥60', s45: '≥45', s30: '≥30', s15: '≥15', s0: '<15' }[vt]} 段；模式 ${mode === 'timed' ? '15秒挑战' : '自由模式'} × 难度 ${diffCN}`,
+                    sampleNote: smallSample
                 };
                 try {
                     localStorage.setItem('stroop.lastRun', JSON.stringify(d));
@@ -921,7 +961,7 @@
                 document.getElementById("animal").innerHTML =
                     `🐾 注意力动物：<strong>${d.aName}</strong><br><span style="font-size:12px;color:#7a828e;">${d.aDesc}</span>`;
                 document.getElementById("evaluation").innerHTML =
-                    d.poem + "\n\n" + d.verdict + "\n\n" +
+                    d.poem + "\n\n" + d.verdict + "\n\n" + (d.sampleNote || '') +
                     `准确率 ${d.accuracy}%　·　平均 RT（反应时）${d.avgRT}ms　·　得分 ${d.score}\n` +
                     `最快 ${d.fastest === null ? '—' : d.fastest + 'ms'}　·　最慢 ${d.slowest === 0 ? '—' : d.slowest + 'ms'}　·　最大连击 ${d.maxCombo}\n` +
                     `历史最佳 ${localStorage.bestScore || '—'}`;
