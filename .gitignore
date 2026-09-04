@@ -17,4 +17,5 @@ Thumbs.db
 # banji 依赖与构建产物
 node_modules/
 apps/banji/dist/
+# banji 构建产物（vite outDir，随每次 build 再生）
 i/banji/

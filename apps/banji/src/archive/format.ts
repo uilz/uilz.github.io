@@ -1,4 +1,5 @@
 import type { EdgeRecord, JournalDoc } from '../domain/types'
+import { isHex64 } from '../domain/validate'
 
 // 归档 ZIP 的布局常量与规范化 JSON。路径里永远不出现用户文件名（CJK/转义问题），
 // 资产条目一律内容寻址：assets/<sha256hex>。
@@ -39,6 +40,18 @@ export interface ArchiveManifest {
 export interface ArchiveSettingsEntry {
   readonly key: string
   readonly value: unknown
+}
+
+/** manifest.assets 条目的逐项窄化（导入预检的第一道 JSON 闸；非法返回 null，不抛错）。 */
+export function narrowAssetEntry(raw: unknown): ArchiveAssetIndexEntry | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+  const rec = raw as Record<string, unknown>
+  if (!isHex64(rec['hash']) || typeof rec['mime'] !== 'string' || typeof rec['size'] !== 'number') return null
+  const name = rec['name']
+  if (name !== undefined && typeof name !== 'string') return null
+  return name === undefined
+    ? { hash: rec['hash'], mime: rec['mime'], size: rec['size'] }
+    : { hash: rec['hash'], mime: rec['mime'], name, size: rec['size'] }
 }
 
 export interface ArchivePayload {

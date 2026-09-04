@@ -2,15 +2,13 @@
 // 本模块零 I/O：记录转换是纯 unknown→unknown；store 拓扑以声明式规格描述、由 repository 解释执行。
 // 产品文案约束：拒绝消息必须让用户读得出“数据还在、更新伴记即可”，绝不可像“日记没了”。
 
-import type { ArchiveAssetIndexEntry } from '../format'
-
 export const ARCHIVE_SCHEMA_CURRENT = 1
 
 export interface RecordTransforms {
   readonly journals?: (raw: unknown) => unknown
   readonly edges?: (raw: unknown) => unknown
   readonly settings?: (raw: unknown) => unknown
-  /** 仅作用于归档 manifest.assets 条目（JSON 形态）。 */
+  /** 仅作用于归档 manifest.assets 条目（JSON 形态；调用方 narrow，见 preflight）。 */
   readonly assetIndex?: (raw: unknown) => unknown
   /** 仅作用于 IDB assets store 的 AssetRecord（带 blob），只能做不动 blob 的字段变形；
    * 需要重算 hash 的算法级变更不走此通道（由导入重建）。archive 侧恒为透传。 */
@@ -36,6 +34,19 @@ export interface SchemaMigration {
 
 /** v1：无历史包袱，表为空。未来版本按 from→to append；to 必须等于 from+1，永不改写旧行。 */
 export const MIGRATIONS: readonly SchemaMigration[] = []
+
+/**
+ * 两个整数的对齐承诺（契约）：IDB version 与归档 schemaVersion 各自独立演进，
+ * 但代码真相一致——CURRENT=1 时任何超出都意味着“当前无法理解这份数据”。
+ * 打开 v≥2 的库若没有对应迁移行，只会静默半升级（v1 的 createV1Schema 直接跳过），
+ * 中心腐坏比拒绝打开危险得多，因此 openRepo 先过这道闸。
+ */
+export const IDB_VERSION_CURRENT = 1
+
+export function validateIdbVersion(target: number): void {
+  if (!Number.isInteger(target) || target < 1) throw rejectedShape(`IDB version 非法: ${String(target)}`)
+  if (target > IDB_VERSION_CURRENT) throw rejectedTooNew(target)
+}
 
 export type ArchiveRejectCode = 'archive_too_new' | 'unknown_hash_algo' | 'archive_shape' | 'migration_chain_broken'
 
@@ -113,7 +124,9 @@ export function migrateRecords(from: number, sets: ArchiveRecordSets, table: rea
     if (hop === undefined) {
       throw rejectedChain(`迁移链缺少 ${String(cur)}→${String(cur + 1)} 转换`)
     }
-    if (hop.to === cur) throw rejectedChain(`迁移表存在自环 ${String(cur)}→${String(cur)}`)
+    if (hop.to !== cur + 1) {
+      throw rejectedChain(`迁移表 ${String(cur)} 行声明 to=${String(hop.to)}，违反 to=from+1`)
+    }
     out = hopTransform(hop, out)
     cur = hop.to
   }
@@ -132,6 +145,3 @@ export function migrateArchive(archive: MigratableArchive, table: readonly Schem
   }
   return r
 }
-
-/** 归档 manifest.assets 条目的便捷类型别名（迁移签名收 unknown，实际项形状见 format.ts）。 */
-export type { ArchiveAssetIndexEntry }

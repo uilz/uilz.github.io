@@ -1,11 +1,10 @@
 import type { AssetRecord, CardId, EdgeRecord, JournalDoc, SettingsRecord } from '../domain/types'
-import type { SchemaMigration } from '../archive/migration'
+import { validateIdbVersion, type SchemaMigration } from '../archive/migration'
 import { clearStore, deleteDatabase, getAll, getOne, indexAll, putRecord, request, scanCursor, transactionDone, withStore } from './idb'
 import { DB_NAME, DB_VERSION, openBanjiDatabase, STORES } from './schema'
-import type { AssetRepo, EdgeRepo, JournalRepo, Repo, SettingsRepo, StagedEntry } from './types'
+import { MAX_STAGE_BATCH, type AssetRepo, type EdgeRepo, type JournalRepo, type Repo, type SettingsRepo, type StagedEntry } from './types'
 
 export { deleteDatabase }
-export const MAX_STAGE_BATCH = 200
 
 function singleStore<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => Promise<T>): Promise<T> {
   return withStore(db, store, mode, fn)
@@ -73,7 +72,10 @@ export interface OpenRepoOptions {
 }
 
 export async function openRepo(opts: OpenRepoOptions = {}): Promise<Repo> {
-  const db = await openBanjiDatabase(opts.migrationTable, opts.name ?? DB_NAME, opts.version ?? DB_VERSION)
+  const name = opts.name ?? DB_NAME
+  const version = opts.version ?? DB_VERSION
+  validateIdbVersion(version)
+  const db = await openBanjiDatabase(opts.migrationTable, name, version)
   return {
     journals: makeJournals(db),
     assets: makeAssets(db),

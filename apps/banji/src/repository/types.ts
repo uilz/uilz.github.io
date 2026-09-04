@@ -2,6 +2,9 @@ import type { AssetRecord, CardId, EdgeRecord, JournalDoc, SettingsRecord, Stagi
 
 // 仓库接口：archive 层与测试只依赖这些接口，实现注入 fake-indexeddb。
 
+/** 单批暂存记录上限（导入第 2 阶段的生产端约束，写在类型旁让两层共享）。 */
+export const MAX_STAGE_BATCH = 200
+
 export interface JournalRepo {
   get(date: string): Promise<JournalDoc | undefined>
   put(doc: JournalDoc): Promise<void>
@@ -36,7 +39,8 @@ export interface SettingsRepo {
   clear(): Promise<void>
 }
 
-export type StagedValue = JournalDoc | AssetRecord | EdgeRecord | SettingsRecord
+/** staging 值是“已验证透传”：写入方必须是 archive 预检通过的原始 JSON/记录（unknown 保持其无类型特权）。 */
+export type StagedValue = unknown
 
 export interface StagedEntry {
   readonly key: StagingKey
