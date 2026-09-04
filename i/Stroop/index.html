@@ -409,6 +409,12 @@
                 <label><input type="radio" name="mode" value="free"> 自由模式</label>
                 <label><input type="radio" name="mode" value="timed" checked> 15秒挑战</label>
             </div>
+            <h2 style="margin-top:12px;">难度</h2>
+            <div class="mode-select">
+                <label><input type="radio" name="difficulty" value="easy"> 简单</label>
+                <label><input type="radio" name="difficulty" value="medium" checked> 中等</label>
+                <label><input type="radio" name="difficulty" value="hard"> 困难</label>
+            </div>
         </div>
 
         <div id="hint">空格键 或 点击上方文字区域 开始测试</div>
@@ -452,6 +458,7 @@
             let fastestRT = Infinity,
                 slowestRT = 0;
             let mode = 'timed';
+            let difficulty = 'medium';
             let countdownValue = 15;
 
             const wordEl = document.getElementById("stroopWord");
@@ -464,6 +471,7 @@
             const resultPanel = document.getElementById("result");
             const checks = document.querySelectorAll("#setting input[type=checkbox]");
             const modeRadios = document.querySelectorAll("input[name='mode']");
+            const difficultyRadios = document.querySelectorAll("input[name='difficulty']");
             const hintEl = document.getElementById("hint");
             const stopBtn = document.getElementById("stopBtn");
             const countdownDisplay = document.getElementById("countdownDisplay");
@@ -496,6 +504,7 @@
                 enabledColors.forEach(key => {
                     const btn = document.createElement("button");
                     btn.className = "colorBtn";
+                    btn.dataset.key = key;
                     btn.textContent = COLOR_POOL[key].text;
                     btn.onclick = () => chooseColor(key);
                     btn.addEventListener("keydown", e => {
@@ -507,12 +516,28 @@
 
             /* 高性能按钮随机化：仅重排现有DOM节点 */
             function shuffleButtons() {
+                if (difficulty === 'easy') return;
                 const buttons = Array.from(btnBox.children);
                 if (buttons.length === 0) return;
                 const shuffled = shuffleArray(buttons);
                 const fragment = document.createDocumentFragment();
                 shuffled.forEach(btn => fragment.appendChild(btn));
                 btnBox.appendChild(fragment);
+            }
+
+            /* 按难度应用按钮文字颜色:简单=自身语义色、中等=全部白色、困难=每题从启用色池随机配色 */
+            function applyButtonColors() {
+                Array.from(btnBox.children).forEach(btn => {
+                    let color;
+                    if (difficulty === 'easy') {
+                        color = COLOR_POOL[btn.dataset.key].color;
+                    } else if (difficulty === 'medium') {
+                        color = COLOR_POOL.white.color;
+                    } else {
+                        color = COLOR_POOL[rand(enabledColors)].color;
+                    }
+                    btn.style.color = color;
+                });
             }
 
             function updatePool() {
@@ -524,6 +549,7 @@
                 }
                 buildButtons();
                 shuffleButtons();
+                applyButtonColors();
             }
 
             function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -611,6 +637,7 @@
                 wordArea.style.cursor = "pointer";
                 nextQuestion();
                 shuffleButtons();
+                applyButtonColors();
             }
 
             function stopGame() {
@@ -698,6 +725,7 @@
                     Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length) + "ms";
                 nextQuestion();
                 shuffleButtons();
+                applyButtonColors();
             }
 
             function getAccuracy() {
@@ -813,6 +841,20 @@
             modeRadios.forEach(radio => {
                 radio.addEventListener("change", (e) => {
                     if (e.target.checked) mode = e.target.value;
+                });
+            });
+
+            /* 难度切换监听 */
+            difficultyRadios.forEach(radio => {
+                radio.addEventListener("change", (e) => {
+                    if (e.target.checked) {
+                        difficulty = e.target.value;
+                        if (!started) {
+                            buildButtons();
+                            shuffleButtons();
+                            applyButtonColors();
+                        }
+                    }
                 });
             });
 
