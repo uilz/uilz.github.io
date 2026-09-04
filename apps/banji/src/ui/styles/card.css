@@ -37,6 +37,10 @@
   overflow: auto;
   white-space: pre-wrap;
   font-variant-ligatures: none;
+  /* Blink 以最深命中节点自己的 touch-action 起手手势：.bj-card 的 none 罩不住文字行，
+     不补这条则「按住纸身拖动」在触摸端被判定为滚文字而 pointercancel（e2e 真 touch 钉死）。
+     长文的滚读改走编辑态（textarea 有 auto）与桌面滚轮（touch-action 不拦滚轮）。 */
+  touch-action: none;
 }
 
 .bj-text-edit {
