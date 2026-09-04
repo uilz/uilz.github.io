@@ -14,8 +14,8 @@ Thumbs.db
 # 其他项目可能残留的临时文件
 *.tmp
 
-# banji 依赖与构建产物
+# banji 依赖与构建中间产物
 node_modules/
 apps/banji/dist/
-# banji 构建产物（vite outDir，随每次 build 再生）
-i/banji/
+# 注意：i/banji/ 是 vite 构建产物，但本仓库无 CI，Pages 直接 serve 仓库文件，
+# 因此 i/banji/ 必须入库（发布 = npm run build && git add i/banji && push）。

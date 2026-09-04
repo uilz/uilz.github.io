@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f2ecdf" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>伴记</title>
+    <script>
+      // 首帧前定色：module 脚本是 deferred 的，先用主题镜像值落底色（夜读不闪白）。
+      try {
+        var night = localStorage.getItem("banji:theme") === "night";
+        document.documentElement.setAttribute("data-bj-theme", night ? "night" : "light");
+        document.documentElement.style.backgroundColor = night ? "#171310" : "#f2ecdf";
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="/i/banji/assets/index-Dz79q4X1.js"></script>
+    <link rel="stylesheet" crossorigin href="/i/banji/assets/index-BAfll8wh.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
