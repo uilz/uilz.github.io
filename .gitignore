@@ -13,3 +13,8 @@ Thumbs.db
 
 # 其他项目可能残留的临时文件
 *.tmp
+
+# banji 依赖与构建产物
+node_modules/
+apps/banji/dist/
+i/banji/
