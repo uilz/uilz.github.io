@@ -10,8 +10,17 @@ export function themeFromStored(value: unknown): ThemeId {
   return value === 'night' ? 'night' : 'light'
 }
 
+// 主题底色与 index.html 的静态 theme-color / 内联守卫保持同值。
+export const THEME_PAPER: Record<ThemeId, string> = { light: '#f2ecdf', night: '#171310' }
+
+export function applyThemeColor(theme: ThemeId): void {
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta !== null) meta.setAttribute('content', THEME_PAPER[theme])
+}
+
 export function applyTheme(theme: ThemeId): void {
   document.documentElement.setAttribute('data-bj-theme', theme)
+  applyThemeColor(theme)
   try {
     window.localStorage.setItem(THEME_MIRROR, theme)
   } catch {

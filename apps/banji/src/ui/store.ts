@@ -1,107 +1,40 @@
 // 单一内存中介：日文档 + 卡片操作只经过这里（foundation 报告明令：避免并发覆写）。
 // 本地 state 乐观更新是唯一视觉真相；一切落库都排进同一串行队列（读-改-写绝不并发），
 // 文本/位置/尺寸编辑 debounce ≤600ms 后合并为一次 app.updateCard/moveCard/resizeCard。
+// 编排在此（夹带管线、失败意图陪跑）；状态形状与迁移在 dayState.ts，动作表在 storeTypes.ts。
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
-import type { BanjiApp, CardPatch } from '../application'
-import type { Card, CardId, CardPos, CardSize } from '../domain/types'
+import type { BanjiApp } from '../application'
+import type { Card, CardId, CardPos } from '../domain/types'
 import { cardsByIdOf, collectSubtreeIds } from '../domain/gc'
 import { isPlainObject } from '../domain/validation'
 import { resolveRenderer } from './cards/registry'
+import { attachKind, clampCardPos, dropAt, fitWithin, imageCardSize, scatterPos } from './placement'
+import { attachFailureCopy, probeImageSize } from './probe'
+import { dayReducer, initialDayState } from './dayState'
+import type { Pending } from './dayState'
+import type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
+
+export type { DayState, Ghost, Note } from './dayState'
+export type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
 const DEBOUNCE_MS = 450
 const Z_CEILING = 500
-
-export interface DayState {
-  readonly date: string | null
-  readonly loaded: boolean
-  readonly cards: readonly Card[]
-  readonly selectedId: CardId | null
-  readonly editingId: CardId | null
-  readonly lastAddedId: CardId | null
-}
-
-const initialState: DayState = {
-  date: null,
-  loaded: false,
-  cards: [],
-  selectedId: null,
-  editingId: null,
-  lastAddedId: null,
-}
-
-type Action =
-  | { readonly type: 'day/open'; readonly date: string }
-  | { readonly type: 'day/loaded'; readonly cards: readonly Card[] }
-  | { readonly type: 'card/added'; readonly card: Card }
-  | { readonly type: 'card/patched'; readonly id: CardId; readonly patch: Partial<Card> }
-  | { readonly type: 'cards/removed'; readonly ids: readonly CardId[] }
-  | { readonly type: 'cards/set'; readonly cards: readonly Card[] }
-  | { readonly type: 'ui/select'; readonly id: CardId | null }
-  | { readonly type: 'ui/edit'; readonly id: CardId | null }
-
-function reducer(state: DayState, action: Action): DayState {
-  switch (action.type) {
-    case 'day/open':
-      return { ...initialState, date: action.date }
-    case 'day/loaded':
-      return { ...state, loaded: true, cards: action.cards }
-    case 'card/added':
-      // 新落的第一行就该能写：R1 的 add 只有文字卡，直接进编辑态。
-      return { ...state, cards: [...state.cards, action.card], selectedId: action.card.id, editingId: action.card.id, lastAddedId: action.card.id }
-    case 'card/patched':
-      return { ...state, cards: state.cards.map((c) => (c.id === action.id ? { ...c, ...action.patch } : c)) }
-    case 'cards/removed': {
-      const doomed = new Set<string>(action.ids)
-      return {
-        ...state,
-        cards: state.cards.filter((c) => !doomed.has(c.id)),
-        selectedId: state.selectedId !== null && doomed.has(state.selectedId) ? null : state.selectedId,
-        editingId: state.editingId !== null && doomed.has(state.editingId) ? null : state.editingId,
-      }
-    }
-    case 'cards/set':
-      return { ...state, cards: action.cards }
-    case 'ui/select':
-      return { ...state, selectedId: action.id }
-    case 'ui/edit':
-      return { ...state, editingId: action.id }
-  }
-}
-
-interface Pending {
-  readonly date: string
-  pos?: CardPos
-  size?: CardSize
-  patch?: CardPatch
-}
-
-export interface DayActions {
-  select(id: CardId | null): void
-  enterEdit(id: CardId): void
-  exitEdit(): void
-  /** 渲染器只交“变了哪些键”；与存储的 raw props 合并写回 —— 未知扩展字段不丢。 */
-  patchProps(id: CardId, patch: Record<string, unknown>): void
-  move(id: CardId, pos: CardPos): void
-  resize(id: CardId, size: CardSize): void
-  remove(id: CardId): void
-  addTextCard(): void
-}
-
-export interface DayStore {
-  readonly state: DayState
-  readonly actions: DayActions
-}
 
 function sortByZ(cards: readonly Card[]): readonly Card[] {
   return [...cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
 }
 
-export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): DayStore {
-  const [state, dispatch] = useReducer(reducer, initialState)
+export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, opts: DayStoreOptions = {}): DayStore {
+  const [state, dispatch] = useReducer(dayReducer, initialDayState)
   const stateRef = useRef(state)
   stateRef.current = state
   const pendingRef = useRef(new Map<CardId, Pending>())
+  // 落盘失败的意图不丢：住这里，等下一次落盘陪跑（last-intent-wins——后到的编辑覆盖旧意图）。
+  const failedRef = useRef(new Map<CardId, Pending>())
   const timerRef = useRef<number | null>(null)
+  const ghostSeqRef = useRef(0)
+  const noteSeqRef = useRef(0)
+  const probe = opts.probe ?? probeImageSize
   // 串行队列：getJournal/addCard/updateCard/move… 全部排一条链，日文档永不并发读-改-写。
   const queueRef = useRef<Promise<unknown>>(Promise.resolve())
   const loadGenRef = useRef(0)
@@ -114,13 +47,24 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): 
       window.clearTimeout(timerRef.current)
       timerRef.current = null
     }
+    // 上次没存上的意图搭这趟车；更新的编辑（若有）已在 pendingRef，天然覆盖旧意图。
+    for (const [id, entry] of failedRef.current) {
+      if (!pendingRef.current.has(id)) pendingRef.current.set(id, entry)
+    }
+    failedRef.current.clear()
     const drained = [...pendingRef.current.entries()]
     pendingRef.current.clear()
     for (const [id, entry] of drained) {
       chain(async () => {
-        if (entry.patch !== undefined) await app.updateCard(entry.date, id, entry.patch)
-        if (entry.pos !== undefined) await app.moveCard(entry.date, id, entry.pos)
-        if (entry.size !== undefined) await app.resizeCard(entry.date, id, entry.size)
+        try {
+          if (entry.patch !== undefined) await app.updateCard(entry.date, id, entry.patch)
+          if (entry.pos !== undefined) await app.moveCard(entry.date, id, entry.pos)
+          if (entry.size !== undefined) await app.resizeCard(entry.date, id, entry.size)
+          if (failedRef.current.size === 0 && stateRef.current.saveFailed > 0) dispatch({ type: 'save/clear' })
+        } catch {
+          failedRef.current.set(id, entry)
+          dispatch({ type: 'save/failed', count: failedRef.current.size })
+        }
       })
     }
   }, [app, chain])
@@ -129,7 +73,8 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): 
     (id: CardId, mutate: (entry: Pending) => void): void => {
       const current = stateRef.current
       if (current.date === null) return
-      const entry: Pending = pendingRef.current.get(id) ?? { date: current.date }
+      const entry: Pending = pendingRef.current.get(id) ?? failedRef.current.get(id) ?? { date: current.date }
+      failedRef.current.delete(id)
       mutate(entry)
       pendingRef.current.set(id, entry)
       if (timerRef.current !== null) window.clearTimeout(timerRef.current)
@@ -177,6 +122,43 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): 
       }
     },
     [schedule],
+  )
+
+  /** 夹带单份文件的完整管线（跑在串行链上）：资产 → 探测 → 卡片，失败则虚影熄灭 + 回执。 */
+  const attachOne = useCallback(
+    (day: string, file: File, pos: CardPos, token: number, seq: number): void => {
+      const kind = attachKind(file.type)
+      dispatch({
+        type: 'ghost/add',
+        ghost: { token, kind, name: file.name, pos, size: resolveRenderer(kind).defaultSize },
+      })
+      chain(async () => {
+        const vanish = (): void => {
+          dispatch({ type: 'ghost/remove', token })
+        }
+        try {
+          const record = await app.addAsset(file)
+          let props: Record<string, unknown> = { hash: record.hash }
+          let size = resolveRenderer(kind).defaultSize
+          if (kind === 'image') {
+            const nat = await probe(file)
+            if (nat !== null) {
+              const fit = fitWithin(nat.w, nat.h)
+              props = { hash: record.hash, w: fit.w, h: fit.h }
+              size = imageCardSize(nat.w, nat.h)
+            }
+          }
+          const maxZ = sortByZ(stateRef.current.cards).at(-1)?.z ?? 0
+          const card = await app.addCard(day, { kind, props, pos, size, z: maxZ + 1 + seq * 0.5 })
+          vanish()
+          if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit: false })
+        } catch (err) {
+          vanish()
+          dispatch({ type: 'note/set', id: ++noteSeqRef.current, msg: attachFailureCopy(err) })
+        }
+      })
+    },
+    [app, chain, probe],
   )
 
   const actions = useMemo<DayActions>(
@@ -232,8 +214,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): 
         if (day === null) return
         flushNow()
         const renderer = resolveRenderer('text')
-        const maxY = current.cards.reduce((m, c) => Math.max(m, c.pos.y + c.size.h), 0)
-        const pos: CardPos = { x: 24, y: current.cards.length === 0 ? 24 : maxY + 28 }
+        const pos = scatterPos(current.cards.length + current.ghosts.length)
         const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
         chain(async () => {
           const card = await app.addCard(day, {
@@ -243,11 +224,27 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0): 
             size: renderer.defaultSize,
             z: maxZ + 1,
           })
-          if (stateRef.current.date === day) dispatch({ type: 'card/added', card })
+          if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit: true })
         })
       },
+      attach(files, at = null) {
+        const current = stateRef.current
+        const day = current.date
+        if (day === null || files.length === 0) return
+        flushNow()
+        files.forEach((file, k) => {
+          const base = at !== null ? dropAt(clampCardPos(at), k) : scatterPos(current.cards.length + current.ghosts.length + k)
+          attachOne(day, file, base, ++ghostSeqRef.current, k)
+        })
+      },
+      retrySave() {
+        flushNow()
+      },
+      dismissNote() {
+        dispatch({ type: 'note/clear' })
+      },
     }),
-    [app, bringToFront, chain, flushNow, schedule],
+    [app, attachOne, bringToFront, chain, flushNow, schedule],
   )
 
   return { state, actions }

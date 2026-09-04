@@ -11,6 +11,8 @@
   --bj-ink-faint: #a2937d;
   --bj-hairline: rgba(126, 102, 68, 0.34);
   --bj-hairline-strong: rgba(126, 102, 68, 0.55);
+  --bj-card: #fffdf4;
+  --bj-card-edge: rgba(126, 102, 68, 0.45);
   --bj-accent: #8c6f4a;
   --bj-ring: #b98d52;
   --bj-dot: rgba(72, 58, 40, 0.68);
@@ -36,9 +38,11 @@
   --bj-ink-faint: #7d705a;
   --bj-hairline: rgba(206, 173, 120, 0.2);
   --bj-hairline-strong: rgba(206, 173, 120, 0.36);
+  --bj-card: #2a2318;
+  --bj-card-edge: rgba(206, 173, 120, 0.34);
   --bj-accent: #b6905e;
   --bj-ring: #c79a5e;
-  --bj-dot: rgba(233, 221, 195, 0.62);
+  --bj-dot: rgba(240, 230, 208, 0.88);
   --bj-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px -6px rgba(0, 0, 0, 0.5);
   --bj-shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.4), 0 14px 30px -10px rgba(0, 0, 0, 0.6);
   --bj-veil: rgba(8, 6, 4, 0.55);
@@ -195,6 +199,38 @@ p {
   }
 }
 
+/* 回执便签：出事了，但只是温赭描边轻轻亮了一下（禁红色警报）。 */
+.bj-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bj-toast-alert {
+  border-color: var(--bj-accent);
+  color: var(--bj-ink);
+}
+
+.bj-toast-raised {
+  bottom: calc(142px + env(safe-area-inset-bottom));
+}
+
+.bj-toast-action {
+  flex: none;
+  min-height: 40px;
+  padding: 4px 14px;
+  border: 1px solid var(--bj-accent);
+  border-radius: 999px;
+  color: var(--bj-accent);
+  font-family: var(--bj-display);
+  letter-spacing: 0.14em;
+  transition: transform var(--bj-move) ease-out;
+}
+
+.bj-toast-action:active {
+  transform: scale(0.96);
+}
+
 /* 设置抽屉 */
 .bj-scrim {
   position: fixed;
@@ -326,7 +362,8 @@ p {
   min-height: 40px;
 }
 
-.bj-hidden-file {
+.bj-hidden-file,
+.bj-attach-file {
   display: none;
 }
 

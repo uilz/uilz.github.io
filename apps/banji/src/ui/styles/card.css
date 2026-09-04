@@ -3,19 +3,15 @@
 .bj-card {
   position: absolute;
   padding: 12px 14px 14px;
-  border: 1px solid var(--bj-hairline);
+  border: 1px solid var(--bj-card-edge);
   border-radius: 3px;
-  background: color-mix(in srgb, var(--bj-surface) 78%, #fffdf6 22%);
+  background: var(--bj-card);
   box-shadow: var(--bj-shadow);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   font-size: 15.5px;
   outline: none;
-}
-
-[data-bj-theme='night'] .bj-card {
-  background: color-mix(in srgb, var(--bj-surface) 82%, #3a3022 18%);
 }
 
 .bj-card.is-sel {
@@ -226,6 +222,46 @@
 
 .bj-settle {
   animation: bj-settle 180ms ease-out;
+}
+
+/* 夹带虚影：资产还在路上的占位纸。虚线细边、不投影、不可交互——安静到几乎看不见。 */
+.bj-ghost {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  border-color: var(--bj-hairline-strong);
+  background: transparent;
+  box-shadow: none;
+  color: var(--bj-ink-faint);
+  pointer-events: none;
+  animation: bj-ghost-in 180ms ease-out;
+}
+
+@keyframes bj-ghost-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bj-ghost-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 0 8px;
+}
+
+.bj-ghost-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  letter-spacing: 0.08em;
 }
 
 /* —— 渲染器内部 —— */

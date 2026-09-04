@@ -50,6 +50,8 @@
   overflow: auto;
   overscroll-behavior: contain;
   position: relative;
+  /* 自成叠层：纸片再多也压不住浮在桌面上的功能便签（添卡条）。 */
+  z-index: 0;
   background:
     radial-gradient(100% 60% at 50% -14%, var(--bj-page-a), transparent 62%),
     radial-gradient(70% 45% at 88% 108%, var(--bj-page-b), transparent 60%),
@@ -74,14 +76,33 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 180px;
+  top: 168px;
   text-align: center;
+  color: var(--bj-ink-faint);
+  pointer-events: none;
+}
+
+.bj-empty-main {
   font-family: var(--bj-display);
   font-size: 17px;
   letter-spacing: 0.22em;
   margin-right: -0.22em;
-  color: var(--bj-ink-faint);
-  pointer-events: none;
+}
+
+/* 第二行耳语：入口的邀请，不喊。 */
+.bj-empty-sub {
+  margin-top: 12px;
+  font-family: var(--bj-display);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  margin-right: -0.14em;
+  opacity: 0.72;
+}
+
+/* 拖入进行时：画布边内一枚暖棕虚线框，只说“放这里”，不变色不发光。 */
+.bj-canvas.is-drop {
+  outline: 2px dashed var(--bj-hairline-strong);
+  outline-offset: -10px;
 }
 
 .bj-add-wrap {
@@ -91,7 +112,35 @@
   bottom: calc(18px + env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 14px;
   pointer-events: none;
+}
+
+/* 夹带入口：一枚回形针浮在纸边，比主按钮安静一档。 */
+.bj-clip {
+  pointer-events: auto;
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 50%;
+  background: var(--bj-surface);
+  color: var(--bj-ink-faint);
+  transition:
+    color var(--bj-move) ease-out,
+    border-color var(--bj-move) ease-out,
+    transform var(--bj-move) ease-out;
+}
+
+.bj-clip:hover {
+  color: var(--bj-accent);
+  border-color: var(--bj-hairline-strong);
+}
+
+.bj-clip:active {
+  transform: scale(0.94);
 }
 
 .bj-add {

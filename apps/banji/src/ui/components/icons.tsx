@@ -61,6 +61,14 @@ export function IconDots({ size = 16 }: IconProps): ReactElement {
   )
 }
 
+export function IconPaperclip({ size = 17 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <path d="M8.4 19.5 16.8 11a2.9 2.9 0 0 0-4.1-4.1L4.8 14.8a1.9 1.9 0 0 0 2.7 2.7l7.5-7.5a.9.9 0 0 0-1.3-1.3l-6.9 6.9" />
+    </svg>
+  )
+}
+
 export function IconText({ size = 13 }: IconProps): ReactElement {
   return (
     <svg {...stroke(size)}>
