@@ -308,6 +308,9 @@
             border-color: #539bf5;
             color: #e6e8ec;
         }
+        #rationale { margin-top: 12px; font-size: 11px; color: #555c66; }
+        #rationale summary { cursor: pointer; color: #6e7681; font-size: 12px; }
+        .rat-lines { margin-top: 8px; line-height: 1.9; white-space: pre-line; }
 
         @media(max-width: 600px) {
             body {
@@ -428,6 +431,7 @@
             <div id="evaluation"></div>
             <hr class="result-divider">
             <button id="downloadCSV">导出 CSV 数据</button>
+            <details id="rationale"><summary>为什么是这些评价？</summary><div class="rat-lines"></div></details>
         </div>
     </div>
 
@@ -461,7 +465,7 @@
             let mode = 'timed';
             let difficulty = 'medium';
             let countdownValue = 15;
-            const IDLE_HINT = "空格键 或 点击上方文字区域 开始测试\n玩法：把字当成一幅画，画是什么颜色，你就点写有那个颜色名字的按钮。 玩的时候嘴里跟着念字的颜色（比如念“黄、黄、黄”），能帮你屏蔽掉字义的干扰，多试几次就顺手啦！\n模式：15秒挑战限时15秒、多答多得；自由模式不限时、可随时停止";
+            const IDLE_HINT = "空格键 或 点击上方文字区域 开始测试\n玩法：上面的颜色，对应下面的字。\n把字当成一幅画，画是什么颜色，你就点写有那个颜色名字的按钮。 玩的时候嘴里跟着念字的颜色（比如念“黄、黄、黄”），能帮你屏蔽掉字义的干扰，多试几次就顺手啦！\n模式：15秒挑战限时15秒、多答多得；自由模式不限时、可随时停止";
 
             const wordEl = document.getElementById("stroopWord");
             const btnBox = document.getElementById("buttons");
@@ -542,6 +546,13 @@
                 });
             }
 
+            /* 设置持久化：颜色池 × 模式 × 难度 */
+            function saveSettings() {
+                try {
+                    localStorage.setItem('stroop.settings', JSON.stringify({ v: 1, colors: enabledColors, mode: mode, difficulty: difficulty }));
+                } catch (e) {}
+            }
+
             function updatePool() {
                 enabledColors = [];
                 checks.forEach(c => { if (c.checked) enabledColors.push(c.value); });
@@ -549,6 +560,7 @@
                     alert("至少选择两种颜色");
                     return;
                 }
+                saveSettings();
                 buildButtons();
                 shuffleButtons();
                 applyButtonColors();
@@ -618,6 +630,9 @@
             }
 
             function startGame() {
+                try {
+                    localStorage.removeItem('stroop.lastRun');
+                } catch (e) {}
                 started = true;
                 resultPanel.style.display = "none";
                 resetStats();
@@ -756,9 +771,10 @@
                 localStorage.bestRT = bestRT;
             }
 
-            function exportCSV() {
+            function exportCSV(rts) {
                 let csv = "ReactionTime(ms)\n";
-                reactionTimes.forEach(rt => csv += rt + "\n");
+                const data = rts || reactionTimes;
+                data.forEach(rt => csv += rt + "\n");
                 const blob = new Blob([csv], { type: "text/csv" });
                 const a = document.createElement("a");
                 a.href = URL.createObjectURL(blob);
@@ -767,50 +783,56 @@
             }
 
             const WEATHER = {
-                sun: { name: "晴空", icon: "☀", descs: ["大脑里的天空没有一片多余的云。", "今天云也有，但都飘在你注意力之外。", "你盯颜色的时候，世界自动调成了静音。"] },
-                aurora: { name: "极光", icon: "🌌", descs: ["注意力像极光一样安静，却照亮整个夜晚。", "快和准同时发生的时候，天空会亮。", "这一局你的注意力在跳舞，而且每一步都踩在点上。"] },
-                cloud: { name: "多云", icon: "☁", descs: ["偶尔有杂念飘过，但没有停留太久。", "云来了一点，你抬头看了一眼，又继续走。", "注意力偶尔走神，但它总认得回来的路。"] },
-                fog: { name: "迷雾", icon: "🌫", descs: ["颜色就在眼前，世界却总慢半拍。", "雾不是没有颜色，是你还在和它对表。", "你看见了答案，只是眼神慢了一秒。"] },
-                storm: { name: "风暴", icon: "⛈", descs: ["文字与颜色不断争吵，注意力疲于奔命。", "今天颜色和字谁也不让谁，你被夹在中间。", "注意力不是没了，是打仗太累了。"] },
-                meteor: { name: "流星雨", icon: "☄", descs: ["思维快得像划过夜空，却也容易擦肩而过。", "你的直觉跑得比检查快。", "准度靠速度撑起来的时候，天空会有流星。"] }
+                sun: { name: "晴空", icon: "☀", descs: ["大脑里的天空没有一片多余的云。", "今天云也有，但都飘在你注意力之外。", "你盯颜色的时候，世界自动调成了静音。"], why: "准确率 ≥ 90 且平均RT（反应时）< 600ms" },
+                aurora: { name: "极光", icon: "🌌", descs: ["注意力像极光一样安静，却照亮整个夜晚。", "快和准同时发生的时候，天空会亮。", "这一局你的注意力在跳舞，而且每一步都踩在点上。"], why: "得分 > 90 且准确率 ≥ 95" },
+                cloud: { name: "多云", icon: "☁", descs: ["偶尔有杂念飘过，但没有停留太久。", "云来了一点，你抬头看了一眼，又继续走。", "注意力偶尔走神，但它总认得回来的路。"], why: "准确率 ≥ 70，未够上更快更高档" },
+                fog: { name: "迷雾", icon: "🌫", descs: ["颜色就在眼前，世界却总慢半拍。", "雾不是没有颜色，是你还在和它对表。", "你看见了答案，只是眼神慢了一秒。"], why: "未命中更高档的兜底" },
+                storm: { name: "风暴", icon: "⛈", descs: ["文字与颜色不断争吵，注意力疲于奔命。", "今天颜色和字谁也不让谁，你被夹在中间。", "注意力不是没了，是打仗太累了。"], why: "平均RT（反应时）> 900ms" },
+                meteor: { name: "流星雨", icon: "☄", descs: ["思维快得像划过夜空，却也容易擦肩而过。", "你的直觉跑得比检查快。", "准度靠速度撑起来的时候，天空会有流星。"], why: "平均RT（反应时）< 550ms 且准确率 ≥ 80" }
             };
             const ANIMAL = {
-                hawk: { name: "猎鹰", descs: ["目标出现后，其余世界自动失焦。", "你开始享受连击带来的专注本身了。", "每一击都没有多余动作，像经过训练。"] },
-                owl: { name: "猫头鹰", descs: ["慢一点，但每一次俯冲都精准。", "快不是优点，准才是。", "你在心里先确认了一遍，才让手指投票。"] },
-                wolf: { name: "狼", descs: ["节奏稳定，从不轻易偏离方向。", "你的准确率不是爆发，是维持。", "不冒进、不掉队，这就是狼的走法。"] },
-                whale: { name: "鲸", descs: ["思维缓慢而深邃，不被噪音左右。", "速度不是你的战场，稳才是。", "你在注意力水下慢慢转身，但从不撞错方向。"] },
-                fox: { name: "狐狸", descs: ["聪明，但偶尔会相信自己的第一直觉。", "你离高分只差“多看一眼”。", "聪明已经在了，耐心也会到账。"] },
-                cat: { name: "猫", descs: ["世界里的每一样东西，都值得看一眼。", "你不是没能力专注，只是好奇心更贵。", "注意力像猫，来了，蹭你一下，走了。"] },
-                butterfly: { name: "蝴蝶", descs: ["注意力今天停留在每一朵花上。", "每一次犹豫都有原因，只是答案不在犹豫里。", "飞得久了会忘路，下次先落对那朵花。"] }
+                hawk: { name: "猎鹰", descs: ["目标出现后，其余世界自动失焦。", "你开始享受连击带来的专注本身了。", "每一击都没有多余动作，像经过训练。"], why: "连击 > 15" },
+                owl: { name: "猫头鹰", descs: ["慢一点，但每一次俯冲都精准。", "快不是优点，准才是。", "你在心里先确认了一遍，才让手指投票。"], why: "平均RT < 500ms 且准确率 > 90" },
+                wolf: { name: "狼", descs: ["节奏稳定，从不轻易偏离方向。", "你的准确率不是爆发，是维持。", "不冒进、不掉队，这就是狼的走法。"], why: "准确率 ≥ 85" },
+                whale: { name: "鲸", descs: ["思维缓慢而深邃，不被噪音左右。", "速度不是你的战场，稳才是。", "你在注意力水下慢慢转身，但从不撞错方向。"], why: "平均RT > 800ms" },
+                fox: { name: "狐狸", descs: ["聪明，但偶尔会相信自己的第一直觉。", "你离高分只差“多看一眼”。", "聪明已经在了，耐心也会到账。"], why: "连击 < 5 且准确率 < 70" },
+                cat: { name: "猫", descs: ["世界里的每一样东西，都值得看一眼。", "你不是没能力专注，只是好奇心更贵。", "注意力像猫，来了，蹭你一下，走了。"], why: "准确率 < 60" },
+                butterfly: { name: "蝴蝶", descs: ["注意力今天停留在每一朵花上。", "每一次犹豫都有原因，只是答案不在犹豫里。", "飞得久了会忘路，下次先落对那朵花。"], why: "各档未命中的兜底" }
             };
 
-            /* 模式 × 难度 × 准度分档评语（accuracy >= 70 取 high，否则 low） */
+            /* 模式 × 难度 × 得分分档评语（15 分一档：≥60 high / ≥30 mid / 否则 low） */
             const VERDICT = {
                 timed: {
                     easy: {
                         high: ["模式：15 秒里，你把最安静的模式打成了节拍器。", "15 秒 + 简单 = 手速的体检报告。"],
+                        mid: ["模式：静态题也能失手，开局手还没热。", "模式：15 秒太短，短到状态没来得及上线。"],
                         low: ["模式：题目没动、颜色没骗，15 秒输给了手速。", "简单模式限时翻车——是紧张，不是注意力的锅。"]
                     },
                     medium: {
                         high: ["模式：字在乱跑，你比它更快，还先到终点。", "乱序 + 限时，中等模式被你跑成了直线。"],
+                        mid: ["模式：乱序里丢了准头，但框架没散。", "模式：时钟没收住你，先收住眼睛。"],
                         low: ["模式：位置一晃，15 秒就不够用了。", "先回静态题稳住准度，再来挑战时钟？"]
                     },
                     hard: {
-                        high: ["模式：15 秒加困难双重 debuff，你居然没亏。", "限时和障眼法一起开，你两个都赢了。"],
+                        high: ["模式：15 秒加困难双重 debuff（减益），你居然没亏。", "限时和障眼法一起开，你两个都赢了。"],
+                        mid: ["模式：困难局里没崩盘，这就是及格。", "模式：困难模式要一局一局喂，15 秒算开胃。"],
                         low: ["模式：困难模式本来就是用来输的，15 秒更是。", "下次从中等开始攒准度，再回来复仇。"]
                     }
                 },
                 free: {
                     hard: {
                         high: ["模式：困难模式的自由局，每一题都是硬仗。", "颜色在按钮上跳了一整局，你都接住了。"],
+                        mid: ["模式：困难模式输得有章法——先输位置，再输颜色。", "模式：能撑完全场，就算训练量达标。"],
                         low: ["模式：没人掐表，但困难模式自己会施压。", "这一局的敌人是颜色自己。"]
                     },
                     easy: {
                         high: ["模式：不限时的一局，简单模式像散步——你走得很稳。", "慢下来也没偷分，这就是自由模式的诚实。"],
+                        mid: ["模式：散步也能踩空——状态还在路上。", "模式：不限时，失误反而更像态度问题。"],
                         low: ["模式：题没动、色没骗——纯属状态没上线。", "下一局：站起来，深呼吸，再按空格。"]
                     },
                     medium: {
                         high: ["模式：不限时还乱序，你练的是持久专注。", "自己叫停也算一种准度。"],
+                        mid: ["模式：乱序保住了半局，另一半输给了犹豫。", "模式：慢慢来可以，慢还错就要复盘了。"],
                         low: ["模式：慢慢答也能答错，说明不是时间问题。", "把速度先放下，眼睛跟着颜色走一遍。"]
                     }
                 }
@@ -835,50 +857,95 @@
                 return ANIMAL.butterfly;
             }
 
+            /* 按得分 15 分一档的 7 档评语（纯 score 瀑布，附档位依据 why） */
             function literaryLine(score, accuracy, comboVal) {
-                if (score > 90) return pickText(["今天，文字试图欺骗你。\n颜色没有说一句话。\n你却相信了颜色。", "连击拉满，天气放晴，\n连失误都只存在于一瞬间。", "这一局没有对手，\n颜色自己举了白旗。"]);
-                if (accuracy >= 85 && comboVal > 10)
-                    return pickText(["注意力像一把手术刀。\n没有犹豫，没有偏移，\n只有切开真相。", "快和准难得同框，\n你站在正中间。", "注意力像一列准点的车，\n每一站都没有停错。"]);
-                if (accuracy >= 70) return pickText(["世界一直在制造噪音。\n而你，只回应真正重要的那一个。", "你被带走几次，\n又走回来几次。", "分心收了一点过路费，\n但你没有为它停工。"]);
-                if (accuracy >= 50) return pickText(["有些文字，今天成功吸引了你的目光。\n但它们终究没有带走你的方向。", "这一局是注意力在找节拍：\n错的都是抢拍的。", "你赢下了大多数回合，\n剩下的只是杂音。"]);
-                return pickText(["颜色和文字一直在争论。\n你的注意力站在它们中间，\n一时不知道该相信谁。", "注意力不是丢了，\n是还没出门。", "慢也没关系，\n颜色会等下一次空格。"]);
+                if (score >= 90) return { line: pickText(["今天，文字试图欺骗你。\n颜色没有说一句话。\n你却相信了颜色。", "连击拉满，天气放晴，\n连失误都只存在于一瞬间。", "这一局没有对手，\n颜色自己举了白旗。"]), why: `本局得分 ${score} ≥ 90，最高段` };
+                if (score >= 75) return { line: pickText(["注意力像一把手术刀。\n没有犹豫，没有偏移，\n只有切开真相。", "快和准难得同框，\n你站在正中间。", "注意力像一列准点的车，\n每一站都没有停错。"]), why: `本局得分 ${score} ≥ 75` };
+                if (score >= 60) return { line: pickText(["世界一直在制造噪音。\n而你，只回应真正重要的那一个。", "你被带走几次，\n又走回来几次。", "分心收了一点过路费，\n但你没有为它停工。"]), why: `本局得分 ${score} ≥ 60` };
+                if (score >= 45) return { line: pickText(["有些文字，今天成功吸引了你的目光。\n但它们终究没有带走你的方向。", "这一局是注意力在找节拍：\n错的都是抢拍的。", "你赢下了大多数回合，\n剩下的只是杂音。"]), why: `本局得分 ${score} ≥ 45` };
+                if (score >= 30) return { line: pickText(["这一局错了将近一半。\n它们不是看不见，\n是被字拐跑的。", "注意力已经开始打盹，\n但还没睡沉——\n喊一声，它认得颜色。", "失误扎堆出现的时候，\n眼睛其实还是亮的。"]), why: `本局得分 ${score} ≥ 30` };
+                if (score >= 15) return { line: pickText(["颜色一直在那里。\n你只是忙着\n被字的意思带走。", "分数低，不代表不配玩，\n代表这局的你，\n还没进场。", "手指和眼睛今天没商量好，\n每一次点击，\n都晚了半拍。"]), why: `本局得分 ${score} ≥ 15` };
+                return { line: pickText(["颜色和文字一直在争论。\n你的注意力站在它们中间，\n一时不知道该相信谁。", "注意力不是丢了，\n是还没出门。", "慢也没关系，\n颜色会等下一次空格。"]), why: `低于 15，兜底段` };
             }
 
             function showResult() {
-                resultPanel.style.display = "block";
                 const score = calculateScore();
                 saveHistory(score);
                 const accuracy = getAccuracy();
                 const verdictSet = VERDICT[mode][difficulty];
-                const verdict = pickText(accuracy >= 70 ? verdictSet.high : verdictSet.low);
+                const verdict = pickText(score >= 60 ? verdictSet.high : score >= 30 ? verdictSet.mid : verdictSet.low);
                 const avgRT = reactionTimes.length ?
                     Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length) :
                     0;
-
-                document.getElementById("score").innerHTML = score;
                 const w = pickWeather(score, accuracy, avgRT);
                 const a = pickAnimal(maxCombo, avgRT, accuracy);
+                const poemPick = literaryLine(score, accuracy, maxCombo);
+                const diffCN = { easy: '简单', medium: '中等', hard: '困难' }[difficulty];
+                /* 固化本局全部抽中文案，重载后可原样回放 */
+                const d = {
+                    v: 1,
+                    savedAt: Date.now(),
+                    score: score,
+                    accuracy: accuracy,
+                    avgRT: avgRT,
+                    fastest: fastestRT === Infinity ? null : fastestRT,
+                    slowest: slowestRT,
+                    maxCombo: maxCombo,
+                    mode: mode,
+                    difficulty: difficulty,
+                    reactionTimes: [...reactionTimes],
+                    wIcon: w.icon,
+                    wName: w.name,
+                    wDesc: pickText(w.descs),
+                    wWhy: w.why,
+                    aName: a.name,
+                    aDesc: pickText(a.descs),
+                    aWhy: a.why,
+                    poem: poemPick.line,
+                    poemWhy: poemPick.why,
+                    verdict: verdict,
+                    verdictWhy: `得分 ${score} ` + (score >= 60 ? "≥ 60 → 高段" : score >= 30 ? "≥ 30 → 中段" : "→ 低段") + `；模式 ${mode === 'timed' ? '15秒挑战' : '自由模式'} × 难度 ${diffCN}`
+                };
+                try {
+                    localStorage.setItem('stroop.lastRun', JSON.stringify(d));
+                } catch (e) {}
+                renderReport(d, false);
+            }
+
+            /* 渲染结算报告；restored=true 表示快照回放：展示但不滚动定位 */
+            function renderReport(d, restored) {
+                resultPanel.style.display = "block";
+                document.getElementById("score").innerHTML = d.score;
                 document.getElementById("weather").innerHTML =
-                    `${w.icon} 今日注意力天气：<strong>${w.name}</strong><br><span style="font-size:12px;color:#7a828e;">${pickText(w.descs)}</span>`;
+                    `${d.wIcon} 今日注意力天气：<strong>${d.wName}</strong><br><span style="font-size:12px;color:#7a828e;">${d.wDesc}</span>`;
                 document.getElementById("animal").innerHTML =
-                    `🐾 注意力动物：<strong>${a.name}</strong><br><span style="font-size:12px;color:#7a828e;">${pickText(a.descs)}</span>`;
+                    `🐾 注意力动物：<strong>${d.aName}</strong><br><span style="font-size:12px;color:#7a828e;">${d.aDesc}</span>`;
                 document.getElementById("evaluation").innerHTML =
-                    literaryLine(score, accuracy, maxCombo) + "\n\n" + verdict + "\n\n" +
-                    `准确率 ${accuracy}%　·　平均 RT ${avgRT}ms　·　得分 ${score}\n` +
-                    `最快 ${fastestRT === Infinity ? '—' : fastestRT + 'ms'}　·　最慢 ${slowestRT === 0 ? '—' : slowestRT + 'ms'}　·　最大连击 ${maxCombo}\n` +
+                    d.poem + "\n\n" + d.verdict + "\n\n" +
+                    `准确率 ${d.accuracy}%　·　平均 RT（反应时）${d.avgRT}ms　·　得分 ${d.score}\n` +
+                    `最快 ${d.fastest === null ? '—' : d.fastest + 'ms'}　·　最慢 ${d.slowest === 0 ? '—' : d.slowest + 'ms'}　·　最大连击 ${d.maxCombo}\n` +
                     `历史最佳 ${localStorage.bestScore || '—'}`;
-
-                document.getElementById("downloadCSV").onclick = exportCSV;
-
-                setTimeout(() => {
-                    resultPanel.scrollIntoView({ behavior: "smooth", block: "center" });
-                }, 120);
+                document.querySelector("#rationale .rat-lines").textContent = [
+                    `${d.wIcon} ${d.wName} —— ${d.wWhy}｜本局 准确率${d.accuracy}% · 平均RT${d.avgRT}ms · 连击${d.maxCombo} · 得分${d.score}`,
+                    `🐾 ${d.aName} —— ${d.aWhy}`,
+                    `诗句 —— ${d.poemWhy}`,
+                    `${d.verdictWhy}`
+                ].join('\n');
+                document.getElementById("downloadCSV").onclick = () => exportCSV(d.reactionTimes);
+                if (!restored) {
+                    setTimeout(() => {
+                        resultPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }, 120);
+                }
             }
 
             /* 模式切换监听 */
             modeRadios.forEach(radio => {
                 radio.addEventListener("change", (e) => {
-                    if (e.target.checked) mode = e.target.value;
+                    if (e.target.checked) {
+                        mode = e.target.value;
+                        saveSettings();
+                    }
                 });
             });
 
@@ -887,6 +954,7 @@
                 radio.addEventListener("change", (e) => {
                     if (e.target.checked) {
                         difficulty = e.target.value;
+                        saveSettings();
                         if (!started) {
                             buildButtons();
                             shuffleButtons();
@@ -896,8 +964,52 @@
                 });
             });
 
+            /* 恢复设置：非法/缺失一律静默沿用 HTML 默认值 */
+            (function restoreSettings() {
+                try {
+                    const raw = localStorage.getItem('stroop.settings');
+                    if (!raw) return;
+                    const s = JSON.parse(raw);
+                    if (!s || s.v !== 1 || !Array.isArray(s.colors) || s.colors.length < 2 ||
+                        !s.colors.every(k => Object.keys(COLOR_POOL).includes(k)) ||
+                        !['timed', 'free'].includes(s.mode) || !['easy', 'medium', 'hard'].includes(s.difficulty)) {
+                        localStorage.removeItem('stroop.settings');
+                        return;
+                    }
+                    checks.forEach(c => { c.checked = s.colors.includes(c.value); });
+                    modeRadios.forEach(r => { r.checked = r.value === s.mode; });
+                    difficultyRadios.forEach(r => { r.checked = r.value === s.difficulty; });
+                    mode = s.mode;
+                    difficulty = s.difficulty;
+                } catch (e) {}
+            })();
+
             checks.forEach(c => c.addEventListener("change", updatePool));
             updatePool();
+
+            /* 回放上一局结算快照（存了文案不重抽）；结构不合规则丢弃 */
+            (function restoreLastRun() {
+                try {
+                    const raw = localStorage.getItem('stroop.lastRun');
+                    if (!raw) return;
+                    let d = null;
+                    try {
+                        d = JSON.parse(raw);
+                    } catch (e2) {
+                        localStorage.removeItem('stroop.lastRun');
+                        return;
+                    }
+                    if (!d || d.v !== 1 ||
+                        typeof d.score !== 'number' || d.score < 0 || d.score > 100 ||
+                        typeof d.avgRT !== 'number' || typeof d.accuracy !== 'number' ||
+                        !Array.isArray(d.reactionTimes) ||
+                        typeof d.poem !== 'string' || typeof d.verdict !== 'string' || typeof d.wName !== 'string') {
+                        localStorage.removeItem('stroop.lastRun');
+                        return;
+                    }
+                    renderReport(d, true);
+                } catch (e) {}
+            })();
 
             wordArea.style.cursor = "pointer";
             hintEl.textContent = IDLE_HINT;
