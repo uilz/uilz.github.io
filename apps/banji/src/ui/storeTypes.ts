@@ -29,8 +29,8 @@ export interface DayActions {
   setDropTarget(id: CardId | null): void
   /** 拖垫纸时子纸的实时跟移：纯视觉瞬态，抬手即熄。 */
   setDragFollow(follow: DragFollow | null): void
-  /** 宇宙被整体替换（导入成功）：待撤快照作废——恢复进新宇宙只会污染它。 */
-  invalidateUndo(): void
+  /** 宇宙被整体替换（导入成功）：待撤快照、在途/在败的编辑意图、拖拽瞬态同批作废——旧世界的一切绝不复活进新宇宙。 */
+  onUniverseReplaced(): void
   dismissNote(): void
 }
 

@@ -83,8 +83,9 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
 
   const onImported = useCallback((): void => {
     // 档案即宇宙：全量替换后，月历打点、当日文档、主题都以库内新状态为准。
-    // 待撤快照作废——把旧宇宙的纸片恢复进新宇宙，只会污染它（安全不变量，undo.test 钉死）。
-    store.actions.invalidateUndo()
+    // 作废动作必须先于 reloadKey bump 同步执行：旧宇宙的待撤快照、debounce 窗里的
+    // 编辑/剥离意图、拖拽瞬态全部随宇宙同批弃世（安全不变量，undo-lifecycle/import-discard 钉死）。
+    store.actions.onUniverseReplaced()
     setReloadKey((k) => k + 1)
     void syncThemeFromStore(app).then((t) => {
       applyTheme(t)

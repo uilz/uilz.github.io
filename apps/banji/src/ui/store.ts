@@ -54,6 +54,9 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   // 串行队列：getJournal/addCard/updateCard/move… 全部排一条链，日文档永不并发读-改-写。
   const queueRef = useRef<Promise<unknown>>(Promise.resolve())
   const loadGenRef = useRef(0)
+  // 宇宙代数：导入 ack（全量替换）+1。排入链上但未开火的旧世界意图，链头到达时见代数不匹配即弃权——
+  // 与 onUniverseReplaced 同步清 pendingRef/failedRef 一起构成「作废是原子的」（见该动作注释）。
+  const worldGenRef = useRef(0)
   const chain = useCallback((fn: () => Promise<unknown>): void => {
     queueRef.current = queueRef.current.then(fn, fn).catch(() => undefined)
   }, [])
@@ -70,8 +73,11 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     failedRef.current.clear()
     const drained = [...pendingRef.current.entries()]
     pendingRef.current.clear()
+    // 出排水位的意图盖上当时的宇宙代数：ack 若发生在「已出队、未开火」的缝隙里，链头见代数不匹配即弃权。
+    const gen = worldGenRef.current
     for (const [id, entry] of drained) {
       chain(async () => {
+        if (worldGenRef.current !== gen) return
         try {
           if (entry.patch !== undefined) await app.updateCard(entry.date, id, entry.patch)
           if (entry.pos !== undefined) await app.moveCard(entry.date, id, entry.pos)
@@ -389,11 +395,26 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
           }
         })
       },
-      invalidateUndo() {
+      onUniverseReplaced() {
+        // 导入 ack = 宇宙整体替换，一切旧世界的在途之物同批作废（与 R4 托盘作废同一被接受的取舍）：
+        // ①worldGen++ 杀死「已排水未开火」的链上意图；②定时器+两箱意图清空杀死尚未出队的；
+        // ③失败回执与失败箱同灭（新宇宙没有欠账）；④拖拽瞬态越过替换即无意义，同拍熄灭。
+        // atomicity：本函数全同步、无 await，且在 App.onImported 里先于 reloadKey bump 执行——
+        // 换日 effect 的 flushNow 只能在清空之后跑，队列绝无半排半弃的中间态。
+        worldGenRef.current += 1
+        if (timerRef.current !== null) {
+          window.clearTimeout(timerRef.current)
+          timerRef.current = null
+        }
+        pendingRef.current.clear()
+        failedRef.current.clear()
+        dispatch({ type: 'save/clear' })
         undoIntentRef.current = null
         disarmUndoTimer()
         undoTicketRef.current = null
         dispatch({ type: 'undo/pop' })
+        dispatch({ type: 'ui/drop-target', id: null })
+        dispatch({ type: 'ui/drag-follow', follow: null })
       },
       dismissNote() {
         dispatch({ type: 'note/clear' })
