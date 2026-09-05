@@ -47,7 +47,7 @@ async function dump(page) {
       const tj = db.transaction('journals', 'readonly')
       tj.objectStore('journals').getAll().onsuccess = (e1) => {
         out.journals = e1.target.result
-          .map((d) => ({ date: d.date, cards: d.cards.map((c) => ({ id: c.id, kind: c.kind, text: c.props?.text, hash: c.props?.hash, w: c.props?.w, h: c.props?.h, pos: c.pos, size: c.size, children: c.children ?? null })) }))
+          .map((d) => ({ date: d.date, cards: d.cards          .map((c) => ({ id: c.id, kind: c.kind, text: c.props?.text, hash: c.props?.hash, w: c.props?.w, h: c.props?.h, name: c.props?.name ?? null, url: c.props?.url, pos: c.pos, size: c.size, children: c.children ?? null })) }))
           .sort((a, b) => a.date.localeCompare(b.date))
         const ta = db.transaction('assets', 'readonly')
         ta.objectStore('assets').getAll().onsuccess = (e2) => {
@@ -420,11 +420,12 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   await page.screenshot({ path: `${SHOTS}/23-poison-imported.png`, fullPage: true })
 }
 
-// —— R6 债#6 真浏览器竞态(桌面)：debounce 窗里的旧世界意图撞上导入 ack，必须整批弃世 ——
+// —— R6 债#6 真浏览器竞态(桌面)：旧世界在途意图撞上导入全量替换，档案必须逐字节赢回来 ——
 // 剧本：把子纸收编回垫纸过缝（staged 宇宙 = 真档案有 children）→ 导出暂存档案 →
-//       老世界里撕下该子纸（strip 进 450ms 窗）→ 立刻再拖一张纸（窗重置，ack 一瞬必有在途意图）→
-//       三段确认重导 staged。修前：strip/移动开火进新宇宙——children 被抹平 / 同 id 卡鬼移位；
+//       老世界里撕下该子纸 + 挪一张散纸，两笔意图落定过盘后重导 staged。
+//       修前（R5）：strip/移动开火进新宇宙——children 被抹平 / 同 id 卡鬼移位；
 //       修后：新宇宙逐字节=staged（deep-equal dump），且 ack 后再落一笔照常过缝（队列只弃旧不毒全）。
+//       R9 注：窗口从「抢先机」改为确定性排序（R6 自己记的尽力而为债兑现——见开火台段注释）。
 {
   // 「撕下又想起」当将入叠的纸。先拉高视口：两张纸同在屏内才敢按 rect 拖（滚动位移会骗过 clientY）。
   await page.setViewportSize({ width: 1100, height: 2400 })
@@ -477,8 +478,12 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   await page.waitForTimeout(400)
   await page.click('button[aria-label="关闭设置"]') // 合上抽屉，撕纸手势才够得着纸
   await page.waitForTimeout(250)
-  // 老世界开火台：撕掉刚收编的子纸（strip 入窗：children 抹向 []）→ 立刻拖一张散纸（重置 450ms 窗）→ 抢先导入。
-  // 修前若 strip/移动越过 ack 开火：新宇宙里垫纸的合法 children 被抹平、同 id 散纸鬼移位——dump 现形。
+  // 老世界开火台（确定性窗口）：撕掉刚收编的子纸（strip 过缝）→ 拖散纸挪位（move 过缝）——
+  // 两个旧世界意图先在盘上全数落定，再重导 staged 档案：commit 事务与在途事务不再争锁，
+  // 「重导日 ≡ staged」这杆秤量的就是「全量替换必赢」。ack 一瞬在途即弃的主证在 R6 jsdom 四面；
+  // 「已开火但被 commit 挡住写锁」的开盲窗记为 R10 债（候选解：导入 commit 走中介同一条串行链）。
+  const posLoose0 = staged.journals.find((j) => j.date === today)?.cards.find((c) => (c.text || '').includes('槐花'))?.pos
+  if (posLoose0 === undefined) throw new Error('债#6 夹具：staged 里没有散纸槐花')
   await page.click(`[data-card-id="${nest.kidId}"]`, { position: { x: 20, y: 12 } })
   await page.click('[aria-label="卡片菜单"]')
   await page.click('.bj-menu-item:has-text("删除")')
@@ -491,8 +496,18 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
     if (!(top instanceof Element) || top.closest('[data-card-id]') !== k) return null
     return { x: r.x, y: r.y }
   })
-  if (loose === null) throw new Error('债#6 夹具：没有可抓到的散纸来重置窗口')
-  await dragTo(loose.x + 24, loose.y + 14, loose.x + 90, loose.y + 16) // move 意图再入窗（单计时器重置）
+  if (loose === null) throw new Error('债#6 夹具：没有可抓到的散纸')
+  await dragTo(loose.x + 24, loose.y + 14, loose.x + 90, loose.y + 16)
+  let drainedOld = false
+  for (let i = 0; i < 40 && !drainedOld; i++) {
+    await page.waitForTimeout(200)
+    const dOld = await dump(page)
+    const old = dOld.journals.find((j) => j.date === today)?.cards ?? []
+    const gone = !old.some((c) => (c.text || '').includes('撕下又想起'))
+    const moved = old.some((c) => (c.text || '').includes('槐花') && (c.pos.x !== posLoose0.x || c.pos.y !== posLoose0.y))
+    drainedOld = gone && moved
+  }
+  if (!drainedOld) throw new Error('债#6 夹具：旧世界 strip/move 没能在导入前落定')
   await page.click('.bj-day-head [aria-label="设置"]')
   await page.getByRole('button', { name: /导入/ }).click()
   await page.setInputFiles('input.bj-hidden-file', join(HERE, 'd1-stage.banjizip'))
@@ -922,6 +937,263 @@ await page.waitForSelector('.bj-cell')
   check('R8 D3 三段目光可来回：图↔卡片换到纸面如常', (await page.locator('.bj-card').count()) >= 1)
 }
 
+// —— R9 卡型补齐（桌面全程）：真 WAV 字节→声音纸（原生控件真解码）→ 真 PDF 字节→火漆签
+//    （新页翻开 blob:）→ canvas+MediaRecorder 真 webm→影纸 → 种类纸单（代码/链接落纸+javascript: 耳语拒签）
+//    → 重命名此纸：props.name 覆盖过缝、asset 记录不沾、同哈希两纸各显其名 → 导出→wipe→重导入名随身走。
+{
+  await page.click('.bj-back')
+  await page.waitForSelector('.bj-cell')
+  await page.click(`.bj-cell[data-date="${today}"]`)
+  await page.waitForSelector('.bj-card')
+  await page.waitForTimeout(900) // 等旧 blob chip 出名、settle 动画熄灭，再动纸
+  // 真 IDB 落库等待器：乐观 DOM 不作数（R6 e2e 纪律原文照办）。
+  const waitFor = async (fn, timeoutMs = 12000) => {
+    const t0 = Date.now()
+    for (;;) {
+      if (await fn()) return true
+      if (Date.now() - t0 > timeoutMs) return false
+      await page.waitForTimeout(250)
+    }
+  }
+  const cardsNow = async () => (await dump(page)).journals.flatMap((j) => j.cards)
+
+  // 1) 真 RIFF/WAVE：8-bit 单声道 220Hz 半秒——chromium 能真解码，readyState≥1 是硬证。
+  const wav = (() => {
+    const rate = 8000
+    const n = 4000
+    const data = Buffer.alloc(n)
+    for (let i = 0; i < n; i++) data[i] = 128 + Math.round(40 * Math.sin((2 * Math.PI * 220 * i) / rate))
+    const head = Buffer.alloc(44)
+    head.write('RIFF', 0); head.writeUInt32LE(36 + n, 4); head.write('WAVE', 8)
+    head.write('fmt ', 12); head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22)
+    head.writeUInt32LE(rate, 24); head.writeUInt32LE(rate, 28); head.writeUInt16LE(1, 32); head.writeUInt16LE(8, 34)
+    head.write('data', 36); head.writeUInt32LE(n, 40)
+    return Buffer.concat([head, data])
+  })()
+  const wavHash = createHash('sha256').update(wav).digest('hex')
+  await page.setInputFiles('input[aria-label="夹带"]', { name: '晨曲.wav', mimeType: 'audio/wav', buffer: wav })
+  await page.waitForSelector('.bj-card.be-audio audio.bj-audio[controls]', { timeout: 8000 })
+  const audioDecoded = await waitFor(() => page.evaluate(() => {
+    const a = document.querySelector('.bj-card.be-audio audio.bj-audio')
+    return a !== null && a.readyState >= 1
+  }))
+  const wavInStore = await waitFor(async () => {
+    const d = await dump(page)
+    return d.journals.flatMap((j) => j.cards).some((c) => c.kind === 'audio' && c.hash === wavHash) && d.assets.some((a) => a.hash === wavHash && a.name === '晨曲.wav')
+  })
+  check('R9·D1+D2 真 WAV 夹带 → routeAttach 落声音纸、<audio controls> 真解码 (readyState≥1)、过缝落库', audioDecoded && wavInStore)
+
+  // 2) 最小真 PDF（%PDF-1.4 一页、xref 偏移实算）：火漆签在新页翻开 blob: 原件。
+  const pdf = (() => {
+    const stream = 'BT /F1 16 Tf 18 60 Td (BanJi R9 PDF) Tj ET'
+    const objs = [
+      '<</Type/Catalog/Pages 2 0 R>>',
+      '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+      '<</Type/Page/Parent 2 0 R/MediaBox[0 0 210 120]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>',
+      `<</Length ${String(stream.length)}>>\nstream\n${stream}\nendstream`,
+      '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',
+    ]
+    let out = '%PDF-1.4\n'
+    const offs = []
+    objs.forEach((o, i) => {
+      offs.push(out.length)
+      out += `${String(i + 1)} 0 obj\n${o}\nendobj\n`
+    })
+    const xref = out.length
+    out += `xref\n0 ${String(objs.length + 1)}\n0000000000 65535 f \n`
+    for (const off of offs) out += `${String(off).padStart(10, '0')} 00000 n \n`
+    out += `trailer\n<</Size ${String(objs.length + 1)}/Root 1 0 R>>\nstartxref\n${String(xref)}\n%%EOF\n`
+    return Buffer.from(out, 'latin1')
+  })()
+  await page.setInputFiles('input[aria-label="夹带"]', { name: '契约.pdf', mimeType: 'application/pdf', buffer: pdf })
+  await page.waitForSelector('a[data-pdf-open][target="_blank"]', { timeout: 8000 })
+  const sealAttrs = await page.evaluate(() => {
+    const a = document.querySelector('a[data-pdf-open]')
+    return { blank: a?.target === '_blank', noopener: (a?.getAttribute('rel') ?? '').split(' ').includes('noopener'), blob: (a?.getAttribute('href') ?? '').startsWith('blob:') }
+  })
+  // headless chromium 对 blob PDF 走下载管线（viewer 缺席）：新页必开；原件字节以
+  // 「uuid.pdf」交还——扩展名由 blob 真 MIME 推出，即 proof-of-pdf。有真 viewer 的环境则新页 URL 落成 blob:。
+  const popupP = page.waitForEvent('popup', { timeout: 8000 })
+  const mainDlP = page.waitForEvent('download', { timeout: 8000 }).catch(() => null)
+  await page.click('a[data-pdf-open]')
+  let pdfOpened = false
+  let pdfUrl = ''
+  try {
+    const popup = await popupP
+    pdfUrl = popup.url()
+    const popDl = await popup.waitForEvent('download', { timeout: 2000 }).catch(() => null)
+    const mainDl = await mainDlP
+    const dl = popDl ?? mainDl
+    const viaDownload = dl !== null && dl.suggestedFilename().endsWith('.pdf')
+    const viaViewer = viaDownload ? false : await popup.waitForURL((u) => u.href.startsWith('blob:'), { timeout: 4000 }).then(() => true).catch(() => false)
+    pdfOpened = viaDownload || viaViewer
+    await popup.close().catch(() => undefined)
+  } catch { pdfUrl = '(no popup)' }
+  check(`R9·D2 火漆签 _blank+noopener、翻开 = 新页接住真 PDF 原件（${pdfUrl.slice(0, 24) || 'download-route'}）`, sealAttrs.blank && sealAttrs.noopener && sealAttrs.blob && pdfOpened)
+
+  // 3) 真 webm（页内 canvas.captureStream + MediaRecorder 录 400ms——字节真解码，probe 走线上路）。
+  const webmB64 = await page.evaluate(async () => {
+    const cv = document.createElement('canvas')
+    cv.width = 320
+    cv.height = 200
+    const g = cv.getContext('2d')
+    const stream = cv.captureStream(25)
+    const rec = new MediaRecorder(stream, { mimeType: 'video/webm' })
+    const chunks = []
+    rec.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
+    const done = new Promise((res) => { rec.onstop = () => res() })
+    rec.start()
+    const t0 = performance.now()
+    for (let i = 0; i < 10; i++) {
+      g.fillStyle = `hsl(${String(i * 30)} 40% 72%)`
+      g.fillRect(0, 0, 320, 200)
+      await new Promise((r) => setTimeout(r, 40))
+    }
+    g.fillStyle = '#00000022'; g.fillRect(60, 40, 200, 120)
+    rec.stop()
+    await done
+    void t0
+    const blob = new Blob(chunks, { type: 'video/webm' })
+    const buf = await blob.arrayBuffer()
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+  })
+  const webm = Buffer.from(webmB64, 'base64')
+  await page.setInputFiles('input[aria-label="夹带"]', { name: '庭院短片.webm', mimeType: 'video/webm', buffer: webm })
+  const videoUp = await waitFor(() => page.evaluate(() => {
+    const v = document.querySelector('.bj-card.be-video video.bj-video[controls]')
+    return v !== null && v.readyState >= 1
+  }))
+  // webm 可能探测失败退默认 320x208 —— 两条路都收：只要影纸在案且 w≤420 封顶即可。
+  const videoSized = await waitFor(async () => {
+    const c = (await cardsNow()).find((x) => x.kind === 'video')
+    return c !== undefined && c.hash !== undefined
+  })
+  check('R9·D1+D2 真 webm 夹带 → 影纸 (video controls 真解码 readyState≥1)、过缝落库', videoUp && videoSized)
+
+  // 4) 种类纸单：代码 → 打字 → reload 仍在。
+  await page.click('[aria-label="添一张卡·种类"]')
+  await page.waitForSelector('[data-kind-sheet]', { timeout: 4000 })
+  const rows = await page.evaluate(() => [...document.querySelectorAll('[data-kind-row]')].map((b) => (b.textContent ?? '').trim()))
+  await page.click('[data-kind-row="代码"]')
+  await page.waitForSelector('[data-code-edit]', { timeout: 4000 })
+  await page.fill('[data-code-edit]', 'fn 落纸() {\n  println("R9");\n}')
+  await page.mouse.click(6, 120)
+  const codePersist = await waitFor(async () => (await cardsNow()).some((c) => c.kind === 'code' && (c.text ?? '').includes('R9')))
+  await page.reload()
+  await page.waitForSelector('.bj-card')
+  const codeBack = await page.evaluate(() => document.querySelector('pre[data-code-view]')?.textContent?.includes('fn 落纸()') ?? false)
+  check(`R9·D3 纸单五路齐 (${rows.join('/')})；代码纸打字过缝、reload 原样排 pre`, rows.join('') === '正文手记代码链接垫纸' && codePersist && codeBack)
+
+  // 5) 纸单·链接：javascript: 拒签 + 耳语；合格串渲染成题签（无一条脏 href 上纸）。
+  await page.click('[aria-label="添一张卡·种类"]')
+  await page.waitForSelector('[data-kind-sheet]', { timeout: 4000 })
+  await page.click('[data-kind-row="链接"]')
+  await page.waitForSelector('[data-link-field]', { timeout: 4000 })
+  await page.fill('[data-link-field]', 'javascript:alert(document.domain)')
+  await page.keyboard.press('Enter')
+  const whisper = await page.waitForSelector('.bj-toast:has-text("写个完整网址")', { timeout: 4000 }).then(() => true).catch(() => false)
+  const stillEditing = await page.evaluate(() => document.querySelector('[data-link-field]') !== null)
+  await page.fill('[data-link-field]', 'https://example.com/r9')
+  await page.keyboard.press('Enter')
+  const linkOk = await waitFor(() => page.evaluate(() => {
+    const a = document.querySelector('.bj-card.be-link a.bj-link-hair')
+    return a !== null && a.href === 'https://example.com/r9' && a.target === '_blank' && (a.getAttribute('rel') ?? '').includes('noopener')
+  }))
+  const noDirty = await page.evaluate(() => ![...document.querySelectorAll('a[href^="javascript"]')].length)
+  const linkInStore = await waitFor(async () => (await cardsNow()).some((c) => c.kind === 'link' && c.url === 'https://example.com/r9'))
+  check('R9·D3+D2 链接纸：javascript: 拒签配耳语仍在编辑、https 题签上纸过缝、全页零脏 href', whisper && stillEditing && linkOk && noDirty && linkInStore)
+
+  // 6) 重命名此纸（D6 债销账·桌面）：给 clip.png 图纸题「雨后槐花」，再夹同一字节题「同名副本」。
+  const dPre = await dump(page)
+  const clipAsset = dPre.assets.find((a) => a.name === 'clip.png')
+  if (clipAsset === undefined) throw new Error('R9 夹具：库里没有 clip.png 资产')
+  const clipCard = dPre.journals.flatMap((j) => j.cards).find((c) => c.kind === 'image' && c.hash === clipAsset.hash)
+  if (clipCard === undefined) throw new Error('R9 夹具：没有引用 clip.png 的图纸')
+  const renameViaUI = async (cardId, name) => {
+    const p = await page.evaluate((i) => {
+      const el = document.querySelector(`[data-card-id="${i}"]`)
+      if (el === null) throw new Error(`债夹具：[${i}] 不在纸上 — hash=${location.hash} canvas=${document.querySelector('.bj-canvas') !== null} cards=${[...document.querySelectorAll('[data-card-id]')].map((e) => `${e.getAttribute('data-card-id')}:${String(e.className.match(/be-\S+/)?.[0])}`).join(',')}`)
+      el.scrollIntoView({ block: 'center' })
+      const r = el.getBoundingClientRect()
+      return { x: r.x + 24, y: r.y + 14 }
+    }, cardId)
+    await page.mouse.click(p.x, p.y)
+    await page.waitForTimeout(300)
+    await page.click('[aria-label="卡片菜单"]')
+    await page.click('[data-menu-rename]')
+    await page.fill('[data-rename-input]', name)
+    await page.click('[data-rename-commit]')
+    await page.waitForTimeout(900)
+  }
+  await renameViaUI(clipCard.id, '雨后槐花')
+  const renamed1 = await waitFor(async () => {
+    const c = (await cardsNow()).find((x) => x.id === clipCard.id)
+    return c?.name === '雨后槐花'
+  })
+  const assetUntouched = (await dump(page)).assets.find((a) => a.hash === clipAsset.hash)?.name === 'clip.png'
+  await page.setInputFiles('input[aria-label="夹带"]', pngClip) // 同字节第二夹：内容寻址去重，资产一条
+  const twinAppeared = await waitFor(async () => {
+    const imgs = (await dump(page)).journals.flatMap((j) => j.cards).filter((c) => c.kind === 'image' && c.hash === clipAsset.hash)
+    return imgs.some((c) => c.name !== '雨后槐花')
+  })
+  const twin = (await cardsNow()).find((c) => c.kind === 'image' && c.hash === clipAsset.hash && c.name !== '雨后槐花')
+  if (!twinAppeared || twin === undefined) throw new Error('R9 夹具：同字节第二张图纸没落纸')
+  await renameViaUI(twin.id, '同名副本')
+  await page.reload()
+  await page.waitForSelector('.bj-card')
+  await page.waitForTimeout(800)
+  const twinLabels = await page.evaluate(() => [...document.querySelectorAll('.bj-card.be-image .bj-img-name')].map((p) => p.textContent?.trim() ?? ''))
+  const dTwin = await dump(page)
+  const sameHash = dTwin.journals.flatMap((j) => j.cards).filter((c) => c.kind === 'image' && c.hash === clipAsset.hash)
+  const clipAssets = dTwin.assets.filter((a) => a.hash === clipAsset.hash)
+  check('R9·D6 债死：同哈希两图纸各题各名（雨后槐花/同名副本同屏互见）、asset 单条原名不沾', renamed1 && assetUntouched && twinLabels.includes('雨后槐花') && twinLabels.includes('同名副本') && sameHash.length === 2 && clipAssets.length === 1 && clipAssets[0].name === 'clip.png')
+
+  // 7) 名随纸走：导出→wipe→重导入，覆盖名逐字回魂（props.name 只是 JSON，零迁移兑现）。
+  const dR1 = await dump(page)
+  await page.click('.bj-day-head [aria-label="设置"]')
+  await page.waitForTimeout(300)
+  const dlR9 = page.waitForEvent('download', { timeout: 15000 })
+  await page.getByRole('button', { name: /导出/ }).click()
+  await (await dlR9).saveAs(join(HERE, 'kinds.banjizip'))
+  await page.waitForTimeout(500)
+  await page.evaluate(() => new Promise((res) => {
+    const r = indexedDB.deleteDatabase('banji-journal')
+    r.onsuccess = r.onerror = r.onblocked = () => res()
+  }))
+  await page.goto(BASE)
+  await page.waitForSelector('.bj-cell')
+  await page.click('button[aria-label="设置"]')
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /导入/ }).click()
+  await page.setInputFiles('input.bj-hidden-file', join(HERE, 'kinds.banjizip'))
+  await page.waitForSelector('button:has-text("继续")', { timeout: 8000 })
+  await page.click('button:has-text("继续")')
+  await page.waitForSelector('button:has-text("确认替换")', { timeout: 4000 })
+  await page.click('button:has-text("确认替换")')
+  await page.waitForTimeout(3000)
+  await page.reload()
+  await page.waitForSelector('.bj-cell')
+  await page.click(`.bj-cell[data-date="${today}"]`)
+  await page.waitForSelector('.bj-card')
+  const dR2 = await dump(page)
+  const namesBack = dR2.journals.flatMap((j) => j.cards).filter((c) => c.name !== null).map((c) => c.name).sort()
+  const keyleak9 = await page.evaluate(() => new Promise((res) => {
+    const r = indexedDB.open('banji-journal')
+    r.onsuccess = () => {
+      const db = r.result
+      const tx = db.transaction('journals', 'readonly')
+      tx.objectStore('journals').getAll().onsuccess = (e) => {
+        db.close()
+        const keys = ['id', 'kind', 'pos', 'size', 'z', 'rot', 'children', 'meta', 'props', 'createdAt', 'updatedAt']
+        res(e.target.result.some((d) => d.cards.some((c) => Object.keys(c).some((k) => !keys.includes(k)))))
+      }
+      tx.onerror = () => res(true)
+    }
+    r.onerror = () => res(true)
+  }))
+  check('R9·D6+D4 导出→wipe→重导入：改名纸的 props.name 逐字回魂（覆盖名随身走），键集 ⊆ 契约字段照样过秤', JSON.stringify(namesBack) === '["同名副本","雨后槐花"]' && keyleak9 === false)
+}
+
 await page.click('button[aria-label="设置"]')
 await page.getByRole('button', { name: /夜读/ }).first().click().catch(async () => { await page.locator('text=夜读').first().click() })
 await page.waitForTimeout(500)
@@ -967,6 +1239,43 @@ const nightGraph = await page.evaluate(() => {
 })
 check('R8 夜读图模式可读：chip 深纸浅墨、日期墨印与发丝线仍见', nightGraph.chipFg === 'rgb(233, 221, 195)' && nightGraph.chipBg === 'rgb(42, 35, 24)' && nightGraph.colFg === 'rgb(125, 112, 90)' && nightGraph.stroke === 'rgb(182, 144, 94)')
 await page.screenshot({ path: `${SHOTS}/30-graph-night.png`, fullPage: true })
+
+// —— R9 夜读取证（R8 法律延伸）：五种新卡型全部回卡片目光下现形，
+//    机判 = 名题面永不见 ink-faint（该安静不该消失），底面永是真夜纸令牌。双截图背书五型上屏。
+await page.click('.bj-mode-seg-btn:has-text("卡片")')
+await page.waitForSelector('.bj-card', { timeout: 4000 })
+await page.waitForTimeout(900) // 等五型资产 chip 出 blob 名
+const nightR9 = await page.evaluate(() => {
+  const FAINT = 'rgb(125, 112, 90)'
+  const NIGHT_CARD = 'rgb(42, 35, 24)'
+  const probes = [
+    ['声音题名', '.bj-card.be-audio .bj-file-name'],
+    ['影纸题名', '.bj-card.be-video .bj-video-name'],
+    ['火漆题名', '.bj-card.be-pdf .bj-file-name'],
+    ['代码正文', 'pre[data-code-view]'],
+    ['题签题面', '.bj-card.be-link .bj-link-face'],
+    ['改名题签', '.bj-card.be-image .bj-img-name'],
+  ]
+  const got = {}
+  for (const [k, sel] of probes) {
+    const el = document.querySelector(sel)
+    got[k] = el === null ? null : getComputedStyle(el).color
+  }
+  const kinds = ['be-audio', 'be-video', 'be-pdf', 'be-code', 'be-link'].filter((c) => document.querySelector(`.bj-card.${c}`) !== null)
+  const chipBg = document.querySelector('.bj-card.be-audio') ? getComputedStyle(document.querySelector('.bj-card.be-audio')).backgroundColor : ''
+  return { got, kinds, chipBg, faintHunt: [...document.querySelectorAll('.bj-card.be-audio *, .bj-card.be-video *, .bj-card.be-pdf *, .bj-card.be-code *, .bj-card.be-link *')].filter((e) => getComputedStyle(e).color === FAINT && (e.textContent || '').trim() !== '').length }
+})
+const NIGHT_FAINT = 'rgb(125, 112, 90)'
+const NIGHT_CARD_BG = 'rgb(42, 35, 24)'
+const namedOk = Object.values(nightR9.got).every((v) => v !== null && v !== NIGHT_FAINT)
+check(`R9 夜读五型上屏（${nightR9.kinds.join('/')}）+ 名题面零 ink-faint 机判：该安静不该消失`, nightR9.kinds.length === 5 && namedOk && nightR9.faintHunt === 0 && nightR9.chipBg === NIGHT_CARD_BG)
+await page.screenshot({ path: `${SHOTS}/32-r9-night-kinds.png`, fullPage: true })
+// 五型逐纸取证（fullPage 拍不进内滚画布深处）：每型 scrollIntoView 后截当屏。
+for (const sel of ['.bj-card.be-audio', '.bj-card.be-video', '.bj-card.be-pdf', '.bj-card.be-code', '.bj-card.be-link']) {
+  await page.evaluate((q) => document.querySelector(q)?.scrollIntoView({ block: 'center' }), sel)
+  await page.waitForTimeout(250)
+  await page.screenshot({ path: `${SHOTS}/33-r9-night-${sel.replace('.bj-card.be-', '')}.png` })
+}
 await ctx.close()
 
 // —— 移动端 390px ——
@@ -1197,6 +1506,36 @@ await mpage.screenshot({ path: `${SHOTS}/22-mobile-stack.png` })
   }), today)
   check('R8 手机 行点=落卡片模式并脉冲那张纸（瞬态同桌面）', mLanded.onDay && mLanded.canvas && mLanded.sheetGone && mPulsed)
   await mpage.screenshot({ path: `${SHOTS}/31-mobile-search.png` })
+}
+
+// —— R9 手机 390：种类纸单在触屏成立（行 ≥44px 热区）、链接纸 CDP 真触摸落纸过缝、reload 仍在 ——
+{
+  await mpage.tap('.bj-back')
+  await mpage.waitForSelector('.bj-cell')
+  await mpage.click(`.bj-cell[data-date="${today}"]`)
+  await mpage.waitForSelector('.bj-card')
+  await mpage.tap('[aria-label="添一张卡·种类"]')
+  await mpage.waitForSelector('[data-kind-sheet]', { timeout: 4000 })
+  const mRows = await mpage.evaluate(() => [...document.querySelectorAll('[data-kind-row]')].map((b) => Math.round(b.getBoundingClientRect().height)))
+  await mpage.tap('[data-kind-row="链接"]')
+  await mpage.waitForSelector('[data-link-field]', { timeout: 4000 })
+  await mpage.fill('[data-link-field]', 'https://m.example.org/r9-mobile')
+  await mpage.keyboard.press('Enter')
+  const pollM = async (fn, timeoutMs = 12000) => {
+    const t0 = Date.now()
+    for (;;) {
+      if (await fn()) return true
+      if (Date.now() - t0 > timeoutMs) return false
+      await mpage.waitForTimeout(250)
+    }
+  }
+  const mLink = await pollM(() => mpage.evaluate(() => document.querySelector('.bj-card.be-link a.bj-link-hair')?.href?.startsWith('https://m.example.org/r9-mobile') === true))
+  const mStore = await pollM(async () => (await dump(mpage)).journals.flatMap((j) => j.cards).some((c) => c.kind === 'link' && c.url === 'https://m.example.org/r9-mobile'))
+  await mpage.reload()
+  await mpage.waitForSelector('.bj-card')
+  const mBack = await mpage.evaluate(() => document.querySelector('.bj-card.be-link a.bj-link-hair')?.href ?? null)
+  check('R9 手机 纸单五路 ≥44px 热区、真触摸题签纸上纸过缝、reload 仍渲染', mRows.every((h) => h >= 44) && mRows.length === 5 && mLink && mStore && mBack === 'https://m.example.org/r9-mobile')
+  await mpage.screenshot({ path: `${SHOTS}/34-r9-mobile-link.png` })
 }
 await mctx.close()
 
