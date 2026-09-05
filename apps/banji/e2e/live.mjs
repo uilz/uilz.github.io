@@ -949,6 +949,44 @@ await page.waitForSelector('.bj-cell')
   const chronoOk = graph.cols.every((c, i) => i === 0 || graph.cols[i - 1] <= c)
   const colSet = new Set(graph.cols)
   check('R8 D3 图模式：全日记纸片排上时间轴、日期列历法升序、跨日发丝贝塞尔在', graph.chips >= 8 && chronoOk && colSet.has(today) && colSet.has(twoDays) && graph.oldLine)
+  // —— R12 跨日线角标（「找不到昨日的线」债的销账检）：cross/same 判族全部从 DOM 自立
+  //    （chip 的 data-graph-date 对照线段两端），不信渲染谓词自己报的账；
+  //    角标=跨日线恰好一枚、同日线零枚、日子文字与远端一致。 ——
+  const badgeDay = await page.evaluate(() => {
+    const y0 = new Date()
+    y0.setDate(y0.getDate() - 1)
+    const yd = [y0.getFullYear(), String(y0.getMonth() + 1).padStart(2, '0'), String(y0.getDate()).padStart(2, '0')].join('-')
+    const lbl = (dsm) => `${Number(dsm.slice(5, 7))}月${Number(dsm.slice(8, 10))}日`
+    const dateOf = new Map([...document.querySelectorAll('[data-graph-chip]')].map((c) => [c.getAttribute('data-graph-chip') ?? '', c.getAttribute('data-graph-date') ?? '']))
+    const cross = []
+    const same = []
+    for (const el of [...document.querySelectorAll('[data-graph-line]')]) {
+      const id = el.getAttribute('data-graph-line') ?? ''
+      const from = id.slice(0, id.indexOf('→'))
+      const to = id.slice(id.indexOf('→') + 1)
+      const da = dateOf.get(from)
+      const db = dateOf.get(to)
+      if (da === undefined || db === undefined) continue
+      ;(da === db ? same : cross).push({ id, far: da > db ? da : db })
+    }
+    const badges = [...document.querySelectorAll('.bj-line-badge')].map((b) => ({ id: b.getAttribute('data-line-badge') ?? '', date: b.getAttribute('data-line-date') ?? '', text: (b.textContent ?? '').trim() }))
+    const byBadgeId = new Map(badges.map((b) => [b.id, b]))
+    return {
+      crossN: cross.length, sameN: same.length,
+      exact: cross.every((c) => byBadgeId.has(c.id)) && badges.every((b) => cross.some((c) => c.id === b.id)) && badges.length === cross.length,
+      oldBadge: byBadgeId.get('r8-old-day→r7-yesterday')?.date === yd && byBadgeId.get('r8-old-day→r7-yesterday')?.text === lbl(yd),
+      textsOk: badges.every((b) => b.text === lbl(b.date)),
+      notSame: same.every((s) => !byBadgeId.has(s.id)),
+    }
+  })
+  check('R12 角标只随跨日线：每根跨日线恰一枚日子签且文字=远端日（同日线零枚，判族自 DOM 自立）', badgeDay.exact && badgeDay.notSame && badgeDay.textsOk && badgeDay.oldBadge && badgeDay.crossN >= 1 && badgeDay.sameN >= 1)
+  const badgeDayStyle = await page.evaluate(() => {
+    const b = document.querySelector('.bj-line-badge')
+    if (b === null) return null
+    const cs = getComputedStyle(b)
+    return { fg: cs.color, pe: cs.pointerEvents, pos: cs.position }
+  })
+  check('R12 角标白班令牌：ink-soft 淡墨（非 faint）· 绝对定位钉纸角 · pointer-events 穿透不抢 chip 点击', badgeDayStyle?.fg === 'rgb(111, 98, 80)' && badgeDayStyle?.pe === 'none' && badgeDayStyle?.pos === 'absolute')
   await page.screenshot({ path: `${SHOTS}/28-graph.png`, fullPage: true })
   await page.click('[data-graph-chip="r8-old-day"]')
   const chipPulsed = await page.waitForFunction(() => {
@@ -961,6 +999,14 @@ await page.waitForSelector('.bj-cell')
     graphGone: document.querySelector('[data-graph]') === null,
   }))
   check('R8 D3 点异日 chip：退图模式、翻回那天的卡片并脉冲那张纸', chipJump.hash === `#/d/${twoDays}` && chipJump.canvas && chipJump.graphGone && chipPulsed)
+  // R12 时序债死（R11 债2 根因）：chip 落点后 App 级瞬态 hop 还亮着 FLASH_OFF_MS（脉冲 260ms），
+  // 亮期间 DayView 把本日的目光强制收回 'cards'（R8·D4 落点语义）——上一行 waitForFunction 只等到
+  // 「灯点亮」，随后点「图」若是落进熄灯前的窗里，点击被 effect 收走、[data-graph] 永不出现、4s 超时。
+  // 确定性前置=等灯熄灭（is-pulse 从 DOM 消失 ⇔ React 已提交 hop=null，effect 从此哑火）。零 sleep。
+  await page.waitForFunction(() => {
+    const card = document.querySelector('[data-card-id="r8-old-day"]')
+    return card === null || !card.classList.contains('is-pulse')
+  }, null, { timeout: 3000 })
   await page.click('.bj-mode-seg-btn:has-text("图")')
   await page.waitForSelector('[data-graph]', { timeout: 4000 })
   await page.click('.bj-mode-seg-btn:has-text("卡片")')
@@ -1358,6 +1404,21 @@ const nightGraph = await page.evaluate(() => {
   return { chipFg: chip.color, chipBg: chip.backgroundColor, colFg: col.color, stroke: line.stroke }
 })
 check('R8 夜读图模式可读：chip 深纸浅墨、日期墨印与发丝线仍见', nightGraph.chipFg === 'rgb(233, 221, 195)' && nightGraph.chipBg === 'rgb(42, 35, 24)' && nightGraph.colFg === 'rgb(125, 112, 90)' && nightGraph.stroke === 'rgb(182, 144, 94)')
+// R12 夜读法律延伸：角标是可读信息（哪天的线去哪天），按 R8 判例永住 ink-soft、绝不落 faint 面。
+const badgeNight = await page.evaluate(() => {
+  const dateOf = new Map([...document.querySelectorAll('[data-graph-chip]')].map((c) => [c.getAttribute('data-graph-chip') ?? '', c.getAttribute('data-graph-date') ?? '']))
+  const crossIds = [...document.querySelectorAll('[data-graph-line]')].filter((el) => {
+    const id = el.getAttribute('data-graph-line') ?? ''
+    const da = dateOf.get(id.slice(0, id.indexOf('→')))
+    const db = dateOf.get(id.slice(id.indexOf('→') + 1))
+    return da !== undefined && db !== undefined && da !== db
+  }).map((el) => el.getAttribute('data-graph-line') ?? '')
+  const bs = [...document.querySelectorAll('.bj-line-badge')]
+  if (bs.length === 0) return null
+  const cs = getComputedStyle(bs[0])
+  return { same: bs.length === crossIds.length, fg: cs.color, bg: cs.backgroundColor }
+})
+check('R12 夜读角标可读：角标数=跨日线数、墨色=夜 ink-soft（非 faint 面）、纸色底真落夜纸', badgeNight !== null && badgeNight.same === true && badgeNight.fg === 'rgb(181, 166, 136)' && badgeNight.bg === 'rgb(42, 35, 24)')
 await page.screenshot({ path: `${SHOTS}/30-graph-night.png`, fullPage: true })
 
 // —— R9 夜读取证（R8 法律延伸）：五种新卡型全部回卡片目光下现形，
