@@ -345,6 +345,81 @@ check('R5 D4 拖出垫纸界外：断奶过缝落库，垫纸退回耳语', (mat
 check('R5 D4 出界位移持久：reload 后子纸仍在界外新位', Math.abs(kidOut.pos.x - matOut.pos.x) > 0 && kidOut.pos.x < matOut.pos.x)
 await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true })
 
+// —— R6 档案中毒判死（桌面）：把子纸再收编回垫纸 → 撕下 → 任 10s 托盘静默过期（回天之门焊死）→
+//    导出（下载落盘）→ wipe IDB → 抽屉双确认重导 → reload 开日。
+//    修复前：过期后 dangling 引用长住 children[]，自家档案必死在自家导入闸（journal.child_missing），
+//    wipe 之后等于数据无门可回。prune-at-delete-commit 后此路全绿，且「N 张」永不数到幽灵。
+{
+  const seed = await page.evaluate(() => {
+    const m = document.querySelector('.bj-card.be-container')
+    const k = [...document.querySelectorAll('.bj-card:not(.be-container)')].find((e) => (e.textContent || '').includes('入叠帖'))
+    if (m === null || k === undefined) return null
+    m.scrollIntoView({ block: 'center' })
+    const mr = m.getBoundingClientRect()
+    const kr = k.getBoundingClientRect()
+    return { mx: mr.x, my: mr.y, mw: mr.width, mh: mr.height, kx: kr.x, ky: kr.y, kidId: k.getAttribute('data-card-id') }
+  })
+  if (seed === null) throw new Error('R6 夹具：桌上没有垫纸或子纸')
+  await page.mouse.move(seed.kx + 24, seed.ky + 14)
+  await page.mouse.down()
+  await page.mouse.move(seed.kx + 80, seed.ky + 120, { steps: 5 })
+  await page.mouse.move(seed.mx + seed.mw / 2, seed.my + seed.mh / 2, { steps: 8 })
+  await page.mouse.up()
+  await page.waitForFunction(() => document.querySelector('.bj-card.be-container .bj-stack-note')?.textContent?.trim() === '1 张', null, { timeout: 8000 })
+  let matPre = null
+  for (let i = 0; i < 24 && matPre?.children?.includes(seed.kidId) !== true; i++) {
+    await page.waitForTimeout(250) // debounce 450 + 串行链：等真缝落库，别拿乐观 DOM 当过缝证据
+    matPre = (await dump(page)).journals.find((j) => j.date === today)?.cards.find((c) => c.kind === 'container') ?? null
+  }
+  if (matPre?.children?.includes(seed.kidId) !== true) throw new Error('R6 夹具：收编没过缝，毒从何处来')
+  await page.click(`[data-card-id="${seed.kidId}"]`, { position: { x: 20, y: 12 } })
+  await page.click('[aria-label="卡片菜单"]')
+  await page.click('.bj-menu-item:has-text("删除")')
+  await page.click('button:has-text("确认删除")')
+  await page.waitForSelector('.bj-toast', { timeout: 4000 })
+  const poisonToast = ((await page.locator('.bj-toast').first().textContent()) || '').trim()
+  if (poisonToast !== '已撕下 1 张，再想想') throw new Error(`R6 夹具：撕下回执不对（${poisonToast}）`)
+  await page.waitForTimeout(11_000) // 10s TTL + 余量：纸片归尘，撤销之路自此焊死
+  if ((await page.locator('.bj-toast').count()) !== 0) throw new Error('R6：过期不寂静（残影/警报 = 剥离没存上）')
+  const dPoison = await dump(page)
+  const matPoison = dPoison.journals.find((j) => j.date === today)?.cards.find((c) => c.kind === 'container')
+  const kidPoison = dPoison.journals.find((j) => j.date === today)?.cards.some((c) => c.text === '入叠帖')
+  if (matPoison === undefined || kidPoison) throw new Error('R6 夹具：过期后库内状态不对')
+  if (matPoison.children !== null && matPoison.children.length !== 0) throw new Error(`R6：幽灵还住在库里 children=${JSON.stringify(matPoison.children)}`)
+  await page.click('.bj-day-head [aria-label="设置"]')
+  await page.waitForTimeout(300)
+  const dlPoisonPromise = page.waitForEvent('download', { timeout: 15000 })
+  await page.getByRole('button', { name: /导出/ }).click()
+  const dlPoison = await dlPoisonPromise
+  await dlPoison.saveAs(join(HERE, 'expired-strip.banjizip'))
+  await page.evaluate(() => new Promise((res) => {
+    const r = indexedDB.deleteDatabase('banji-journal')
+    r.onsuccess = r.onerror = r.onblocked = () => res()
+  }))
+  await page.goto(BASE)
+  await page.waitForSelector('.bj-cell')
+  await page.click('button[aria-label="设置"]')
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /导入/ }).click()
+  await page.setInputFiles('input.bj-hidden-file', join(HERE, 'expired-strip.banjizip'))
+  await page.waitForSelector('button:has-text("继续")', { timeout: 8000 })
+  await page.click('button:has-text("继续")')
+  await page.waitForSelector('button:has-text("确认替换")', { timeout: 4000 })
+  await page.click('button:has-text("确认替换")')
+  await page.waitForTimeout(3000)
+  await page.reload()
+  await page.waitForSelector('.bj-cell')
+  await page.click(`.bj-cell[data-date="${today}"]`)
+  await page.waitForSelector('.bj-card.be-container', { timeout: 8000 })
+  const poisonNotes = await page.locator('.bj-card.be-container .bj-stack-note').count()
+  const poisonWhisper = ((await page.locator('.bj-card.be-container .bj-stack-whisper').textContent().catch(() => '')) || '').includes('拖一张纸进来')
+  const dPoisonBack = await dump(page)
+  const matBack = dPoisonBack.journals.find((j) => j.date === today)?.cards.find((c) => c.kind === 'container')
+  const poisonDead = (matBack?.children === null || matBack?.children?.length === 0) && poisonNotes === 0 && poisonWhisper
+  check('R6 档案中毒判死: 撕子纸→10s过期→导出→wipe→重导过闸→开日，垫纸诚实耳语、库里档里没有幽灵', poisonDead)
+  await page.screenshot({ path: `${SHOTS}/23-poison-imported.png`, fullPage: true })
+}
+
 await page.click('.bj-back')
 await page.waitForSelector('.bj-cell')
 
