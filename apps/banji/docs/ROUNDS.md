@@ -116,3 +116,25 @@
 - 落点态与拖拽跟移住 dayState 瞬态,永不进 Card/props/meta:e2e 以「存储键集 ⊆ 契约字段全集」钉死,刷新即无痕。
 - 拖入命中按渲染序而非存储 z:D2 的「垫纸恒below子纸」使两个序本就不是一回事,按 z 蒙会在叠中叠上点错纸。
 - 环护栏分三道各司其职:hit-test 子树排除(手势)、canNest+stackIssues(写闸)、gc/fit 遍历去重(病态数据存活);域校验器仍是唯一真口径,UI 不自造第二套。
+
+## Round 6 — 2026-09-05 · 数据可靠性长尾（债#6 ack 作废 + store 拆分 + 债#3 滚屏）(已完成，待发布)
+
+**完成**
+- 债#6 导入 ack 作废在途一切（T1，本轮核心）：R5 收尾揪出的窗洞补死——撕纸的 prune-strip 或任何编辑意图住在 450ms debounce 窗时用户完成全量替换 import，旧世界的补丁会开火进新宇宙（抹平 legitimate children、同 id 卡鬼移位）。修法把 R4 的「导入成功即作废托盘」扩成整斧：**ack 信号点 = 抽屉 success → App.onImported 里同步调用的 store 动作 `onUniverseReplaced()`**（原 `invalidateUndo` 升格改名），一次弃世：debounce 定时器 + pendingRef/failedRef 两箱 + save/clear 陈旧回执 + 托盘/已许诺在途 restore（原有腿）+ dropTargetId/dragFollow 瞬态。原子性两条：①动作全同步无 await、且先于 reloadKey bump——换日 effect 的 flushNow 只能在清空后跑，绝无半排半弃；②链上新「宇宙代数 worldGen」——flushNow 出队时盖代数，链头到达见 ack 落斧即弃权，堵死「已排水、未开火」的最后一指宽。反向竞态核验：**只弃旧不毒全**——ack 后新 schedule 拿新代数照常过缝（单测 (c) + e2e 当场添卡落库双钉）。测试：jsdom 四面（strip 窗内 ack→过缝零调用+全库 dump 逐字不动 / failedRef 清箱无陈回执重试 / ack 后编辑照常 / 双瞬态同拍熄灭，mock 的 importFromFile 真换宇宙让旧 strip 现形）+ e2e 桌面真时序（收编过缝→导出定档→老世界撕子纸+拖散纸重置单计时器保证 ack 一瞬必有在途→抢先重导→**重导日逐字节 ≡ 定档档案**）。
+- 债#2 store.ts 拆分（T2，纯 refactor 零行为差）：373 纯行 → 两台一等编排机独立成模块＋测试——**undoTray.ts**（票据面：arm 顶替/claim 出口/consumeIntent 链头一票一销/disarmTimer/discard；pruneStripIntent 以「配方+核心递箱」落位，不碰意图箱所有权）与 **attachPipeline.ts**（夹带面：ghost 私号生平、addAsset→探尺→addCard 逐字草稿、失败文案映射；chain/dispatch/getState/nextNoteId 全注入，落笔前 settle 仍归核心动作层）。唯一共享核心留下：串行链 + schedule/diff/commitStack + worldGen + 动作表——**绝无第二条链**。三处零风险收拢凑数：runPlan（四式手势共用落笔口径）、haltDebounce、spawn（添卡/造叠同款十行×2）；sortByZ 归 stackGeometry 独此一家。既有 18 套件断言一字未动全绿；新加 9 台面单元测（托盘五态+prune 幂等+管线四态）。
+- 债#3 拖入远垫自动滚屏（T3，tier-2 也兑现了）：**edgeScrollStep 纯几何**（滚动窗缘 48px 带宽、速度 =12·(深度/带宽)²——平方缓入是纸的惯性不是机械追帧、封顶 12px/帧、出缘钳顶、带沿浅处取整归零「进带不即弹」）+ **useAutoScrollWhileDragging** rAF 圈贴 DayView 局部态：CardFrame 越阈真拖才上报（点选不算）、capture pointermove 采样、位移走原生 scroll、prefers-reduced-motion **根本不起圈**（让位而非打折）。store/dayState/契约一字不碰。「该不该动」以几何单测为主证（e2e 只证布线活着：底缘静置 700ms 自走 172px≈缓入档）——headless 证不了手感，诚实记档。
+- 测试净增：单测 202→219（+17），e2e 50→54 全绿 0 console error；LOC 闸：store.ts 250 恰达标、undoTray 80、attachPipeline 63、useAutoScroll 35，无一超 250。
+
+**已知债(R7 候选)**
+1. 实机证据长队（自 R3 顺延）：iPad/iPhone 软键盘 visualViewport、自动滚屏缓入手感（48/12 系几何正确、体感待拍）、**拖拽滚屏时 hitTest 落点仍按落指时采样的画布原点算——滚屏位移会让入叠判定漂移，是否每帧重取 rect，实机定夺**；叠中叠手势几何已对但零 UI 提示（R5 尾）。
+2. undo 圈内导出字节回归（R4 债，三度顺延）：restore 只 bump 文档 updatedAt，但要入档——撕下再想想一圈后该日 journals.json 字节必变；保不保「undo 圈字节不变量」待产品拍板。
+3. 同字节改名第二张卡显示首入库文件名（R2 债，四度顺延）。
+4. 「这一笔没存上」保存侧仍无离线/配额根因探测（R3 债5 顺延）。
+5. 搜索/关系/线/图模式 = Phase 3+；设置键仍两枚（theme、hint_wide_canvas）。
+6. D1 的 e2e 竞态夹具是「定档+计时器重置」的尽力而为（import 若慢过 450ms 旧意图会良性开火在旧世界、被整斧抹掉——检测不到≠没修，回归防护的确定性主证在 jsdom 四面）；档案显著变大后再议加探针，暂不立项。
+
+**决策记录(R6 增量)**
+- 导入 ack = 世界尽头的整斧：pending/failed/瞬态与托盘同批弃世——用户选「档案即宇宙」那一刻，旧世界未记账的编辑即被放弃的编辑；这是 R4 托盘作废同一被接受取舍的补齐，不是新增风险。反向不变量同钉：**作废只弃旧、不毒新**（世界代数出队盖章，新意图拿新代数照常排链）。
+- 拆分只搬机器、不搬纪律：undo 的 restore 排链、attach 的落笔前 settle、prune 的意图箱所有权都留在核心——「无第二链」是拆分红线，注入接口（chain/dispatch/getState/nextNoteId）是两台机与核心的全部接触面。
+- 自动滚屏的『该不该动』归纯几何（可测）、「动起来像什么」归实机；reduced-motion 时循环压根不建，无新 UI 元素，存储侧不留痕。
+- e2e 夹具三纪律被真跑揪出、立为样板：滚动会骗过 rect（同屏才按坐标拖）、乐观 DOM≠过缝证据（等真 IDB dump 再定档）、探测别用 rAF 频率轰炸 IDB 连接队列（有界单次开库轮询）。
