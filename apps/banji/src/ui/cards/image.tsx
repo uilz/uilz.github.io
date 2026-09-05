@@ -1,26 +1,18 @@
 import type { ReactElement } from 'react'
-import type { ImageProps } from '../../domain/types'
 import type { CardRenderer, RenderCtx } from './types'
-import { isPlainObject } from '../../domain/validation'
-import { useAssetUrl } from './asset'
+import { assetLabel, readAssetProps, useAssetUrl } from './asset'
 import { deriveInitialSize } from './md'
 import { imageFitMaxW, viewportWidthNow } from '../placement'
 
-function readImage(raw: unknown): ImageProps {
-  if (!isPlainObject(raw)) return { hash: '' }
-  const hash = typeof raw['hash'] === 'string' ? raw['hash'] : ''
-  const w = typeof raw['w'] === 'number' ? raw['w'] : undefined
-  const h = typeof raw['h'] === 'number' ? raw['h'] : undefined
-  const name = typeof raw['name'] === 'string' ? raw['name'] : undefined
-  return { hash, ...(w === undefined ? {} : { w }), ...(h === undefined ? {} : { h }), ...(name === undefined ? {} : { name }) }
-}
-
+// R11·D2 题签统一：「影纸常挂」口径胜出——图纸与共型资产卡都永显 assetLabel 一行小名
+// （props.name → 资产原名 → hash 前八），未改名不再藏签；展示链只住 asset.ts 一家。
 function ImageView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx }): ReactElement {
-  const p = readImage(raw)
-  const { url, missing } = useAssetUrl(ctx.app, p.hash)
+  const p = readAssetProps(raw)
+  const { url, asset, missing } = useAssetUrl(ctx.app, p.hash)
   if (p.hash === '' || missing) {
     return <div className="bj-img-quiet">这张图片的原件不在了</div>
   }
+  const label = assetLabel(p.name, asset, p.hash)
   return (
     <>
       {url === null ? (
@@ -39,9 +31,7 @@ function ImageView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCt
           }}
         />
       )}
-      {p.name === undefined || p.name === '' ? null : (
-        <p className="bj-img-name" title={p.name}>{p.name}</p>
-      )}
+      <p className="bj-img-name bj-asset-name" data-asset-name title={label}>{label}</p>
     </>
   )
 }

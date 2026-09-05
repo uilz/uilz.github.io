@@ -12,7 +12,7 @@ function FileView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx
       <span className="bj-file-ico">
         <IconFile />
       </span>
-      <span className="bj-file-name" data-file-name>{label}</span>
+      <span className="bj-file-name bj-asset-name" data-file-name data-asset-name>{label}</span>
       {asset !== undefined ? <span className="bj-file-size">{humanSize(asset.size)}</span> : null}
       {url !== null ? (
         <a className="bj-file-save" href={url} download={asset?.name ?? true}>

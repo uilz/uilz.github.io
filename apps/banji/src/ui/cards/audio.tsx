@@ -12,10 +12,10 @@ function AudioView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCt
   if (missing) return <div className="bj-img-quiet">这页声音的原件不在了</div>
   const label = assetLabel(p.name, asset, p.hash)
   return (
-    <div className="bj-audio-chip" data-nodrag data-asset-name>
+    <div className="bj-audio-chip" data-nodrag>
       <p className="bj-audio-head">
         <span className="bj-file-ico"><IconAudio /></span>
-        <span className="bj-file-name">{label}</span>
+        <span className="bj-file-name bj-asset-name" data-asset-name>{label}</span>
         {asset !== undefined ? <span className="bj-file-size">{humanSize(asset.size)}</span> : null}
       </p>
       {url === null ? <p className="bj-img-quiet">正在取出…</p> : <audio className="bj-audio" controls preload="metadata" src={url} />}

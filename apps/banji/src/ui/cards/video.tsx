@@ -14,7 +14,7 @@ function VideoView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCt
   if (missing) return <div className="bj-img-quiet">这段影像的原件不在了</div>
   const label = assetLabel(p.name, asset, p.hash)
   return (
-    <div className="bj-video-wrap" data-nodrag data-asset-name>
+    <div className="bj-video-wrap" data-nodrag>
       {url === null ? <div className="bj-img-quiet">正在取出…</div> : (
         <video
           className="bj-video"
@@ -29,7 +29,7 @@ function VideoView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCt
           }}
         />
       )}
-      <p className="bj-video-name" title={label}>{label}</p>
+      <p className="bj-video-name bj-asset-name" data-asset-name title={label}>{label}</p>
     </div>
   )
 }

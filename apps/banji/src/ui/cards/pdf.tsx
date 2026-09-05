@@ -13,17 +13,17 @@ function PdfView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx 
   const seal = <span className="bj-pdf-seal" aria-hidden><IconPdf /></span>
   if (missing) {
     return (
-      <div className="bj-file-chip bj-pdf-chip" data-asset-name>
+      <div className="bj-file-chip bj-pdf-chip">
         {seal}
-        <span className="bj-file-name">{label}</span>
+        <span className="bj-file-name bj-asset-name" data-asset-name>{label}</span>
         <span className="bj-file-quiet">原件不在了</span>
       </div>
     )
   }
   return (
-    <a className="bj-file-chip bj-pdf-chip" data-nodrag data-asset-name data-pdf-open href={url ?? undefined} target="_blank" rel="noopener">
+    <a className="bj-file-chip bj-pdf-chip" data-nodrag data-pdf-open href={url ?? undefined} target="_blank" rel="noopener">
       {seal}
-      <span className="bj-file-name">{label}</span>
+      <span className="bj-file-name bj-asset-name" data-asset-name>{label}</span>
       {asset !== undefined ? <span className="bj-file-size">{humanSize(asset.size)}</span> : null}
       {url === null ? <span className="bj-file-quiet">正在取出</span> : <span className="bj-pdf-open">翻开</span>}
     </a>

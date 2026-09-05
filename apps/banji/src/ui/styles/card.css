@@ -373,14 +373,20 @@
   flex: none;
 }
 
-.bj-file-name {
-  flex: 1;
-  min-width: 0;
+/* R11·D2 题签统一（「影纸常挂」口径胜出）：五资产型 name 元素同类同排印，
+   版位随纸面（画面在下、chip 在内联），口径唯 .bj-asset-name 一家。 */
+.bj-asset-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
-  color: var(--bj-ink);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--bj-ink-soft);
+}
+
+.bj-file-name {
+  flex: 1;
+  min-width: 0;
 }
 
 .bj-file-size {
@@ -474,7 +480,7 @@
 
 /* —— R9 卡型补齐 —— */
 
-/* 图片纸改名后纸下一行小名（props.name 才显——未改名的图照旧只有图，R3 定宽账不动）。 */
+/* 图片纸题签（R11·D2）：常挂一行小名（排印在 .bj-asset-name），未改名也不再藏签。 */
 .bj-card.be-image .bj-card-body {
   display: flex;
   flex-direction: column;
@@ -489,12 +495,6 @@
 .bj-img-name {
   flex: none;
   margin: 4px 0 0;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--bj-ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* 声音纸：题头一行 + 原生控件一枚。控件墨色跟着主题走（accent-color 是唯一正门）。 */
@@ -525,7 +525,7 @@
   height: 36px;
 }
 
-/* 影纸：画面吃满，纸下一行名（与图片不同——影纸无名也留白边记账，控件纸面本就有题签位）。 */
+/* 影纸：画面吃满，纸下行名常挂（R11·D2 口径的出处——图纸今共此律，chip 型同字内联）。 */
 .bj-video-wrap {
   display: flex;
   flex-direction: column;
@@ -544,12 +544,6 @@
 .bj-video-name {
   flex: none;
   margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--bj-ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* 火漆签：骑在文件 chip 的骨架上，翻开是一枚 quiet 签。 */
