@@ -108,6 +108,7 @@
 3. 叠中叠手势已几何正确(D3 命中天然允许、cycle-guard 兜底)但零 UI 提示;跨屏远垫拖入不自动滚屏。
 4. 实机键盘/visualViewport 抽验(R3 起顺延)、undo 圈内导出字节回归(R4 债)、同字节改名第二张卡(R2 债)原样还在。
 5. 搜索/关系/线/图模式 = Phase 3+;设置键仍两枚。
+6. (R5 收尾揪出) 450ms debounce 窗内 删除→立刻导入宇宙替换:pending 的剥离补丁会陪跑进新宇宙,可致合法 children 被抹平+同 id 冲突 skip 成孤儿(flatten+orphan,不产生悬空、不过不了任何闸、无 phantom——但 R4「导入作废在途承诺」只治 restore 不治 pending edits)。候选:导入 ack 时清空 pending intents 或按新宇宙重算。
 
 **决策记录(R5 增量)**
 - attach/detach 不入 undo 托盘:同一手势自我反悔(再拖进/再拖出即可),而托盘只有一格——低风险可逆行不许顶掉「撕下」的高风险承诺(任务书 D7,兑现为记录)。
