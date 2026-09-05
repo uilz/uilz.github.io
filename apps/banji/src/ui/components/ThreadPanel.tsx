@@ -1,7 +1,7 @@
 // 线模式（D5）：一张纸的连通分量串成一层一层珠子——是一串珠子不是一张网。
 // 层=链距离（锚点居首）、层内=日期升序；日期换组处落一枚墨印日子签。点珠=翻回卡片模式开那一天。
-// 底料 = loadAllCards + loadAllEdges 一次性全扫（千级=档案尺度的读，任务书拍板可负担）。只读、不留偏好转瞬态。
-import { useEffect, useState } from 'react'
+// 底料 = loadAllCards + loadAllEdges 一次性全扫（千级=档案尺度的读，任务书拍板可负担）。只读、不留偏转移除不存账。
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BanjiApp } from '../../application'
 import { isPlainObject } from '../../domain/validation'
@@ -38,20 +38,12 @@ export function threadBeads(beads: readonly Bead[], edges: readonly EdgeRecord[]
   }))
 }
 
-interface ThreadPanelProps {
-  readonly app: BanjiApp
-  readonly anchor: CardId | null
-  /** 点珠：回卡片模式并落在珠子的日子。 */
-  readonly onOpenDate: (date: string) => void
-}
-
 interface Labeled {
   readonly bead: Bead
-  /** 非 null = 这枚珠开启新的一天（墨印分日内穿一线）。 */
+  /** 非 null = 这枚珠开启新的一天（墨印是组「间」的分隔，头一枚不挂）。 */
   readonly day: string | null
 }
 
-/** 全局顺序日期分组（跨层连续判定）：头一枚不挂印，换组处才落墨印——分隔在组「间」。 */
 function labelRuns(runs: readonly { depth: number; beads: readonly Bead[] }[]): { depth: number; beads: readonly Labeled[] }[] {
   let last = ''
   let first = true
@@ -66,6 +58,13 @@ function labelRuns(runs: readonly { depth: number; beads: readonly Bead[] }[]): 
   }))
 }
 
+interface ThreadPanelProps {
+  readonly app: BanjiApp
+  readonly anchor: CardId | null
+  /** 点珠：回卡片模式并落在珠子的日子。 */
+  readonly onOpenDate: (date: string) => void
+}
+
 export function ThreadPanel({ app, anchor, onOpenDate }: ThreadPanelProps): ReactElement {
   const [world, setWorld] = useState<{ readonly beads: readonly Bead[]; readonly edges: readonly EdgeRecord[] } | null>(null)
   useEffect(() => {
@@ -77,6 +76,7 @@ export function ThreadPanel({ app, anchor, onOpenDate }: ThreadPanelProps): Reac
       live = false
     }
   }, [app])
+  const runs = useMemo(() => (world === null || anchor === null ? null : labelRuns(threadBeads(world.beads, world.edges, anchor))), [world, anchor])
   if (anchor === null) {
     return (
       <div className="bj-thread" data-thread>
@@ -84,18 +84,17 @@ export function ThreadPanel({ app, anchor, onOpenDate }: ThreadPanelProps): Reac
       </div>
     )
   }
-  const runs = world === null ? null : labelRuns(threadBeads(world.beads, world.edges, anchor))
   return (
     <div className="bj-thread" data-thread data-anchor={anchor}>
       {runs === null ? (
         <p className="bj-thread-whisper">正在翻它牵过的线…</p>
       ) : (
         <div className="bj-thread-strip" data-thread-strip>
-          {runs.map((run, ri) => (
-            <span key={run.depth} className="bj-thread-run" data-thread-depth={String(ri)}>
+          {runs.map((run) => (
+            <span key={run.depth} className="bj-thread-run" data-thread-depth={String(run.depth)}>
               {run.beads.map(({ bead, day }, bi) => (
                 <span key={bead.cardId} className="bj-thread-slot">
-                  {ri === 0 && bi === 0 ? null : <span className="bj-thread-seg" aria-hidden />}
+                  {bi === 0 && run.depth === 0 ? null : <span className="bj-thread-seg" aria-hidden />}
                   {day === null ? null : (
                     <span className="bj-thread-day" data-thread-day={day}>
                       {shortDateLabel(day)}
