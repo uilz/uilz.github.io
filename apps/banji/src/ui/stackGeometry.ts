@@ -182,6 +182,11 @@ export function stackIssues(cards: readonly Card[]): readonly ValidationIssue[] 
   return containerIssues(topo, 'ui.cards')
 }
 
+/** z 升序的拷贝：置顶抬位与新生落位共用的同一把尺。 */
+export function sortByZ(cards: readonly Card[]): readonly Card[] {
+  return [...cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
+}
+
 /**
  * 渲染序（D2）：z 升序为底，但垫纸永远垫在自己的纸下面 —— 不管存储 z 怎么写。
  * 只在渲染层推导，存储的 z 一个字都不改；叠中叠沿祖先链逐层前置。
@@ -189,7 +194,7 @@ export function stackIssues(cards: readonly Card[]): readonly ValidationIssue[] 
 export function renderStackOrder(cards: readonly Card[]): readonly Card[] {
   const byId = cardsByIdOf(cards)
   const parents = parentIndex(cards)
-  const byZ = [...cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
+  const byZ = sortByZ(cards)
   const out: Card[] = []
   const placed = new Set<CardId>()
   const place = (id: CardId): void => {

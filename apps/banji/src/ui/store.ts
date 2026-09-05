@@ -1,19 +1,25 @@
 // 单一内存中介：日文档 + 卡片操作只经过这里（foundation 报告明令：避免并发覆写）。
 // 本地 state 乐观更新是唯一视觉真相；一切落库都排进同一串行队列（读-改-写绝不并发），
 // 文本/位置/尺寸编辑 debounce ≤600ms 后合并为一次 app.updateCard/moveCard/resizeCard。
-// 编排在此（夹带管线、失败意图陪跑）；状态形状与迁移在 dayState.ts，动作表在 storeTypes.ts。
+// 本模块只剩共享核心：串行链 + schedule/diff 纪律 + 动作表；两台一等编排机在兄弟模块——
+// 撕下托盘在 undoTray.ts，夹带管线在 attachPipeline.ts（它们借 chain/dispatch 注入回这唯一一条链）；
+// 状态形状与迁移在 dayState.ts，动作表签名在 storeTypes.ts。
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
-import type { BanjiApp, DeleteSnapshot } from '../application'
-import type { Card, CardId, CardPos } from '../domain/types'
+import type { BanjiApp } from '../application'
+import type { Card, CardId } from '../domain/types'
 import { cardsByIdOf, collectSubtreeIds } from '../domain/gc'
 import { isPlainObject } from '../domain/validation'
 import { resolveRenderer } from './cards/registry'
-import { attachKind, clampCardPos, dropAt, fitWithin, imageCardSize, imageFitMaxW, scatterPos, viewportWidthNow } from './placement'
-import { attachFailureCopy, probeImageSize } from './probe'
+import { scatterPos, viewportWidthNow } from './placement'
+import { probeImageSize } from './probe'
 import { dayReducer, initialDayState } from './dayState'
 import type { Pending } from './dayState'
 import { buildDeleteSnapshot, stripDoomedRefs } from './undoSnapshot'
+import { createUndoTray, pruneStripIntent } from './undoTray'
+import { createAttachPipeline } from './attachPipeline'
+import { sortByZ } from './stackGeometry'
 import { ATTACH_REJECTED_COPY, DETACH_REJECTED_COPY, diffIntents, planAttach, planDetach, planMove, planResize } from './stackOps'
+import type { StackPlan } from './stackOps'
 import type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
 export type { DayState, Ghost, Note, UndoTray } from './dayState'
@@ -21,19 +27,6 @@ export type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
 const DEBOUNCE_MS = 450
 const Z_CEILING = 500
-/** “再想想”的窗口：10 秒，之后纸片安静地归尘（无提醒、无残影）。 */
-const UNDO_TTL_MS = 10_000
-
-function sortByZ(cards: readonly Card[]): readonly Card[] {
-  return [...cards].sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
-}
-
-interface UndoTicket {
-  readonly seq: number
-  readonly date: string
-  readonly snapshot: DeleteSnapshot
-  claimed: boolean
-}
 
 export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, opts: DayStoreOptions = {}): DayStore {
   const [state, dispatch] = useReducer(dayReducer, initialDayState)
@@ -42,13 +35,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   const pendingRef = useRef(new Map<CardId, Pending>())
   // 落盘失败的意图不丢：住这里，等下一次落盘陪跑（last-intent-wins——后到的编辑覆盖旧意图）。
   const failedRef = useRef(new Map<CardId, Pending>())
-  const undoSeqRef = useRef(0)
-  const undoTimerRef = useRef<number | null>(null)
-  const undoTicketRef = useRef<UndoTicket | null>(null)
-  // claimed（已按“再想想”）的 restore 在链上排队时也要保住：它是用户已出口的承诺，只被导入作废。
-  const undoIntentRef = useRef<UndoTicket | null>(null)
   const timerRef = useRef<number | null>(null)
-  const ghostSeqRef = useRef(0)
   const noteSeqRef = useRef(0)
   const probe = opts.probe ?? probeImageSize
   // 串行队列：getJournal/addCard/updateCard/move… 全部排一条链，日文档永不并发读-改-写。
@@ -61,11 +48,15 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     queueRef.current = queueRef.current.then(fn, fn).catch(() => undefined)
   }, [])
 
-  const flushNow = useCallback((): void => {
+  const haltDebounce = useCallback((): void => {
     if (timerRef.current !== null) {
       window.clearTimeout(timerRef.current)
       timerRef.current = null
     }
+  }, [])
+
+  const flushNow = useCallback((): void => {
+    haltDebounce()
     // 上次没存上的意图搭这趟车；更新的编辑（若有）已在 pendingRef，天然覆盖旧意图。
     for (const [id, entry] of failedRef.current) {
       if (!pendingRef.current.has(id)) pendingRef.current.set(id, entry)
@@ -89,7 +80,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         }
       })
     }
-  }, [app, chain])
+  }, [app, chain, haltDebounce])
 
   const schedule = useCallback(
     (id: CardId, mutate: (entry: Pending) => void): void => {
@@ -99,10 +90,10 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       failedRef.current.delete(id)
       mutate(entry)
       pendingRef.current.set(id, entry)
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+      haltDebounce()
       timerRef.current = window.setTimeout(flushNow, DEBOUNCE_MS)
     },
-    [flushNow],
+    [flushNow, haltDebounce],
   )
 
   useEffect(() => {
@@ -122,73 +113,19 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   const bringToFront = useCallback(
     (id: CardId): void => {
       const cards = sortByZ(stateRef.current.cards)
-      const top = cards.findLast((c) => c.id !== id)
-      const maxZ = top?.z ?? 0
+      const maxZ = cards.findLast((c) => c.id !== id)?.z ?? 0
       if (maxZ < Z_CEILING) {
         const z = maxZ + 0.5
         dispatch({ type: 'card/patched', id, patch: { z } })
-        schedule(id, (e) => {
-          e.patch = { ...e.patch, z }
-        })
+        schedule(id, (e) => { e.patch = { ...e.patch, z } })
         return
       }
       const renumbered = cards.map((c, i): Card => ({ ...c, z: c.id === id ? cards.length : i + 1 }))
       dispatch({ type: 'cards/set', cards: renumbered })
-      for (const c of renumbered) {
-        const z = c.z ?? 0
-        schedule(c.id, (e) => {
-          e.patch = { ...e.patch, z }
-        })
-      }
+      for (const c of renumbered) schedule(c.id, (e) => { e.patch = { ...e.patch, z: c.z ?? 0 } })
     },
     [schedule],
   )
-
-  /** 夹带单份文件的完整管线（跑在串行链上）：资产 → 探测 → 卡片，失败则虚影熄灭 + 回执。 */
-  const attachOne = useCallback(
-    (day: string, file: File, pos: CardPos, token: number, seq: number): void => {
-      const kind = attachKind(file.type)
-      dispatch({
-        type: 'ghost/add',
-        ghost: { token, kind, name: file.name, pos, size: resolveRenderer(kind).defaultSize },
-      })
-      chain(async () => {
-        const vanish = (): void => {
-          dispatch({ type: 'ghost/remove', token })
-        }
-        try {
-          const record = await app.addAsset(file)
-          let props: Record<string, unknown> = { hash: record.hash }
-          let size = resolveRenderer(kind).defaultSize
-          if (kind === 'image') {
-            const nat = await probe(file)
-            if (nat !== null) {
-              // 创建期定宽公式唯一住在 imageFitMaxW：手机收进屏内，桌面封顶不变。
-              const maxW = imageFitMaxW(viewportWidthNow())
-              const fit = fitWithin(nat.w, nat.h, maxW)
-              props = { hash: record.hash, w: fit.w, h: fit.h }
-              size = imageCardSize(nat.w, nat.h, maxW)
-            }
-          }
-          const maxZ = sortByZ(stateRef.current.cards).at(-1)?.z ?? 0
-          const card = await app.addCard(day, { kind, props, pos, size, z: maxZ + 1 + seq * 0.5 })
-          vanish()
-          if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit: false })
-        } catch (err) {
-          vanish()
-          dispatch({ type: 'note/set', id: ++noteSeqRef.current, msg: attachFailureCopy(err) })
-        }
-      })
-    },
-    [app, chain, probe],
-  )
-
-  const disarmUndoTimer = useCallback((): void => {
-    if (undoTimerRef.current !== null) {
-      window.clearTimeout(undoTimerRef.current)
-      undoTimerRef.current = null
-    }
-  }, [])
 
   const commitStack = useCallback(
     (next: readonly Card[]): void => {
@@ -209,49 +146,46 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     [schedule],
   )
 
-  /** 「再想想」抢跑未落盘的 strip：撤掉在途/在败意图里的 children 字段（逐字快照复原才是最新意图；其余字段不连坐）。 */
-  const pruneStripIntent = useCallback((parentIds: Iterable<CardId>): void => {
-    for (const id of parentIds) {
-      for (const box of [pendingRef.current, failedRef.current]) {
-        const e = box.get(id)
-        if (e === undefined || e.patch === undefined || !('children' in e.patch)) continue
-        const { children: _strip, ...rest } = e.patch
-        if (Object.keys(rest).length > 0) e.patch = rest
-        else if (e.pos !== undefined || e.size !== undefined) delete e.patch
-        else box.delete(id)
-      }
-    }
-  }, [])
+  const tray = useMemo(() => createUndoTray(dispatch), [dispatch])
+  const nextNoteId = useCallback((): number => ++noteSeqRef.current, [])
+  const attaching = useMemo(
+    () => createAttachPipeline({ app, chain, dispatch, getState: () => stateRef.current, probe, nextNoteId }),
+    [app, chain, dispatch, probe, nextNoteId],
+  )
 
-  /** 单级托盘：新的撕下直接顶替旧纸片（被顶掉的不另发声——它本就在倒计时）。 */
-  const armUndo = useCallback(
-    (day: string, snapshot: DeleteSnapshot): void => {
-      disarmUndoTimer()
-      const seq = ++undoSeqRef.current
-      const ticket: UndoTicket = { seq, date: day, snapshot, claimed: false }
-      undoTicketRef.current = ticket
-      dispatch({
-        type: 'undo/push',
-        tray: { seq, date: day, snapshot, count: snapshot.cards.length, expiresAt: Date.now() + UNDO_TTL_MS },
-      })
-      undoTimerRef.current = window.setTimeout(() => {
-        undoTimerRef.current = null
-        const t = undoTicketRef.current
-        if (t !== null && t.seq === seq && !t.claimed) {
-          undoTicketRef.current = null
-          dispatch({ type: 'undo/expire', seq })
-        }
-      }, UNDO_TTL_MS)
+  /** 四式手势（挪/缩/入叠/断奶）共用的落笔口径：闸下拒签=意图丢弃+一句人话（gone 只来自陈旧双开，静默弃）；放行=过 diff→schedule 唯一通道。 */
+  const runPlan = useCallback(
+    (plan: StackPlan, rejectNote: string | null): void => {
+      if (plan.ok) { commitStack(plan.cards); return }
+      if (rejectNote !== null && plan.reason === 'nested-illegal') dispatch({ type: 'note/set', id: nextNoteId(), msg: rejectNote })
     },
-    [disarmUndoTimer],
+    [commitStack, nextNoteId],
   )
 
   useEffect(
     () => () => {
       flushNow()
-      disarmUndoTimer()
+      tray.disarmTimer()
     },
-    [disarmUndoTimer, flushNow],
+    [flushNow, tray],
+  )
+
+  /** 添一张卡/造一张叠共用的新生管线：先结算在途编辑，散点落位、压顶入场。 */
+  const spawn = useCallback(
+    (kind: 'text' | 'container', edit: boolean): void => {
+      const current = stateRef.current
+      const day = current.date
+      if (day === null) return
+      flushNow()
+      const renderer = resolveRenderer(kind)
+      const pos = scatterPos(current.cards.length + current.ghosts.length, viewportWidthNow())
+      const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
+      chain(async () => {
+        const card = await app.addCard(day, { kind, props: renderer.emptyDraft(pos), pos, size: renderer.defaultSize, z: maxZ + 1 })
+        if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit })
+      })
+    },
+    [app, chain, flushNow],
   )
 
   const actions = useMemo<DayActions>(
@@ -275,59 +209,23 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         const base = isPlainObject(card.props) ? card.props : {}
         const props = { ...base, ...patch }
         dispatch({ type: 'card/patched', id, patch: { props } })
-        schedule(id, (e) => {
-          e.patch = { ...e.patch, props }
-        })
+        schedule(id, (e) => { e.patch = { ...e.patch, props } })
       },
       move(id, pos) {
-        const plan = planMove(stateRef.current.cards, id, pos)
-        if (plan.ok) commitStack(plan.cards)
+        runPlan(planMove(stateRef.current.cards, id, pos), null)
       },
       resize(id, size) {
-        const plan = planResize(stateRef.current.cards, id, size)
-        if (plan.ok) commitStack(plan.cards)
+        runPlan(planResize(stateRef.current.cards, id, size), null)
       },
       attachChild(parentId, childId, childPos) {
-        const plan = planAttach(stateRef.current.cards, parentId, childId, childPos)
-        if (!plan.ok) {
-          if (plan.reason === 'nested-illegal') dispatch({ type: 'note/set', id: ++noteSeqRef.current, msg: ATTACH_REJECTED_COPY })
-          return
-        }
-        commitStack(plan.cards)
+        runPlan(planAttach(stateRef.current.cards, parentId, childId, childPos), ATTACH_REJECTED_COPY)
       },
       detachChild(childId, pos) {
-        const plan = planDetach(stateRef.current.cards, childId, pos)
-        if (!plan.ok) {
-          if (plan.reason === 'nested-illegal') dispatch({ type: 'note/set', id: ++noteSeqRef.current, msg: DETACH_REJECTED_COPY })
-          return
-        }
-        commitStack(plan.cards)
+        runPlan(planDetach(stateRef.current.cards, childId, pos), DETACH_REJECTED_COPY)
       },
-      setDropTarget(id) {
-        dispatch({ type: 'ui/drop-target', id })
-      },
-      setDragFollow(follow) {
-        dispatch({ type: 'ui/drag-follow', follow })
-      },
-      createContainer() {
-        const current = stateRef.current
-        const day = current.date
-        if (day === null) return
-        flushNow()
-        const renderer = resolveRenderer('container')
-        const pos = scatterPos(current.cards.length + current.ghosts.length, viewportWidthNow())
-        const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
-        chain(async () => {
-          const card = await app.addCard(day, {
-            kind: 'container',
-            props: renderer.emptyDraft(pos),
-            pos,
-            size: renderer.defaultSize,
-            z: maxZ + 1,
-          })
-          if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit: false })
-        })
-      },
+      setDropTarget: (id) => dispatch({ type: 'ui/drop-target', id }),
+      setDragFollow: (follow) => dispatch({ type: 'ui/drag-follow', follow }),
+      createContainer: () => spawn('container', false),
       remove(id) {
         const day = stateRef.current.date
         if (day === null) return
@@ -342,53 +240,23 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
           // prune-at-delete-commit：幸存父卡的 children 悬空引用同批改写（同一条 debounce 串行链，
           // last-intent-wins 与失败回执都是现成通道；撤销凭 parentPatches 按原 index 复原）。
           commitStack(stripDoomedRefs(stateRef.current.cards.filter((c) => !doomed.has(c.id)), doomed))
-          armUndo(day, snapshot)
+          tray.arm(day, snapshot)
         })
       },
-      addTextCard() {
-        const current = stateRef.current
-        const day = current.date
-        if (day === null) return
-        flushNow()
-        const renderer = resolveRenderer('text')
-        const pos = scatterPos(current.cards.length + current.ghosts.length, viewportWidthNow())
-        const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
-        chain(async () => {
-          const card = await app.addCard(day, {
-            kind: 'text',
-            props: renderer.emptyDraft(pos),
-            pos,
-            size: renderer.defaultSize,
-            z: maxZ + 1,
-          })
-          if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit: true })
-        })
-      },
+      addTextCard: () => spawn('text', true),
       attach(files, at = null) {
-        const current = stateRef.current
-        const day = current.date
-        if (day === null || files.length === 0) return
-        flushNow()
-        files.forEach((file, k) => {
-          const base = at !== null ? dropAt(clampCardPos(at), k) : scatterPos(current.cards.length + current.ghosts.length + k, viewportWidthNow())
-          attachOne(day, file, base, ++ghostSeqRef.current, k)
-        })
+        if (stateRef.current.date === null || files.length === 0) return
+        flushNow() // 夹带前先结算在途编辑：新纸落在最新的账上
+        attaching.attach(files, at)
       },
-      retrySave() {
-        flushNow()
-      },
+      retrySave: flushNow,
       undoDelete() {
-        const ticket = undoTicketRef.current
-        if (ticket === null || ticket.claimed) return
-        ticket.claimed = true
-        disarmUndoTimer()
-        undoTicketRef.current = null
-        undoIntentRef.current = ticket
-        pruneStripIntent(new Set(ticket.snapshot.parentPatches.map((p) => p.parentId)))
+        const ticket = tray.claim()
+        if (ticket === null) return
+        pruneStripIntent([pendingRef.current, failedRef.current], new Set(ticket.snapshot.parentPatches.map((p) => p.parentId)))
         dispatch({ type: 'undo/pop' })
         chain(async () => {
-          if (undoIntentRef.current?.seq !== ticket.seq) return // 落笔前宇宙已被替换：这张承诺随作废作废
-          undoIntentRef.current = null
+          if (!tray.consumeIntent(ticket.seq)) return // 落笔前宇宙已被替换：这张承诺随作废作废
           await app.restoreCards(ticket.date, ticket.snapshot)
           if (stateRef.current.date === ticket.date) {
             dispatch({ type: 'cards/restored', cards: ticket.snapshot.cards, parentPatches: ticket.snapshot.parentPatches })
@@ -398,29 +266,22 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       onUniverseReplaced() {
         // 导入 ack = 宇宙整体替换，一切旧世界的在途之物同批作废（与 R4 托盘作废同一被接受的取舍）：
         // ①worldGen++ 杀死「已排水未开火」的链上意图；②定时器+两箱意图清空杀死尚未出队的；
-        // ③失败回执与失败箱同灭（新宇宙没有欠账）；④拖拽瞬态越过替换即无意义，同拍熄灭。
+        // ③失败回执与失败箱同灭（新宇宙没有欠账）；④托盘与已许诺 restore 作废（undoTray.discard）；
+        // ⑤拖拽瞬态越过替换即无意义，同拍熄灭。
         // atomicity：本函数全同步、无 await，且在 App.onImported 里先于 reloadKey bump 执行——
         // 换日 effect 的 flushNow 只能在清空之后跑，队列绝无半排半弃的中间态。
         worldGenRef.current += 1
-        if (timerRef.current !== null) {
-          window.clearTimeout(timerRef.current)
-          timerRef.current = null
-        }
+        haltDebounce()
         pendingRef.current.clear()
         failedRef.current.clear()
         dispatch({ type: 'save/clear' })
-        undoIntentRef.current = null
-        disarmUndoTimer()
-        undoTicketRef.current = null
-        dispatch({ type: 'undo/pop' })
+        tray.discard()
         dispatch({ type: 'ui/drop-target', id: null })
         dispatch({ type: 'ui/drag-follow', follow: null })
       },
-      dismissNote() {
-        dispatch({ type: 'note/clear' })
-      },
+      dismissNote: () => dispatch({ type: 'note/clear' }),
     }),
-    [app, armUndo, attachOne, bringToFront, chain, commitStack, disarmUndoTimer, flushNow, pruneStripIntent, schedule],
+    [app, attaching, bringToFront, chain, commitStack, flushNow, runPlan, schedule, spawn, tray],
   )
 
   return { state, actions }
