@@ -7,6 +7,7 @@ import { isHex64 } from '../domain/validate'
 import { ASSET_DIR, FILE_EDGES, FILE_JOURNALS, FILE_MANIFEST, FILE_SETTINGS } from './format'
 import { createHashSubtle } from './hash'
 import { chunksToBlob, joinChunks, parseZipEntries } from './zip'
+import { rejectCopy } from './rejectCopy'
 import { preflightArchive, type AssetBody, type PreflightCode, type PreflightProblem, type PreflightStats } from './preflight'
 import type { ArchiveRejectCode, SchemaMigration } from './migration'
 
@@ -88,7 +89,7 @@ function failureFromProblems(problems: readonly PreflightProblem[]): ImportResul
   if (first.gate !== undefined) {
     return { ok: false, reason: first.gate.code, userMessage: first.gate.userMessage, detail: first.gate.message.slice(0, 300) }
   }
-  const shown = problems.slice(0, 3).map((p) => `${p.inner ?? p.code} ${p.detail}`)
+  const shown = problems.slice(0, 3).map((p) => rejectCopy(p, p.detail))
   const rest = problems.length > 3 ? ` 等共 ${String(problems.length)} 处` : ''
   return { ok: false, reason: first.code, userMessage: CORRUPT_PREFIX + shown.join('；') + rest, detail: problems.map((p) => `${p.code}:${p.detail}`).join(' | ').slice(0, 500) }
 }
