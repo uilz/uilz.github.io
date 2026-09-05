@@ -90,12 +90,12 @@ export function ThreadPanel({ app, anchor, onOpenDate }: ThreadPanelProps): Reac
       {runs === null ? (
         <p className="bj-thread-whisper">正在翻它牵过的线…</p>
       ) : (
-        <div className="bj-thread-strip">
+        <div className="bj-thread-strip" data-thread-strip>
           {runs.map((run, ri) => (
             <span key={run.depth} className="bj-thread-run" data-thread-depth={String(ri)}>
-              {ri > 0 ? <span className="bj-thread-seg" aria-hidden /> : null}
-              {run.beads.map(({ bead, day }) => (
+              {run.beads.map(({ bead, day }, bi) => (
                 <span key={bead.cardId} className="bj-thread-slot">
+                  {ri === 0 && bi === 0 ? null : <span className="bj-thread-seg" aria-hidden />}
                   {day === null ? null : (
                     <span className="bj-thread-day" data-thread-day={day}>
                       {shortDateLabel(day)}

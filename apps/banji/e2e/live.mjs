@@ -604,7 +604,7 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   await addCard('牵线乙')
   const ids = await page.evaluate(() => {
     const of = (t) => [...document.querySelectorAll('.bj-card')].find((e) => (e.textContent || '').includes(t))?.getAttribute('data-card-id') ?? null
-    return { a: of('牵线甲'), b: of('牵线乙'), mat: of('入叠帖') }
+    return { a: of('牵线甲'), b: of('牵线乙'), other: of('撕下又想起') }
   })
   if (ids.a === null || ids.b === null) throw new Error('R7 夹具：桌上没有 牵线甲/乙')
   const tapCard = async (id) => {
@@ -630,12 +630,12 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
       day: document.querySelector('.bj-day')?.getAttribute('data-linking') === 'true',
       canvas: document.querySelector('.bj-canvas')?.classList.contains('is-linking') === true,
       origin: q(s.a)?.getAttribute('data-link') === 'origin',
+      lift: q(s.a)?.classList.contains('bj-link-origin') === true,
       target: q(s.b)?.getAttribute('data-link') === 'target',
-      blocked: q(s.mat)?.getAttribute('data-link') === 'blocked',
       bar: document.querySelector('[data-linker]')?.textContent?.includes('牵给近日') === true,
     }
   }, ids)
-  check('R7 D1 起牵：起点抬起、靶纸亮、垫纸家眷压暗、招呼条带「牵给近日…」', dusk.origin && dusk.target && dusk.blocked && dusk.day && dusk.bar)
+  check('R7 D1 起牵：起点抬起、靶纸亮、招呼条带「牵给近日…」、画布入牵态', dusk.origin && dusk.lift && dusk.target && dusk.day && dusk.canvas && dusk.bar)
   await tapCard(ids.b)
   await page.waitForTimeout(900)
   const linked1 = await page.evaluate((s) => {
@@ -656,16 +656,32 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   const reloaded = await page.evaluate(() => ({ n: document.querySelectorAll('g.bj-line').length, hit: document.querySelectorAll('.bj-line-hit').length }))
   const e1 = await edgesDump()
   check('R7 reload 后线还在（边过缝落库、线随账重画）', reloaded.n === 1 && reloaded.hit === 1 && e1?.length === 1)
+  // 牵线模式里的 dedup 目击：再来一次牵线，已连过的乙必须压暗（blocked），寻常纸仍旧可牵（不滥暗）
+  await tapCard(ids.a)
+  await page.click('[aria-label="卡片菜单"]')
+  await page.click('.bj-menu-item:has-text("牵线")')
+  await page.waitForTimeout(300)
+  const dusk2 = await page.evaluate((s) => {
+    const qb = document.querySelector(`[data-card-id="${s.b}"]`)
+    const qo = document.querySelector(`[data-card-id="${s.other}"]`)
+    return {
+      linkedBlocked: qb?.getAttribute('data-link') === 'blocked' && qb?.classList.contains('bj-link-dim') === true,
+      otherTarget: qo?.getAttribute('data-link') === 'target',
+      origin: qb !== null && document.querySelector(`[data-card-id="${s.a}"]`)?.getAttribute('data-link') === 'origin',
+    }
+  }, ids)
+  check('R7 D1 再牵见黄昏：已连过的纸压暗（dedup 可见），寻常纸仍可牵，起点抬起', dusk2.linkedBlocked && dusk2.otherTarget && dusk2.origin)
+  await tapCard(ids.a) // 再点原纸收线
+  await page.waitForTimeout(250)
+  const receded = await page.evaluate(() => ({ day: document.querySelector('[data-linking]') !== null, canvas: document.querySelector('.bj-canvas')?.classList.contains('is-linking') === true }))
+  check('R7 D1 再点原纸收线：牵态即刻退场', !receded.day && !receded.canvas)
   // 撕线：点线 → 签落线腰 → 点签 → 线没、账清、托盘不占
   await page.evaluate(() => {
     const path = document.querySelector('.bj-line-hit')
-    const len = path.getTotalLength()
-    const p = path.getPointAtLength(len / 2)
-    const m = path.getScreenCTM()
-    window.__r7mid = { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f }
+    const r = path.getBoundingClientRect()
+    window.__r7mid = { x: r.x + r.width / 2, y: r.y + r.height / 2 }
+    path.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerId: 1, pointerType: 'mouse', isPrimary: true }))
   })
-  const mid = await page.evaluate(() => window.__r7mid)
-  await page.mouse.click(mid.x, mid.y)
   await page.waitForSelector('.bj-line-chip', { timeout: 4000 })
   const chipTxt = ((await page.locator('.bj-line-chip').textContent()) || '').trim()
   await page.click('.bj-line-chip')

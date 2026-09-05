@@ -121,6 +121,7 @@
 
 .bj-link-veil {
   z-index: 1100;
+  pointer-events: auto; /* 招呼条不吃事件，但纸单必吃——不然跨日牵手点不动（e2e 真浏览器抓出来的）*/
   display: flex;
   align-items: flex-start;
   justify-content: center;
