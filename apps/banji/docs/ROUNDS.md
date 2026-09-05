@@ -103,7 +103,7 @@
 - 测试(T4/T5):单测 164→198(+34:geometry 16、ops 10、手势过缝面 8, plus two rusty assertions aligned per spec)——叠护栏环数据双面(子树遍历终止/fit 到期原样)、attach/detach 过 mock 缝逐字、fit 钳制、子树平移、dropTargetId 永不在存储键、闸拒写+回执、容器删除→undo 嵌套复原、mat-below-children 派生零 z 改写、子树计数。e2e 36→49 全绿 0 console error:桌面 造叠图标/耳语/悬停 is-dropon/children 过缝落库 reload 仍在/键集 ⊆ 契约/界内压上渲染/空处拖垫整树 +140px 跟移/拖出断奶持久;手机 390 CDP 真 touch 造叠+拖入(「1 张」上纸、reload 仍在)。
 
 **已知债(R6 候选)**
-1. 单卡删除的幸存父卡悬空引用长尾(R4 记录语义):再想想当场复原;**过期不复活后引用留在库里**——「N 张」数到幽灵、含该日的档案再导入会 child_missing 被拒。候选:级联时顺手 prune 幸存引用(快照已记原位),待拍板。
+1. 单卡删除的幸存父卡悬空引用长尾(R4 记录语义) — 已拍板随本轮清偿:**prune-at-delete-commit 胜 prune-at-expiry**。删除提交就在 remove 的同一条串行链上同批改写幸存父卡 children(stripDoomedRefs 走 commitStack→diffIntents→updateCard 现成通道)——库中永不存谎言档案:「N 张」不数幽灵、含该日的档案再导入不再死在 child_missing(e2e 真浏览器判死:撕子纸→10s 过期→导出→wipe→重导过闸→开日对账)。**undo 机制零改动**:快照仍记原 index,再想想按出生席位逐字插回,撤销抢在剥离落盘前开机时 pruneStripIntent 撤回首尚未过缝的剥离意图(逐字复原才是最新意图,其余字段不连坐);无过期定时器耦合、无异步二次写。候选方案 prune-at-expiry 落选:过期侧另起写盘既添第二条时序通道,又留窗口让谎言档案在 10s 里出门。
 2. `store.ts` 360 纯行(HEAD 已 304,超 250 天花板):R6 拆 undo 托盘机与夹带管线为独立编排单元。
 3. 叠中叠手势已几何正确(D3 命中天然允许、cycle-guard 兜底)但零 UI 提示;跨屏远垫拖入不自动滚屏。
 4. 实机键盘/visualViewport 抽验(R3 起顺延)、undo 圈内导出字节回归(R4 债)、同字节改名第二张卡(R2 债)原样还在。
