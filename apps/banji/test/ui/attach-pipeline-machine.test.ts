@@ -53,6 +53,7 @@ function harness(over: Partial<SeamPick> = {}, state: DayState = { ...initialDay
   }
   const pipeline = createAttachPipeline({
     app,
+    flushNow: () => undefined,
     chain: (fn) => {
       chainQ.push(fn)
     },

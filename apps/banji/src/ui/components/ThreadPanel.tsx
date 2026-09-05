@@ -45,6 +45,27 @@ interface ThreadPanelProps {
   readonly onOpenDate: (date: string) => void
 }
 
+interface Labeled {
+  readonly bead: Bead
+  /** 非 null = 这枚珠开启新的一天（墨印分日内穿一线）。 */
+  readonly day: string | null
+}
+
+/** 全局顺序日期分组（跨层连续判定）：头一枚不挂印，换组处才落墨印——分隔在组「间」。 */
+function labelRuns(runs: readonly { depth: number; beads: readonly Bead[] }[]): { depth: number; beads: readonly Labeled[] }[] {
+  let last = ''
+  let first = true
+  return runs.map((run) => ({
+    depth: run.depth,
+    beads: run.beads.map((bead) => {
+      const day = first || bead.date === last ? null : bead.date
+      first = false
+      last = bead.date
+      return { bead, day }
+    }),
+  }))
+}
+
 export function ThreadPanel({ app, anchor, onOpenDate }: ThreadPanelProps): ReactElement {
   const [world, setWorld] = useState<{ readonly beads: readonly Bead[]; readonly edges: readonly EdgeRecord[] } | null>(null)
   useEffect(() => {
@@ -63,7 +84,7 @@ export function ThreadPanel({ app, anchor, onOpenDate }: ThreadPanelProps): Reac
       </div>
     )
   }
-  const runs = world === null ? null : threadBeads(world.beads, world.edges, anchor)
+  const runs = world === null ? null : labelRuns(threadBeads(world.beads, world.edges, anchor))
   return (
     <div className="bj-thread" data-thread data-anchor={anchor}>
       {runs === null ? (
@@ -73,29 +94,26 @@ export function ThreadPanel({ app, anchor, onOpenDate }: ThreadPanelProps): Reac
           {runs.map((run, ri) => (
             <span key={run.depth} className="bj-thread-run" data-thread-depth={String(ri)}>
               {ri > 0 ? <span className="bj-thread-seg" aria-hidden /> : null}
-              {run.beads.map((bead, bi) => {
-                const prev = run.beads[bi - 1]
-                return (
-                  <span key={bead.cardId} className="bj-thread-slot">
-                    {prev !== undefined && prev.date !== bead.date ? (
-                      <span className="bj-thread-day" data-thread-day={bead.date}>
-                        {shortDateLabel(bead.date)}
-                      </span>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="bj-thread-bead"
-                      data-thread-node={bead.cardId}
-                      data-date={bead.date}
-                      title={`${shortDateLabel(bead.date)} · 翻开这一天`}
-                      onClick={() => onOpenDate(bead.date)}
-                    >
-                      <span className="bj-thread-snippet">{bead.snippet}</span>
-                      <span className="bj-thread-bead-date">{shortDateLabel(bead.date)}</span>
-                    </button>
-                  </span>
-                )
-              })}
+              {run.beads.map(({ bead, day }) => (
+                <span key={bead.cardId} className="bj-thread-slot">
+                  {day === null ? null : (
+                    <span className="bj-thread-day" data-thread-day={day}>
+                      {shortDateLabel(day)}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="bj-thread-bead"
+                    data-thread-node={bead.cardId}
+                    data-date={bead.date}
+                    title={`${shortDateLabel(bead.date)} · 翻开这一天`}
+                    onClick={() => onOpenDate(bead.date)}
+                  >
+                    <span className="bj-thread-snippet">{bead.snippet}</span>
+                    <span className="bj-thread-bead-date">{shortDateLabel(bead.date)}</span>
+                  </button>
+                </span>
+              ))}
             </span>
           ))}
         </div>

@@ -97,22 +97,19 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     [flushNow, haltDebounce],
   )
 
+  // 牵线编排机（第三台一等单元）先于开日 effect 就位：loadForDay 借这唯一一条链拉线账。
+  const linking = useMemo(() => createLinkOps({ app, chain, dispatch, getState: () => stateRef.current }), [app, chain, dispatch])
+
   useEffect(() => {
     flushNow() // 换日前把上一天的未落盘编辑结算进队列
     if (date === null) return
     const gen = ++loadGenRef.current
     dispatch({ type: 'day/open', date })
-    chain(async () => {
-      const doc = await app.getJournal(date)
-      if (loadGenRef.current === gen) dispatch({ type: 'day/loaded', cards: doc?.cards ?? [] })
-      // R7：线跟着纸进门——触及本日卡片的边随开日一并载入（撕裂/牵线/恢复都只动这份内存账）。
-      const links = await app.listEdgesForCards((doc?.cards ?? []).map((c) => c.id))
-      if (loadGenRef.current === gen) dispatch({ type: 'links/set', links })
-    })
+    linking.loadForDay(date, () => loadGenRef.current === gen)
     return () => {
       loadGenRef.current += 1 // 作废在途加载，只接受最新一次 open 的结果
     }
-  }, [date, reloadKey, app, chain, flushNow])
+  }, [date, reloadKey, app, flushNow, linking])
 
   const bringToFront = useCallback(
     (id: CardId): void => {
@@ -151,11 +148,10 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   )
 
   const tray = useMemo(() => createUndoTray(dispatch), [dispatch])
-  const linking = useMemo(() => createLinkOps({ app, chain, dispatch, getState: () => stateRef.current }), [app, chain, dispatch])
   const nextNoteId = useCallback((): number => ++noteSeqRef.current, [])
   const attaching = useMemo(
-    () => createAttachPipeline({ app, chain, dispatch, getState: () => stateRef.current, probe, nextNoteId }),
-    [app, chain, dispatch, probe, nextNoteId],
+    () => createAttachPipeline({ app, chain, dispatch, getState: () => stateRef.current, probe, nextNoteId, flushNow }),
+    [app, chain, dispatch, probe, nextNoteId, flushNow],
   )
 
   /** 四式手势（挪/缩/入叠/断奶）共用的落笔口径：闸下拒签=意图丢弃+一句人话（gone 只来自陈旧双开，静默弃）；放行=过 diff→schedule 唯一通道。 */
@@ -174,24 +170,6 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       linking.dispose()
     },
     [flushNow, tray, linking],
-  )
-
-  /** 添一张卡/造一张叠共用的新生管线：先结算在途编辑，散点落位、压顶入场。 */
-  const spawn = useCallback(
-    (kind: 'text' | 'container', edit: boolean): void => {
-      const current = stateRef.current
-      const day = current.date
-      if (day === null) return
-      flushNow()
-      const renderer = resolveRenderer(kind)
-      const pos = scatterPos(current.cards.length + current.ghosts.length, viewportWidthNow())
-      const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
-      chain(async () => {
-        const card = await app.addCard(day, { kind, props: renderer.emptyDraft(pos), pos, size: renderer.defaultSize, z: maxZ + 1 })
-        if (stateRef.current.date === day) dispatch({ type: 'card/added', card, edit })
-      })
-    },
-    [app, chain, flushNow],
   )
 
   const actions = useMemo<DayActions>(
@@ -232,7 +210,9 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       },
       setDropTarget: (id) => dispatch({ type: 'ui/drop-target', id }),
       setDragFollow: (follow) => dispatch({ type: 'ui/drag-follow', follow }),
-      createContainer: () => spawn('container', false),
+      setGaze: (gaze, anchor) => dispatch({ type: 'ui/gaze', gaze, anchor }),
+      setLineChip: (id) => dispatch({ type: 'line/chip', id }),
+      createContainer: () => attaching.spawn('container', false),
       remove(id) {
         const day = stateRef.current.date
         if (day === null) return
@@ -250,7 +230,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
           tray.arm(day, snapshot)
         })
       },
-      addTextCard: () => spawn('text', true),
+      addTextCard: () => attaching.spawn('text', true),
       attach(files, at = null) {
         if (stateRef.current.date === null || files.length === 0) return
         flushNow() // 夹带前先结算在途编辑：新纸落在最新的账上
@@ -289,11 +269,13 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         dispatch({ type: 'ui/drag-follow', follow: null })
         dispatch({ type: 'links/set', links: [] })
         dispatch({ type: 'ui/linking', id: null })
+        dispatch({ type: 'ui/gaze', gaze: 'cards', anchor: null })
+        dispatch({ type: 'line/chip', id: null })
         linking.dispose()
       },
       dismissNote: () => dispatch({ type: 'note/clear' }),
     }),
-    [app, attaching, bringToFront, chain, commitStack, flushNow, linking, runPlan, schedule, spawn, tray],
+    [app, attaching, bringToFront, chain, commitStack, flushNow, linking, runPlan, schedule, tray],
   )
 
   return { state, actions }

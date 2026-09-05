@@ -23,6 +23,8 @@ export interface LinkOps {
   linkTo(target: CardId): void
   /** 撕线（D3）：无 undo——重新牵一次就是同一只手反过来，自我可逆。 */
   removeLine(id: string): void
+  /** 开日随纸载入线账（触及本日卡片的边）；live 由核心的加载代数把门。 */
+  loadForDay(date: string, live: () => boolean): void
   /** 组件卸载：掐掉未及熄灭的落定计时。 */
   dispose(): void
 }
@@ -62,6 +64,15 @@ export function createLinkOps({ app, chain, dispatch, getState }: LineDispatch):
       chain(async () => {
         await app.deleteEdge(id)
         dispatch({ type: 'link/remove', id })
+      })
+    },
+    loadForDay(date, live) {
+      chain(async () => {
+        const doc = await app.getJournal(date)
+        if (!live()) return
+        dispatch({ type: 'day/loaded', cards: doc?.cards ?? [] })
+        const links = await app.listEdgesForCards((doc?.cards ?? []).map((c) => c.id))
+        if (live()) dispatch({ type: 'links/set', links })
       })
     },
     dispose: clearSettle,

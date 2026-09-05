@@ -1,10 +1,16 @@
-import type { Card, CardId, JournalDoc } from '../src/domain/types'
+import type { Card, CardId, EdgeRecord, JournalDoc } from '../src/domain/types'
 
 // 测试夹具：一次构造调用产出一张合法卡片/一份合法文档，测试保持单行可读。
 
 let seq = 0
 export function tid(label = 'c'): CardId {
   return `${label}#${String(++seq)}` as CardId
+}
+
+/** 合法边夹具（契约字段全集：id/source/target/createdAt/updatedAt，role 休眠不出）。 */
+let edgeSeq = 0
+export function edgeOf(source: CardId, target: CardId): EdgeRecord {
+  return { id: `edge#${String(++edgeSeq)}`, source, target, createdAt: isoAt(2), updatedAt: isoAt(2) }
 }
 
 export function isoAt(ms = 0): string {

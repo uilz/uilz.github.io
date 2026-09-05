@@ -18,15 +18,19 @@ export interface AttachPipelineDeps {
   readonly probe: ImageProber
   /** 回执序号由核心统一发号（夹带与拓扑闸共用一条便签序列，id 永不碰撞）。 */
   readonly nextNoteId: () => number
+  /** 落笔前先结算在途编辑（唯一链的排队口径）。 */
+  readonly flushNow: () => void
 }
 
 export interface AttachPipeline {
   /** 三把手汇成的一条管线：at=null 走瀑布落点，否则指针处落卡（多份 24px 阶梯）。 */
   attach(files: readonly File[], at: CardPos | null): void
+  /** 添一张卡/造一张叠共用的新生管线（R7 自 store 迁入，守编排机各归其位的拆分纪律）。 */
+  spawn(kind: 'text' | 'container', edit: boolean): void
 }
 
 export function createAttachPipeline(deps: AttachPipelineDeps): AttachPipeline {
-  const { app, chain, dispatch, getState, probe } = deps
+  const { app, chain, dispatch, getState, probe, flushNow } = deps
 
   let seq = 0
 
@@ -63,6 +67,19 @@ export function createAttachPipeline(deps: AttachPipelineDeps): AttachPipeline {
   }
 
   return {
+    spawn(kind, edit) {
+      const current = getState()
+      const day = current.date
+      if (day === null) return
+      flushNow()
+      const renderer = resolveRenderer(kind)
+      const pos = scatterPos(current.cards.length + current.ghosts.length, viewportWidthNow())
+      const maxZ = sortByZ(current.cards).at(-1)?.z ?? 0
+      chain(async () => {
+        const card = await app.addCard(day, { kind, props: renderer.emptyDraft(pos), pos, size: renderer.defaultSize, z: maxZ + 1 })
+        if (getState().date === day) dispatch({ type: 'card/added', card, edit })
+      })
+    },
     attach(files, at) {
       const state = getState()
       const day = state.date

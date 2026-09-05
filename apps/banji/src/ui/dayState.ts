@@ -57,6 +57,12 @@ export interface DayState {
   readonly linkFromId: CardId | null
   /** 牵成后短暂安分的两张纸（180ms 落定视觉）：瞬态。 */
   readonly settleIds: readonly CardId[]
+  /** 目光（D5）：'cards' 过日子 / 'thread' 串珠子；瞬态、不落设置（任务书：不留视图偏好）。 */
+  readonly gaze: 'cards' | 'thread'
+  /** 切进线模式一瞬定下的锚点（当时的选中卡）；串珠底料。瞬态。 */
+  readonly threadAnchor: CardId | null
+  /** 撕线签住着的边 id（D3）：点线请出、Esc/点空退场。瞬态。 */
+  readonly lineChipId: string | null
 }
 
 export const initialDayState: DayState = {
@@ -75,6 +81,9 @@ export const initialDayState: DayState = {
   links: [],
   linkFromId: null,
   settleIds: [],
+  gaze: 'cards',
+  threadAnchor: null,
+  lineChipId: null,
 }
 
 export type Action =
@@ -94,6 +103,8 @@ export type Action =
   | { readonly type: 'link/remove'; readonly id: string }
   | { readonly type: 'ui/linking'; readonly id: CardId | null }
   | { readonly type: 'link/settle'; readonly ids: readonly CardId[] }
+  | { readonly type: 'ui/gaze'; readonly gaze: 'cards' | 'thread'; readonly anchor: CardId | null }
+  | { readonly type: 'line/chip'; readonly id: string | null }
   | { readonly type: 'ghost/add'; readonly ghost: Ghost }
   | { readonly type: 'ghost/remove'; readonly token: number }
   | { readonly type: 'save/failed'; readonly count: number }
@@ -173,6 +184,12 @@ export function dayReducer(state: DayState, action: Action): DayState {
       return { ...state, links: state.links.filter((e) => e.id !== action.id) }
     case 'ui/linking':
       return state.linkFromId === action.id ? state : { ...state, linkFromId: action.id }
+    case 'ui/gaze': {
+      if (state.gaze === action.gaze && (action.gaze === 'cards' || state.threadAnchor === action.anchor)) return state
+      return { ...state, gaze: action.gaze, threadAnchor: action.gaze === 'thread' ? action.anchor : null }
+    }
+    case 'line/chip':
+      return state.lineChipId === action.id ? state : { ...state, lineChipId: action.id }
     case 'link/settle': {
       if (state.settleIds.length === 0 && action.ids.length === 0) return state
       const same = state.settleIds.length === action.ids.length && action.ids.every((id, i) => state.settleIds[i] === id)
