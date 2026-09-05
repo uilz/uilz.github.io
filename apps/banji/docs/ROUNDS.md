@@ -163,3 +163,28 @@
 - 拆分只搬机器、不搬纪律：undo 的 restore 排链、attach 的落笔前 settle、prune 的意图箱所有权都留在核心——「无第二链」是拆分红线，注入接口（chain/dispatch/getState/nextNoteId）是两台机与核心的全部接触面。
 - 自动滚屏的『该不该动』归纯几何（可测）、「动起来像什么」归实机；reduced-motion 时循环压根不建，无新 UI 元素，存储侧不留痕。
 - e2e 夹具三纪律被真跑揪出、立为样板：滚动会骗过 rect（同屏才按坐标拖）、乐观 DOM≠过缝证据（等真 IDB dump 再定档）、探测别用 rAF 频率轰炸 IDB 连接队列（有界单次开库轮询）。
+
+## Round 8 — 2026-09-05 · 跨时间探索：全局搜索 + 图模式（时间轴纸聚）+ role 拍板（已完成，待发布）
+
+**完成**
+- 搜索内核（T0·D2）：域内纯函数 `searchCards(cards, assetMeta, query, opts)`——大小写不敏感子串（fold 走码元 1:1，CJK 天然成立；整串 toLowerCase 快路 + 逐码元核验兜底，宁可不匹配不给错位下标）；语料=按字段不按 kind（一切 props.text 正文行、link 的 url、image/file 的 hash→资产名联结），容器孩子平摊自成一行；rank=首行>后行/链接>资产名、并列 createdAt 降、id 全序兜底=结果可复现；snippet 命中行 ±40 码元、越界补省略号、高亮交付 [start,end) 下标（渲染层切 React 文本节点——XSS 从构造上无路）；cap 50、空白查询恒空、无历史无模糊无持久化。新读缝 `loadAllAssetMeta(): Promise<AssetMeta[]>`（`{hash,name?,mime,size}`，blob 一字不过缝，无名资产 name 键整个缺席）。
+- 搜索纸面（T1·D1）：月历页眉齿轮旁一枚发丝放大镜（手绘 svg）+ 全局 ⌘F/Ctrl+F → 纸片自下升起（≤160ms transform 入场、下滑/Esc 退场）、输入即持焦（16px 字号=手机理智缩放线）、250ms debounce（house style）、结果按日分组新日在前、日期如书口题签、赭底淡高亮非霓虹；行点=hop 瞬态（App 级）： router hash 跳那天 → 卡片模式 → 那张纸 scrollIntoView ≤200ms 暖脉冲（纸色一暖非描边闪烁；熄灭走落点侧认领主路、App 4s 只兜孤儿 hop——e2e/jsdom 假计时器双钉）。空语「想找哪一笔？」、无果「没有哪页纸写过这个。」。
+- 图模式（T2·D3）：DayHead 卡片/线/图 三段；Time-axis 纸聚非物理网——`graphLayout(entries, edges, opts)` 纯函数（日期列历法升序、日内 createdAt 堆叠、容器孩子缩进悬母片之下、隔代封顶、病态环漏网纸兜底上柱不吞纸、边=两端活 chip 才落笔的二次贝塞尔——画法复用 lineShape 同一支笔）；确定性别钉：双跑深相等 + 乱序输入不动几何。GraphPanel 入场读一遍 loadAllCards/loadAllEdges（非每帧）；chip=缩小纸片（8 字 snippet、附件换 kind 图标）；横扫逛时间、无 zoom 无拖拽重排无 animation loop；点 chip=退图模式回那天卡片并脉冲那张纸。空账本耳语「笔还没落，纸串自然是空的」。
+- D4 纪律与 D5 拍板：三目光与搜索纸片的一切（查询词、debounce、开合、hop、layout 账）全住组件/App 瞬态——切换零写库（jsdom 写侧计数+存储 JSON 逐字双钉）、键集纪律 e2e 复验（卡片键/边键 ⊆ 契约全集，跳转历遍后依旧）。`Edge.role` **拍板保留**为契约内 schema 保险字段（与 Card.rot 同性质：未来关系类型留位、零 UI、零校验语义）——ARCHITECTURE §2 落字，R6/R7「role 去留」债销账。
+- 测试：单测 257→305（+48=内核 22+seam 2+布局 11+搜索纸面 8+图模式 5，含 D4 三目光往返零写笔面）；e2e 70→87（+17：桌面搜索全程/⌘F/Esc/行点脉冲起熄/键集、图模式 chips+跨日发丝+chip 翻页+三段来回、夜读搜索纸片与图模式深底浅墨机判+双截图、手机 390 输入≥16px/行≥44px/行点脉冲）。真跑揪出两条 e2e 时序债立为纪律：**debounce 窗内旧行不作数**（每次输入等「这一问自己的行」再断言/点击）、**脉冲采样勿落在熄灭窗沿**（waitForFunction 见起再见底）。0 console error。
+- LOC 闸（awk 纯行，全数 ≤250）：domain/search 133、graphLayout 133、SearchSheet 132、GraphPanel 89、cardHop 7、useCardPulse 13、DayHead 33、App 169→176、dayState 204→206、storeTypes 36、store 244（未动）、DayView 212→229、CardFrame 244（+2）、application/index 153、main 27。
+
+**已知债(R9 候选)**
+1. 实机证据长队（自 R3 顺延）：iPad/iPhone 软键盘 visualViewport、滚屏缓入手感、滚屏 hitTest 采样漂移、搜索纸片在真软键盘下的顶托（headless 只会几何近似）。
+2. 同字节改名的第二张卡显示首入库文件名（R2 债，**六度顺延**）。
+3. BFS/搜索规模化前奏：loadAllCards/loadAllEdges/loadAllAssetMeta 每次入场全扫（万级卡改增量账；R7 债5 的续命）。
+4. undo 导出字节已销账确认（R4 债、R7 D7 拍板语义回归——本轮无新增证据需求，仅复述在账）。
+5. 图模式只画「两端都是活 chip」的线；跨日线的角标提示仍议而未决（R7 债6 原样）；children 跨日引用（病态）在图上母片下不出子片（byId 同日限定），静默跳过。
+6. 搜索不认多词 AND/OR、不搜 meta、不搜未知 kind 的非规范字段——按最小契约交付，实测有需求再议。
+
+**决策记录(R8 增量)**
+- role 去留拍板：**保留为契约保险字段**（与 rot 同性质）——schema 保险的价值恰在没人需要它的日子里最低；摘除它是省一行类型、赔一次升版本，不值。哪天真用再升 schemaVersion 配校验，契约纪律不变。
+- 图模式弃力导向取时间轴纸串：x=日期 y=日内时序，布局是纯函数不是模拟——用户要的是「串起来翻」不是「弹来弹去找」；确定性=可测、可复现、刷新不跳相。
+- 搜索无历史无持久化无模糊：本地私册，「搜过什么」本身是隐私；翻旧纸的手感来自即时高亮与按日回跳，不来自搜索引擎的联想 machinery。
+- hop 熄灯主路移到落点侧：脉冲的 200ms 该从「纸到齐」起算——从点击起算会让慢加载吞掉那一眼暖；App 4s 兜底只收无人认领的孤儿瞬态。
+- snippet 高亮契约=「原文切片+[start,end) 码元下标」：域算坐标、渲染层切文本节点，HTML 注入路在架构上不存在（MdView 纪律延伸）；e2e + jsdom 双面判死 XSS。

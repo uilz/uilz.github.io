@@ -47,7 +47,7 @@
 | `staging` | **out-of-line** 键 `j:<date> \| a:<hash> \| e:<id> \| s:<key>` | 对应上表的整条记录 |
 
 - **Blob 必须存 Blob 对象，绝不存 ArrayBuffer**（结构化克隆后可直接用，且避免 detach 风险）。
-- `edges`/`staging` 在 v1 **刻意建空**：IDB 升版本会阻塞其他连接，早建早免痛；staging 是导入第 2 阶段的草稿区，必须与活动 store 同库同事务才能做单事务提交。**R7 起 edges 已接线**（牵线/撕线/级联剪边/线模式/归档往返），契约字段一字未动：`role` 继续休眠（无 role 编辑 UI，dedup 使同对卡至多一根线）。
+- `edges`/`staging` 在 v1 **刻意建空**：IDB 升版本会阻塞其他连接，早建早免痛；staging 是导入第 2 阶段的草稿区，必须与活动 store 同库同事务才能做单事务提交。**R7 起 edges 已接线**（牵线/撕线/级联剪边/线模式/归档往返），契约字段一字未动。**R8 拍板（销 R6/R7「role 去留」债）：`Edge.role` 保留为契约内 schema 保险字段**——与 `Card.rot` 同一性质：未来的关系类型留位、零编辑 UI、零校验语义（可选字符串即合法）；哪天真做关系类型，升 schemaVersion + 迁移表补行，绝不偷改。dedup 仍以「一根线就够」为口径（同对卡至多一根线）。
 - `staging` 的 `s:` 前缀是对契约原文三类的**内部扩批**：settings 必须活过导入三阶段（HERO 要求），而契约的 commit 清空四个活动 store；没有第四类暂存键则 settings 无处过桥。对外归档格式不受影响（settings.json 仍 `{key,value}`）。见 §8 偏差记录。
 
 ## 3. Card（锁定）
@@ -148,6 +148,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 - `archive-corruption.test.ts`：**七连损坏电池**（字节≠名字 hash、引用资产缺失、schemaVersion 999+文案、非法日期、跨日志重复卡 id、容器环、一子两父）+ 缺正文/错 app/坏 settings 补充闸 + 配额三态。每案都断言"库快照 before≡after"。
 - `application.test.ts`：UI 缝（addCard/updateCard/move/resize/cascade/getMonth/exportToFile/importFromFile/close）。
 - R7 关系面：`edges-domain.test.ts`（pairKey/edgesTouching/threadOrder 跨日平序+环安全）、`edges-application.test.ts`（三闸、dedup 双向、撕线幂等、级联剪边含跨日边、edgePatches 逐字双幂等、预检悬空端点双向+正例放行、D6 归档往返、D7 语义等价导出拍板），UI：`links-mode.test.tsx`（纸黄昏、三道收线、落定熄灭、dedup 目击、跨日「牵给近日」、撕线反悔分界、edgePatches∩parentPatches 经托盘逐字同回、键集纪律）、`thread-mode.test.tsx`（串珠纯算+线模式交互+点珠翻页+瞬态不写库）。
+- R8 跨时间探索面（305 基线）：`search.test.ts`（22：EN/CJK fold 子串、rank 三档 + createdAt 降 + id 全序、snippet 省略号界、[start,end) 码元坐标、cap/around 覆写、空白恒空、容器孩子自成行）、`search-seam.test.ts`（2：loadAllAssetMeta 无 blob/无 addedAt、无名资产 name 键整个缺席——真 repo 非 mock）、`graph-layout.test.ts`（11：双跑深相等确定性、乱序不动几何、日期列历法升序、createdAt 堆叠、孩子缩进悬母片下、边只认活 chip、柱内无重叠、病态环不吞纸、空图/单纸边角）、UI `search.test.tsx`（8：入口/持焦/耳语/分组高亮/孩子行/XSS 文本节点判死/假计时器脉冲起熄+零写库/底料一入一读）、`graph-mode.test.tsx`（5：三段、全日记 chips、跨日线、点 chip 翻页脉冲、D4 三目光往返零写笔键账逐字）。e2e 70→87（搜索全程/图模式/夜读双取证/手机 390），0 console。
 
 ```
 cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸全绿才算完成
@@ -161,3 +162,5 @@ cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸�
 所有失败经 `ImportResult/ExportResult` 判别联合返回（带 zh-CN `userMessage`，直接可渲染）；
 卡片级操作抛 `InvalidDateError | JournalNotFoundError | CardNotFoundError`（同步 API 语义）。
 R7 关系缝清单（§8 偏差 5）：`addEdge`（自牵/无卡/dedup 三道静默闸，成功返回落库边）、`deleteEdge`（幂等）、`listEdgesForCards`（渲染账本）、`getRecentCards(anchor, days)`（「牵给近日」窗 [anchor−days, anchor)，垫纸出局、附 assetName）、`loadAllCards`/`loadAllEdges`（线模式 BFS 底料）。全 additive，无既有签名破坏（除偏差 5 记录的两处）。
+
+**R8 跨时间探索缝（全 read-only，零新存储字段/零迁移——不占 §8 偏差表）**：`loadAllAssetMeta(): Promise<AssetMeta[]>`——全量资产的 `{hash,name?,mime,size}` 投影，**blob 一字不过缝**（IDB 递来整条记录，过缝第一刻剥成投影；无名资产 name 键整个缺席）；域内纯函数 `searchCards(cards, assetMeta, query, opts)`——大小写不敏感子串（fold 走码元 1:1，CJK 天然成立）、rank=首行>后行/链接>资产名、并列 createdAt 降、cap 50、snippet±40 带省略号、高亮以 [start,end) 码元下标交付（渲染层切 React 文本节点，绝无 HTML 注入路）。图模式布局 `graphLayout(entries, edges, opts)` 住 UI（视图几何非领域规则）：时间轴纸聚、纯函数、双跑深相等。三目光（卡片/线/图）、搜索瞬态（查询词、纸片开合）、hop 跳纸脉冲全不住 store 串行链——e2e 键集断言（卡片键/边键 ⊆ 契约全集）随轮复验。
