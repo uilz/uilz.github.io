@@ -420,6 +420,120 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   await page.screenshot({ path: `${SHOTS}/23-poison-imported.png`, fullPage: true })
 }
 
+// —— R6 债#6 真浏览器竞态(桌面)：debounce 窗里的旧世界意图撞上导入 ack，必须整批弃世 ——
+// 剧本：把子纸收编回垫纸过缝（staged 宇宙 = 真档案有 children）→ 导出暂存档案 →
+//       老世界里撕下该子纸（strip 进 450ms 窗）→ 立刻再拖一张纸（窗重置，ack 一瞬必有在途意图）→
+//       三段确认重导 staged。修前：strip/移动开火进新宇宙——children 被抹平 / 同 id 卡鬼移位；
+//       修后：新宇宙逐字节=staged（deep-equal dump），且 ack 后再落一笔照常过缝（队列只弃旧不毒全）。
+{
+  // 「撕下又想起」当将入叠的纸。先拉高视口：两张纸同在屏内才敢按 rect 拖（滚动位移会骗过 clientY）。
+  await page.setViewportSize({ width: 1100, height: 2400 })
+  const nest = await page.evaluate(() => {
+    const m = document.querySelector('.bj-card.be-container')
+    const k = [...document.querySelectorAll('.bj-card:not(.be-container)')].find((e) => (e.textContent || '').includes('撕下又想起'))
+    if (m === null || k === undefined) return null
+    const mr = m.getBoundingClientRect()
+    const kr = k.getBoundingClientRect()
+    const grabAt = { x: kr.x + 24, y: kr.y + 14 }
+    const top = document.elementFromPoint(grabAt.x, grabAt.y)
+    const holder = top instanceof Element ? top.closest('[data-card-id]') : null
+    if (holder !== k || kr.bottom > 2400 || mr.bottom > 2400) return { bad: JSON.stringify({ holder: holder?.getAttribute('data-card-id'), kid: k.getAttribute('data-card-id') }) }
+    return { mx: mr.x, my: mr.y, mw: mr.width, mh: mr.height, kx: kr.x, ky: kr.y, kidId: k.getAttribute('data-card-id') }
+  })
+  if (nest === null || nest.bad !== undefined) throw new Error(`债#6 夹具：抓不到可收编的纸 — ${nest?.bad ?? '缺垫纸或子纸'}`)
+  const dragTo = async (x0, y0, x1, y1) => {
+    await page.mouse.move(x0, y0)
+    await page.mouse.down()
+    await page.mouse.move(x0 + 60, y0 + 90, { steps: 5 })
+    await page.mouse.move(x1, y1, { steps: 8 })
+    await page.mouse.up()
+  }
+  await dragTo(nest.kx + 24, nest.ky + 14, nest.mx + nest.mw / 2, nest.my + nest.mh / 2) // 收编回叠
+  const noteUp = await page
+    .waitForFunction(() => document.querySelector('.bj-card.be-container .bj-stack-note')?.textContent?.trim() === '1 张', null, { timeout: 8000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!noteUp) {
+    const probe = await page.evaluate(() => ({
+      cards: [...document.querySelectorAll('.bj-card')].map((e) => ({ id: e.getAttribute('data-card-id'), kind: e.className.match(/be-\S+/)?.[0], t: (e.textContent || '').slice(0, 14) })),
+      note: document.querySelector('.bj-card.be-container .bj-stack-note')?.textContent ?? null,
+    }))
+    await page.screenshot({ path: `${SHOTS}/24a-d1-nest-fail.png`, fullPage: true })
+    throw new Error(`债#6 夹具：收编未上小注 — ${JSON.stringify(probe)}`)
+  }
+  const stagedMat = await (async () => {
+    for (let i = 0; i < 24; i++) {
+      const c = (await dump(page)).journals.find((j) => j.date === today)?.cards.find((x) => x.kind === 'container')
+      if (c?.children?.includes(nest.kidId)) return c
+      await page.waitForTimeout(250) // 等真缝落库，别拿乐观 DOM 当过缝证据
+    }
+    throw new Error('债#6 夹具：收编没过缝')
+  })()
+  const staged = await dump(page)
+  await page.click('.bj-day-head [aria-label="设置"]')
+  const dlStaged = page.waitForEvent('download', { timeout: 15000 })
+  await page.getByRole('button', { name: /导出/ }).click()
+  await (await dlStaged).saveAs(join(HERE, 'd1-stage.banjizip'))
+  await page.waitForTimeout(400)
+  await page.click('button[aria-label="关闭设置"]') // 合上抽屉，撕纸手势才够得着纸
+  await page.waitForTimeout(250)
+  // 老世界开火台：撕掉刚收编的子纸（strip 入窗：children 抹向 []）→ 立刻拖一张散纸（重置 450ms 窗）→ 抢先导入。
+  // 修前若 strip/移动越过 ack 开火：新宇宙里垫纸的合法 children 被抹平、同 id 散纸鬼移位——dump 现形。
+  await page.click(`[data-card-id="${nest.kidId}"]`, { position: { x: 20, y: 12 } })
+  await page.click('[aria-label="卡片菜单"]')
+  await page.click('.bj-menu-item:has-text("删除")')
+  await page.click('button:has-text("确认删除")')
+  const loose = await page.evaluate(() => {
+    const k = [...document.querySelectorAll('.bj-card:not(.be-container)')].find((e) => (e.textContent || '').includes('槐花'))
+    if (k === undefined) return null
+    const r = k.getBoundingClientRect()
+    const top = document.elementFromPoint(r.x + 24, r.y + 14)
+    if (!(top instanceof Element) || top.closest('[data-card-id]') !== k) return null
+    return { x: r.x, y: r.y }
+  })
+  if (loose === null) throw new Error('债#6 夹具：没有可抓到的散纸来重置窗口')
+  await dragTo(loose.x + 24, loose.y + 14, loose.x + 90, loose.y + 16) // move 意图再入窗（单计时器重置）
+  await page.click('.bj-day-head [aria-label="设置"]')
+  await page.getByRole('button', { name: /导入/ }).click()
+  await page.setInputFiles('input.bj-hidden-file', join(HERE, 'd1-stage.banjizip'))
+  await page.waitForSelector('button:has-text("继续")', { timeout: 8000 })
+  await page.click('button:has-text("继续")')
+  await page.click('button:has-text("确认替换")')
+  await page.waitForTimeout(1400) // 越过 450ms 窗：未被作废的旧意图会在这段里过缝现形
+  await page.reload() // ack 发生在日路由上：reload 后停在当日（宇宙已由 onImported 换过）
+  await page.waitForSelector('.bj-card.be-container', { timeout: 8000 })
+  const back = await dump(page)
+  const matBack2 = back.journals.find((j) => j.date === today)?.cards.find((x) => x.kind === 'container')
+  check('R6 债#6 ack 弃在途: 重导日逐字节 ≡ staged 档案（无幽灵 strip、无鬼移位）', norm(back) === norm(staged))
+  if (norm(back) !== norm(staged)) { console.log('  staged=', norm(staged)); console.log('  back  =', norm(back)) }
+  check('R6 债#6 档案里的 children 依档还原（垫纸 legitimate 收编不被老世界抹平）', matBack2?.children?.length === 1 && stagedMat !== null)
+  // 队列不毒：ack 之后的新意图照常排链过缝（同库同实例，先验 IDB 再 reload）
+  await page.click('.bj-add')
+  await page.waitForSelector('textarea', { timeout: 4000 })
+  await page.locator('textarea').first().fill('ack 后的新落笔')
+  await page.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  let postEdited = false
+  for (let i = 0; i < 40 && !postEdited; i++) {
+    await page.waitForTimeout(200) // debounce 450 + 串行链：单次开库读，别用 rAF 频率轰炸 IDB 连接队列
+    postEdited = await page.evaluate(() => new Promise((res) => {
+      const r = indexedDB.open('banji-journal')
+      r.onsuccess = () => {
+        const db = r.result
+        const tx = db.transaction('journals', 'readonly')
+        tx.objectStore('journals').getAll().onsuccess = (e) => {
+          db.close()
+          res(e.target.result.some((d) => d.cards.some((c) => (c.props?.text || '').includes('ack 后的新落笔'))))
+        }
+        tx.onerror = () => { db.close(); res(false) }
+      }
+      r.onerror = () => res(false)
+    }))
+  }
+  check('R6 债#6 队列不毒: ack 后新编辑照常 450ms 过缝落库', postEdited === true)
+  await page.screenshot({ path: `${SHOTS}/24-ack-discarded.png`, fullPage: true })
+  await page.setViewportSize({ width: 1100, height: 760 })
+}
+
 await page.click('.bj-back')
 await page.waitForSelector('.bj-cell')
 
