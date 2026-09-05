@@ -190,7 +190,7 @@ describe('撕线的反悔账（D3/D4 分界）', () => {
 })
 
 describe('瞬态永不过缝（R5 键集纪律）', () => {
-  it('牵一割的全旅程后：存储卡片键 ⊆ 契约 ∧ 边键 ⊆ 契约 ∧ 边账目不混进 meta/props', async () => {
+  it('牵一割的全旅程后：存储卡片键 ⊆ 契约 ∧ 边键 ⊆ 契约', async () => {
     const a = textCard('a纸', { id: cid('k-a'), pos: { x: 20, y: 20 }, size: { w: 120, h: 60 } })
     const b = textCard('b纸', { id: cid('k-b'), pos: { x: 300, y: 20 }, size: { w: 120, h: 60 } })
     openDay([a, b])
