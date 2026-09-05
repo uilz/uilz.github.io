@@ -4,9 +4,11 @@
 import type { BanjiApp } from '../application'
 import type { CardPos } from '../domain/types'
 import { resolveRenderer } from './cards/registry'
-import { attachKind, clampCardPos, dropAt, fitWithin, imageCardSize, imageFitMaxW, scatterPos, viewportWidthNow } from './placement'
+import { clampCardPos, dropAt, fitWithin, imageCardSize, imageFitMaxW, scatterPos, viewportWidthNow } from './placement'
 import { sortByZ } from './stackGeometry'
+import { routeAttach } from './attachRoute'
 import { attachFailureCopy, type ImageProber } from './probe'
+import { probeVideoSize, type VideoProber } from './videoProbe'
 import type { Action, DayState } from './dayState'
 
 export interface AttachPipelineDeps {
@@ -16,6 +18,8 @@ export interface AttachPipelineDeps {
   /** 纸面现况的唯一读口径（ghost 占位与 maxZ 抬层都要看当前卡）。 */
   readonly getState: () => DayState
   readonly probe: ImageProber
+  /** 影纸探测缺席时用真探测（测试注入假探针，浏览器走 metadata 路）。 */
+  readonly probeVideo?: VideoProber
   /** 回执序号由核心统一发号（夹带与拓扑闸共用一条便签序列，id 永不碰撞）。 */
   readonly nextNoteId: () => number
   /** 落笔前先结算在途编辑（唯一链的排队口径）。 */
@@ -25,17 +29,18 @@ export interface AttachPipelineDeps {
 export interface AttachPipeline {
   /** 三把手汇成的一条管线：at=null 走瀑布落点，否则指针处落卡（多份 24px 阶梯）。 */
   attach(files: readonly File[], at: CardPos | null): void
-  /** 添一张卡/造一张叠共用的新生管线（R7 自 store 迁入，守编排机各归其位的拆分纪律）。 */
-  spawn(kind: 'text' | 'container', edit: boolean): void
+  /** 添卡全谱（底栏默认+种类纸单共用）：text/container/markdown/code/link，正文即写者进编辑态。 */
+  spawn(kind: 'text' | 'container' | 'markdown' | 'code' | 'link', edit: boolean): void
 }
 
 export function createAttachPipeline(deps: AttachPipelineDeps): AttachPipeline {
   const { app, chain, dispatch, getState, probe, flushNow } = deps
+  const probeVideo = deps.probeVideo ?? probeVideoSize
 
   let seq = 0
 
   const attachOne = (token: number, day: string, file: File, pos: CardPos, order: number): void => {
-    const kind = attachKind(file.type)
+    const kind = routeAttach(file.type)
     dispatch({ type: 'ghost/add', ghost: { token, kind, name: file.name, pos, size: resolveRenderer(kind).defaultSize } })
     chain(async () => {
       const vanish = (): void => {
@@ -45,10 +50,10 @@ export function createAttachPipeline(deps: AttachPipelineDeps): AttachPipeline {
         const record = await app.addAsset(file)
         let props: Record<string, unknown> = { hash: record.hash }
         let size = resolveRenderer(kind).defaultSize
-        if (kind === 'image') {
-          const nat = await probe(file)
+        // 图片/影纸共一条封顶血脉：imageFitMaxW 的视口感知公式，两型一处不落。
+        if (kind === 'image' || kind === 'video') {
+          const nat = kind === 'image' ? await probe(file) : await probeVideo(file)
           if (nat !== null) {
-            // 创建期定宽公式唯一住在 imageFitMaxW：手机收进屏内，桌面封顶不变。
             const maxW = imageFitMaxW(viewportWidthNow())
             const fit = fitWithin(nat.w, nat.h, maxW)
             props = { hash: record.hash, w: fit.w, h: fit.h }

@@ -1,6 +1,7 @@
 // 中介对外契约：动作表与选项。状态形状住 dayState.ts，编排在 store.ts。
 import type { CardId, CardPos, CardSize } from '../domain/types'
 import type { ImageProber } from './probe'
+import type { VideoProber } from './videoProbe'
 import type { DragFollow, DayState } from './dayState'
 
 export interface DayActions {
@@ -13,6 +14,10 @@ export interface DayActions {
   resize(id: CardId, size: CardSize): void
   remove(id: CardId): void
   addTextCard(): void
+  /** 添卡种类纸单（R9·D3）：手记/代码/链接各落一型新纸并进编辑态（正文=添一张卡、垫纸=造叠，各走原动作）。 */
+  addCardOf(kind: 'markdown' | 'code' | 'link'): void
+  /** 一句耳语（便签通道）：链接没写完整时的「写个完整网址…」从这里出。 */
+  whisper(msg: string): void
   /** 夹带：图片/文件走 addAsset→addCard；at=null 时用瀑布落点（按钮/粘贴入口）。 */
   attach(files: readonly File[], at?: CardPos | null): void
   /** 保存失败回执上的“再试”：把未落盘意图重新推上串行链。 */
@@ -48,6 +53,7 @@ export interface DayActions {
 
 export interface DayStoreOptions {
   readonly probe?: ImageProber
+  readonly probeVideo?: VideoProber
 }
 
 export interface DayStore {

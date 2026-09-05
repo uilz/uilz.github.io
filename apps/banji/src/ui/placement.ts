@@ -47,10 +47,10 @@ export function clampCardPos(pos: CardPos): CardPos {
   return { x: clampPos(pos.x), y: clampPos(pos.y) }
 }
 
-/** 夹带图片的宽封顶（图片本体，不含卡片边框）。全仓唯一定义处：
- *  创建期（store 管线）与渲染期兜底（cards/image onLoad）都必须从这里派生，禁第二处字面量。 */
+/** 图片/影纸本体的创建期封顶（本体宽，不含卡片边框）。全仓唯一定义处：
+ *  创建管线与渲染期兜底（image/video onLoad）都必须从这里派生，禁第二处字面量。 */
 export const MAX_CARD_IMAGE_W = 420
-/** 图片本体封顶的下限：再窄的屏也要留得住一张可辨的纸片。 */
+/** 本体封顶的下限：再窄的屏也要留得住一张可辨的纸片。 */
 const IMAGE_FLOOR_W = 80
 
 /** .bj-card 的内衬（左右 14 / 上 12 下 14 的近似体感取整）：图片本体之外加的边框余量。 */
@@ -75,11 +75,6 @@ export function fitWithin(natW: number, natH: number, maxW: number = MAX_CARD_IM
 export function imageCardSize(natW: number, natH: number, maxW: number = MAX_CARD_IMAGE_W): CardSize {
   const fit = fitWithin(natW, natH, maxW)
   return { w: fit.w + CARD_CHROME.w, h: fit.h + CARD_CHROME.h }
-}
-
-/** kind 判别只有一条规则：mime 以 image/ 开头者成图片卡，其余一律文件卡（未知类型至少存得下）。 */
-export function attachKind(mime: string): 'image' | 'file' {
-  return mime.startsWith('image/') ? 'image' : 'file'
 }
 
 /** 拖拽自动滚屏的领带宽（滚动窗口缘向内 48px 起坡）。 */

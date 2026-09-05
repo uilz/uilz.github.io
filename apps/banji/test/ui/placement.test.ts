@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  attachKind,
   clampCardPos,
   dropAt,
   edgeScrollStep,
@@ -120,12 +119,12 @@ describe('新卡落纸位置学（纯函数）', () => {
     expect(imageCardSize(800, 600)).toEqual({ w: fit.w + CARD_CHROME.w, h: fit.h + CARD_CHROME.h })
   })
 
-  it('attachKind：唯 mime 前缀是从，未知类型一律文件卡', () => {
-    expect(attachKind('image/png')).toBe('image')
-    expect(attachKind('image/svg+xml')).toBe('image')
-    expect(attachKind('application/pdf')).toBe('file')
-    expect(attachKind('')).toBe('file')
-    expect(attachKind('application/x-unknown')).toBe('file')
+  it('影纸与图片共一条封顶血脉：D1 路由迁 attachRoute 后，封顶公式对两型同值恒等', () => {
+    // R9·D1 起 mime→kind 判别全住 attachRoute.test.ts；placement 只管几何——
+    // 视频创建期的宽封顶复用 imageFitMaxW（R3 公式一字不动），此处钉死这条复用线不漂移。
+    expect(imageFitMaxW(390)).toBe(290) // 手机：390-72-28 收进屏内
+    expect(imageFitMaxW(1024)).toBe(MAX_CARD_IMAGE_W) // 桌面：封顶回 420
+    expect(imageCardSize(1600, 900, imageFitMaxW(390))).toEqual({ w: 318, h: 189 }) // 900·(290/1600)=163.1→163 +26
   })
 })
 

@@ -65,13 +65,13 @@ describe('夹带闭环（附件管线，缝=mock BanjiApp，无 IDB）', () => {
     expect(document.querySelector('[data-card-id]')).not.toBeNull()
   })
 
-  it('application/pdf：建文件卡，props 只带 hash（名字住资产记录，渲染器自取）', async () => {
+  it('application/pdf：R9·D1 点名归 pdf 卡，props 只带 hash（名字住资产记录，渲染器自取）', async () => {
     renderDay()
     const f = mkFile('合同.pdf', 'application/pdf')
     fireEvent.change(clipInput(), { target: { files: [f] } })
     await waitFor(() => expect(seam.app.addCard).toHaveBeenCalled())
     const [, draft] = vi.mocked(seam.app.addCard).mock.calls[0] ?? []
-    expect(draft).toMatchObject({ kind: 'file', props: { hash: await sha256Hex(Uint8Array.from([1, 2, 3, 4])) } })
+    expect(draft).toMatchObject({ kind: 'pdf', props: { hash: await sha256Hex(Uint8Array.from([1, 2, 3, 4])) } })
     expect(probeCalls).toEqual([])
   })
 

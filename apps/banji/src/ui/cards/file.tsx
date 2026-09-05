@@ -1,25 +1,18 @@
 import type { ReactElement } from 'react'
-import type { FileProps } from '../../domain/types'
 import type { CardRenderer, RenderCtx } from './types'
-import { isPlainObject } from '../../domain/validation'
-import { humanSize, useAssetUrl } from './asset'
+import { assetLabel, humanSize, readAssetProps, useAssetUrl } from './asset'
 import { IconFile } from '../components/icons'
 
-function readFile(raw: unknown): FileProps {
-  if (!isPlainObject(raw)) return { hash: '' }
-  return typeof raw['hash'] === 'string' ? { hash: raw['hash'] } : { hash: '' }
-}
-
 function FileView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx }): ReactElement {
-  const p = readFile(raw)
+  const p = readAssetProps(raw)
   const { url, asset, missing } = useAssetUrl(ctx.app, p.hash)
-  const label = asset?.name ?? (p.hash === '' ? '（无原件)' : `${p.hash.slice(0, 10)}…`)
+  const label = assetLabel(p.name, asset, p.hash)
   return (
     <div className="bj-file-chip" data-nodrag>
       <span className="bj-file-ico">
         <IconFile />
       </span>
-      <span className="bj-file-name">{label}</span>
+      <span className="bj-file-name" data-file-name>{label}</span>
       {asset !== undefined ? <span className="bj-file-size">{humanSize(asset.size)}</span> : null}
       {url !== null ? (
         <a className="bj-file-save" href={url} download={asset?.name ?? true}>

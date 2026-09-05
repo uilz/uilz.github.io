@@ -386,7 +386,8 @@
 .bj-file-size {
   flex: none;
   font-size: 15px;
-  color: var(--bj-ink-faint);
+  /* 夜读机判（R8 法律延伸）：尺寸/状态是可读信息，不是装饰——ink-faint 在夜纸上会消失，抬到 ink-soft。 */
+  color: var(--bj-ink-soft);
   font-variant-numeric: tabular-nums;
 }
 
@@ -401,7 +402,7 @@
 }
 
 .bj-file-quiet {
-  color: var(--bj-ink-faint);
+  color: var(--bj-ink-soft);
 }
 
 /* 迷你 md 排印 */
@@ -469,4 +470,207 @@
 .bj-md-a {
   color: var(--bj-accent);
   border-bottom: 1px solid var(--bj-hairline);
+}
+
+/* —— R9 卡型补齐 —— */
+
+/* 图片纸改名后纸下一行小名（props.name 才显——未改名的图照旧只有图，R3 定宽账不动）。 */
+.bj-card.be-image .bj-card-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.bj-card.be-image .bj-img {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.bj-img-name {
+  flex: none;
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--bj-ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 声音纸：题头一行 + 原生控件一枚。控件墨色跟着主题走（accent-color 是唯一正门）。 */
+.bj-audio,
+.bj-video {
+  accent-color: var(--bj-accent);
+}
+
+.bj-audio-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  justify-content: center;
+}
+
+.bj-audio-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.bj-audio {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+}
+
+/* 影纸：画面吃满，纸下一行名（与图片不同——影纸无名也留白边记账，控件纸面本就有题签位）。 */
+.bj-video-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+}
+
+.bj-video {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.bj-video-name {
+  flex: none;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--bj-ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 火漆签：骑在文件 chip 的骨架上，翻开是一枚 quiet 签。 */
+a.bj-pdf-chip {
+  text-decoration: none;
+}
+
+.bj-pdf-seal {
+  display: inline-grid;
+  place-items: center;
+  color: var(--bj-accent);
+  flex: none;
+}
+
+.bj-pdf-open {
+  flex: none;
+  font-size: 15px;
+  padding: 2px 8px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 999px;
+  color: var(--bj-accent);
+}
+
+/* 代码纸：暖墨等宽，长行横向推纸不折行；编辑与正文同款落笔。 */
+.bj-code-read {
+  height: 100%;
+  margin: 0;
+  overflow: auto;
+  white-space: pre;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--bj-ink);
+  /* 同 .bj-text-read 的触摸起手逻辑：按纸身拖动是挪纸，不是滚代码。 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bj-code-quiet {
+  color: var(--bj-ink-soft);
+}
+
+.bj-code-area {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+/* 题签纸：题面是墨、网址是发丝——不是超链接蓝。 */
+.bj-link-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+.bj-link-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-bottom: 1px solid var(--bj-hairline);
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: var(--bj-ink);
+  font-family: var(--bj-body);
+  font-size: 16px; /* ≥16 防 iOS 聚焦缩放 */
+  line-height: 1.6;
+  caret-color: var(--bj-accent);
+}
+
+.bj-link-input::placeholder {
+  color: var(--bj-ink-faint);
+}
+
+.bj-link-chip {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  min-width: 0;
+}
+
+.bj-link-face {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-family: var(--bj-display);
+  font-size: 16px;
+  color: var(--bj-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bj-link-hair {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--bj-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--bj-hairline);
+}
+
+/* 不可信的串不配成链：以文本现形，点两下重写（等墨，不该消失）。 */
+.bj-link-failed {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  text-align: center;
+  line-height: 1.6;
+  color: var(--bj-ink-soft);
+  word-break: break-all;
 }

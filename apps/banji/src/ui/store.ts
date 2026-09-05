@@ -12,6 +12,7 @@ import { isPlainObject } from '../domain/validation'
 import { resolveRenderer } from './cards/registry'
 import { scatterPos, viewportWidthNow } from './placement'
 import { probeImageSize } from './probe'
+import { probeVideoSize } from './videoProbe'
 import { dayReducer, initialDayState } from './dayState'
 import type { Pending } from './dayState'
 import { buildDeleteSnapshot, stripDoomedRefs } from './undoSnapshot'
@@ -39,6 +40,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   const timerRef = useRef<number | null>(null)
   const noteSeqRef = useRef(0)
   const probe = opts.probe ?? probeImageSize
+  const probeVideo = opts.probeVideo ?? probeVideoSize
   // 串行队列：getJournal/addCard/updateCard/move… 全部排一条链，日文档永不并发读-改-写。
   const queueRef = useRef<Promise<unknown>>(Promise.resolve())
   const loadGenRef = useRef(0)
@@ -150,8 +152,8 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   const tray = useMemo(() => createUndoTray(dispatch), [dispatch])
   const nextNoteId = useCallback((): number => ++noteSeqRef.current, [])
   const attaching = useMemo(
-    () => createAttachPipeline({ app, chain, dispatch, getState: () => stateRef.current, probe, nextNoteId, flushNow }),
-    [app, chain, dispatch, probe, nextNoteId, flushNow],
+    () => createAttachPipeline({ app, chain, dispatch, getState: () => stateRef.current, probe, probeVideo, nextNoteId, flushNow }),
+    [app, chain, dispatch, probe, probeVideo, nextNoteId, flushNow],
   )
 
   /** 四式手势（挪/缩/入叠/断奶）共用的落笔口径：闸下拒签=意图丢弃+一句人话（gone 只来自陈旧双开，静默弃）；放行=过 diff→schedule 唯一通道。 */
@@ -231,6 +233,8 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         })
       },
       addTextCard: () => attaching.spawn('text', true),
+      addCardOf: (kind) => attaching.spawn(kind, true),
+      whisper: (msg) => dispatch({ type: 'note/set', id: nextNoteId(), msg }),
       attach(files, at = null) {
         if (stateRef.current.date === null || files.length === 0) return
         flushNow() // 夹带前先结算在途编辑：新纸落在最新的账上

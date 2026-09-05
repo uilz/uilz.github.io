@@ -9,6 +9,7 @@ import { dateTitle } from '../labels'
 import { CardFrame } from './CardFrame'
 import { GhostCard } from './GhostCard'
 import { GraphPanel } from './GraphPanel'
+import { KindSheet } from './KindSheet'
 import { LinesLayer } from './LinesLayer'
 import { Linker } from './Linker'
 import { ThreadPanel } from './ThreadPanel'
@@ -227,6 +228,7 @@ export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard, onH
             <button type="button" className="bj-add" onClick={() => actions.addTextCard()} tabIndex={linking ? -1 : 0}>
               添一张卡
             </button>
+            <KindSheet actions={actions} linking={linking} />
           </div>
         </>
       )}

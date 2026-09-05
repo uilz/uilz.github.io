@@ -6,8 +6,11 @@ import type { DayActions } from '../store'
 import type { LinkPhase } from '../linkage'
 import type { RenderCtx } from '../cards/types'
 import { resolveRenderer, rendererFor } from '../cards/registry'
+import { readAssetProps } from '../cards/asset'
+import { isAttachKind } from '../attachRoute'
 import { hitTestContainer, parentIdOf } from '../stackGeometry'
 import { clampCardPos } from '../placement'
+import { CardMenu, DeleteConfirmPanel, RenamePanel } from './CardMenus'
 import { CardTypeIcon, IconDots, IconPencil } from './icons'
 
 interface Offset {
@@ -56,7 +59,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
   const isMat = card.kind === 'container'
   const [drag, setDrag] = useState<Offset | null>(null)
   const [size, setSize] = useState<{ w: number; h: number } | null>(null)
-  const [menu, setMenu] = useState<'closed' | 'open' | 'confirm'>('closed')
+  const [menu, setMenu] = useState<'closed' | 'open' | 'confirm' | 'rename'>('closed')
   const dragRef = useRef<DragBase | null>(null)
   const linkTapRef = useRef<{ pid: number; sx: number; sy: number } | null>(null)
   const sizeRef = useRef<{ pid: number; sx: number; sy: number; w: number; h: number } | null>(null)
@@ -71,6 +74,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
     enterEdit: () => actions.enterEdit(card.id),
     exitEdit: () => actions.exitEdit(),
     setProps: (patch) => actions.patchProps(card.id, patch),
+    whisper: (msg) => actions.whisper(msg),
   }
 
   const onBackgroundDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
@@ -225,28 +229,26 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
             <IconDots />
           </button>
           {menu === 'open' ? (
-            <div className="bj-menu">
-              <button type="button" className="bj-menu-item" onClick={() => { setMenu('closed'); actions.startLinking(card.id) }}>
-                牵线
-              </button>
-              <button type="button" className="bj-menu-item" onClick={() => setMenu('confirm')}>
-                删除
-              </button>
-            </div>
+            <CardMenu
+              hasRename={isAttachKind(card.kind)}
+              onRename={() => setMenu('rename')}
+              onLink={() => { setMenu('closed'); actions.startLinking(card.id) }}
+              onDelete={() => setMenu('confirm')}
+            />
+          ) : null}
+          {menu === 'rename' ? (
+            <RenamePanel
+              initial={readAssetProps(card.props).name ?? ''}
+              onCancel={() => setMenu('closed')}
+              onCommit={(name) => { setMenu('closed'); actions.patchProps(card.id, { name }) }}
+            />
           ) : null}
           {menu === 'confirm' ? (
-            <div className="bj-menu bj-menu-confirm">
-              <p>{confirmCopy}</p>
-              <p className="bj-menu-note">撕下后十秒内可以再想想</p>
-              <div className="bj-menu-row">
-                <button type="button" onClick={() => setMenu('closed')}>
-                  取消
-                </button>
-                <button type="button" className="bj-danger" onClick={() => { setMenu('closed'); actions.remove(card.id) }}>
-                  确认删除
-                </button>
-              </div>
-            </div>
+            <DeleteConfirmPanel
+              copy={confirmCopy}
+              onCancel={() => setMenu('closed')}
+              onConfirm={() => { setMenu('closed'); actions.remove(card.id) }}
+            />
           ) : null}
         </div>
       ) : null}

@@ -115,6 +115,70 @@ export function IconSearch({ size = 17 }: IconProps): ReactElement {
   )
 }
 
+export function IconCaretDown({ size = 13 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <path d="m6.5 9.5 5.5 5 5.5-5" />
+    </svg>
+  )
+}
+
+export function IconAudio({ size = 13 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <path d="M4.5 9.5v5h3.2l4.3 3.6V5.9L7.7 9.5H4.5Z" />
+      <path d="M16.5 8.8a4.6 4.6 0 0 1 0 6.4M18.8 6.2a8 8 0 0 1 0 11.6" opacity="0.7" />
+    </svg>
+  )
+}
+
+export function IconVideo({ size = 13 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <rect x="4" y="6" width="11" height="12" rx="1.6" />
+      <path d="m16.6 10.6 3.4-2.4v7.6l-3.4-2.4" />
+    </svg>
+  )
+}
+
+export function IconPdf({ size = 13 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <path d="M7 3.5h7l4 4V20a.9.9 0 0 1-.9.9H7a.9.9 0 0 1-.9-.9V4.4A.9.9 0 0 1 7 3.5Z" />
+      <path d="M13.8 3.6v4.2h4.1" />
+      <path d="M8.6 17.4c1.9-3.4 4.9-3.4 6.8 0" opacity="0.8" />
+      <circle cx="12" cy="14.6" r="1.1" opacity="0.8" />
+    </svg>
+  )
+}
+
+export function IconCode({ size = 13 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <path d="m9 8-4 4 4 4M15 8l4 4-4 4" />
+    </svg>
+  )
+}
+
+export function IconLinkSign({ size = 13 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <path d="M10.2 13.8a3.4 3.4 0 0 1 0-4.8l2.2-2.2a3.4 3.4 0 0 1 4.8 4.8l-1 1" />
+      <path d="M13.8 10.2a3.4 3.4 0 0 1 0 4.8l-2.2 2.2a3.4 3.4 0 0 1-4.8-4.8l1-1" />
+    </svg>
+  )
+}
+
+export function IconMd({ size = 13 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <rect x="3.5" y="6" width="17" height="12" rx="1.8" />
+      <path d="M6.5 15V9.5L9 12.6l2.5-3.1V15" />
+      <path d="M15 9.5v4.2m0 0 1.8-1.9M15 13.7l-1.8-1.9" />
+    </svg>
+  )
+}
+
 export function IconStack({ size = 17 }: IconProps): ReactElement {
   return (
     <svg {...stroke(size)}>
@@ -131,6 +195,12 @@ const KIND_ICONS: Record<IconKind, () => ReactElement> = {
   file: () => <IconFile />,
   mystery: () => <IconUnknownShape />,
   stack: () => <IconStack size={13} />,
+  audio: () => <IconAudio />,
+  video: () => <IconVideo />,
+  pdf: () => <IconPdf />,
+  code: () => <IconCode />,
+  link: () => <IconLinkSign />,
+  md: () => <IconMd />,
 }
 
 export function CardTypeIcon({ kind }: { readonly kind: IconKind }): ReactElement {

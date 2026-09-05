@@ -1,12 +1,13 @@
 // 日中介的状态层 —— 纯 reducer：形状、迁移、ghost/note/回执计数、关系渲染账目。零 React hooks 之外的编排。
 import type { Card, CardId, CardPos, CardSize, EdgeRecord } from '../domain/types'
 import { edgesTouching } from '../domain/edges'
+import type { AttachKind } from './attachRoute'
 import type { CardPatch, DeleteSnapshot, ParentPatch } from '../application'
 
-/** 夹带占位（ghost）：资产未落定前的安静虚影，只活在 UI 内存，刷新即无。 */
+/** 夹带占位（ghost）：资产未落定前的安静虚影，只活在 UI 内存，刷新即无。kind 谱 = 夹带路由可产的卡型。 */
 export interface Ghost {
   readonly token: number
-  readonly kind: 'image' | 'file'
+  readonly kind: AttachKind
   readonly name: string
   readonly pos: CardPos
   readonly size: CardSize
