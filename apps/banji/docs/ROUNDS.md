@@ -188,3 +188,30 @@
 - 搜索无历史无持久化无模糊：本地私册，「搜过什么」本身是隐私；翻旧纸的手感来自即时高亮与按日回跳，不来自搜索引擎的联想 machinery。
 - hop 熄灯主路移到落点侧：脉冲的 200ms 该从「纸到齐」起算——从点击起算会让慢加载吞掉那一眼暖；App 4s 兜底只收无人认领的孤儿瞬态。
 - snippet 高亮契约=「原文切片+[start,end) 码元下标」：域算坐标、渲染层切文本节点，HTML 注入路在架构上不存在（MdView 纪律延伸）；e2e + jsdom 双面判死 XSS。
+
+## Round 9 — 2026-09-05 · 卡型补齐（六渲染器 + mime 路由表 + 添卡纸单 + 改名债销）(已完成，待发布)
+
+**完成**
+- D1 mime 路由表（T1）：`ui/attachRoute.ts`（纯函数，穷测 20 路）——`application/pdf` 精确点名、`image/ audio/ video/` 前缀归号、参数尾巴与小写噪音先洗、其余一律文件卡（未知类型至少存得下）；`placement.attachKind` 二分流退役，夹带管线与 Ghost kind 谱（dayState 窄化为 AttachKind）只消费这一张判据表。
+- D2 六渲染器落位（T2）：registry 挂上 v1 联合自始预声明的六槽——声音纸（纸上一枚原生 `<audio controls>`，不画假波形）、影纸（原生 `<video>`，创建期与图片共一条 `imageFitMaxW` 封顶血脉：`videoProbe.ts` 的 `<video preload=metadata>` 探尺，失败退默认尺寸、渲染期 loadedmetadata 自愈补全——图片同款双保险）、火漆签（chip 一点 = `target=_blank rel=noopener` 新页开 blob 原件；内嵌预览明确不做，零依赖法没有 PDF.js，R10 候选）、代码纸（暖墨等宽无高亮，长行横向推纸）、题签纸（题面 host/title + 网址发丝，不是超链接蓝）、手记纸（text 渲染器的 md 别名槽，正文卡两路并存）。资产全系共骑 `useAssetUrl`：objectURL 与卡片同生死，卸载/换 hash 即 revoke（jsdom 直钉 revoke 调用）。
+- 链接闸与安全（T2·D4）：`domain/link.ts` `safeHttpUrl` 孤闸——WHATWG http(s) 规范形独认、控制字符零容忍、无协议/协议相对一律 null；创建/编辑提交才写 props（半途草稿连 props 都不进，拒签配「写个完整网址，比如 https://…」耳语），渲染期同一实现再走一遍（库里的 javascript: 换不来一条 `<a>`，只以文本现形）——两处都不是孤闸。D4 形状闸挂进既有 `validateCard`：资产类 hash=64hex（sha 冻结小写，大写即畸形）、code/markdown text 必字符串、markdown 只认 format=md、link 空串容草稿（新建未落笔）非空必过闸。**契约零变更零迁移**：props 形状本就按 kind 判别，未知 kind 原样保留一字未动。
+- D3 添卡种类纸单（T3）：底栏「添一张卡」一 tap 正文口径一字不动（hero 回归闸 jsdom+e2e 双钉），旁缀一枚发丝 caret 掀开纸单——正文/手记/代码/链接/垫纸，垫纸即造叠旧动作，三新型走 spawn 全谱；Esc/点单外/选毕即收，开合纯屏幕瞬态零写库。手机 caret/行热区 ≥44px（格式 chip 同闸）。
+- D6 改名债终结（T4，R2 债·六度顺延后首破）：`props.name` 纸面展示覆盖（可选 additive JSON，键集 ⊆ 契约断言带 name 照常过秤）——⋯ 菜单「重命名此纸」只对资产五型现身（`isAttachKind` 同一张表做资格闸），浮笺落笔经唯一串行链 `schedule→updateCard` patch.props；展示链 `props.name ?? asset.name ?? hash前8` 唯住 `assetLabel`（空串署名=撤下覆盖，视同没有），图纸改名后纸下小名一行、影音声纸题签常挂；**资产记录永不改写**（内容寻址的权威名与纸面私名互不连坐）——同哈希两张纸各显其名，jsdom + e2e 真浏览器双终判（雨后槐花/同名副本同屏互见、导档案 wipe 重导名随身走）。
+- e2e 纪律两则（本轮真跑揪出）：①R6 债#6 竞态夹具从「抢先机开盲盒」改为确定性排序——旧世界 strip/move 先在盘上落定再重导，「全量替换必赢」这杆秤不再掷硬币（R6 尾注「尽力而为」债兑现；ack 一瞬在途即弃的主证仍在 jsdom 四面）；②headless chromium 无 PDF viewer，blob `<a target=_blank>` 走下载管线——火漆签断言改为「新页必开 且 真 PDF 字节以 uuid.pdf 交还（扩展名=真 MIME，proof-of-pdf）」，真 viewer 环境走 blob: 导航路。R9 新检 9 枚：真 RIFF/WAVE 夹带→声音纸真解码 readyState≥1、页内 canvas+MediaRecorder 真 webm→影纸、纸单代码打字 reload 排 pre、纸单链接 javascript: 拒签+https 过缝全页零脏 href、改名债死双名同屏、导出→wipe→重导 name 逐字回魂+键集复秤、夜读五型机判（名题面零 ink-faint，R8 法律延伸；`.bj-file-size/.bj-file-quiet` 顺手 ink-faint→ink-soft——尺寸与状态是可读信息不是装饰）+逐纸截图取证 33-r9-night-{audio,video,pdf,code,link}.png、手机 390 纸单真触摸落链接。**96/96 ALL-PASS 连跑两遍，0 console error。**
+- 测试：单测 305→370（继承工 48 = 链接闸 24 + 路由 20 + props 形闸 4；收尾补 17 = 纸单 5 + 改名 5 + 渲染器面 7）；e2e 87→96。LOC 闸（awk 纯行，全数 ≤250）：store 247（在顶下走，R10 若再触先拆）、CardFrame 244→246（浮笺析出 CardMenus 82 抵账）、DayView 229→232（纸单独立成组件 KindSheet 79）、attachPipeline 82、attachRoute 22、link.ts 28、videoProbe 25、六渲染器 34-83、cardShape 161。
+
+**已知债(R10 候选)**
+1. 实机证据长队（自 R3 顺延）：iPad/iPhone 软键盘 visualViewport、滚屏缓入手感、hitTest 采样漂移、代码纸 tab 键与横推体感。
+2. PDF 内嵌预览：chip 已闭环，页内翻页需 PDF.js（新依赖）或另案——待产品拍板再上。
+3. BFS/搜索规模化 + loadAll 系列每入场全扫（R7 债5/R8 债3 原样顺延，三处投影缝同批改增量账）。
+4. 「这一笔没存上」保存侧根因探测（R3 债5 原样顺延）。
+5. （R9 新立）导入 commit 与中介串行链不同门：旧世界意图若已开火、其 IDB 事务排在 ack 之后过锁，worldGen 的链头弃权管不到那一指宽（R6 治的是「已排水未开火」）——候选解：导入 commit 走 store 同一条链排队；e2e 侧已确定性化，窗口实机复现前不立法。
+6. 影纸无名时题签常挂（与图纸「改名才显名」不对称）——下轮视觉拍板统一口径。
+
+**决策记录(R9 增量)**
+- 注册表兑现「新增卡型不重构系统」：六槽 v1 联合自始预声明，本轮填槽零 schemaVersion 零迁移；`props.name` 走 kind 内 JSON additive，旧档案无此键照常读——契约的预留位第一次真被用到，且用到即验证了预留的价值。
+- pdf 是签不是页：零依赖法排除内嵌预览；新页开原件=浏览器全权，blob 同源、`rel=noopener` 断反向句柄，攻击面为零。
+- 改名走 props 覆盖、不动资产：内容寻址下同字节共享同一份原件记录，资产名是「原始入库时的叫法」（权威、恒定），纸面名是「这张纸上的叫法」（私有、可空）——R2 债三六度顺延的根因是把两件事记成了同一件，分开记账即债消。
+- 添卡不叠新交互：一 tap 正文是肌肉记忆承诺，种类入口压在一枚 caret 之后——纸单五行全是既有动作，零新编排、零新状态。
+- mime 判别、改名资格、Ghost 卡型谱三件事共吃 attachRoute 一张表：判据只住一处，placement 从此只谈几何。
+- 链接 sanitizer 双闸同实现（domain 纯函数）：表单与渲染共骑一个 `safeHttpUrl`，永远不漂移；纵深防御≠两套代码。
