@@ -3,6 +3,7 @@ import {
   attachKind,
   clampCardPos,
   dropAt,
+  edgeScrollStep,
   fitWithin,
   hasOffscreenRight,
   imageCardSize,
@@ -149,5 +150,40 @@ describe('hasOffscreenRight：宽画布耳语的纯几何判据（右缘 > vw-48
     expect(hasOffscreenRight([], 390)).toBe(false)
     expect(hasOffscreenRight([at(9_999, 10)], Number.POSITIVE_INFINITY)).toBe(false)
     expect(hasOffscreenRight([{ pos: { x: 0 }, size: { w: 10 } }], 12)).toBe(true)
+  })
+})
+
+describe('edgeScrollStep：拖卡远垫自动滚屏（纸面惯性=平方缓入，封顶 12px/帧）', () => {
+  it('带宽未触 = 0：带内沿恰在边界上不进带（view 0..500，band 48）', () => {
+    for (const p of [48, 100, 300, 452]) expect(edgeScrollStep(p, 0, 500)).toBe(0)
+  })
+
+  it('左/上缘为负、右/下缘为正；深度 (d/48)² 缓入：¼ 深 1px、半深 3px、满带 12px（取整）', () => {
+    expect(edgeScrollStep(36, 0, 500)).toBe(-1) // d=12 → 12·(1/4)²=0.75 → round -1
+    expect(edgeScrollStep(24, 0, 500)).toBe(-3) // d=24 → 12·(1/2)²=3
+    expect(edgeScrollStep(0, 0, 500)).toBe(-12) // d=48 满带封顶
+    expect(edgeScrollStep(500, 0, 500)).toBe(12)
+    expect(edgeScrollStep(476, 0, 500)).toBe(3)
+  })
+
+  it('出视口钳到封顶不放大：±9999 也只 ±12；全扫描 |step|≤12 且方向恒合法', () => {
+    expect(edgeScrollStep(-9_999, 0, 500)).toBe(-12)
+    expect(edgeScrollStep(9_999, 0, 500)).toBe(12)
+    for (let p = -600; p <= 1_100; p += 5) {
+      const s = edgeScrollStep(p, 0, 500)
+      expect(Math.abs(s)).toBeLessThanOrEqual(12)
+      // 带沿浅处取整归零（<~2px 深推不动纸）：只锁方向，不锁“进带即动”。
+      if (p < 48) expect(s).toBeLessThanOrEqual(0)
+      else if (p > 452) expect(s).toBeGreaterThanOrEqual(0)
+      else expect(s).toBe(0)
+      if (p < 24) expect(s).toBeLessThan(0)
+      if (p > 476) expect(s).toBeGreaterThan(0)
+    }
+  })
+
+  it('深度单调：越出缘越深、推得越急（缓入非阶跃）', () => {
+    const steps = [47, 40, 30, 20, 10, 0].map((p) => Math.abs(edgeScrollStep(p, 0, 500)))
+    for (let i = 1; i < steps.length; i++) expect(steps[i]).toBeGreaterThanOrEqual(steps[i - 1] ?? 0)
+    expect(steps.at(-1)).toBe(12)
   })
 })

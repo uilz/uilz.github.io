@@ -10,6 +10,7 @@ import { CardFrame } from './CardFrame'
 import { IconChevronLeft, IconGear, IconPaperclip, IconStack } from './icons'
 import { hasOffscreenRight, viewportWidthNow } from '../placement'
 import { renderStackOrder, subtreeIds } from '../stackGeometry'
+import { useAutoScrollWhileDragging } from '../useAutoScroll'
 
 /** 设置键一次读穿：耳语终生只耳语一次（“见过”以库内记录为准，换设备也记得）。 */
 export const WIDE_HINT_KEY = 'hint_wide_canvas'
@@ -52,6 +53,9 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
   const scrollRef = useRef<HTMLDivElement>(null)
   const dragDepthRef = useRef(0)
   const [dragging, setDragging] = useState(false)
+  const [cardDrag, setCardDrag] = useState(false)
+  // 拖入远垫：拖卡时指针压到滚动窗缘 48px 内就缓缓推纸（reduced-motion 让位，见 useAutoScroll）。
+  useAutoScrollWhileDragging(scrollRef, cardDrag)
   // 宽画布耳语：设置未读回前按“见过”处理（宁可不响，不错闪）。
   const [whisper, setWhisper] = useState<'off' | 'on' | 'fading'>('off')
   const [hintProbeTick, setHintProbeTick] = useState(0)
@@ -210,6 +214,7 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
               follow={followFor(card.id)}
               z={i + 1}
               justBorn={state.lastAddedId === card.id}
+              onDragActiveChange={setCardDrag}
             />
           ))}
           {state.ghosts.map((g) => (

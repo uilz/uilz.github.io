@@ -82,6 +82,21 @@ export function attachKind(mime: string): 'image' | 'file' {
   return mime.startsWith('image/') ? 'image' : 'file'
 }
 
+/** 拖拽自动滚屏的领带宽（滚动窗口缘向内 48px 起坡）。 */
+export const AUTOSCROLL_BAND = 48
+/** 每帧最大推进（px）：封顶在 12 —— 是纸的惯性，不是弹射。 */
+export const AUTOSCROLL_MAX_STEP = 12
+
+/** 拖入远垫的滚屏步进（单轴）：指针深入带宽 d 时速度 = maxStep·(d/band)²（缓入），
+ *  入带前为 0，出视口钳到封顶；正值推向正方向（下/右）。纯几何可测，rAF 圈在 useAutoScroll。 */
+export function edgeScrollStep(pointer: number, viewMin: number, viewMax: number, band: number = AUTOSCROLL_BAND, maxStep: number = AUTOSCROLL_MAX_STEP): number {
+  const depthLow = viewMin + band - pointer
+  if (depthLow > 0) return -Math.round(maxStep * Math.min(depthLow / band, 1) ** 2)
+  const depthHigh = pointer - (viewMax - band)
+  if (depthHigh > 0) return Math.round(maxStep * Math.min(depthHigh / band, 1) ** 2)
+  return 0
+}
+
 export interface CanvasSized {
   readonly pos: { readonly x: number }
   readonly size: { readonly w: number }

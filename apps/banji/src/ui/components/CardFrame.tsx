@@ -26,6 +26,8 @@ interface CardFrameProps {
   readonly follow: Offset | null
   readonly z: number
   readonly justBorn: boolean
+  /** 真拖拽（越过阈值）起止上报：DayView 用它起/停远垫自动滚屏。点选不算拖。 */
+  readonly onDragActiveChange: (active: boolean) => void
 }
 
 interface DragBase {
@@ -41,7 +43,7 @@ interface DragBase {
 
 const DRAG_THRESHOLD_SQ = 25
 
-export function CardFrame({ card, cards, app, date, actions, selected, editing, dropOn, follow, z, justBorn }: CardFrameProps): ReactElement {
+export function CardFrame({ card, cards, app, date, actions, selected, editing, dropOn, follow, z, justBorn, onDragActiveChange }: CardFrameProps): ReactElement {
   const renderer = resolveRenderer(card.kind)
   const editable = rendererFor(card.kind)?.editable ?? false
   const isMat = card.kind === 'container'
@@ -92,6 +94,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
     if (!d.moved) {
       if (dx * dx + dy * dy < DRAG_THRESHOLD_SQ) return
       d.moved = true
+      onDragActiveChange(true)
     }
     setDrag({ dx, dy })
     actions.setDropTarget(hitTestContainer({ x: e.clientX - d.ox, y: e.clientY - d.oy }, cards, card.id))
@@ -104,6 +107,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
     if (d === null || d.pid !== e.pointerId) return
     dragRef.current = null
     setDrag(null)
+    onDragActiveChange(false)
     actions.setDropTarget(null)
     actions.setDragFollow(null)
     if (d.moved) {
@@ -165,6 +169,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
       onPointerCancel={() => {
         dragRef.current = null
         setDrag(null)
+        onDragActiveChange(false)
         actions.setDropTarget(null)
         actions.setDragFollow(null)
       }}
