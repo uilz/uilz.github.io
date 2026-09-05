@@ -67,6 +67,8 @@ export function Linker({ app, date, originId, links, onLink }: LinkerProps): Rea
                     key={r.card.id}
                     type="button"
                     className="bj-link-row"
+                    data-recent-row={r.card.id}
+                    data-day={r.date}
                     onClick={() => {
                       setOpen(false)
                       onLink(r.card.id)

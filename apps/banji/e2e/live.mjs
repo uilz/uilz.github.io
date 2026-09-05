@@ -555,6 +555,210 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   check(`R6 债#3 自动滚屏布线：指压底缘 700ms 滚动窗自走 ${String(pushed)}px（>8）`, pushed > 8)
 }
 
+// —— R7 关系系统（桌面全流程 D1-D6）：牵线→纸黄昏→点靶成线→reload 还在→撕线→再牵→跨日「牵给近日」→
+//    撕端点卡 10s 反悔（卡与线同回）→线模式串珠+点珠翻页→导出→wipe→导入（线随档案回魂，边逐字）。
+{
+  const edgesDump = () => page.evaluate(() => new Promise((res) => {
+    const r = indexedDB.open('banji-journal')
+    r.onsuccess = () => {
+      const db = r.result
+      const tx = db.transaction('edges', 'readonly')
+      tx.objectStore('edges').getAll().onsuccess = (e) => {
+        db.close()
+        res(e.target.result.slice().sort((a, b) => a.id.localeCompare(b.id)))
+      }
+      tx.onerror = () => { db.close(); res(null) }
+    }
+    r.onerror = () => res(null)
+  }))
+  // 昨日的纸：直写 IDB（契约形状），「牵给近日」才有真纸可牵
+  const prev = await page.evaluate(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    const iso = new Date().toISOString()
+    const date = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('banji-journal')
+      r.onsuccess = () => {
+        const db = r.result
+        const tx = db.transaction('journals', 'readwrite')
+        tx.objectStore('journals').put({
+          date,
+          cards: [{ id: 'r7-yesterday', kind: 'text', pos: { x: 60, y: 60 }, size: { w: 220, h: 120 }, props: { text: '近日帖' }, createdAt: iso, updatedAt: iso }],
+          updatedAt: iso,
+        })
+        tx.oncomplete = () => { db.close(); res(date) }
+        tx.onerror = () => { db.close(); rej(tx.error) }
+      }
+      r.onerror = () => rej(r.error)
+    })
+  })
+  const addCard = async (text) => {
+    await page.click('.bj-add')
+    await page.waitForSelector('textarea', { timeout: 4000 })
+    await page.locator('textarea').first().fill(text)
+    await page.mouse.click(6, 120) // 点空退编辑并结算（避开耳语/浮钮）
+    await page.waitForTimeout(900)
+  }
+  await addCard('牵线甲')
+  await addCard('牵线乙')
+  const ids = await page.evaluate(() => {
+    const of = (t) => [...document.querySelectorAll('.bj-card')].find((e) => (e.textContent || '').includes(t))?.getAttribute('data-card-id') ?? null
+    return { a: of('牵线甲'), b: of('牵线乙'), mat: of('入叠帖') }
+  })
+  if (ids.a === null || ids.b === null) throw new Error('R7 夹具：桌上没有 牵线甲/乙')
+  const tapCard = async (id) => {
+    const p = await page.evaluate((i) => {
+      const el = document.querySelector(`[data-card-id="${i}"]`)
+      el.scrollIntoView({ block: 'center' })
+      const r = el.getBoundingClientRect()
+      return { x: r.x + 24, y: r.y + 14 }
+    }, id)
+    await page.mouse.click(p.x, p.y)
+    await page.waitForTimeout(250)
+  }
+  await tapCard(ids.a)
+  await page.click('[aria-label="卡片菜单"]')
+  const menuHas = ((await page.locator(`.bj-menu-item:has-text("牵线")`).count()) === 1)
+    && ((await page.locator(`.bj-menu-item:has-text("删除")`).count()) === 1)
+  check('R7 D1 ⋯ 菜单有「牵线」（在删除之上）', menuHas)
+  await page.click('.bj-menu-item:has-text("牵线")')
+  await page.waitForTimeout(300)
+  const dusk = await page.evaluate((s) => {
+    const q = (i) => document.querySelector(`[data-card-id="${i}"]`)
+    return {
+      day: document.querySelector('.bj-day')?.getAttribute('data-linking') === 'true',
+      canvas: document.querySelector('.bj-canvas')?.classList.contains('is-linking') === true,
+      origin: q(s.a)?.getAttribute('data-link') === 'origin',
+      target: q(s.b)?.getAttribute('data-link') === 'target',
+      blocked: q(s.mat)?.getAttribute('data-link') === 'blocked',
+      bar: document.querySelector('[data-linker]')?.textContent?.includes('牵给近日') === true,
+    }
+  }, ids)
+  check('R7 D1 起牵：起点抬起、靶纸亮、垫纸家眷压暗、招呼条带「牵给近日…」', dusk.origin && dusk.target && dusk.blocked && dusk.day && dusk.bar)
+  await tapCard(ids.b)
+  await page.waitForTimeout(900)
+  const linked1 = await page.evaluate((s) => {
+    const g = document.querySelector('g.bj-line')
+    if (g === null) return { n: 0 }
+    const ink = g.querySelector('.bj-line-ink')
+    const d = ink?.getAttribute('d') ?? ''
+    const m = /M (-?[\d.]+) (-?[\d.]+)/.exec(d)
+    const ca = document.querySelector(`[data-card-id="${s.a}"]`)
+    const r = ca.getBoundingClientRect()
+    const canvas = document.querySelector('.bj-canvas').getBoundingClientRect()
+    return { n: document.querySelectorAll('g.bj-line').length, ends: { x: Number(m?.[1]), y: Number(m?.[2]) }, center: { x: r.x - canvas.x + r.width / 2, y: r.y - canvas.y + r.height / 2 }, src: g.getAttribute('data-source'), tgt: g.getAttribute('data-target') }
+  }, ids)
+  check('R7 D2 点靶成线：SVG 贝塞尔存在、一端落在起点纸心（±4px）', linked1.n === 1 && Math.abs(linked1.ends.x - linked1.center.x) <= 4 && Math.abs(linked1.ends.y - linked1.center.y) <= 4)
+  await page.reload()
+  await page.waitForSelector('.bj-card')
+  await page.waitForTimeout(900)
+  const reloaded = await page.evaluate(() => ({ n: document.querySelectorAll('g.bj-line').length, hit: document.querySelectorAll('.bj-line-hit').length }))
+  const e1 = await edgesDump()
+  check('R7 reload 后线还在（边过缝落库、线随账重画）', reloaded.n === 1 && reloaded.hit === 1 && e1?.length === 1)
+  // 撕线：点线 → 签落线腰 → 点签 → 线没、账清、托盘不占
+  await page.evaluate(() => {
+    const path = document.querySelector('.bj-line-hit')
+    const len = path.getTotalLength()
+    const p = path.getPointAtLength(len / 2)
+    const m = path.getScreenCTM()
+    window.__r7mid = { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f }
+  })
+  const mid = await page.evaluate(() => window.__r7mid)
+  await page.mouse.click(mid.x, mid.y)
+  await page.waitForSelector('.bj-line-chip', { timeout: 4000 })
+  const chipTxt = ((await page.locator('.bj-line-chip').textContent()) || '').trim()
+  await page.click('.bj-line-chip')
+  await page.waitForTimeout(900)
+  const afterTear = await page.evaluate(() => ({ n: document.querySelectorAll('g.bj-line').length, chip: document.querySelectorAll('.bj-line-chip').length, toast: document.querySelectorAll('.bj-toast').length }))
+  check('R7 D3 点线请出「撕线」签；点签撕线：线没账清且不占托盘', chipTxt === '撕线' && afterTear.n === 0 && afterTear.chip === 0 && afterTear.toast === 0 && ((await edgesDump())?.length ?? -1) === 0)
+  // 再牵回来（同一手势即反悔），然后跨日「牵给近日」
+  await tapCard(ids.a)
+  await page.click('[aria-label="卡片菜单"]')
+  await page.click('.bj-menu-item:has-text("牵线")')
+  await tapCard(ids.b)
+  await page.waitForTimeout(900)
+  await tapCard(ids.a)
+  await page.click('[aria-label="卡片菜单"]')
+  await page.click('.bj-menu-item:has-text("牵线")')
+  await page.click('[data-linker] .bj-link-recent')
+  await page.waitForSelector('.bj-link-modal [data-recent-row]', { timeout: 6000 })
+  const sheet = await page.evaluate(() => {
+    const row = document.querySelector('[data-recent-row]')
+    return { n: document.querySelectorAll('[data-recent-row]').length, txt: row?.textContent ?? '', date: row?.getAttribute('data-day') ?? '' }
+  })
+  await page.click('.bj-link-modal [data-recent-row]')
+  await page.waitForTimeout(900)
+  const e2 = await edgesDump()
+  check('R7 D1 「牵给近日」纸单列出昨日的纸；点中=跨日成线（库里两根，同日仍只画一根）', sheet.n >= 1 && sheet.txt.includes('近日帖') && sheet.date === prev && e2?.length === 2 && (await page.locator('g.bj-line').count()) === 1)
+  // 撕端点卡 → 剪线；10s 反悔 → 卡与线同回、边 id 逐字
+  const beforePrune = (await edgesDump()).map((e) => e.id)
+  await tapCard(ids.b)
+  await page.click('[aria-label="卡片菜单"]')
+  await page.click('.bj-menu-item:has-text("删除")')
+  await page.click('button:has-text("确认删除")')
+  await page.waitForTimeout(900)
+  const pruned = await edgesDump()
+  const prunedOk = pruned?.length === 1 && pruned[0].source !== ids.b && pruned[0].target !== ids.b
+  await page.click('.bj-toast .bj-toast-action') // 再想想：卡与线同批回位
+  await page.waitForTimeout(1200)
+  const revived = await edgesDump()
+  const revivedIds = revived.map((e) => e.id).sort()
+  const backB = await page.evaluate(() => [...document.querySelectorAll('.bj-card')].some((e) => (e.textContent || '').includes('牵线乙')))
+  check('R7 D4 撕卡同批剪线；再想想卡与线逐字同回（edgePatches）', prunedOk && backB && JSON.stringify(revivedIds) === JSON.stringify(beforePrune.slice().sort()) && (await page.locator('g.bj-line').count()) === 1)
+  await page.screenshot({ path: `${SHOTS}/25-links.png`, fullPage: true })
+  // 线模式：选中甲 → 切「线」→ 串珠（锚居首、昨日内层、日期墨印）→ 点珠翻页并回卡片模式
+  await tapCard(ids.a)
+  await page.click('[data-mode="thread"]')
+  await page.waitForSelector('[data-thread-strip]', { timeout: 6000 })
+  const beads = await page.evaluate((s) => {
+    const nodes = [...document.querySelectorAll('[data-thread-node]')]
+    return { order: nodes.map((n) => ({ a: n.getAttribute('data-thread-node') === s.a, prev: n.getAttribute('data-thread-node') === 'r7-yesterday' })), days: [...document.querySelectorAll('[data-thread-day]')].length, segs: document.querySelectorAll('.bj-thread-seg').length }
+  }, ids)
+  check('R7 D5 线模式：锚点居首、昨日的纸入串、日期墨印分隔、珠间直线段', beads.order.length === 3 && beads.order[0].a === true && beads.order.some((o) => o.prev) && beads.days >= 1 && beads.segs >= 2)
+  await page.screenshot({ path: `${SHOTS}/26-thread.png`, fullPage: true })
+  await page.click('[data-thread-node="r7-yesterday"]')
+  await page.waitForTimeout(900)
+  const movedDay = await page.evaluate(() => ({
+    hash: window.location.hash,
+    thread: document.querySelector('[data-thread]') !== null,
+    note: [...document.querySelectorAll('.bj-card')].some((e) => (e.textContent || '').includes('近日帖')),
+  }))
+  check('R7 D5 点珠：回卡片模式并翻开那一天', movedDay.hash === `#/d/${prev}` && !movedDay.thread && movedDay.note)
+  await page.click('.bj-back')
+  await page.waitForSelector('.bj-cell')
+  // D6 归档往返：导出→wipe→导入→线随账回魂、边逐字
+  await page.click('button[aria-label="设置"]')
+  await page.waitForTimeout(300)
+  const dlR7 = page.waitForEvent('download', { timeout: 15000 })
+  await page.getByRole('button', { name: /导出/ }).click()
+  await (await dlR7).saveAs(join(HERE, 'relations.banjizip'))
+  await page.waitForTimeout(500)
+  await page.evaluate(() => new Promise((res) => {
+    const r = indexedDB.deleteDatabase('banji-journal')
+    r.onsuccess = r.onerror = r.onblocked = () => res()
+  }))
+  await page.goto(BASE)
+  await page.waitForSelector('.bj-cell')
+  await page.click('button[aria-label="设置"]')
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /导入/ }).click()
+  await page.setInputFiles('input.bj-hidden-file', join(HERE, 'relations.banjizip'))
+  await page.waitForSelector('button:has-text("继续")', { timeout: 8000 })
+  await page.click('button:has-text("继续")')
+  await page.waitForSelector('button:has-text("确认替换")', { timeout: 4000 })
+  await page.click('button:has-text("确认替换")')
+  await page.waitForTimeout(3000)
+  const backR7 = await edgesDump()
+  check('R7 D6 归档往返：edges.json 逐字回魂（id/端点/时间戳不重生）', JSON.stringify((backR7 ?? []).map((e) => e.id).sort()) === JSON.stringify(beforePrune.slice().sort()))
+  await page.reload()
+  await page.waitForSelector('.bj-cell')
+  await page.click(`.bj-cell[data-date="${today}"]`)
+  await page.waitForSelector('.bj-card')
+  await page.waitForTimeout(900)
+  check('R7 D6 导入后开日：同日连线重新画上', (await page.locator('g.bj-line').count()) === 1)
+}
+
 await page.click('.bj-back')
 await page.waitForSelector('.bj-cell')
 
@@ -725,6 +929,62 @@ const matM = dayM.cards.find((c) => c.kind === 'container')
 const kidM = dayM.cards.find((c) => (c.text || '').includes('手机上落的一笔'))
 check('mobile R5 拖入过缝：children 落库 reload 仍在', matM.children?.includes(kidM.id) === true)
 await mpage.screenshot({ path: `${SHOTS}/22-mobile-stack.png` })
+
+// —— R7 手机真触摸牵线（390）：CDP touch 走同一套 pointer 管线，纸黄昏与线在手机上也成立 ——
+{
+  const touchTap = async (x, y) => {
+    const p = { x, y, radiusX: 1, radiusY: 1, force: 1 }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [p] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await mpage.waitForTimeout(350)
+  }
+  await mpage.tap('.bj-add')
+  let ta = mpage.locator('textarea').first()
+  await ta.waitFor({ timeout: 4000 })
+  await ta.fill('手机牵A')
+  await mpage.evaluate(() => window.getSelection()?.removeAllRanges())
+  await touchTap(24, 120) // 点空气泡退编辑并结算
+  await mpage.waitForTimeout(1200)
+  await mpage.tap('.bj-add')
+  ta = mpage.locator('textarea').first()
+  await ta.waitFor({ timeout: 4000 })
+  await ta.fill('手机牵B')
+  await mpage.evaluate(() => window.getSelection()?.removeAllRanges())
+  await touchTap(24, 120)
+  await mpage.waitForTimeout(1200)
+  const mIds = await mpage.evaluate(() => {
+    const of = (t) => [...document.querySelectorAll('.bj-card')].find((e) => (e.textContent || '').includes(t))?.getAttribute('data-card-id') ?? null
+    return { a: of('手机牵A'), b: of('手机牵B') }
+  })
+  if (mIds.a === null || mIds.b === null) throw new Error('R7 手机夹具：牵A/牵B 没落纸')
+  const tapCardM = async (id) => {
+    const p = await mpage.evaluate((i) => {
+      const el = document.querySelector(`[data-card-id="${i}"]`)
+      el.scrollIntoView({ block: 'center' })
+      const r = el.getBoundingClientRect()
+      return { x: r.x + 24, y: r.y + 14 }
+    }, id)
+    await touchTap(p.x, p.y)
+  }
+  await tapCardM(mIds.a)
+  await mpage.tap('[aria-label="卡片菜单"]')
+  await mpage.tap('.bj-menu-item:has-text("牵线")')
+  await mpage.waitForTimeout(400)
+  const duskM = await mpage.evaluate((s) => ({
+    day: document.querySelector('.bj-day')?.getAttribute('data-linking') === 'true',
+    target: document.querySelector(`[data-card-id="${s.b}"]`)?.getAttribute('data-link') === 'target',
+  }), mIds)
+  check('R7 手机 起牵：data-linking 与靶纸点亮在 390 屏成立', duskM.day === true && duskM.target === true)
+  await tapCardM(mIds.b)
+  await mpage.waitForTimeout(1200)
+  const lineM = await mpage.locator('g.bj-line').count()
+  check('R7 手机 真触摸牵线成线（SVG 在纸下画上）', lineM === 1)
+  await mpage.screenshot({ path: `${SHOTS}/27-mobile-link.png` })
+  await mpage.reload()
+  await mpage.waitForSelector('.bj-card')
+  await mpage.waitForTimeout(1200)
+  check('R7 手机 牵线过缝落库：reload 线还在', (await mpage.locator('g.bj-line').count()) === 1)
+}
 await mctx.close()
 
 await browser.close()
