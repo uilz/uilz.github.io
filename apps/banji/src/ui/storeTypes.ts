@@ -39,8 +39,8 @@ export interface DayActions {
   linkTo(target: CardId): void
   /** 撕线（D3）：无 undo 托盘——重新牵一根就是同一只手反过来，自我可逆。 */
   removeLine(id: string): void
-  /** 目光切换（D5）：卡片/线瞬态；切去线时锚点定在当下选中卡，不留视图偏好。 */
-  setGaze(gaze: 'cards' | 'thread', anchor: CardId | null): void
+  /** 目光切换（D5/R8·D3）：卡片/线/图瞬态；切去线时锚点定在当下选中卡，切图不带锚，不留视图偏好。 */
+  setGaze(gaze: 'cards' | 'thread' | 'graph', anchor: CardId | null): void
   /** 撕线签住哪根线（D3）：点线请出、Esc/点空退场；瞬态。 */
   setLineChip(id: string | null): void
   dismissNote(): void

@@ -106,6 +106,15 @@ export function IconUnknownShape({ size = 13 }: IconProps): ReactElement {
   )
 }
 
+export function IconSearch({ size = 17 }: IconProps): ReactElement {
+  return (
+    <svg {...stroke(size)}>
+      <circle cx="10.8" cy="10.8" r="5.4" />
+      <path d="m15 15 4.2 4.2" />
+    </svg>
+  )
+}
+
 export function IconStack({ size = 17 }: IconProps): ReactElement {
   return (
     <svg {...stroke(size)}>

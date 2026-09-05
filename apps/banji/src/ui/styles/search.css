@@ -1,0 +1,164 @@
+/* 全局搜索纸面（R8·D1）——翻旧纸，不是搜索引擎：纸片自下升起、赭底淡高亮、日期如书口题签。 */
+
+.bj-search {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: min(76vh, 620px);
+  min-height: 240px;
+  margin: 0 auto;
+  max-width: 620px;
+  padding: 0 0 calc(10px + env(safe-area-inset-bottom));
+  background: var(--bj-surface);
+  border-top: 1px solid var(--bj-hairline);
+  border-radius: 10px 10px 0 0;
+  box-shadow: var(--bj-shadow-lift);
+  z-index: 82;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  animation: bj-search-in var(--bj-move) ease-out forwards;
+}
+
+@keyframes bj-search-in {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 下滑退场：transform 一沉即走（≤160ms，纸离开不是窗关闭）。 */
+.bj-search.is-out {
+  animation: bj-search-out var(--bj-move) ease-in forwards;
+}
+
+@keyframes bj-search-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.bj-search-grab {
+  padding: 10px 18px 6px;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.bj-search-bar {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: var(--bj-hairline-strong);
+  opacity: 0.6;
+}
+
+/* 输入 ≥16px 字：手机聚焦不触发浏览器自动放大（R3 键盘纪律）。 */
+.bj-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 2px;
+  border: none;
+  border-bottom: 1px solid var(--bj-hairline);
+  background: none;
+  color: var(--bj-ink);
+  font-family: var(--bj-body);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+
+.bj-search-input:focus {
+  outline: none;
+  border-bottom-color: var(--bj-accent);
+}
+
+.bj-search-input::placeholder {
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  letter-spacing: 0.14em;
+}
+
+.bj-search-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 6px 0;
+}
+
+.bj-search-whisper {
+  margin: 34px 0;
+  text-align: center;
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 16px;
+  letter-spacing: 0.2em;
+  margin-right: -0.2em;
+}
+
+.bj-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bj-search-row {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: none;
+  border-bottom: 1px solid var(--bj-wash);
+  background: none;
+  color: var(--bj-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--bj-move) ease-out;
+}
+
+.bj-search-row:hover {
+  background: var(--bj-wash);
+}
+
+.bj-search-row:active {
+  background: var(--bj-page-a);
+}
+
+/* 日期如书口题签：竖意小签，新日在前由渲染顺序保证。 */
+.bj-search-day {
+  font-family: var(--bj-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--bj-ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bj-search-cut {
+  font-family: var(--bj-body);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--bj-ink-soft);
+  overflow-wrap: break-word;
+}
+
+/* 命中高亮：暖赭底淡染，不是霓虹黄。 */
+.bj-search-hl {
+  background: color-mix(in srgb, var(--bj-ring) 34%, transparent);
+  color: var(--bj-ink);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.bj-search-more {
+  margin: 12px 0;
+  text-align: center;
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+}

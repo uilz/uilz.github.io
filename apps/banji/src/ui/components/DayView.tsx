@@ -4,15 +4,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent as ReactDragEvent, ReactElement } from 'react'
 import type { DayStore } from '../store'
 import type { BanjiApp } from '../../application'
-import type { Card, CardPos } from '../../domain/types'
+import type { Card, CardId, CardPos } from '../../domain/types'
 import { dateTitle } from '../labels'
 import { CardFrame } from './CardFrame'
 import { GhostCard } from './GhostCard'
+import { GraphPanel } from './GraphPanel'
 import { LinesLayer } from './LinesLayer'
 import { Linker } from './Linker'
 import { ThreadPanel } from './ThreadPanel'
 import { DayHead } from './DayHead'
 import { linkPhases } from '../linkage'
+import type { CardHop } from '../cardHop'
+import { useCardPulse } from '../useCardPulse'
 import { useWideCanvasWhisper, WIDE_HINT_KEY } from '../useWideCanvasWhisper'
 import { IconPaperclip, IconStack } from './icons'
 import { dayHref } from '../router'
@@ -27,9 +30,12 @@ interface DayViewProps {
   readonly date: string
   readonly store: DayStore
   readonly onOpenSettings: () => void
+  /** 搜索行/图 chip 共用的落点瞬态（R8·D4）：跳到某天某纸，暖脉冲 ≤200ms，App 计时熄灭。 */
+  readonly hop: CardHop | null
+  readonly onOpenCard: (date: string, cardId: CardId) => void
 }
 
-export function DayView({ app, date, store, onOpenSettings }: DayViewProps): ReactElement {
+export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard }: DayViewProps): ReactElement {
   const { state, actions } = store
   const fileRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -40,6 +46,10 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
   useAutoScrollWhileDragging(scrollRef, cardDrag)
   const { whisper, onScrolled } = useWideCanvasWhisper(app, scrollRef, state.loaded, state.cards)
   const sorted = renderStackOrder(state.cards)
+  const flashed = useCardPulse(hop, date, state.loaded)
+  useEffect(() => {
+    if (hop !== null && hop.date === date && state.gaze !== 'cards') actions.setGaze('cards', null)
+  }, [hop, date, state.gaze, actions])
   const followSet = useMemo<Set<string> | null>(
     () => (state.dragFollow === null ? null : subtreeIds(state.cards, state.dragFollow.rootId)),
     [state.dragFollow, state.cards],
@@ -111,6 +121,14 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
           onOpenDate={(d) => {
             actions.setGaze('cards', null)
             window.location.hash = dayHref(d)
+          }}
+        />
+      ) : state.gaze === 'graph' ? (
+        <GraphPanel
+          app={app}
+          onOpenCard={(d, cid) => {
+            actions.setGaze('cards', null)
+            onOpenCard(d, cid)
           }}
         />
       ) : (
@@ -188,6 +206,7 @@ export function DayView({ app, date, store, onOpenSettings }: DayViewProps): Rea
                   z={i + 1}
                   justBorn={state.lastAddedId === card.id || state.settleIds.includes(card.id)}
                   linkMode={linking ? (phases.get(card.id) ?? 'blocked') : 'off'}
+                  pulse={flashed === card.id}
                   onDragActiveChange={setCardDrag}
                 />
               ))}

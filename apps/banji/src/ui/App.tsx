@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BanjiApp } from '../application'
+import type { CardId } from '../domain/types'
 import { formatDate } from '../domain/date'
 import { useHashRoute } from './router'
+import { dayHref } from './router'
 import { useDayStore } from './store'
 import type { DayStoreOptions } from './store'
+import { HOP_MS } from './cardHop'
+import type { CardHop } from './cardHop'
 import { THEME_KEY, applyTheme, syncThemeFromStore } from './theme'
 import type { ThemeId } from './theme'
 import { CalendarView } from './components/CalendarView'
 import { DayView } from './components/DayView'
+import { SearchSheet } from './components/SearchSheet'
 import { SettingsDrawer } from './components/SettingsDrawer'
 
 function todayOf(now: () => Date): string {
@@ -53,10 +58,38 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [hop, setHop] = useState<CardHop | null>(null)
   const date = route.name === 'day' ? route.date : null
   const store = useDayStore(app, date, reloadKey, storeOptions)
   const today = todayOf(now)
   const { saveFailed, note } = store.state
+
+  useEffect(() => {
+    if (hop === null) return
+    const t = window.setTimeout(() => setHop(null), HOP_MS)
+    return () => {
+      window.clearTimeout(t)
+    }
+  }, [hop])
+
+  const openCard = useCallback((target: string, cardId: CardId): void => {
+    setHop({ date: target, cardId })
+    if (window.location.hash !== dayHref(target)) window.location.hash = dayHref(target)
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [])
 
   useEffect(() => {
     if (toast === null) return
@@ -119,9 +152,17 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
   return (
     <div className="bj-app" data-route={route.name}>
       {route.name === 'calendar' ? (
-        <CalendarView app={app} today={today} reloadKey={reloadKey} onOpenSettings={() => setDrawerOpen(true)} />
+        <CalendarView app={app} today={today} reloadKey={reloadKey} onOpenSettings={() => setDrawerOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
       ) : (
-        <DayView key={route.date} app={app} date={route.date} store={store} onOpenSettings={() => setDrawerOpen(true)} />
+        <DayView
+          key={route.date}
+          app={app}
+          date={route.date}
+          store={store}
+          onOpenSettings={() => setDrawerOpen(true)}
+          hop={hop}
+          onOpenCard={openCard}
+        />
       )}
       {drawerOpen ? (
         <SettingsDrawer
@@ -131,6 +172,16 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
           onImported={onImported}
           notify={notify}
           onClose={() => setDrawerOpen(false)}
+        />
+      ) : null}
+      {searchOpen ? (
+        <SearchSheet
+          app={app}
+          onPick={(d, cid) => {
+            setSearchOpen(false)
+            openCard(d, cid)
+          }}
+          onClose={() => { setSearchOpen(false) }}
         />
       ) : null}
       {pills}

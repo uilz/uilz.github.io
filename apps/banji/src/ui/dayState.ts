@@ -57,8 +57,8 @@ export interface DayState {
   readonly linkFromId: CardId | null
   /** 牵成后短暂安分的两张纸（180ms 落定视觉）：瞬态。 */
   readonly settleIds: readonly CardId[]
-  /** 目光（D5）：'cards' 过日子 / 'thread' 串珠子；瞬态、不落设置（任务书：不留视图偏好）。 */
-  readonly gaze: 'cards' | 'thread'
+  /** 目光（D5/R8·D3）：'cards' 过日子 / 'thread' 串珠子 / 'graph' 时间轴纸聚；瞬态、不落设置（任务书：不留视图偏好）。 */
+  readonly gaze: 'cards' | 'thread' | 'graph'
   /** 切进线模式一瞬定下的锚点（当时的选中卡）；串珠底料。瞬态。 */
   readonly threadAnchor: CardId | null
   /** 撕线签住着的边 id（D3）：点线请出、Esc/点空退场。瞬态。 */
@@ -103,7 +103,7 @@ export type Action =
   | { readonly type: 'link/remove'; readonly id: string }
   | { readonly type: 'ui/linking'; readonly id: CardId | null }
   | { readonly type: 'link/settle'; readonly ids: readonly CardId[] }
-  | { readonly type: 'ui/gaze'; readonly gaze: 'cards' | 'thread'; readonly anchor: CardId | null }
+  | { readonly type: 'ui/gaze'; readonly gaze: 'cards' | 'thread' | 'graph'; readonly anchor: CardId | null }
   | { readonly type: 'line/chip'; readonly id: string | null }
   | { readonly type: 'ghost/add'; readonly ghost: Ghost }
   | { readonly type: 'ghost/remove'; readonly token: number }

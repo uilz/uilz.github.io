@@ -1,0 +1,113 @@
+/* 图模式（R8·D3）——时间轴上的纸串，不是网络拓扑图：日期墨印分栏、发丝连线、chip 是缩小的纸片。 */
+
+.bj-graph {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--bj-paper);
+}
+
+/* 只横不纵：逛时间推移即达，无 zoom 无拖拽重排。 */
+.bj-graph-scroll {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+}
+
+.bj-graph-field {
+  position: relative;
+  min-width: 100%;
+}
+
+/* 日期墨印分栏：像书口题签，一枚一枚钉在列头。 */
+.bj-graph-day {
+  position: absolute;
+  top: 6px;
+  font-family: var(--bj-display);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--bj-ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.bj-graph-lines {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+/* 发丝连线：与同日线同一支笔——暖棕 1px 40%，无箭头无辉光。 */
+.bj-graph-line {
+  fill: none;
+  stroke: var(--bj-thread);
+  stroke-opacity: 0.4;
+  stroke-width: 1px;
+}
+
+/* chip = 缩小的纸片：同一张纸的令牌，只是更薄更静。 */
+.bj-graph-chip {
+  position: absolute;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid var(--bj-card-edge);
+  border-radius: 2px;
+  background: var(--bj-card);
+  box-shadow: var(--bj-shadow);
+  color: var(--bj-ink);
+  font-family: var(--bj-body);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform var(--bj-move) ease-out,
+    box-shadow var(--bj-move) ease-out;
+}
+
+.bj-graph-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--bj-shadow-lift);
+}
+
+.bj-graph-chip:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.bj-graph-snippet {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bj-graph-whisper {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40%;
+  margin: 0;
+  text-align: center;
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 17px;
+  letter-spacing: 0.22em;
+  margin-right: -0.22em;
+  pointer-events: none;
+}
+
+.bj-graph-hint {
+  margin: 0;
+  padding: 0 0 10px;
+  text-align: center;
+  color: var(--bj-ink-faint);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}

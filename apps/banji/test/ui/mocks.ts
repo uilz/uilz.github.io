@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 import { hashBlob } from '../../src/archive/hash'
 import type {
   AssetInput,
+  AssetMeta,
   AssetRecord,
   BanjiApp,
   Card,
@@ -153,6 +154,9 @@ export function makeMockApp(): MockSeam {
         .flatMap((d) => d.cards.map((card) => ({ date: d.date, card }))),
     ),
     loadAllEdges: vi.fn(async (): Promise<EdgeRecord[]> => [...edges.values()].sort((a, b) => (a.id < b.id ? -1 : 1))),
+    loadAllAssetMeta: vi.fn(async (): Promise<AssetMeta[]> =>
+      [...assets.values()].map((a) => ({ hash: a.hash, mime: a.mime, size: a.size, ...(a.name === undefined ? {} : { name: a.name }) })),
+    ),
     addAsset: vi.fn(async (file: AssetInput): Promise<AssetRecord> => {
       const hash = await hashBlob(file)
       const found = assets.get(hash)

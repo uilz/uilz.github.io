@@ -19,6 +19,25 @@
   box-shadow: var(--bj-shadow-lift);
 }
 
+.bj-card:active {
+  border-color: var(--bj-hairline-strong);
+  box-shadow: var(--bj-shadow-lift);
+}
+
+/* 搜索/图落点的暖脉冲（R8·D1）：背景一暖即回，200ms 纸色呼吸，不是描边闪烁。 */
+.bj-card.is-pulse {
+  animation: bj-card-pulse 200ms ease-out;
+}
+
+@keyframes bj-card-pulse {
+  0% {
+    background-color: color-mix(in srgb, var(--bj-ring) 45%, var(--bj-card));
+  }
+  100% {
+    background-color: var(--bj-card);
+  }
+}
+
 .bj-card.is-sel,
 .bj-card:active {
   z-index: auto; /* 层级由内联 zIndex 决定；此行只表意 */

@@ -1,9 +1,9 @@
-// 日页眉：回历、题字、「卡片/线」段切（图模式是 R8 的留白，不给占位桩）、设置。
+// 日页眉：回历、题字、「卡片/线/图」三段低语（R8·D3 图模式上架）、设置。
 interface DayHeadProps {
   readonly title: string
-  /** 'cards' | 'thread'（由 DayView 的 gaze 映射出字符串供高亮）。 */
-  readonly gaze: 'cards' | 'thread'
-  readonly onGaze: (gaze: 'cards' | 'thread') => void
+  /** 'cards' | 'thread' | 'graph'（由 DayView 的 gaze 映射出字符串供高亮）。 */
+  readonly gaze: 'cards' | 'thread' | 'graph'
+  readonly onGaze: (gaze: 'cards' | 'thread' | 'graph') => void
   readonly onOpenSettings: () => void
 }
 
@@ -24,6 +24,9 @@ export function DayHead({ title, gaze, onGaze, onOpenSettings }: DayHeadProps): 
         </button>
         <button type="button" data-mode="thread" className={`bj-mode-seg-btn${gaze === 'thread' ? ' is-on' : ''}`} onClick={() => onGaze('thread')}>
           线
+        </button>
+        <button type="button" data-mode="graph" className={`bj-mode-seg-btn${gaze === 'graph' ? ' is-on' : ''}`} onClick={() => onGaze('graph')}>
+          图
         </button>
       </div>
       <button type="button" className="bj-quiet-btn" aria-label="设置" onClick={onOpenSettings}>

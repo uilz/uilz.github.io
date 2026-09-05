@@ -4,7 +4,7 @@ import type { BanjiApp } from '../../application'
 import { monthMatrix, monthOf } from '../../domain/date'
 import { dayHref } from '../router'
 import { WEEKDAYS_MONDAY } from '../labels'
-import { IconChevronLeft, IconChevronRight, IconGear } from './icons'
+import { IconChevronLeft, IconChevronRight, IconGear, IconSearch } from './icons'
 
 export interface Ym {
   readonly y: number
@@ -27,9 +27,10 @@ interface CalendarViewProps {
   readonly today: string
   readonly reloadKey: number
   readonly onOpenSettings: () => void
+  readonly onOpenSearch: () => void
 }
 
-export function CalendarView({ app, today, reloadKey, onOpenSettings }: CalendarViewProps): ReactElement {
+export function CalendarView({ app, today, reloadKey, onOpenSettings, onOpenSearch }: CalendarViewProps): ReactElement {
   const [ym, setYm] = useState<Ym>(() => {
     const t = today.split('-')
     return { y: Number(t[0]), m: Number(t[1]) }
@@ -55,9 +56,14 @@ export function CalendarView({ app, today, reloadKey, onOpenSettings }: Calendar
     <div className="bj-cal">
       <header className="bj-cal-head">
         <h1 className="bj-wordmark">伴记</h1>
-        <button type="button" className="bj-quiet-btn" aria-label="设置" onClick={onOpenSettings}>
-          <IconGear />
-        </button>
+        <div className="bj-cal-head-btns">
+          <button type="button" className="bj-quiet-btn" aria-label="搜索手札" title="想找哪一笔？（⌘F）" onClick={onOpenSearch} data-search-open>
+            <IconSearch />
+          </button>
+          <button type="button" className="bj-quiet-btn" aria-label="设置" onClick={onOpenSettings}>
+            <IconGear />
+          </button>
+        </div>
       </header>
       <nav className="bj-month-nav" aria-label="月份切换">
         <button type="button" className="bj-quiet-btn" aria-label="上一月" onClick={() => setYm(shiftMonth(ym, -1))}>

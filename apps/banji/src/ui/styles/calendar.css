@@ -26,11 +26,20 @@
   color: var(--bj-ink);
 }
 
-.bj-cal-head .bj-quiet-btn {
+.bj-cal-head-btns {
   position: absolute;
   right: 0;
   top: 50%;
   margin-top: -22px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bj-cal-head .bj-quiet-btn {
+  position: static;
+  top: auto;
+  right: auto;
+  margin-top: 0;
 }
 
 .bj-month-nav {

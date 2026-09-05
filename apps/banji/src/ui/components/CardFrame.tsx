@@ -31,6 +31,8 @@ interface CardFrameProps {
   readonly linkMode?: LinkMode
   /** 真拖拽（越过阈值）起止上报：DayView 用它起/停远垫自动滚屏。点选不算拖。 */
   readonly onDragActiveChange: (active: boolean) => void
+  /** 搜索/图落点的暖脉冲（R8 瞬态）：App 计时 ≤200ms 内为 true，类名即来即走，不过缝。 */
+  readonly pulse?: boolean
 }
 
 type LinkMode = LinkPhase | 'off'
@@ -48,7 +50,7 @@ interface DragBase {
 
 const DRAG_THRESHOLD_SQ = 25
 
-export function CardFrame({ card, cards, app, date, actions, selected, editing, dropOn, follow, z, justBorn, linkMode = 'off', onDragActiveChange }: CardFrameProps): ReactElement {
+export function CardFrame({ card, cards, app, date, actions, selected, editing, dropOn, follow, z, justBorn, linkMode = 'off', onDragActiveChange, pulse = false }: CardFrameProps): ReactElement {
   const renderer = resolveRenderer(card.kind)
   const editable = rendererFor(card.kind)?.editable ?? false
   const isMat = card.kind === 'container'
@@ -184,7 +186,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
       data-card
       data-card-id={card.id}
       data-link={linkMode === 'off' ? undefined : linkMode}
-      className={`bj-card be-${card.kind}${selected ? ' is-sel' : ''}${dropOn ? ' is-dropon' : ''}${justBorn ? ' bj-settle' : ''}${linkCls}`}
+      className={`bj-card be-${card.kind}${selected ? ' is-sel' : ''}${dropOn ? ' is-dropon' : ''}${justBorn ? ' bj-settle' : ''}${pulse ? ' is-pulse' : ''}${linkCls}`}
       style={{
         left: card.pos.x,
         top: card.pos.y,
