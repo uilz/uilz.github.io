@@ -534,6 +534,27 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   await page.setViewportSize({ width: 1100, height: 760 })
 }
 
+// —— R6 债#3 自动滚屏布线（真浏览器）：按住纸拖进滚动窗底缘带、静置 600ms ——
+// rAF 圈该把窗推走（纸从指针下溜过）；松手后位移过缝。几何封顶/缓入由 placement 单测钉死，这里只证布线活。
+{
+  const g = await page.evaluate(() => {
+    const k = [...document.querySelectorAll('.bj-card:not(.be-container)')].find((e) => (e.textContent || '').includes('槐花'))
+    if (k === undefined) return null
+    const r = k.getBoundingClientRect()
+    const s = document.querySelector('.bj-scroll').getBoundingClientRect()
+    return { x: r.x + 24, y: r.y + 14, top: s.top, bottom: s.bottom, scroll0: document.querySelector('.bj-scroll').scrollTop }
+  })
+  if (g === null) throw new Error('债#3 夹具：没有可拖的纸上')
+  await page.mouse.move(g.x, g.y)
+  await page.mouse.down()
+  await page.mouse.move(g.x + 80, g.bottom - 20, { steps: 10 }) // 压进底缘 48px 带
+  await page.waitForTimeout(700) // 让 rAF 圈推一段
+  const pushed = await page.evaluate((s0) => document.querySelector('.bj-scroll').scrollTop - s0, g.scroll0)
+  await page.mouse.up()
+  await page.waitForTimeout(900) // 落笔过缝；滚屏本身只住屏幕惯性，无存储面（契约键集在 R5 断言已钉死）
+  check(`R6 债#3 自动滚屏布线：指压底缘 700ms 滚动窗自走 ${String(pushed)}px（>8）`, pushed > 8)
+}
+
 await page.click('.bj-back')
 await page.waitForSelector('.bj-cell')
 
