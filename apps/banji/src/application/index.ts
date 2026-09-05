@@ -2,6 +2,7 @@
 // 的编排，零 React/DOM 依赖（importFromFile 收 Blob 只因 File 天然继承它）。
 // R7 拆分：契约类型与错误住 ./types，关系缝与删除-恢复的边端编排住 ./edgeCases（守 250 纯行天花板）。
 import type { AssetRecord, Card, CardId, JournalDoc } from '../domain/types'
+import type { AssetMeta } from '../domain/search'
 import { isValidDateString } from '../domain/date'
 import { newCardId } from '../domain/id'
 import { hashBlob } from '../archive/hash'
@@ -23,6 +24,7 @@ import {
 
 export * from './types'
 export type { AssetRecord, Card, CardId, CardKind, EdgeRecord, JournalDoc } from '../domain/types'
+export type { AssetMeta } from '../domain/search'
 export { isValidDateString, monthMatrix, monthOf, todayLocal, addDays } from '../domain/date'
 export { newCardId, newEdgeId } from '../domain/id'
 export type { ExportResult } from '../archive/exportArchive'
@@ -111,6 +113,15 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
     getRecentCards: (anchor, days) => getRecentCards(repo, anchor, days),
     loadAllCards: () => loadAllCards(repo),
     loadAllEdges: () => loadAllEdges(repo),
+    // IDB 递来整条记录；过缝第一刻就剥成元数据投影——blob 引用绝不下到 UI 层。
+    async loadAllAssetMeta() {
+      return (await repo.assets.list()).map((a): AssetMeta => ({
+        hash: a.hash,
+        mime: a.mime,
+        size: a.size,
+        ...(a.name === undefined ? {} : { name: a.name }),
+      }))
+    },
     async addAsset(file) {
       const hash = await hashBlob(file)
       const existing = await repo.assets.get(hash)

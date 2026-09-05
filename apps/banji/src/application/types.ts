@@ -3,6 +3,7 @@
 // UI 与测试只认 '../application' 这一只桶。
 import type { AssetRecord, Card, CardId, CardKind, CardPos, CardSize, EdgeRecord, JournalDoc } from '../domain/types'
 import { isValidDateString } from '../domain/date'
+import type { AssetMeta } from '../domain/search'
 import type { ValidationIssue } from '../domain/validate'
 import type { SchemaMigration } from '../archive/migration'
 import type { ImportArchiveOptions, ImportResult } from '../archive/importArchive'
@@ -134,6 +135,8 @@ export interface BanjiApp {
   loadAllCards(): Promise<CardAt[]>
   /** 线模式 BFS 的另一半：全量边。千级全扫是档案尺度的读，可负担（任务书 D5）。 */
   loadAllEdges(): Promise<EdgeRecord[]>
+  /** R8·D2 全局搜索的底料：全量资产元数据投影。返回记录**绝不含 blob**（blob 不过缝）。 */
+  loadAllAssetMeta(): Promise<AssetMeta[]>
   /** 不落库的文件字节 → assets store（内容寻址 sha256；同字节复用既有记录，改名不去重失效）。 */
   addAsset(file: AssetInput): Promise<AssetRecord>
   getAsset(hash: string): Promise<AssetRecord | undefined>
