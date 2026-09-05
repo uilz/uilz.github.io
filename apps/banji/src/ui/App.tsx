@@ -63,7 +63,7 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
   const date = route.name === 'day' ? route.date : null
   const store = useDayStore(app, date, reloadKey, storeOptions)
   const today = todayOf(now)
-  const { saveFailed, note } = store.state
+  const { saveFailed, saveFailedCause, note } = store.state
 
   // hop 的熄灭主路在落点侧（useCardPulse 放完即请 setHop(null)）；这里只兜 4s 无人认领的孤儿瞬态。
   useEffect(() => {
@@ -128,10 +128,13 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
     })
   }, [app, store.actions])
 
+  // R11·D1 根因三分的落点：配额失败给出路（导出旧手札），漂移与未知仍走 R2 既有通用回执；「· 再试」由按钮补齐。
   const receipt =
-    saveFailed > 0
-      ? { msg: `${saveFailed === 1 ? '这一笔' : `这 ${String(saveFailed)} 笔`}没存上`, label: '再试' as const }
-      : null
+    saveFailed === 0
+      ? null
+      : saveFailedCause === 'quota'
+        ? { msg: '手机纸不多了 · 导出旧手札', label: '再试' as const }
+        : { msg: `${saveFailed === 1 ? '这一笔' : `这 ${String(saveFailed)} 笔`}没存上`, label: '再试' as const }
   const undo = store.state.undo
   const undoReceipt = undo === null ? null : { msg: `已撕下 ${String(undo.count)} 张，`, label: '再想想' as const }
   const transient = note !== null ? note.msg : toast !== null ? toast.msg : null

@@ -9,6 +9,42 @@ import { diffIntents } from './stackOps'
 
 const DEBOUNCE_MS = 450
 
+/**
+ * 落盘失败的根因三分（R11·D1，七度债收口）：唯一分类点在链条的 catch 边界，回执按类配文案。
+ * quota = 设备空间见底（给出路：导出旧手札）；drift = 程序/数据漂移（非法日期、无日志、无此卡等
+ * 契约内不可能到达的失败）；unknown = 其余。三类共用 R2 的驻留回执通道——零新 UI 通道。
+ */
+export type SaveRootCause = 'quota' | 'drift' | 'unknown'
+
+const QUOTA_NAMES: ReadonlySet<string> = new Set(['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'])
+/** 程序/数据漂移类：application 层抛的文档/卡片寻址错（浏览器 IDB 侧同族以 DOMException 名呈现）。 */
+const DRIFT_NAMES: ReadonlySet<string> = new Set(['InvalidDateError', 'JournalNotFoundError', 'CardNotFoundError', 'InvalidRestoreError', 'NotFoundError', 'ConstraintError'])
+/** 旧式 DOMException 以数字 code 报配额（老 WebKit=22、老 Gecko/Blink=1014），name 可能缺席。 */
+const QUOTA_LEGACY_CODES: ReadonlySet<number> = new Set([22, 1014])
+
+function shapeOfLegacy(err: unknown): { readonly name: string; readonly code: number } {
+  if (err instanceof DOMException || err instanceof Error) {
+    const code = (err as { code?: unknown }).code
+    return { name: err.name, ...(typeof code === 'number' ? { code } : { code: 0 }) }
+  }
+  if (typeof err === 'object' && err !== null) {
+    const like = err as { name?: unknown; code?: unknown }
+    return {
+      name: typeof like.name === 'string' ? like.name : '',
+      code: typeof like.code === 'number' ? like.code : 0,
+    }
+  }
+  return { name: '', code: 0 }
+}
+
+/** 纯函数：任何被 catch 的落笔失败 → 根因类。真 DOMException/Error/legacy {name,code} 形状全部收得。 */
+export function classifySaveError(err: unknown): SaveRootCause {
+  const { name, code } = shapeOfLegacy(err)
+  if (QUOTA_NAMES.has(name) || QUOTA_LEGACY_CODES.has(code)) return 'quota'
+  if (DRIFT_NAMES.has(name)) return 'drift'
+  return 'unknown'
+}
+
 export interface WriteChainDeps {
   readonly app: Pick<BanjiApp, 'updateCard' | 'moveCard' | 'resizeCard'>
   readonly dispatch: (action: Action) => void
@@ -98,9 +134,9 @@ export function createWriteChain(deps: WriteChainDeps): WriteChain {
           if (entry.pos !== undefined) await deps.app.moveCard(entry.date, id, entry.pos)
           if (entry.size !== undefined) await deps.app.resizeCard(entry.date, id, entry.size)
           if (failed.size === 0 && deps.getState().saveFailed > 0) deps.dispatch({ type: 'save/clear' })
-        } catch {
+        } catch (err) {
           failed.set(id, entry)
-          deps.dispatch({ type: 'save/failed', count: failed.size })
+          deps.dispatch({ type: 'save/failed', count: failed.size, cause: classifySaveError(err) })
         }
       })
     }

@@ -2,6 +2,7 @@
 import type { Card, CardId, CardPos, CardSize, EdgeRecord } from '../domain/types'
 import { edgesTouching } from '../domain/edges'
 import type { AttachKind } from './attachRoute'
+import type { SaveRootCause } from './writeChain'
 import type { CardPatch, DeleteSnapshot, ParentPatch } from '../application'
 
 /** 夹带占位（ghost）：资产未落定前的安静虚影，只活在 UI 内存，刷新即无。kind 谱 = 夹带路由可产的卡型。 */
@@ -45,6 +46,8 @@ export interface DayState {
   readonly ghosts: readonly Ghost[]
   /** >0 = 有未落盘的编辑意图（多次失败合并为一张回执，值为意图条数）。 */
   readonly saveFailed: number
+  /** 最后一次落盘失败的根因（R11·D1）：回执文案按类取；0 失败时无意义。 */
+  readonly saveFailedCause: SaveRootCause
   readonly note: Note | null
   /** null = 无待撤销删除；非 null = 撕下的纸片还在桌边等着。 */
   readonly undo: UndoTray | null
@@ -75,6 +78,7 @@ export const initialDayState: DayState = {
   lastAddedId: null,
   ghosts: [],
   saveFailed: 0,
+  saveFailedCause: 'unknown',
   note: null,
   undo: null,
   dropTargetId: null,
@@ -108,7 +112,7 @@ export type Action =
   | { readonly type: 'line/chip'; readonly id: string | null }
   | { readonly type: 'ghost/add'; readonly ghost: Ghost }
   | { readonly type: 'ghost/remove'; readonly token: number }
-  | { readonly type: 'save/failed'; readonly count: number }
+  | { readonly type: 'save/failed'; readonly count: number; readonly cause: SaveRootCause }
   | { readonly type: 'save/clear' }
   | { readonly type: 'note/set'; readonly id: number; readonly msg: string }
   | { readonly type: 'note/clear' }
@@ -120,7 +124,7 @@ export function dayReducer(state: DayState, action: Action): DayState {
   switch (action.type) {
     case 'day/open':
       // 未落盘意图（failedRef）跨日仍住在编排层，回执必须活着陪它；待撤的纸片同理——undo 认的是出生日。
-      return { ...initialDayState, date: action.date, saveFailed: state.saveFailed, undo: state.undo }
+      return { ...initialDayState, date: action.date, saveFailed: state.saveFailed, saveFailedCause: state.saveFailedCause, undo: state.undo }
     case 'day/loaded':
       return { ...state, loaded: true, cards: action.cards }
     case 'card/added':
@@ -209,9 +213,9 @@ export function dayReducer(state: DayState, action: Action): DayState {
     case 'ghost/remove':
       return { ...state, ghosts: state.ghosts.filter((g) => g.token !== action.token) }
     case 'save/failed':
-      return { ...state, saveFailed: action.count }
+      return { ...state, saveFailed: action.count, saveFailedCause: action.cause }
     case 'save/clear':
-      return { ...state, saveFailed: 0 }
+      return { ...state, saveFailed: 0, saveFailedCause: 'unknown' }
     case 'note/set':
       return { ...state, note: { id: action.id, msg: action.msg } }
     case 'note/clear':
