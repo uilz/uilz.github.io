@@ -5,6 +5,13 @@ import type { AssetRecord, CardId, EdgeRecord, JournalDoc, SettingsRecord, Stagi
 /** 单批暂存记录上限（导入第 2 阶段的生产端约束，写在类型旁让两层共享）。 */
 export const MAX_STAGE_BATCH = 200
 
+/**
+ * R10·债#5 提交门：导入第 3 阶段的调度权。持串行中介的宿主把 commit 事务「排进自己那条链」
+ * （worldGen 排入即 ++、在途意图先落定、作废整斧在链环内执行）；未注册 = 直通立即执行（无头调用者）。
+ * 门只调度、不重排事务——commit 仍是恰好一个 readwrite 事务、oncomplete-only（契约 §7 铁律不动）。
+ */
+export type CommitGate = <T>(task: () => Promise<T>) => Promise<T>
+
 export interface JournalRepo {
   get(date: string): Promise<JournalDoc | undefined>
   put(doc: JournalDoc): Promise<void>
@@ -55,7 +62,7 @@ export interface Repo {
   settings: SettingsRepo
   clearStaging(): Promise<void>
   stageBatch(batch: readonly StagedEntry[]): Promise<void>
-  /** 唯一提交点：单事务清空四个活动 store 并把 staging 游标排干。 */
+  /** 唯一提交点：单事务清空四个活动 store 并把 staging 游标排干（排期归 CommitGate，事务本体在此）。 */
   commitStaging(): Promise<void>
   close(): void
 }

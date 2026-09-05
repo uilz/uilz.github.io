@@ -101,6 +101,38 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     [flushNow, tray, linking],
   )
 
+  // 宇宙整体替换的弃世整斧（R10 前住 onUniverseReplaced 体内，原文搬出）：全同步、无 await。
+  // 导入 ack = 宇宙整体替换，一切旧世界的在途之物同批作废（与 R4 托盘作废同一被接受的取舍）：
+  // ①worldGen++ 杀死「已排水未开火」的链上意图；②定时器+两箱意图清空杀死尚未出队的；
+  // ③失败回执与失败箱同灭（新宇宙没有欠账）；④托盘与已许诺 restore 作废（undoTray.discard）；
+  // ⑤拖拽瞬态越过替换即无意义，同拍熄灭。
+  // atomicity：本函数在 App.onImported 里先于 reloadKey bump 执行；R10 起它还被 commit 屏障
+  // 挂在链环内、ack 放行前落斧——换日 effect 的 flushNow 只能在清空之后跑，队列绝无半排半弃。
+  const universeSwap = useCallback((): void => {
+    core.bumpWorldGen()
+    haltDebounce()
+    core.pending.clear()
+    core.failed.clear()
+    dispatch({ type: 'save/clear' })
+    tray.discard()
+    dispatch({ type: 'ui/drop-target', id: null })
+    dispatch({ type: 'ui/drag-follow', follow: null })
+    dispatch({ type: 'links/set', links: [] })
+    dispatch({ type: 'ui/linking', id: null })
+    dispatch({ type: 'ui/gaze', gaze: 'cards', anchor: null })
+    dispatch({ type: 'line/chip', id: null })
+    linking.dispose()
+  }, [core, haltDebounce, dispatch, tray, linking])
+
+  // 单链红线的门缝（债#5 候选解落位）：commit 的排他执行权由链持有者注入缝——抽屉与任何无头
+  // 调用者共用 importFromFile 这一扇门，拿到的就是同一条屏障保证；卸载即交还直通（无人在链上等）。
+  useEffect(() => {
+    app.setCommitGate((task) => core.runBarrier(task, universeSwap))
+    return () => {
+      app.setCommitGate(null)
+    }
+  }, [app, core, universeSwap])
+
   const actions = useMemo<DayActions>(
     () => ({
       ...linking,
@@ -183,30 +215,10 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
           }
         })
       },
-      onUniverseReplaced() {
-        // 导入 ack = 宇宙整体替换，一切旧世界的在途之物同批作废（与 R4 托盘作废同一被接受的取舍）：
-        // ①worldGen++ 杀死「已排水未开火」的链上意图；②定时器+两箱意图清空杀死尚未出队的；
-        // ③失败回执与失败箱同灭（新宇宙没有欠账）；④托盘与已许诺 restore 作废（undoTray.discard）；
-        // ⑤拖拽瞬态越过替换即无意义，同拍熄灭。
-        // atomicity：本函数全同步、无 await，且在 App.onImported 里先于 reloadKey bump 执行——
-        // 换日 effect 的 flushNow 只能在清空之后跑，队列绝无半排半弃的中间态。
-        core.bumpWorldGen()
-        haltDebounce()
-        core.pending.clear()
-        core.failed.clear()
-        dispatch({ type: 'save/clear' })
-        tray.discard()
-        dispatch({ type: 'ui/drop-target', id: null })
-        dispatch({ type: 'ui/drag-follow', follow: null })
-        dispatch({ type: 'links/set', links: [] })
-        dispatch({ type: 'ui/linking', id: null })
-        dispatch({ type: 'ui/gaze', gaze: 'cards', anchor: null })
-        dispatch({ type: 'line/chip', id: null })
-        linking.dispose()
-      },
+      onUniverseReplaced: universeSwap,
       dismissNote: () => dispatch({ type: 'note/clear' }),
     }),
-    [app, attaching, bringToFront, chain, commitStack, flushNow, linking, runPlan, schedule, tray],
+    [app, attaching, bringToFront, chain, commitStack, flushNow, linking, runPlan, schedule, tray, universeSwap, core],
   )
 
   return { state, actions }

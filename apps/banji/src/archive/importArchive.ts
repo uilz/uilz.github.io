@@ -1,7 +1,7 @@
 // 导入 = 严格三阶段（契约 §7）：0 配额预检 → 1 纯内存预检 → 2 分批暂存 → 3 单事务提交。
 // 前两阶段的任何失败都发生在第一次写入之前——“失败不动现有数据”由执行顺序结构性保证，
 // 第 3 阶段要么整体生效（oncomplete）要么整体回滚（onabort），中间态不可被观察到。
-import type { Repo } from '../repository/types'
+import type { CommitGate, Repo } from '../repository/types'
 import { MAX_STAGE_BATCH } from '../repository/types'
 import { isHex64 } from '../domain/validate'
 import { ASSET_DIR, FILE_EDGES, FILE_JOURNALS, FILE_MANIFEST, FILE_SETTINGS } from './format'
@@ -40,6 +40,8 @@ export interface ImportArchiveOptions {
   readonly migrationTable?: readonly SchemaMigration[]
   /** 注入配额探针（测试缝）。生产默认走 navigator.storage.estimate；环境不支持则跳过。 */
   readonly estimate?: () => Promise<StorageEstimate | undefined>
+  /** R10·债#5 提交门：把 commit 排进宿主中介的同一条串行链。缺席 = 直通立即执行（headless 无并发对手）。 */
+  readonly commitGate?: CommitGate
 }
 
 const utf8DecodeFatal = (bytes: Uint8Array): string => new TextDecoder('utf-8', { fatal: true }).decode(bytes)
@@ -140,8 +142,10 @@ export async function importArchive(zip: Uint8Array, opts: ImportArchiveOptions)
   }
 
   // —— 阶段 3：唯一提交事务；成功当且仅当 oncomplete（repository 层保证）。
+  // 门只调度不改结构：缺席直通（无头），注册后 commit 作为链上环节执行（R10·债#5）。
   try {
-    await opts.repo.commitStaging()
+    const commit = (): Promise<void> => opts.repo.commitStaging()
+    await (opts.commitGate === undefined ? commit() : opts.commitGate(commit))
   } catch (err) {
     return { ok: false, reason: 'commit_failed', userMessage: '提交导入事务时出错，已整体回滚；你现有的日记保持导入原样。', detail: String(err).slice(0, 200) }
   }

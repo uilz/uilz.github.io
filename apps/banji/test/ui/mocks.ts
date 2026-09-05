@@ -185,6 +185,7 @@ export function makeMockApp(): MockSeam {
       ok: true,
       stats: { journals: journals.size, cards: 0, edges: 0, settings: 0, assets: 0 },
     })),
+    setCommitGate: vi.fn(),
     close: vi.fn(),
   }
 

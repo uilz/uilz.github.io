@@ -34,6 +34,14 @@ export interface WriteChain {
   readonly failed: Map<CardId, Pending>
   /** 宇宙代数 +1：导入 ack（全量替换）落斧时，链上代数不匹配的意图到达链头即弃权（见 flushNow）。 */
   bumpWorldGen(): void
+  /**
+   * R10·债#5 提交屏障：导入 commit 作为普通链上环节走同一条链（单链红线守死——门缝注入，绝不另起二链）。
+   * 排入即（这一同步刻）代数 ++：其后一切旧世界意图——连同「已出队未开火」的链上项——到链头弃权；
+   * 已在途（开火后卡在 app 层多事务缝隙里）的由链前缀自然静等落定，其写全部先于 commit 事务诞生→被清。
+   * 成功：在链环内先落弃世整斧（onSwap 全同步），再放 ack——链上后继项绝无可能在作废前开火。
+   * 失败：旧世界还活着——被屏障弃权的意图逐场复活重上链（last-intent-wins 字段并集，绝不静默吞笔）。
+   */
+  runBarrier<T>(task: () => Promise<T>, onSwap: () => void): Promise<T>
 }
 
 export function createWriteChain(deps: WriteChainDeps): WriteChain {
@@ -46,6 +54,12 @@ export function createWriteChain(deps: WriteChainDeps): WriteChain {
   // 宇宙代数：导入 ack（全量替换）+1。排入链上但未开火的旧世界意图，链头到达时见代数不匹配即弃权——
   // 与 onUniverseReplaced 同步清两箱一起构成「作废是原子的」（见该动作注释）。
   let worldGen = 0
+  // R10 屏障账：barraged=屏障在岗（弃权按代数对照），barrierGen=排入刻的代数（旧/新意图的分水岭），
+  // rescued=被屏障弃权的链上意图（commit 失败复活），armed=排入后仍会开火的新世界意图（绝不被复活覆盖）。
+  let barraged = false
+  let barrierGen = 0
+  const rescued = new Map<CardId, Pending>()
+  const armed = new Map<CardId, Pending>()
 
   const chain = (fn: () => Promise<unknown>): void => {
     queue = queue.then(fn, fn).catch(() => undefined)
@@ -70,8 +84,15 @@ export function createWriteChain(deps: WriteChainDeps): WriteChain {
     // 出排水位的意图盖上当时的宇宙代数：ack 若发生在「已出队、未开火」的缝隙里，链头见代数不匹配即弃权。
     const gen = worldGen
     for (const [id, entry] of drained) {
+      // 屏障排入后才出队的意图（代数=屏障刻）注定在新宇宙开火或弃权，记账防 commit 失败时复活盖过它。
+      if (barraged && gen === barrierGen) arm(id, entry)
       chain(async () => {
-        if (worldGen !== gen) return
+        if (worldGen !== gen) {
+          // 弃权分两种：屏障在岗且代数停在与排入刻同值——commit 尚未见分晓，这一笔留着可能复活（债#5）；
+          // 其余（ack 整斧式作废）按 R6 原口径静默弃。
+          if (barraged && worldGen === barrierGen) rescue(id, entry)
+          return
+        }
         try {
           if (entry.patch !== undefined) await deps.app.updateCard(entry.date, id, entry.patch)
           if (entry.pos !== undefined) await deps.app.moveCard(entry.date, id, entry.pos)
@@ -112,6 +133,74 @@ export function createWriteChain(deps: WriteChainDeps): WriteChain {
     }
   }
 
+  /** 意图的字段并集（last-intent-wins 同口径）：同字段新值赢，异字段都保——复活绝不吞候选。 */
+  const mergePending = (stale: Pending, fresh: Pending): Pending => {
+    const merged: Pending = { date: fresh.date }
+    const pos = fresh.pos ?? stale.pos
+    const size = fresh.size ?? stale.size
+    if (pos !== undefined) merged.pos = pos
+    if (size !== undefined) merged.size = size
+    const patch = fresh.patch !== undefined || stale.patch !== undefined
+      ? { ...stale.patch, ...fresh.patch }
+      : undefined
+    if (patch !== undefined) merged.patch = patch
+    return merged
+  }
+
+  const rescue = (id: CardId, entry: Pending): void => {
+    const prev = rescued.get(id)
+    rescued.set(id, prev === undefined ? entry : mergePending(prev, entry))
+  }
+
+  const arm = (id: CardId, entry: Pending): void => {
+    const prev = armed.get(id)
+    armed.set(id, prev === undefined ? entry : mergePending(prev, entry))
+  }
+
+  /** commit 失败的复活：弃权意图重入 pending 箱并即刻结算——旧世界还活着，一笔都不能白弃。 */
+  const revive = (): void => {
+    barraged = false
+    barrierGen = 0
+    const had = rescued.size > 0
+    for (const [id, stale] of rescued) {
+      const fresh = pending.get(id) ?? armed.get(id)
+      pending.set(id, fresh === undefined ? stale : mergePending(stale, fresh))
+    }
+    rescued.clear()
+    armed.clear()
+    if (had) flushNow() // 当前代数重盖章上链（无新屏障，正常开火进依旧在盘的旧世界）
+  }
+
+  const runBarrier = <T>(task: () => Promise<T>, onSwap: () => void): Promise<T> => {
+    // 排入即落斧（全同步、无 await）：代数 ++ 先于任何后续出队盖章，也先于任何已在链上的未到链头意图开火。
+    worldGen += 1
+    barrierGen = worldGen
+    barraged = true
+    rescued.clear()
+    armed.clear()
+    let settle!: (value: T) => void
+    let reject!: (reason: unknown) => void
+    const gate = new Promise<T>((res, rej) => {
+      settle = res
+      reject = rej
+    })
+    chain(async () => {
+      try {
+        const result = await task() // 此刻链前缀（含在途开火的最后一笔 IDB 事务）已全部诞生在 commit 之前
+        onSwap() // 整斧在链环内、ack 放行前落定：代数再 ++、两箱/定时器/回执/托盘/瞬态同批弃世
+        barraged = false
+        barrierGen = 0
+        rescued.clear()
+        armed.clear()
+        settle(result)
+      } catch (err) {
+        revive()
+        reject(err) // 错只经 gate 递出（链继续空转，绝不卡死）
+      }
+    })
+    return gate
+  }
+
   return {
     chain,
     schedule,
@@ -123,5 +212,6 @@ export function createWriteChain(deps: WriteChainDeps): WriteChain {
     bumpWorldGen() {
       worldGen += 1
     },
+    runBarrier,
   }
 }

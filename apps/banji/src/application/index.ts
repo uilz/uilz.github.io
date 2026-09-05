@@ -6,7 +6,7 @@ import type { AssetMeta } from '../domain/search'
 import { isValidDateString } from '../domain/date'
 import { newCardId } from '../domain/id'
 import { hashBlob } from '../archive/hash'
-import type { Repo } from '../repository/types'
+import type { CommitGate, Repo } from '../repository/types'
 import { exportArchive } from '../archive/exportArchive'
 import { importArchive } from '../archive/importArchive'
 import { CardNotFoundError, JournalNotFoundError, requireDate } from './types'
@@ -29,6 +29,7 @@ export { isValidDateString, monthMatrix, monthOf, todayLocal, addDays } from '..
 export { newCardId, newEdgeId } from '../domain/id'
 export type { ExportResult } from '../archive/exportArchive'
 export type { ImportResult } from '../archive/importArchive'
+export type { CommitGate } from '../repository/types'
 
 const DEFAULT_POS: { x: number; y: number } = { x: 0, y: 0 }
 const DEFAULT_SIZE: { w: number; h: number } = { w: 320, h: 200 }
@@ -52,6 +53,8 @@ function cardFromDraft(draft: NewCardInput, stamp: string): Card {
 
 export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
   const stamp = (): string => (opts.now === undefined ? new Date() : opts.now()).toISOString()
+  // R10·债#5：链上 commit 的执行权在持链者手里（每枚 createBanjiApp 各持各的门，互不串门）。
+  let commitGate: CommitGate | null = null
 
   const getDocOrThrow = async (date: string): Promise<JournalDoc> => {
     requireDate(date)
@@ -157,7 +160,12 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
         ...(opts.migrationTable === undefined ? {} : { migrationTable: opts.migrationTable }),
         ...(importOpts?.estimate === undefined ? {} : { estimate: importOpts.estimate }),
         ...(importOpts?.batchLimit === undefined ? {} : { batchLimit: importOpts.batchLimit }),
+        // 每次调用现摘门（注册/交还未落地也拿得到最新态）：无头 = 直通，与注册前一字不差。
+        commitGate: (task) => (commitGate === null ? task() : commitGate(task)),
       })
+    },
+    setCommitGate(gate) {
+      commitGate = gate
     },
     close: () => repo.close(),
   }

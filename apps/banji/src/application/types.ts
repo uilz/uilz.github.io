@@ -7,6 +7,7 @@ import type { AssetMeta } from '../domain/search'
 import type { ValidationIssue } from '../domain/validate'
 import type { SchemaMigration } from '../archive/migration'
 import type { ImportArchiveOptions, ImportResult } from '../archive/importArchive'
+import type { CommitGate } from '../repository/types'
 import type { ExportResult } from '../archive/exportArchive'
 
 export class InvalidDateError extends Error {
@@ -145,5 +146,10 @@ export interface BanjiApp {
   /** 不碰 DOM：返回字节+建议文件名，下载由 UI 层完成。 */
   exportToFile(): Promise<ExportFileResult>
   importFromFile(source: Blob | Uint8Array, opts?: Pick<ImportArchiveOptions, 'estimate' | 'batchLimit'>): Promise<ImportResult>
+  /**
+   * R10·债#5 提交门注册：持串行链的宿主（UI 唯一中介）挂载时注入「commit 排我这条链」的执行权，
+   * 抽屉与任何无头调用者共用 importFromFile 同一扇门、同一重屏障保证。null/未注册 = 直通立即提交。
+   */
+  setCommitGate(gate: CommitGate | null): void
   close(): void
 }
