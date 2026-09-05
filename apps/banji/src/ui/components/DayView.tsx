@@ -33,9 +33,11 @@ interface DayViewProps {
   /** 搜索行/图 chip 共用的落点瞬态（R8·D4）：跳到某天某纸，暖脉冲 ≤200ms，App 计时熄灭。 */
   readonly hop: CardHop | null
   readonly onOpenCard: (date: string, cardId: CardId) => void
+  /** 脉冲放完请 App 收灯（落点侧主路；App 侧 4s 只兜孤儿 hop）。 */
+  readonly onHopExpire: () => void
 }
 
-export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard }: DayViewProps): ReactElement {
+export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard, onHopExpire }: DayViewProps): ReactElement {
   const { state, actions } = store
   const fileRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -46,7 +48,7 @@ export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard }: D
   useAutoScrollWhileDragging(scrollRef, cardDrag)
   const { whisper, onScrolled } = useWideCanvasWhisper(app, scrollRef, state.loaded, state.cards)
   const sorted = renderStackOrder(state.cards)
-  const flashed = useCardPulse(hop, date, state.loaded)
+  const flashed = useCardPulse(hop, date, state.loaded, onHopExpire)
   useEffect(() => {
     if (hop !== null && hop.date === date && state.gaze !== 'cards') actions.setGaze('cards', null)
   }, [hop, date, state.gaze, actions])

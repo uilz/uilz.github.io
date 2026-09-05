@@ -7,7 +7,7 @@ import { useHashRoute } from './router'
 import { dayHref } from './router'
 import { useDayStore } from './store'
 import type { DayStoreOptions } from './store'
-import { HOP_MS } from './cardHop'
+import { HOP_MAX_MS } from './cardHop'
 import type { CardHop } from './cardHop'
 import { THEME_KEY, applyTheme, syncThemeFromStore } from './theme'
 import type { ThemeId } from './theme'
@@ -65,9 +65,10 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
   const today = todayOf(now)
   const { saveFailed, note } = store.state
 
+  // hop 的熄灭主路在落点侧（useCardPulse 放完即请 setHop(null)）；这里只兜 4s 无人认领的孤儿瞬态。
   useEffect(() => {
     if (hop === null) return
-    const t = window.setTimeout(() => setHop(null), HOP_MS)
+    const t = window.setTimeout(() => setHop(null), HOP_MAX_MS)
     return () => {
       window.clearTimeout(t)
     }
@@ -77,6 +78,7 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
     setHop({ date: target, cardId })
     if (window.location.hash !== dayHref(target)) window.location.hash = dayHref(target)
   }, [])
+  const expireHop = useCallback((): void => setHop(null), [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -162,6 +164,7 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
           onOpenSettings={() => setDrawerOpen(true)}
           hop={hop}
           onOpenCard={openCard}
+          onHopExpire={expireHop}
         />
       )}
       {drawerOpen ? (

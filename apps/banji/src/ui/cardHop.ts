@@ -8,4 +8,7 @@ export interface CardHop {
 }
 
 export const PULSE_MS = 200
-export const HOP_MS = PULSE_MS + 60
+/** 落点侧从「纸已到齐」起算的熄灭窗（脉冲放完即熄）。 */
+export const FLASH_OFF_MS = PULSE_MS + 60
+/** App 兜底：hop 若始终无人认领（目标日没打开/纸已不在），4s 弃世——瞬态不许过夜。 */
+export const HOP_MAX_MS = 4000

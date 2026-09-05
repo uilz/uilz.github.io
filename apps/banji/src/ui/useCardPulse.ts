@@ -3,15 +3,20 @@
 import { useEffect } from 'react'
 import type { CardId } from '../domain/types'
 import type { CardHop } from './cardHop'
+import { FLASH_OFF_MS } from './cardHop'
 import { revealInViewport } from './focus'
 
-/** hop 属于本日子且开日完成 → 返回应脉冲的卡片 id（并滚到那张纸），否则 null。 */
-export function useCardPulse(hop: CardHop | null, date: string, loaded: boolean): CardId | null {
+/** hop 属本日且纸已齐 → 滚到那张纸、返回应脉冲的卡片 id；放完 FLASH_OFF_MS 后请 App 收灯（onExpire）。 */
+export function useCardPulse(hop: CardHop | null, date: string, loaded: boolean, onExpire: () => void): CardId | null {
   const flashed = hop !== null && hop.date === date ? hop.cardId : null
   useEffect(() => {
     if (flashed === null || !loaded) return
     const el = document.querySelector<HTMLElement>(`[data-card-id="${flashed}"]`)
     if (el !== null) revealInViewport(el, 'center')
-  }, [flashed, loaded])
+    const t = window.setTimeout(onExpire, FLASH_OFF_MS)
+    return () => {
+      window.clearTimeout(t)
+    }
+  }, [flashed, loaded, onExpire])
   return flashed
 }
