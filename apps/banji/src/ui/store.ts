@@ -1,9 +1,10 @@
 // 单一内存中介：日文档 + 卡片操作只经过这里（foundation 报告明令：避免并发覆写）。
 // 本地 state 乐观更新是唯一视觉真相；一切落库都排进同一串行队列（读-改-写绝不并发），
 // 文本/位置/尺寸编辑 debounce ≤600ms 后合并为一次 app.updateCard/moveCard/resizeCard。
-// 本模块只剩共享核心：串行链 + schedule/diff 纪律 + 动作表；两台一等编排机在兄弟模块——
-// 撕下托盘在 undoTray.ts，夹带管线在 attachPipeline.ts（它们借 chain/dispatch 注入回这唯一一条链）；
-// 状态形状与迁移在 dayState.ts，动作表签名在 storeTypes.ts。
+// 串行链核心（队列/schedule/diff/flush/worldGen）住兄弟模块 writeChain.ts——本模块持有它，
+// 是这条唯一链的中介；两台一等编排机在另一批兄弟模块：撕下托盘在 undoTray.ts，夹带管线在
+// attachPipeline.ts（它们借 chain/dispatch 注入回这唯一一条链）；状态形状与迁移在 dayState.ts，
+// 动作表签名在 storeTypes.ts。
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import type { BanjiApp } from '../application'
 import type { Card, CardId } from '../domain/types'
@@ -14,90 +15,35 @@ import { scatterPos, viewportWidthNow } from './placement'
 import { probeImageSize } from './probe'
 import { probeVideoSize } from './videoProbe'
 import { dayReducer, initialDayState } from './dayState'
-import type { Pending } from './dayState'
+import { createWriteChain } from './writeChain'
+import type { WriteChain } from './writeChain'
 import { buildDeleteSnapshot, stripDoomedRefs } from './undoSnapshot'
 import { createUndoTray, pruneStripIntent } from './undoTray'
 import { createLinkOps } from './lineOps'
 import { createAttachPipeline } from './attachPipeline'
 import { sortByZ } from './stackGeometry'
-import { ATTACH_REJECTED_COPY, DETACH_REJECTED_COPY, diffIntents, planAttach, planDetach, planMove, planResize } from './stackOps'
+import { ATTACH_REJECTED_COPY, DETACH_REJECTED_COPY, planAttach, planDetach, planMove, planResize } from './stackOps'
 import type { StackPlan } from './stackOps'
 import type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
 export type { DayState, Ghost, Note, UndoTray } from './dayState'
 export type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
-const DEBOUNCE_MS = 450
 const Z_CEILING = 500
 
 export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, opts: DayStoreOptions = {}): DayStore {
   const [state, dispatch] = useReducer(dayReducer, initialDayState)
   const stateRef = useRef(state)
   stateRef.current = state
-  const pendingRef = useRef(new Map<CardId, Pending>())
-  // 落盘失败的意图不丢：住这里，等下一次落盘陪跑（last-intent-wins——后到的编辑覆盖旧意图）。
-  const failedRef = useRef(new Map<CardId, Pending>())
-  const timerRef = useRef<number | null>(null)
   const noteSeqRef = useRef(0)
   const probe = opts.probe ?? probeImageSize
   const probeVideo = opts.probeVideo ?? probeVideoSize
-  // 串行队列：getJournal/addCard/updateCard/move… 全部排一条链，日文档永不并发读-改-写。
-  const queueRef = useRef<Promise<unknown>>(Promise.resolve())
   const loadGenRef = useRef(0)
-  // 宇宙代数：导入 ack（全量替换）+1。排入链上但未开火的旧世界意图，链头到达时见代数不匹配即弃权——
-  // 与 onUniverseReplaced 同步清 pendingRef/failedRef 一起构成「作废是原子的」（见该动作注释）。
-  const worldGenRef = useRef(0)
-  const chain = useCallback((fn: () => Promise<unknown>): void => {
-    queueRef.current = queueRef.current.then(fn, fn).catch(() => undefined)
-  }, [])
-
-  const haltDebounce = useCallback((): void => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-  }, [])
-
-  const flushNow = useCallback((): void => {
-    haltDebounce()
-    // 上次没存上的意图搭这趟车；更新的编辑（若有）已在 pendingRef，天然覆盖旧意图。
-    for (const [id, entry] of failedRef.current) {
-      if (!pendingRef.current.has(id)) pendingRef.current.set(id, entry)
-    }
-    failedRef.current.clear()
-    const drained = [...pendingRef.current.entries()]
-    pendingRef.current.clear()
-    // 出排水位的意图盖上当时的宇宙代数：ack 若发生在「已出队、未开火」的缝隙里，链头见代数不匹配即弃权。
-    const gen = worldGenRef.current
-    for (const [id, entry] of drained) {
-      chain(async () => {
-        if (worldGenRef.current !== gen) return
-        try {
-          if (entry.patch !== undefined) await app.updateCard(entry.date, id, entry.patch)
-          if (entry.pos !== undefined) await app.moveCard(entry.date, id, entry.pos)
-          if (entry.size !== undefined) await app.resizeCard(entry.date, id, entry.size)
-          if (failedRef.current.size === 0 && stateRef.current.saveFailed > 0) dispatch({ type: 'save/clear' })
-        } catch {
-          failedRef.current.set(id, entry)
-          dispatch({ type: 'save/failed', count: failedRef.current.size })
-        }
-      })
-    }
-  }, [app, chain, haltDebounce])
-
-  const schedule = useCallback(
-    (id: CardId, mutate: (entry: Pending) => void): void => {
-      const current = stateRef.current
-      if (current.date === null) return
-      const entry: Pending = pendingRef.current.get(id) ?? failedRef.current.get(id) ?? { date: current.date }
-      failedRef.current.delete(id)
-      mutate(entry)
-      pendingRef.current.set(id, entry)
-      haltDebounce()
-      timerRef.current = window.setTimeout(flushNow, DEBOUNCE_MS)
-    },
-    [flushNow, haltDebounce],
-  )
+  // 唯一串行链（单链红线）：核心一次建、随中介同生死；方法恒稳，注入即接链。
+  const coreRef = useRef<WriteChain | null>(null)
+  if (coreRef.current === null) coreRef.current = createWriteChain({ app, dispatch, getState: () => stateRef.current })
+  const core = coreRef.current
+  const { chain, flushNow, haltDebounce, schedule, commitStack } = core
 
   // 牵线编排机（第三台一等单元）先于开日 effect 就位：loadForDay 借这唯一一条链拉线账。
   const linking = useMemo(() => createLinkOps({ app, chain, dispatch, getState: () => stateRef.current }), [app, chain, dispatch])
@@ -126,25 +72,6 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       const renumbered = cards.map((c, i): Card => ({ ...c, z: c.id === id ? cards.length : i + 1 }))
       dispatch({ type: 'cards/set', cards: renumbered })
       for (const c of renumbered) schedule(c.id, (e) => { e.patch = { ...e.patch, z: c.z ?? 0 } })
-    },
-    [schedule],
-  )
-
-  const commitStack = useCallback(
-    (next: readonly Card[]): void => {
-      const prev = stateRef.current.cards
-      if (next === prev) return
-      dispatch({ type: 'cards/set', cards: next })
-      const prevById = new Map(prev.map((c) => [c.id, c]))
-      for (const delta of diffIntents(prev, next)) {
-        const old = prevById.get(delta.id)
-        if (old === undefined) continue
-        schedule(delta.id, (e) => {
-          if (delta.pos !== undefined && (e.pos === undefined || e.pos.x !== delta.pos.x || e.pos.y !== delta.pos.y)) e.pos = delta.pos
-          if (delta.size !== undefined && (e.size === undefined || e.size.w !== delta.size.w || e.size.h !== delta.size.h)) e.size = delta.size
-          if (delta.children !== undefined) e.patch = { ...e.patch, children: delta.children }
-        })
-      }
     },
     [schedule],
   )
@@ -244,7 +171,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       undoDelete() {
         const ticket = tray.claim()
         if (ticket === null) return
-        pruneStripIntent([pendingRef.current, failedRef.current], new Set(ticket.snapshot.parentPatches.map((p) => p.parentId)))
+        pruneStripIntent([core.pending, core.failed], new Set(ticket.snapshot.parentPatches.map((p) => p.parentId)))
         dispatch({ type: 'undo/pop' })
         chain(async () => {
           if (!tray.consumeIntent(ticket.seq)) return // 落笔前宇宙已被替换：这张承诺随作废作废
@@ -263,10 +190,10 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         // ⑤拖拽瞬态越过替换即无意义，同拍熄灭。
         // atomicity：本函数全同步、无 await，且在 App.onImported 里先于 reloadKey bump 执行——
         // 换日 effect 的 flushNow 只能在清空之后跑，队列绝无半排半弃的中间态。
-        worldGenRef.current += 1
+        core.bumpWorldGen()
         haltDebounce()
-        pendingRef.current.clear()
-        failedRef.current.clear()
+        core.pending.clear()
+        core.failed.clear()
         dispatch({ type: 'save/clear' })
         tray.discard()
         dispatch({ type: 'ui/drop-target', id: null })
