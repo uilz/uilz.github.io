@@ -420,12 +420,14 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   await page.screenshot({ path: `${SHOTS}/23-poison-imported.png`, fullPage: true })
 }
 
-// —— R6 债#6 真浏览器竞态(桌面)：旧世界在途意图撞上导入全量替换，档案必须逐字节赢回来 ——
+// —— R6 债#6 + R10 债#5 真浏览器竞态(桌面)：开火中途的旧世界意图撞上导入 commit——屏障先放行、后抹除 ——
 // 剧本：把子纸收编回垫纸过缝（staged 宇宙 = 真档案有 children）→ 导出暂存档案 →
-//       老世界里撕下该子纸 + 挪一张散纸，两笔意图落定过盘后重导 staged。
-//       修前（R5）：strip/移动开火进新宇宙——children 被抹平 / 同 id 卡鬼移位；
-//       修后：新宇宙逐字节=staged（deep-equal dump），且 ack 后再落一笔照常过缝（队列只弃旧不毒全）。
-//       R9 注：窗口从「抢先机」改为确定性排序（R6 自己记的尽力而为债兑现——见开火台段注释）。
+//       给 journals.get 装一次性挂起闸（deleteCardCascade 的读-改-写缝就钉死在链上：撕下那一笔的
+//       前置链上意图只余半条命）→ 撕子纸（挂起点=开火中途实锤）→ 拖散纸（第二笔旧世界意图）→
+//       ack 先过再放行。修前旁路（R9 记债实锤）：阶段 0-2 只几十毫秒，commit 事务先诞生，
+//       迟醒的意图把事务排在其后 → 新宇宙里 strip 现形 = 谎言档案。修后（R10 屏障）：commit 是
+//       writeChain 的链上环节——在途未落定前它绝不诞生（挂账探针 1500ms 静默为本轮主证），放行后
+//       旧世界之笔先落再被整体抹掉；重导深相等 + children 依档还原 + ack 后新笔照常（只弃旧不毒新）。
 {
   // 「撕下又想起」当将入叠的纸。先拉高视口：两张纸同在屏内才敢按 rect 拖（滚动位移会骗过 clientY）。
   await page.setViewportSize({ width: 1100, height: 2400 })
@@ -478,16 +480,49 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
   await page.waitForTimeout(400)
   await page.click('button[aria-label="关闭设置"]') // 合上抽屉，撕纸手势才够得着纸
   await page.waitForTimeout(250)
-  // 老世界开火台（确定性窗口）：撕掉刚收编的子纸（strip 过缝）→ 拖散纸挪位（move 过缝）——
-  // 两个旧世界意图先在盘上全数落定，再重导 staged 档案：commit 事务与在途事务不再争锁，
-  // 「重导日 ≡ staged」这杆秤量的就是「全量替换必赢」。ack 一瞬在途即弃的主证在 R6 jsdom 四面；
-  // 「已开火但被 commit 挡住写锁」的开盲窗记为 R10 债（候选解：导入 commit 走中介同一条串行链）。
-  const posLoose0 = staged.journals.find((j) => j.date === today)?.cards.find((c) => (c.text || '').includes('槐花'))?.pos
-  if (posLoose0 === undefined) throw new Error('债#6 夹具：staged 里没有散纸槐花')
+  // R10 对抗开火台（债#5 死）：一次性挂起闸钉在 journals.get 的成功回调上——撕下第一笔（置顶 z 补丁
+  // 的 updateCard 读-改-写腿）就此卡在半路：链头已让过（worldGen 验证在开火前）、IDB 事务只活半条。
+  // 另一只探针钉在 IDBDatabase.transaction 上数 5-store readwrite 事务的诞生（commitStaging 独此一家）。
+  // ack 先行、放行在后：修前（旁路 commit）阶段 0-2 几十毫秒内事务就诞生、探针窗口见血；
+  // 修后 commit 是链上环节——挂起者不结算它绝不诞生（探针 1500ms 静默），放行后其写先入旧世界、
+  // 被后续 commit 的 clear 整体抹掉，再迟一步开火的 move 按 R6 代数在链头弃权——一窗三腿全钉。
+  await page.evaluate(() => {
+    const proto = IDBObjectStore.prototype
+    const realGet = proto.get
+    window.__bjCommitTx = 0
+    window.__bjHangArmed = true
+    window.__bjHanged = false
+    window.__bjRelease = () => undefined
+    proto.get = function (q) {
+      const req = realGet.call(this, q)
+      if (window.__bjHangArmed && !window.__bjHanged && this.name === 'journals') {
+        window.__bjHanged = true
+        window.__bjHangArmed = false
+        Object.defineProperty(req, 'onsuccess', {
+          configurable: true,
+          get: () => null,
+          set: (fn) => {
+            window.__bjRelease = () => {
+              window.__bjRelease = () => undefined
+              fn.call(req)
+            }
+          },
+        })
+      }
+      return req
+    }
+    const dbProto = IDBDatabase.prototype
+    const realTx = dbProto.transaction
+    dbProto.transaction = function (names, mode, options) {
+      if (mode === 'readwrite' && Array.isArray(names) && names.length === 5) window.__bjCommitTx += 1
+      return realTx.call(this, names, mode, options)
+    }
+  })
   await page.click(`[data-card-id="${nest.kidId}"]`, { position: { x: 20, y: 12 } })
   await page.click('[aria-label="卡片菜单"]')
   await page.click('.bj-menu-item:has-text("删除")')
   await page.click('button:has-text("确认删除")')
+  await page.waitForFunction(() => window.__bjHanged === true, null, { timeout: 8000 })
   const loose = await page.evaluate(() => {
     const k = [...document.querySelectorAll('.bj-card:not(.be-container)')].find((e) => (e.textContent || '').includes('槐花'))
     if (k === undefined) return null
@@ -497,24 +532,20 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
     return { x: r.x, y: r.y }
   })
   if (loose === null) throw new Error('债#6 夹具：没有可抓到的散纸')
-  await dragTo(loose.x + 24, loose.y + 14, loose.x + 90, loose.y + 16)
-  let drainedOld = false
-  for (let i = 0; i < 40 && !drainedOld; i++) {
-    await page.waitForTimeout(200)
-    const dOld = await dump(page)
-    const old = dOld.journals.find((j) => j.date === today)?.cards ?? []
-    const gone = !old.some((c) => (c.text || '').includes('撕下又想起'))
-    const moved = old.some((c) => (c.text || '').includes('槐花') && (c.pos.x !== posLoose0.x || c.pos.y !== posLoose0.y))
-    drainedOld = gone && moved
-  }
-  if (!drainedOld) throw new Error('债#6 夹具：旧世界 strip/move 没能在导入前落定')
+  await dragTo(loose.x + 24, loose.y + 14, loose.x + 90, loose.y + 16) // 第二笔旧世界意图（ack 时必在弃权位）
   await page.click('.bj-day-head [aria-label="设置"]')
   await page.getByRole('button', { name: /导入/ }).click()
   await page.setInputFiles('input.bj-hidden-file', join(HERE, 'd1-stage.banjizip'))
   await page.waitForSelector('button:has-text("继续")', { timeout: 8000 })
   await page.click('button:has-text("继续")')
   await page.click('button:has-text("确认替换")')
-  await page.waitForTimeout(1400) // 越过 450ms 窗：未被作废的旧意图会在这段里过缝现形
+  const commitEarly = await page
+    .waitForFunction(() => window.__bjCommitTx > 0, null, { timeout: 1500, polling: 40 })
+    .then(() => true)
+    .catch(() => false)
+  check('R10 屏障正证: 在途开火未结算时 commit 事务绝不诞生（修前旁路早已落笔——回归探针）', commitEarly === false)
+  await page.evaluate(() => window.__bjRelease()) // 放行：挂起者的写先落旧世界 → 随后 commit 整体抹掉
+  await page.waitForTimeout(1400) // 越过 450ms 窗：未被抹除/未弃权的旧意图会在这段里过缝现形
   await page.reload() // ack 发生在日路由上：reload 后停在当日（宇宙已由 onImported 换过）
   await page.waitForSelector('.bj-card.be-container', { timeout: 8000 })
   const back = await dump(page)
