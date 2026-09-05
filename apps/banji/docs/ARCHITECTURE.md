@@ -47,7 +47,7 @@
 | `staging` | **out-of-line** 键 `j:<date> \| a:<hash> \| e:<id> \| s:<key>` | 对应上表的整条记录 |
 
 - **Blob 必须存 Blob 对象，绝不存 ArrayBuffer**（结构化克隆后可直接用，且避免 detach 风险）。
-- `edges`/`staging` 在 v1 **刻意建空**：IDB 升版本会阻塞其他连接，早建早免痛；staging 是导入第 2 阶段的草稿区，必须与活动 store 同库同事务才能做单事务提交。
+- `edges`/`staging` 在 v1 **刻意建空**：IDB 升版本会阻塞其他连接，早建早免痛；staging 是导入第 2 阶段的草稿区，必须与活动 store 同库同事务才能做单事务提交。**R7 起 edges 已接线**（牵线/撕线/级联剪边/线模式/归档往返），契约字段一字未动：`role` 继续休眠（无 role 编辑 UI，dedup 使同对卡至多一根线）。
 - `staging` 的 `s:` 前缀是对契约原文三类的**内部扩批**：settings 必须活过导入三阶段（HERO 要求），而契约的 commit 清空四个活动 store；没有第四类暂存键则 settings 无处过桥。对外归档格式不受影响（settings.json 仍 `{key,value}`）。见 §8 偏差记录。
 
 ## 3. Card（锁定）
@@ -111,6 +111,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 0. 配额预检：navigator.storage.estimate（可选守卫，Node/测试注入），Σ资产字节 ×1.2 余量，不足即 fail fast——零写入
 1. PREFLIGHT：纯内存、零写盘。ZIP 流式解析 → 两道闸（schemaVersion/hashAlgo/app=banji）→ 迁移 → 校验：
    日期字符串格式、卡片 id 全局唯一、children 存在/一子一父/容器无环、
+   **边端点必须指向档内存在的卡（R7，`edge.dangling_endpoint`——自家导出同批剪边产不出悬空，此闸拦第三方/手改档案偷渡）**、
    每个 props hash ∈ manifest 且 ZIP 正文 sha256 实算相等、size 相等、settings 形状；
    未知 kind 原样保留、永不因此拒绝。
    失败 ⇒ 返回 problems ⇒ 写盘代码路径根本无从执行（结构保证，不是运行时保证）。
@@ -138,6 +139,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 | 2 | `settings.addedAt`/asset `addedAt` 在导入后 = manifest.exportedAt；settings `updatedAt` 同理 | 归档 settings.json 只存 `{key,value}`（资产 name/mime/size 已够重建） | 往返非逐字段自等，测试按"时间戳再生"预期断言 |
 | 3 | 归档 manifest 校验 `app === 'banji'`（契约暗示） | 拒收他 app 同形档案 | 更严不是更松 |
 | 4 | R4：应用缝新增 `restoreCards(date, snapshot)`（+ `DeleteSnapshot`/`ParentPatch`） | 删除撤销需要"逐字写回"（id/时间戳一件不重生），addCard 的重生语义给不了；卡片级操作在既有缝里也没有恢复之路。快照与撤销历史全部住 UI 内存（刷新即无、单级一格、导入成功即作废），数据契约不动 | §10 的 `BanjiApp` 接口加一员（additive，无既有签名改动）；写回仍走文档级校验器，只 bump 文档 `updatedAt`；对 IDB/store schema/归档格式零变化 |
+| 5 | R7：关系缝上架（`addEdge/deleteEdge/listEdgesForCards/getRecentCards/loadAllCards/loadAllEdges`，全 additive）；`deleteCardCascade` 返回被剪边清单（原 `Promise<void>`）；`DeleteSnapshot` 增 **可选** `edgePatches`（R4-R6 旧构造点零改动） | 关系闭环是 v1 契约内承诺（edges store/edges.json/staging e: 键早已备好），应用层只是第一次有人用；剪边必须与删除同一提交批（「库中永不存谎言档案」前例），deleteCardCascade 是唯一知道被剪了谁的口。边恢复复用 restoreCards 同一扇门，不另开第二张 undo | 数据契约/IDB schema/归档格式零变化（role 仍休眠、字段一字不动）；undo 只多记一页边账；UI 瞬态（目光/撕线签/落定）永不过缝 |
 
 ## 9. 测试基线（`apps/banji/test/`，vitest + fake-indexeddb/auto）
 
@@ -145,6 +147,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 - `archive.test.ts`：export counts/GC/共享去重、**HERO 五 store 全清全还**（Blob sha256 自证）、未知 kind 原样往返、`migrate(CURRENT)` 恒等、双版本闸、40×15 规模护栏（<2s）。
 - `archive-corruption.test.ts`：**七连损坏电池**（字节≠名字 hash、引用资产缺失、schemaVersion 999+文案、非法日期、跨日志重复卡 id、容器环、一子两父）+ 缺正文/错 app/坏 settings 补充闸 + 配额三态。每案都断言"库快照 before≡after"。
 - `application.test.ts`：UI 缝（addCard/updateCard/move/resize/cascade/getMonth/exportToFile/importFromFile/close）。
+- R7 关系面：`edges-domain.test.ts`（pairKey/edgesTouching/threadOrder 跨日平序+环安全）、`edges-application.test.ts`（三闸、dedup 双向、撕线幂等、级联剪边含跨日边、edgePatches 逐字双幂等、预检悬空端点双向+正例放行、D6 归档往返、D7 语义等价导出拍板），UI：`links-mode.test.tsx`（纸黄昏、三道收线、落定熄灭、dedup 目击、跨日「牵给近日」、撕线反悔分界、edgePatches∩parentPatches 经托盘逐字同回、键集纪律）、`thread-mode.test.tsx`（串珠纯算+线模式交互+点珠翻页+瞬态不写库）。
 
 ```
 cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸全绿才算完成
@@ -157,3 +160,4 @@ cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸�
 `src/application/index.ts` 的 `createBanjiApp(repo, { now? })` 是唯一入口；
 所有失败经 `ImportResult/ExportResult` 判别联合返回（带 zh-CN `userMessage`，直接可渲染）；
 卡片级操作抛 `InvalidDateError | JournalNotFoundError | CardNotFoundError`（同步 API 语义）。
+R7 关系缝清单（§8 偏差 5）：`addEdge`（自牵/无卡/dedup 三道静默闸，成功返回落库边）、`deleteEdge`（幂等）、`listEdgesForCards`（渲染账本）、`getRecentCards(anchor, days)`（「牵给近日」窗 [anchor−days, anchor)，垫纸出局、附 assetName）、`loadAllCards`/`loadAllEdges`（线模式 BFS 底料）。全 additive，无既有签名破坏（除偏差 5 记录的两处）。

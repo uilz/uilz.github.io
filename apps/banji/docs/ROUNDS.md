@@ -125,9 +125,34 @@
 - 债#3 拖入远垫自动滚屏（T3，tier-2 也兑现了）：**edgeScrollStep 纯几何**（滚动窗缘 48px 带宽、速度 =12·(深度/带宽)²——平方缓入是纸的惯性不是机械追帧、封顶 12px/帧、出缘钳顶、带沿浅处取整归零「进带不即弹」）+ **useAutoScrollWhileDragging** rAF 圈贴 DayView 局部态：CardFrame 越阈真拖才上报（点选不算）、capture pointermove 采样、位移走原生 scroll、prefers-reduced-motion **根本不起圈**（让位而非打折）。store/dayState/契约一字不碰。「该不该动」以几何单测为主证（e2e 只证布线活着：底缘静置 700ms 自走 172px≈缓入档）——headless 证不了手感，诚实记档。
 - 测试净增：单测 202→219（+17），e2e 50→54 全绿 0 console error；LOC 闸：store.ts 250 恰达标、undoTray 80、attachPipeline 63、useAutoScroll 35，无一超 250。
 
-**已知债(R7 候选)**
+## Round 7 — 2026-09-05 · 关系系统最小闭环（牵线/同日线/撕线/删卡剪边/线模式/归档往返）(已完成，待发布)
+
+**完成**
+- 域与应用缝（T0-T1）：`domain/edges.ts`（pairKey——无序配对键 dedup 口径、edgesTouching——级联选边、threadOrder——BFS 连通分量：链距升序、同层日期升序、id 定序兜底、环安全）；application 拆 `types.ts`+`edgeCases.ts` 守 250 天花板（`src/application/index.ts` 只剩编排）：addEdge 三道静默闸（自牵/端点无卡全库扫描/任一向已连）、deleteEdge 幂等、listEdgesForCards 两向并集、getRecentCards 窗=[anchor−14,anchor) 垫纸出局附资产名、loadAllCards/loadAllEdges（线模式档案尺度底料）；**D4**：deleteCardCascade 同一提交批内 by_source/by_target 剪净触及子树的边（跨日边也剪）并返回逐字副本，restoreCards 凭 snapshot.edgePatches（DeleteSnapshot 新可选字段，R4-R6 构造点零改动）按原 id 重插、已存在者跳过=双次幂等——悬空边构造上不可达。预检补边端点闸 `edge.dangling_endpoint`（R4-R6 只有 validateEdge 形状校验、**端点从未对卡核验**；自家导出已同批剪边产不出悬空，此闸专拦第三方/手改档案偷渡——双向各测一毒+正例放行，失败库内分毫不动）。
+- 牵线与同日渲染（T2，D1/D2）：⋯ 菜单加「牵线」→ 黄昏态：非靶 45% 压暗（纸落暮色）、起点抬纸 + 穿针 cursor、家眷（子树+父链）与已连对出图拒（linkage.ts 纯函数，复用 stackGeometry 口径）；三道收线之门（再点原纸/Escape/点空）；「牵给近日…」纸单跨日牵手=跨时间探索种子。线画在纸下页上：每边一条二次贝塞尔（控制点垂距 8%、弯曲方向按两端 id 定号——刷新不跳相），暖棕发丝 1px 40%、端点选中/悬停醒到 70%；无箭头无辉光无 dash。DayView 守 250：DayHead（卡片/线段切——图模式 R8 不留桩）、useWideCanvasWhisper 出山、GhostCard 独立；线账/黄昏/串珠目光全住 dayState 瞬态（e2e+单测键集钉死：卡片键 ⊆ 契约、边键 ⊆ 契约）。
+- 编排与撤销（T3，D3/D4 UI 腿）：第三台一等单元 `lineOps.ts`（loadForDay 开日拉线账随纸进门、linkTo 过唯一链+180ms 双纸落定、removeLine）；`undoSnapshot` 的 buildDeleteSnapshot 加收 links 参数——**parentPatches 管「卡内席位」、edgePatches 管「线的两端」，既在叠里又牵着线的纸两样同框**（单测+真浏览器双证：撕→再想想，卡回席位、线回原 id 一字不重生）。撕线无托盘——重新牵一根就是同一只手反过来（R5 D7 口径，兑现为记录）。
+- 归档与拍板（T4，D6/D7）：edges 全程骑既有机械（manifest counts/staging e:/edges.json/三阶段），e2e 真跑 导出→wipe→重导→边逐字回魂、线重新画上。D7 债终结：见决策记录。
+- 测试净增：单测 219→257（+38 = `edges-domain` 8 + `edges-application` 17 + `test/ui/links-mode.test.tsx` 8 + `test/ui/thread-mode.test.tsx` 5）；既有 219 一字未动全绿。e2e 54→70（+16：桌面 D1-D6 全程含撕线/剪边反悔/点珠翻页/归档往返、手机 390 真触摸起牵-成线-reload），0 console error。真浏览器揪出并修两个产品级缺陷：近日纸单 veil 继承 pointer-events:none 真人点不动、串珠发丝只画组间不画珠间。
+- LOC 闸（awk 纯行，全数 ≤250）：domain/edges 58、application/index 143、application/types 127、application/edgeCases 113、linkage 82、lineOps 73、useWideCanvasWhisper 52、DayHead 31、GhostCard 19、LinesLayer 76、Linker 82、ThreadPanel 113、DayView 212、dayState 218、store 244、undoSnapshot 38；application/index.ts 由 355→143（types/edgeCases 拆分）。
+
+**已知债(R8 候选)**
+1. 图模式与全局搜索（Phase 3 剩的两座）+ **role 去留**：字段与校验休眠两版了，R8 拍板——做关系类型编辑就加 UI+迁移校验，不做就从契约摘除（留着一枚没人认的 `role?` 是谎言字段）。
+2. 实机证据长队（自 R3 顺延）：iPad/iPhone 软键盘 visualViewport、滚屏缓入手感、滚屏中 hitTest 采样漂移；叠中叠零 UI 提示（R5 尾）。
+3. 同字节改名第二张卡显示首入库文件名（R2 债，五度顺延）。
+4. 「这一笔没存上」保存侧仍无离线/配额根因探测（R3 债5 顺延）。
+5. 线模式 BFS 每次入场全扫（loadAllCards+loadAllEdges 各一次）；档案到万级卡时要改成增量账——目前千级诚实可负担。
+6. 跨日线在卡片模式完全无形（只有线模式看得见）；若用户实测「找不到昨日的线」再议角标提示，R7 不加装饰。
+
+**决策记录(R7 增量)**
+- undo 圈导出「字节回归」债拍板：**语义回归，不字节回归**——时间戳是诚实数据，为字节恒定去冻结/回拨时间戳是撒谎式优化；撕→再想想→导出的档案与 pristine 深相等（strip updatedAt/addedAt/exportedAt、卡按 id 归序后），由 edges-application 钉死、随轮销账。
+- dedup 以「role 休眠、一根线就够」为口径：**同对卡任一方向已有线即静默拒**，正反各一根的假多元素不存；role 上线那天再议改契约（升 schemaVersion，绝不偷改）。
+- 剪边焊在删除提交点（prune-at-delete-commit 前例延伸）：过期侧/导入侧都不再补刀——线跟纸同批走、跟 undo 同批回，「库中永不存谎言档案」连边也算档案。
+- 线模式**只读串珠**：不拖珠、不存目光偏好、不给图模式留占位桩——R8 做真图模式时瞬态账目原样可续。
+- 撕线不进托盘：同手势自我反悔（再牵一根即撤销），单格托盘只许给「撕下」这种要回头的账（R5 D7 口径兑现）。
+- UI 瞬态三件套（黄昏锚点/目光/撕线签/落定）全走 dayState reducer，不过缝不落库——键集断言 + e2e IDB dump 双保险，契约字段全集仍是唯一真相。
+
+**已知债(R7 候选)**（R7 注：第 2 项 undo 圈内导出字节回归已 D7 拍板销账——语义回归非字节回归，详见 Round 7 决策记录；第 5 项关系/线由 Round 7 交付）
 1. 实机证据长队（自 R3 顺延）：iPad/iPhone 软键盘 visualViewport、自动滚屏缓入手感（48/12 系几何正确、体感待拍）、**拖拽滚屏时 hitTest 落点仍按落指时采样的画布原点算——滚屏位移会让入叠判定漂移，是否每帧重取 rect，实机定夺**；叠中叠手势几何已对但零 UI 提示（R5 尾）。
-2. undo 圈内导出字节回归（R4 债，三度顺延）：restore 只 bump 文档 updatedAt，但要入档——撕下再想想一圈后该日 journals.json 字节必变；保不保「undo 圈字节不变量」待产品拍板。
 3. 同字节改名第二张卡显示首入库文件名（R2 债，四度顺延）。
 4. 「这一笔没存上」保存侧仍无离线/配额根因探测（R3 债5 顺延）。
 5. 搜索/关系/线/图模式 = Phase 3+；设置键仍两枚（theme、hint_wide_canvas）。
