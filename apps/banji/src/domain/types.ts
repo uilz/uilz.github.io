@@ -56,15 +56,59 @@ export interface TextProps {
   format?: 'plain' | 'md'
 }
 
-/** 权威的名称/mime 住在 asset 记录上，卡片只引 hash。 */
+/**
+ * 权威的名称/mime 住在 asset 记录上，卡片只引 hash。
+ * name（R9·D6）是本张纸的展示名覆盖：可选、additive JSON，旧档案无此键照常读；
+ * 资产记录的 name 仍是原始入库名的权威，二者互不改写。
+ */
 export interface ImageProps {
-  hash: string
-  w?: number
-  h?: number
+  readonly hash: string
+  readonly w?: number
+  readonly h?: number
+  readonly name?: string
 }
 
 export interface FileProps {
-  hash: string
+  readonly hash: string
+  readonly name?: string
+}
+
+/** 声音纸（R9）：原生控件 + 展示名覆盖；字节住资产。 */
+export interface AudioProps {
+  readonly hash: string
+  readonly name?: string
+}
+
+/** 影纸（R9）：w/h 是建议尺寸保险字段（与 ImageProps 同性质）。 */
+export interface VideoProps {
+  readonly hash: string
+  readonly w?: number
+  readonly h?: number
+  readonly name?: string
+}
+
+/** 火漆签（R9）：只有引用与展示名；原件在新页读。 */
+export interface PdfProps {
+  readonly hash: string
+  readonly name?: string
+}
+
+/** 手记纸（R9）：text 渲染器的 md 别名槽；format 恒为 'md'（缺席即默认 md）。 */
+export interface MarkdownProps {
+  readonly text: string
+  readonly format?: 'md'
+}
+
+/** 代码纸（R9）：暖墨等宽，无终端黑、无高亮。name 为可选题签。 */
+export interface CodeProps {
+  readonly text: string
+  readonly name?: string
+}
+
+/** 题签纸（R9）：url 必须过 domain/link.safeHttpUrl 才算数；title 为可选题面。 */
+export interface LinkProps {
+  readonly url: string
+  readonly title?: string
 }
 
 /** 容器无载荷：子卡片住在 core 的 children 里。 */

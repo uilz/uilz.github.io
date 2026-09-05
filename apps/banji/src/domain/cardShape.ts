@@ -1,8 +1,38 @@
 import type { CardId, CardKind } from './types'
 import { isNonEmptyId } from './id'
-import { ok, isFiniteNumber, isIsoStamp, isPlainObject, type Validation, type ValidationIssue } from './validation'
+import { safeHttpUrl } from './link'
+import { ok, isFiniteNumber, isHex64, isIsoStamp, isPlainObject, type Validation, type ValidationIssue } from './validation'
 
 // 单卡形状 + 容器局部拓扑校验。导入预检与 UI 表单共用同一套规则。
+
+// —— R9·D4：新 kind 的 props 形状闸。未知 kind 绝不来这里（原样保留是契约），
+//    既有 text/image/file/container 也维持 R1 口径（只查「props 是对象」）——本表只管本轮填槽的类型。
+function propsIssues(kind: string, props: Record<string, unknown>): string | null {
+  const hexHash = typeof props['hash'] === 'string' && isHex64(props['hash'])
+  const nameOk = props['name'] === undefined || typeof props['name'] === 'string'
+  switch (kind) {
+    case 'audio':
+    case 'pdf':
+      return hexHash && nameOk ? null : `props.${kind}`
+    case 'video': {
+      const whOk = (props['w'] === undefined || isFiniteNumber(props['w'])) && (props['h'] === undefined || isFiniteNumber(props['h']))
+      return hexHash && whOk && nameOk ? null : 'props.video'
+    }
+    case 'code':
+      return typeof props['text'] === 'string' && nameOk ? null : 'props.code'
+    case 'markdown':
+      return typeof props['text'] === 'string' && (props['format'] === undefined || props['format'] === 'md') ? null : 'props.markdown'
+    case 'link': {
+      const url = props['url']
+      // 空串容空白草稿（新建未落笔）；非空必须过 http(s) 闸——渲染期还有同一道孤闸兜底
+      const urlOk = url === '' || (typeof url === 'string' && safeHttpUrl(url) !== null)
+      const titleOk = props['title'] === undefined || typeof props['title'] === 'string'
+      return urlOk && titleOk ? null : 'props.link'
+    }
+    default:
+      return null
+  }
+}
 
 function checkCardCore(card: unknown, path: string, issues: ValidationIssue[]): void {
   if (!isPlainObject(card)) {
@@ -50,6 +80,9 @@ export function validateCard(card: unknown): Validation {
     if (!('props' in card) || !isPlainObject(card['props'])) {
       // v1 契约：三种已知 kind 的 props 都是对象；未知 kind 同样要求结构上可原样搬运。
       issues.push({ path: 'card.props', code: 'card.props', message: 'props 必须存在且为对象' })
+    } else if (typeof card['kind'] === 'string') {
+      const bad = propsIssues(card['kind'], card['props'])
+      if (bad !== null) issues.push({ path: `card.${bad}`, code: bad, message: `${String(card['kind'])} 的 props 形状不合契约` })
     }
     const children = card['children']
     if (children !== undefined) {
