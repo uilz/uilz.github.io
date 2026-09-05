@@ -12,7 +12,7 @@ import { attachKind, clampCardPos, dropAt, fitWithin, imageCardSize, imageFitMax
 import { attachFailureCopy, probeImageSize } from './probe'
 import { dayReducer, initialDayState } from './dayState'
 import type { Pending } from './dayState'
-import { buildDeleteSnapshot } from './undoSnapshot'
+import { buildDeleteSnapshot, stripDoomedRefs } from './undoSnapshot'
 import { ATTACH_REJECTED_COPY, DETACH_REJECTED_COPY, diffIntents, planAttach, planDetach, planMove, planResize } from './stackOps'
 import type { DayActions, DayStore, DayStoreOptions } from './storeTypes'
 
@@ -203,6 +203,20 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     [schedule],
   )
 
+  /** 「再想想」抢跑未落盘的 strip：撤掉在途/在败意图里的 children 字段（逐字快照复原才是最新意图；其余字段不连坐）。 */
+  const pruneStripIntent = useCallback((parentIds: Iterable<CardId>): void => {
+    for (const id of parentIds) {
+      for (const box of [pendingRef.current, failedRef.current]) {
+        const e = box.get(id)
+        if (e === undefined || e.patch === undefined || !('children' in e.patch)) continue
+        const { children: _strip, ...rest } = e.patch
+        if (Object.keys(rest).length > 0) e.patch = rest
+        else if (e.pos !== undefined || e.size !== undefined) delete e.patch
+        else box.delete(id)
+      }
+    }
+  }, [])
+
   /** 单级托盘：新的撕下直接顶替旧纸片（被顶掉的不另发声——它本就在倒计时）。 */
   const armUndo = useCallback(
     (day: string, snapshot: DeleteSnapshot): void => {
@@ -319,6 +333,9 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         chain(async () => {
           await app.deleteCardCascade(day, id)
           dispatch({ type: 'cards/removed', ids: [...doomed] })
+          // prune-at-delete-commit：幸存父卡的 children 悬空引用同批改写（同一条 debounce 串行链，
+          // last-intent-wins 与失败回执都是现成通道；撤销凭 parentPatches 按原 index 复原）。
+          commitStack(stripDoomedRefs(stateRef.current.cards.filter((c) => !doomed.has(c.id)), doomed))
           armUndo(day, snapshot)
         })
       },
@@ -361,12 +378,15 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         disarmUndoTimer()
         undoTicketRef.current = null
         undoIntentRef.current = ticket
+        pruneStripIntent(new Set(ticket.snapshot.parentPatches.map((p) => p.parentId)))
         dispatch({ type: 'undo/pop' })
         chain(async () => {
           if (undoIntentRef.current?.seq !== ticket.seq) return // 落笔前宇宙已被替换：这张承诺随作废作废
           undoIntentRef.current = null
           await app.restoreCards(ticket.date, ticket.snapshot)
-          if (stateRef.current.date === ticket.date) dispatch({ type: 'cards/restored', cards: ticket.snapshot.cards })
+          if (stateRef.current.date === ticket.date) {
+            dispatch({ type: 'cards/restored', cards: ticket.snapshot.cards, parentPatches: ticket.snapshot.parentPatches })
+          }
         })
       },
       invalidateUndo() {
@@ -379,7 +399,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         dispatch({ type: 'note/clear' })
       },
     }),
-    [app, armUndo, attachOne, bringToFront, chain, commitStack, disarmUndoTimer, flushNow, schedule],
+    [app, armUndo, attachOne, bringToFront, chain, commitStack, disarmUndoTimer, flushNow, pruneStripIntent, schedule],
   )
 
   return { state, actions }

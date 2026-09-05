@@ -1,6 +1,6 @@
 // 日中介的状态层 —— 纯 reducer：形状、迁移、ghost/note/回执计数。零 React hooks 之外的编排。
 import type { Card, CardId, CardPos, CardSize } from '../domain/types'
-import type { CardPatch, DeleteSnapshot } from '../application'
+import type { CardPatch, DeleteSnapshot, ParentPatch } from '../application'
 
 /** 夹带占位（ghost）：资产未落定前的安静虚影，只活在 UI 内存，刷新即无。 */
 export interface Ghost {
@@ -74,7 +74,7 @@ export type Action =
   | { readonly type: 'card/patched'; readonly id: CardId; readonly patch: Partial<Card> }
   | { readonly type: 'cards/removed'; readonly ids: readonly CardId[] }
   | { readonly type: 'cards/set'; readonly cards: readonly Card[] }
-  | { readonly type: 'cards/restored'; readonly cards: readonly Card[] }
+  | { readonly type: 'cards/restored'; readonly cards: readonly Card[]; readonly parentPatches: readonly ParentPatch[] }
   | { readonly type: 'ui/select'; readonly id: CardId | null }
   | { readonly type: 'ui/edit'; readonly id: CardId | null }
   | { readonly type: 'ui/drop-target'; readonly id: CardId | null }
@@ -119,9 +119,25 @@ export function dayReducer(state: DayState, action: Action): DayState {
     case 'cards/set':
       return { ...state, cards: action.cards }
     case 'cards/restored': {
-      const present = new Set(state.cards.map((c) => c.id))
-      const back = action.cards.filter((c) => !present.has(c.id))
-      return back.length === 0 ? state : { ...state, cards: [...state.cards, ...back] }
+      // 与 restoreCards（真缝侧）同一把尺：逐字补卡 + 幸存父卡按记录 index 重插——UI 内存与库内永不两样。
+      const byId = new Map(state.cards.map((c) => [c.id, c]))
+      let changed = false
+      for (const card of action.cards) {
+        if (byId.has(card.id)) continue
+        byId.set(card.id, card)
+        changed = true
+      }
+      for (const p of action.parentPatches) {
+        const parent = byId.get(p.parentId)
+        if (parent === undefined) continue
+        const children = parent.children ?? []
+        if (children.includes(p.childId)) continue
+        const next = [...children]
+        next.splice(Math.max(0, Math.min(next.length, p.index)), 0, p.childId)
+        byId.set(p.parentId, { ...parent, children: next })
+        changed = true
+      }
+      return changed ? { ...state, cards: [...byId.values()] } : state
     }
     case 'ui/select':
       return { ...state, selectedId: action.id }

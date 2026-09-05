@@ -22,3 +22,12 @@ export function buildDeleteSnapshot(cards: readonly Card[], doomed: ReadonlySet<
   }
   return { doomed: [...doomed], snapshot: { cards: doomedCards, parentPatches } }
 }
+
+/** prune-at-delete-commit：幸存者 children 里的 doomed 引用同批滤净（悬空引用活不过一次提交）。 */
+export function stripDoomedRefs(cards: readonly Card[], doomed: ReadonlySet<CardId>): readonly Card[] {
+  return cards.map((c) =>
+    c.children === undefined || !c.children.some((id) => doomed.has(id))
+      ? c
+      : { ...c, children: c.children.filter((id) => !doomed.has(id)) },
+  )
+}
