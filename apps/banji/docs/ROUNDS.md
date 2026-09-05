@@ -215,3 +215,25 @@
 - 添卡不叠新交互：一 tap 正文是肌肉记忆承诺，种类入口压在一枚 caret 之后——纸单五行全是既有动作，零新编排、零新状态。
 - mime 判别、改名资格、Ghost 卡型谱三件事共吃 attachRoute 一张表：判据只住一处，placement 从此只谈几何。
 - 链接 sanitizer 双闸同实现（domain 纯函数）：表单与渲染共骑一个 `safeHttpUrl`，永远不漂移；纵深防御≠两套代码。
+
+## Round 10 — 2026-09-05 · 导入 commit 走中介同一条链（债#5 死：提交屏障——「库中永不存谎言档案」第一次罩住导入本身）(已完成，待发布)
+
+**完成**
+- 债#5 死（T1-T3，本轮核心）：数据可靠性最后一扇窗关门——importArchive 阶段 3 的 commit 事务自此是中介串行链上的**一个排队环节**（writeChain 提交屏障 runBarrier），所谓「第二道门」从未存在：CommitGate 只是排他执行权的注入缝，事务本体一字未动（恰好一个 readwrite 横跨五 store、oncomplete-only、游标内零 await——契约 §7 三纪律与六陷阱原样）。屏障四段纪律：**①排入时刻同步代数 ++**（比 R6 的 ack 落斧更早一截：管住「commit 已排上、ack 未至」窗口里的一切后继——已出队未开火者链头弃权，屏障后排队的意图入 armed 账、绝不复活盖新笔）；**②在途开火者由链前缀静等结算**——任务书说的「get 已 resolve、put 未发」在真实代码里其实宽得多：withStore 每仓库调用各成一事，updateCard 是两事务序列、deleteCardCascade 四个以上，所有 await 缝都在危险区，屏障的解法是把 commit 排在它们全部落定之后（旧世界迟到的写先落盘→被 commit 的 clear 整体抹掉，IDB 同 store readwrite 按创建先后过锁，构造上无可交错）；**③成功时弃世整斧在链环内先落、后放 ack**——brief 未列的第二洞：import promise 结算与 React ack 之间有一微任务缝，链上后继若抢先开火就能把旧笔落进新宇宙，onSwap 在 settle 之前即焊死；**④commit 失败复活弃权者**（排入时刻的代数 ++ 引入的新代价自己接住）：rescued/armed 字段并集重上链、last-intent-wins、一笔不吞不双写不毒链、旧宇宙一字不换。jsdom 对抗面 + 失败面 + 「只弃旧不毒新」面全钉。
+- T0 先拆后建（纯 refactor 独立提交）：store.ts（248 纯行、R9 报告「再触 store 必须先拆」兑现）把 schedule/diff/flush/worldGen/两箱/串行队列整块搬出成 **writeChain.ts**——370 测不动一字全绿后方在核心上建屏障；落成 store 189 纯行、writeChain 167，双双在 250 内带。
+- 测试（T4）：单测 370→373——`import-barrier.test.tsx` 三面（A：updateCard 悬挂开火 + ack 后才排队一笔，编排日志定死 in-flight→landed→commit、抹除后库逐字=新宇宙、ack 后零过缝；B：commit 失败复活 c-2 过缝、旧宇宙不换、失败人话上抽屉、不双写；C：新宇宙新笔照常过缝），**R6 四面（import-discard）一字未动原样全绿**；e2e 96→97——R9 的「确定性绕行（先落定再重导）」退休为本轮真对抗夹具：一次性挂起闸钉在 `IDBObjectStore.get`（撕下链上意图卡在事务序列半路）、5-store readwrite 诞生计数器钉在 `IDBDatabase.transaction`（commitStaging 独此一家）——修后 1500ms 探针窗内 commit 事务零诞生（屏障正证）+ 放行后重导日逐字节 ≡ staged + children 依档还原 + 队列不毒，**连跑两遍 97/97、0 console error**；阴性对照：临时还原 R9 旁路则诞生探针与逐字节双 FAIL——窗口真存在，非虚构威胁。
+- 文档：ARCHITECTURE §7 阶段 3 补屏障归属一行、§8 偏差表补第 6 行（setCommitGate/commitGate 全 additive）、§9 基线、§10 缝清单补齐。用户可见增量为零（纸下管道轮，UI/文案一字未动）。
+
+**已知债(R11 候选)**
+1. 实机证据长队（自 R3 顺延七度）：iPad/iPhone 软键盘 visualViewport、滚屏缓入手感、hitTest 采样漂移、代码纸 tab 键与横推体感。
+2. PDF 内嵌预览（R9 原样）：chip 已闭环，页内翻页需 PDF.js（新依赖）或另案——待产品拍板再上。
+3. BFS/搜索规模化 + loadAll 系列每入场全扫（R7 债5/R8 债3 原样顺延，三处投影缝同批改增量账）。
+4. 「这一笔没存上」保存侧根因探测（R3 债5 原样顺延）。
+5. 影纸无名时题签常挂 vs 图纸改名才显名（R9 债6 原样）——下轮视觉拍板统一口径。
+
+**决策记录(R10 增量)**
+- 导入 commit 无第二道门：屏障是那条唯一链的排队环节——红线证据=代码里不存在第二个队列，门的签名只是 `<T>(task)=>Promise<T>` 透传；弃权/结算/整斧/复活四段全长在 R6 现成机制（代数盖章、两箱、托盘兴废）上，零新状态机。
+- 已提交事务不回滚是正解而非妥协：IDB 承诺写回滚不了，屏障把它转化为「先到先得、整体抹除」——与 R4「档案即宇宙」的取舍同源，全量替换语义天然收编。
+- 排入时刻代数 ++（非 ack 时刻）+ 链环内整斧（先于 ack 放行）= 两记组合拳各堵一分钟任务书没写的窗：前者堵「commit 已排队、ack 未至」的后继开火，后者堵 promise 结算与 React 落斧之间的微任务缝；其代价（commit 失败会吞弃权笔）由 rescued/armed 复活路径自己接住，失败面也有诚实账。
+- setSetting 侧（主题、宽画布耳语）保持链外直通：单事务、无读-改-写，先至被抹、后至即新宇宙真话——不存在谎言窗，屏障只管 RMW；诚实记档不扩张战线。
+- 先拆后建为硬序：R9 报告点到的 250 天花板在 T0 兑现后才动 store 语义——纯搬运一个测不改，行为等价由全量 370 绿背书，屏障的问题域自此有独立可测宿主（writeChain）。

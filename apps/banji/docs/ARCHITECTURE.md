@@ -120,6 +120,13 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
    store → staging 游标排干（键前缀↔内联键不一致即刻 abort）→ 每行 delete。**成功当且仅当 tx.oncomplete**。
 ```
 
+- **R10·债#5（commit 的排他归位）**：第 3 阶段的**调度权**属宿主中介的唯一串行链（`ui/writeChain.ts` 提交屏障）：
+  UI 中介挂载时把 `<T>(task)=>Promise<T>` 的排他执行权经 `BanjiApp.setCommitGate` 注入缝——排入时刻宇宙代数 ++
+  （已排水未开火者链头弃权、屏障后排队者入 armed 账）、在途开火的读-改-写序列由链前缀静等结算（其全部事务
+  先于 commit 事务诞生→被 clear 抹除）、成功在链环内先落弃世整斧再放 ack、失败复活弃权者一笔不吞。
+  **事务本体一字未动**——上面三纪律与六陷阱原样；门只管排队，绝无第二道门（单链红线）。未注册（无头调用者）=
+  直通立即提交，与注册前一字不差。
+
 导入是**全量替换**语义（档案即宇宙快照），不与现库合并；`ImportResult = {ok:true, stats} | {ok:false, reason, userMessage, detail?}`。
 
 ### IndexedDB 陷阱清单（repository/ 已按此实现，改这层的人必须重新过一遍）
@@ -140,6 +147,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 | 3 | 归档 manifest 校验 `app === 'banji'`（契约暗示） | 拒收他 app 同形档案 | 更严不是更松 |
 | 4 | R4：应用缝新增 `restoreCards(date, snapshot)`（+ `DeleteSnapshot`/`ParentPatch`） | 删除撤销需要"逐字写回"（id/时间戳一件不重生），addCard 的重生语义给不了；卡片级操作在既有缝里也没有恢复之路。快照与撤销历史全部住 UI 内存（刷新即无、单级一格、导入成功即作废），数据契约不动 | §10 的 `BanjiApp` 接口加一员（additive，无既有签名改动）；写回仍走文档级校验器，只 bump 文档 `updatedAt`；对 IDB/store schema/归档格式零变化 |
 | 5 | R7：关系缝上架（`addEdge/deleteEdge/listEdgesForCards/getRecentCards/loadAllCards/loadAllEdges`，全 additive）；`deleteCardCascade` 返回被剪边清单（原 `Promise<void>`）；`DeleteSnapshot` 增 **可选** `edgePatches`（R4-R6 旧构造点零改动） | 关系闭环是 v1 契约内承诺（edges store/edges.json/staging e: 键早已备好），应用层只是第一次有人用；剪边必须与删除同一提交批（「库中永不存谎言档案」前例），deleteCardCascade 是唯一知道被剪了谁的口。边恢复复用 restoreCards 同一扇门，不另开第二张 undo | 数据契约/IDB schema/归档格式零变化（role 仍休眠、字段一字不动）；undo 只多记一页边账；UI 瞬态（目光/撕线签/落定）永不过缝 |
+| 6 | R10：`BanjiApp.setCommitGate(gate \| null)` + `ImportArchiveOptions.commitGate?`（全 additive，类型 `CommitGate=<T>(task)=>Promise<T>` 住 repository/types）；UI 中介析出 `ui/writeChain.ts`（纯拆解零行为差） | 债#5：导入 commit 与串行链不同门，开火中途的旧世界意图可把写落在刚替换的宇宙上（R9 e2e 抓到真竞态、阴性对照双 FAIL 实锤）；屏障只在唯一链上排队 commit（单链红线），不重排事务 | 数据契约/IDB schema/归档格式/commit 事务语义零变化；无头 importFromFile 未注册门 = 与 R9 一字不差；UI 视觉零变化 |
 
 ## 9. 测试基线（`apps/banji/test/`，vitest + fake-indexeddb/auto）
 
@@ -149,6 +157,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 - `application.test.ts`：UI 缝（addCard/updateCard/move/resize/cascade/getMonth/exportToFile/importFromFile/close）。
 - R7 关系面：`edges-domain.test.ts`（pairKey/edgesTouching/threadOrder 跨日平序+环安全）、`edges-application.test.ts`（三闸、dedup 双向、撕线幂等、级联剪边含跨日边、edgePatches 逐字双幂等、预检悬空端点双向+正例放行、D6 归档往返、D7 语义等价导出拍板），UI：`links-mode.test.tsx`（纸黄昏、三道收线、落定熄灭、dedup 目击、跨日「牵给近日」、撕线反悔分界、edgePatches∩parentPatches 经托盘逐字同回、键集纪律）、`thread-mode.test.tsx`（串珠纯算+线模式交互+点珠翻页+瞬态不写库）。
 - R8 跨时间探索面（305 基线）：`search.test.ts`（22：EN/CJK fold 子串、rank 三档 + createdAt 降 + id 全序、snippet 省略号界、[start,end) 码元坐标、cap/around 覆写、空白恒空、容器孩子自成行）、`search-seam.test.ts`（2：loadAllAssetMeta 无 blob/无 addedAt、无名资产 name 键整个缺席——真 repo 非 mock）、`graph-layout.test.ts`（11：双跑深相等确定性、乱序不动几何、日期列历法升序、createdAt 堆叠、孩子缩进悬母片下、边只认活 chip、柱内无重叠、病态环不吞纸、空图/单纸边角）、UI `search.test.tsx`（8：入口/持焦/耳语/分组高亮/孩子行/XSS 文本节点判死/假计时器脉冲起熄+零写库/底料一入一读）、`graph-mode.test.tsx`（5：三段、全日记 chips、跨日线、点 chip 翻页脉冲、D4 三目光往返零写笔键账逐字）。e2e 70→87（搜索全程/图模式/夜读双取证/手机 390），0 console。
+- R10 提交屏障面（373 基线）：UI `import-barrier.test.tsx`（3：A 面悬挂开火定序 in-flight→landed→commit + 新宇宙逐字 + ack 后零过缝、B 面 commit 失败复活不吞不毒旧宇宙不换、C 面只弃旧不毒新）；R6 四面（import-discard）原样重跑。e2e 96→97：债#6 夹具改真对抗（journals.get 一次性挂起闸 + 5-store readwrite 诞生计数器：屏障下 commit 事务 1500ms 零诞生、放行后逐字节 ≡ staged；阴性对照还原旁路则双 FAIL），连跑两遍 0 console。
 
 ```
 cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸全绿才算完成
@@ -164,3 +173,5 @@ cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸�
 R7 关系缝清单（§8 偏差 5）：`addEdge`（自牵/无卡/dedup 三道静默闸，成功返回落库边）、`deleteEdge`（幂等）、`listEdgesForCards`（渲染账本）、`getRecentCards(anchor, days)`（「牵给近日」窗 [anchor−days, anchor)，垫纸出局、附 assetName）、`loadAllCards`/`loadAllEdges`（线模式 BFS 底料）。全 additive，无既有签名破坏（除偏差 5 记录的两处）。
 
 **R8 跨时间探索缝（全 read-only，零新存储字段/零迁移——不占 §8 偏差表）**：`loadAllAssetMeta(): Promise<AssetMeta[]>`——全量资产的 `{hash,name?,mime,size}` 投影，**blob 一字不过缝**（IDB 递来整条记录，过缝第一刻剥成投影；无名资产 name 键整个缺席）；域内纯函数 `searchCards(cards, assetMeta, query, opts)`——大小写不敏感子串（fold 走码元 1:1，CJK 天然成立）、rank=首行>后行/链接>资产名、并列 createdAt 降、cap 50、snippet±40 带省略号、高亮以 [start,end) 码元下标交付（渲染层切 React 文本节点，绝无 HTML 注入路）。图模式布局 `graphLayout(entries, edges, opts)` 住 UI（视图几何非领域规则）：时间轴纸聚、纯函数、双跑深相等。三目光（卡片/线/图）、搜索瞬态（查询词、纸片开合）、hop 跳纸脉冲全不住 store 串行链——e2e 键集断言（卡片键/边键 ⊆ 契约全集）随轮复验。
+
+**R10 提交门（§8 偏差 6）**：`BanjiApp.setCommitGate(gate: CommitGate | null): void`——`CommitGate = <T>(task: () => Promise<T>) => Promise<T>`（repository/types，archive 与 seam 共享）。持链宿主（useDayStore→writeChain 屏障）挂载注册、卸载交还；`importFromFile→importArchive` 阶段 3 永远过门——注册后端到端与抽屉同保证，未注册直通。UI 侧 `actions.onUniverseReplaced` 语义不变（幂等整斧，链环内与抽屉 ack 双落一次无害）；store.ts 的链核心住 `ui/writeChain.ts`（纯拆解），两台编排机注入面不变。
