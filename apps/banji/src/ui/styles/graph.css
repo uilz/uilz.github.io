@@ -87,6 +87,16 @@
   white-space: nowrap;
 }
 
+/* QA（夜读机判）：.bj-kind-ico 本体 ink-faint×0.75 在夜读 chip 上近乎隐形——
+   chip 内换 ink-soft 实笔（仍是淡墨，不发光），尺寸收进 18px 贴合小纸片。 */
+.bj-graph-chip .bj-kind-ico {
+  width: 18px;
+  height: 18px;
+  margin-right: 0;
+  color: var(--bj-ink-soft);
+  opacity: 1;
+}
+
 .bj-graph-whisper {
   position: absolute;
   left: 0;

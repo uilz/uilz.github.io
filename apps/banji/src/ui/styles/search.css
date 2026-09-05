@@ -128,12 +128,13 @@
   background: var(--bj-page-a);
 }
 
-/* 日期如书口题签：竖意小签，新日在前由渲染顺序保证。 */
+/* 日期如书口题签：竖意小签，新日在前由渲染顺序保证；
+   QA（夜读机判）：ink-faint 在夜读底上对比不足，题签该安静但不该消失——ink-soft。 */
 .bj-search-day {
   font-family: var(--bj-display);
   font-size: 13px;
   letter-spacing: 0.08em;
-  color: var(--bj-ink-faint);
+  color: var(--bj-ink-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

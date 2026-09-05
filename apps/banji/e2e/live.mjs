@@ -1187,6 +1187,7 @@ await mpage.screenshot({ path: `${SHOTS}/22-mobile-stack.png` })
   await mpage.waitForFunction(() => document.querySelectorAll('[data-search-row]').length >= 2, null, { timeout: 8000 })
   const mRowBox = await mpage.locator('[data-search-row]').first().boundingBox()
   check('R8 手机 结果行 ≥44px 可点', mRowBox !== null && mRowBox.height >= 44)
+  await mpage.screenshot({ path: `${SHOTS}/31-mobile-search.png` })
   await mpage.locator('[data-search-row]').first().tap()
   const mPulsed = await mpage.waitForFunction(() => document.querySelector('[data-card-id].is-pulse') !== null, null, { timeout: 2500 }).then(() => true).catch(() => false)
   const mLanded = await mpage.evaluate((t) => ({
