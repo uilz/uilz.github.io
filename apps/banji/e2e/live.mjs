@@ -1225,6 +1225,95 @@ await page.waitForSelector('.bj-cell')
   check('R9·D6+D4 导出→wipe→重导入：改名纸的 props.name 逐字回魂（覆盖名随身走），键集 ⊆ 契约字段照样过秤', JSON.stringify(namesBack) === '["同名副本","雨后槐花"]' && keyleak9 === false)
 }
 
+// —— R11·D5 快捷键补全（真键盘过浏览器）：⌘N 添卡即聚焦编辑 / ⌘⇧K 造叠 / ⌘E 抽屉直发导出（键术单在场）/ Esc 合上抽屉。
+// —— R11·D2 题签对称：四型资产卡同名元素同 class（.bj-asset-name），改名后 reload 各显纸面名。
+{
+  const poll = async (fn, timeoutMs = 12000) => {
+    const t0 = Date.now()
+    for (;;) {
+      if (await fn()) return true
+      if (Date.now() - t0 > timeoutMs) return false
+      await page.waitForTimeout(250)
+    }
+  }
+  const cardsNow = async () => (await dump(page)).journals.flatMap((j) => j.cards)
+  await page.click('.bj-back')
+  await page.waitForSelector('.bj-cell')
+  await page.click(`.bj-cell[data-date="${today}"]`)
+  await page.waitForSelector('.bj-card')
+  await page.waitForTimeout(900)
+
+  await page.keyboard.press('Control+e')
+  const dlR11 = await page.waitForEvent('download', { timeout: 15000 }).catch(() => null)
+  const drawerUp = await page.evaluate(() => document.querySelector('.bj-drawer') !== null)
+  const keyRows = await page.evaluate(() => document.querySelectorAll('[data-keylist] li').length)
+  check('R11·D5 ⌘E：抽屉开门直发导出（只读零确认）+ 键术五行在场', dlR11 !== null && drawerUp === true && keyRows === 5)
+  await page.keyboard.press('Escape')
+  check('R11·D5 Esc 合上抽屉（巡检补的门：纸片/纸单/牵线早有出口，抽屉是漏下的最后一扇）', (await page.locator('.bj-drawer').count()) === 0)
+
+  const cardsBeforeN = (await cardsNow()).length
+  await page.keyboard.press('Control+n')
+  const taFocused = await poll(() => page.evaluate(() => document.activeElement?.tagName === 'TEXTAREA'))
+  await page.evaluate(() => document.activeElement?.blur())
+  const nSaved = await poll(async () => (await cardsNow()).length >= cardsBeforeN + 1)
+  check('R11·D5 ⌘N = 添一张卡：与同一枚 pill 同口径（新纸即持焦编辑、过缝落库）', taFocused && nSaved)
+
+  const kMat0 = await page.evaluate(() => document.querySelectorAll('.bj-card.be-container').length)
+  await page.keyboard.press('Control+Shift+k')
+  const kMatOn = await poll(() => page.evaluate((n) => document.querySelectorAll('.bj-card.be-container').length > n, kMat0))
+  check('R11·D5 ⌘⇧K = 造叠：垫纸即刻上纸', kMatOn === true)
+
+  // D2 夹具：给影纸/火漆各题一名，再夹一枚 .txt（text/plain→文件型）题一名；图纸 R9 已题「雨后槐花」。
+  // chip 体是 data-nodrag（点它不选卡——R4 触摸修复的既有纪律），落点走卡片 12/14px 留白纸边。
+  const renameOn = async (cardId, name) => {
+    const p = await page.evaluate((i) => {
+      const el = document.querySelector(`[data-card-id="${i}"]`)
+      if (el === null) return null
+      el.scrollIntoView({ block: 'center' })
+      const r = el.getBoundingClientRect()
+      return { x: r.x + 6, y: r.y + 6 }
+    }, cardId)
+    if (p === null) return false
+    await page.mouse.click(p.x, p.y)
+    await page.waitForTimeout(300)
+    await page.click('[aria-label="卡片菜单"]')
+    await page.click('[data-menu-rename]')
+    await page.fill('[data-rename-input]', name)
+    await page.click('[data-rename-commit]')
+    return poll(async () => (await cardsNow()).find((c) => c.id === cardId)?.name === name)
+  }
+  const dPre11 = await dump(page)
+  const vidCard = dPre11.journals.flatMap((j) => j.cards).find((c) => c.kind === 'video')
+  const pdfCard = dPre11.journals.flatMap((j) => j.cards).find((c) => c.kind === 'pdf')
+  if (vidCard === undefined || pdfCard === undefined) throw new Error('R11·D2 夹具：影纸/火漆不在纸上')
+  const rnVid = await renameOn(vidCard.id, '影纸题雪')
+  const rnPdf = await renameOn(pdfCard.id, '火漆题卷')
+  await page.setInputFiles('input[aria-label="夹带"]', { name: '山门.txt', mimeType: 'text/plain', buffer: Buffer.from('山门一入 深似海\n', 'utf8') })
+  await page.waitForSelector('.bj-card.be-file', { timeout: 8000 })
+  const dMid = await dump(page)
+  const fileCard = dMid.journals.flatMap((j) => j.cards).find((c) => c.kind === 'file')
+  if (fileCard === undefined) throw new Error('R11·D2 夹具：文件卡没落纸（mime 路由坏了？）')
+  const rnFile = await renameOn(fileCard.id, '山门题记')
+  await page.reload()
+  await page.waitForSelector('.bj-card')
+  await page.waitForTimeout(1200) // 等 asset 出 blob（常挂口径下未改名显资产原名，改名纸显覆盖名）
+  const d2 = await page.evaluate(() => {
+    const one = (sel) => document.querySelector(sel)?.textContent?.trim() ?? null
+    const all = (sel) => [...document.querySelectorAll(sel)].map((e) => e.textContent?.trim() ?? '')
+    const classes = ['.bj-card.be-image .bj-asset-name', '.bj-card.be-video .bj-asset-name', '.bj-card.be-pdf .bj-asset-name', '.bj-card.be-file .bj-asset-name']
+    return {
+      image: all('.bj-card.be-image .bj-asset-name').includes('雨后槐花'),
+      video: one('.bj-card.be-video .bj-card-body .bj-video-name') === '影纸题雪',
+      pdf: one('.bj-card.be-pdf .bj-card-body .bj-file-name') === '火漆题卷',
+      file: one('.bj-card.be-file .bj-card-body .bj-file-name') === '山门题记',
+      allOneClass: classes.every((c) => [...document.querySelectorAll(c)].every((e) => e.classList.contains('bj-asset-name') && e.hasAttribute('data-asset-name'))) && classes.every((c) => document.querySelector(c) !== null),
+    }
+  })
+  const named = d2.image && d2.video && d2.pdf && d2.file
+  check('R11·D2 题签对称：改名过缝 reload 四型各显纸面名（图/影/火漆/文件）', rnVid && rnPdf && rnFile && named)
+  check('R11·D2 同一 class 纪律：四型 name 元素全戴 .bj-asset-name + data-asset-name（题签是排印纪律不是各写各的）', d2.allOneClass === true)
+}
+
 await page.click('button[aria-label="设置"]')
 await page.getByRole('button', { name: /夜读/ }).first().click().catch(async () => { await page.locator('text=夜读').first().click() })
 await page.waitForTimeout(500)
