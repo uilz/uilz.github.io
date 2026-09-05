@@ -41,11 +41,29 @@ export interface GraphColumn {
   readonly width: number
 }
 
+/** 跨日线角标（R12）：住远端纸角的日子签——几何归布局一家，渲染层只摆位置。 */
+export interface LineBadge {
+  readonly date: string
+  readonly x: number
+  readonly y: number
+}
+
 export interface GraphLine {
   readonly id: string
   readonly from: CardId
   readonly to: CardId
   readonly d: string
+  /** null = 同日线原样（无角标）；跨日线=远端日子签。 */
+  readonly badge: LineBadge | null
+}
+
+/**
+ * 角标可见性判据（纯函数，单测钉死）：两端同日=null——角标绝不现身；
+ * 跨日=远端日子——左旧右新的时间轴上「远」取历法较晚的一端（字典序最大）。
+ */
+export function lineDayBadge(fromDate: string, toDate: string): string | null {
+  if (fromDate === toDate) return null
+  return fromDate > toDate ? fromDate : toDate
 }
 
 export interface GraphLayout {
@@ -137,7 +155,15 @@ export function graphLayout(entries: readonly GraphEntry[], edges: readonly Edge
     if (a === undefined || b === undefined) continue
     const shape = lineShape(center(a), center(b), e.source, e.target)
     if (shape === null) continue
-    lines.push({ id: e.id, from: e.source, to: e.target, d: shape.d })
+    const badgeDate = lineDayBadge(a.entry.date, b.entry.date)
+    const far = badgeDate === null ? null : a.entry.date === badgeDate ? a : b
+    lines.push({
+      id: e.id,
+      from: e.source,
+      to: e.target,
+      d: shape.d,
+      badge: far === null || badgeDate === null ? null : { date: badgeDate, x: far.x + far.w - 4, y: far.y + far.h - 16 },
+    })
   }
   return {
     columns,

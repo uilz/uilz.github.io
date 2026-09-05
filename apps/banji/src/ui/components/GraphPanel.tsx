@@ -91,6 +91,21 @@ export function GraphPanel({ app, onOpenCard }: GraphPanelProps): ReactElement {
               {chip.entry.icon === 'text' || chip.entry.snippet !== '' ? <span className="bj-graph-snippet">{chip.entry.snippet}</span> : null}
             </button>
           ))}
+          {/* R12 跨日线角标：日子签钉在远端纸角——线牵出这一列时知道它去的是哪一天；同日线一字不加。 */}
+          {layout.lines.map((ln) =>
+            ln.badge === null ? null : (
+              <span
+                key={ln.id}
+                className="bj-line-badge"
+                data-line-badge={`${String(ln.from)}→${String(ln.to)}`}
+                data-line-date={ln.badge.date}
+                aria-hidden
+                style={{ left: ln.badge.x, top: ln.badge.y }}
+              >
+                {shortDateLabel(ln.badge.date)}
+              </span>
+            ),
+          )}
         </div>
       </div>
       <p className="bj-graph-hint">左右推移逛时间 · 点一张小纸翻回它的那天</p>

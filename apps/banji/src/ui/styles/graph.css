@@ -97,6 +97,25 @@
   opacity: 1;
 }
 
+/* R12 跨日线角标：钉在远端纸角的日子签——ink-soft 淡墨（R8 法：可读信息不用 faint 面），
+   纸色底避过 snippet 尾巴，pointer-events 穿透不抢小纸的点击。只随跨日线现身，同日线无。 */
+.bj-line-badge {
+  position: absolute;
+  transform: translateX(-100%);
+  box-sizing: border-box;
+  padding: 0 3px;
+  border-radius: 2px;
+  background: var(--bj-card);
+  color: var(--bj-ink-soft);
+  font-family: var(--bj-body);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .bj-graph-whisper {
   position: absolute;
   left: 0;

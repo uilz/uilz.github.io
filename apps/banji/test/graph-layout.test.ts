@@ -1,7 +1,7 @@
 // graphLayout 纯算（R8·D3）：确定性（双跑深相等、输入序不参与几何）、日期列、createdAt 升序柱内堆叠、
 // 孩子缩进悬母片之下、边只认活 chip、空图/单纸边角。全 node 环境——布局层零 DOM。
 import { describe, expect, it } from 'vitest'
-import { graphLayout, type GraphEntry } from '../src/ui/graphLayout'
+import { graphLayout, lineDayBadge, type GraphEntry } from '../src/ui/graphLayout'
 import type { CardId, EdgeRecord } from '../src/domain/types'
 import { isoAt } from './helpers'
 
@@ -114,5 +114,51 @@ describe('graphLayout：确定性与结构', () => {
   it('病态互父环：一张纸都不吞（兜底上柱），深度封顶不炸', () => {
     const layout = graphLayout([entry('A', '2026-01-10', 1, ['B']), entry('B', '2026-01-10', 2, ['A']), entry('B2', '2026-01-10', 3, ['A'])], [])
     expect(layout.chips).toHaveLength(3)
+  })
+})
+
+describe('lineDayBadge（R12 跨日线角标判据）：纯谓词，角标绝不该悄悄上线', () => {
+  it('同日=不显形（null）——同日线原样一字不加', () => {
+    expect(lineDayBadge('2026-01-10', '2026-01-10')).toBeNull()
+  })
+
+  it('跨日=显形，签的是远端（历法较晚端）——字典序两端谁前谁后同结果', () => {
+    expect(lineDayBadge('2026-01-09', '2026-01-11')).toBe('2026-01-11')
+    expect(lineDayBadge('2026-01-11', '2026-01-09')).toBe('2026-01-11')
+  })
+
+  it('跨一个月/一年也认（日序字典序在 ISO 日历上=历法序）', () => {
+    expect(lineDayBadge('2025-12-31', '2026-01-01')).toBe('2026-01-01')
+    expect(lineDayBadge('2026-09-04', '2026-09-05')).toBe('2026-09-05')
+  })
+})
+
+describe('graphLayout 角标落位：判据的渲染账', () => {
+  it('跨日线：badge.date=远端日、锚点住远端纸的右下角内', () => {
+    const layout = graphLayout([entry('new', '2026-01-11'), entry('old', '2026-01-10')], [edge('old', 'new')])
+    const line = layout.lines[0]!
+    expect(line.badge?.date).toBe('2026-01-11')
+    const far = layout.chips.find((c) => c.entry.cardId === cid('new'))!
+    expect(line.badge!.x).toBeGreaterThan(far.x)
+    expect(line.badge!.x).toBeLessThanOrEqual(far.x + far.w)
+    expect(line.badge!.y).toBeGreaterThan(far.y)
+    expect(line.badge!.y + 14).toBeLessThanOrEqual(far.y + far.h)
+  })
+
+  it('from/to 反着登记，角标照旧钉远端（判据不吃登记序）', () => {
+    const fwd = graphLayout([entry('a', '2026-01-10'), entry('b', '2026-01-12')], [edge('a', 'b')])
+    const rev = graphLayout([entry('a', '2026-01-10'), entry('b', '2026-01-12')], [edge('b', 'a')])
+    expect(fwd.lines[0]!.badge?.date).toBe('2026-01-12')
+    expect(rev.lines[0]!.badge?.date).toBe('2026-01-12')
+  })
+
+  it('同日线 badge=null（线照常画，角标零现身）；跨日混线各归各账', () => {
+    const layout = graphLayout(
+      [entry('s1', '2026-01-10'), entry('s2', '2026-01-10'), entry('far', '2026-01-12')],
+      [edge('s1', 's2'), edge('s2', 'far')],
+    )
+    const byId = new Map(layout.lines.map((l) => [l.id, l]))
+    expect(byId.get('s1→s2')?.badge).toBeNull()
+    expect(byId.get('s2→far')?.badge?.date).toBe('2026-01-12')
   })
 })
