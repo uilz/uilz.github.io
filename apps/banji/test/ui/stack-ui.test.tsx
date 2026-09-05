@@ -175,7 +175,7 @@ describe('叠中叠护栏（D7）', () => {
 })
 
 describe('连纸带叠的再想想（D6）', () => {
-  it('撕内垫报子树总数，再想想连嵌套带 index 逐字复原（parentPatches 之路）', async () => {
+  it('撕内垫报子树总数，外垫引用同批过缝剥离，再想想连嵌套带出生席位逐字复原', async () => {
     const g = kid('ug', { x: 495, y: 495 })
     const inner = containerCard([g.id], { id: cid('ui'), pos: { x: 470, y: 470 }, size: { w: 240, h: 180 } })
     const other = kid('uo2', { x: 900, y: 900 })
@@ -190,6 +190,9 @@ describe('连纸带叠的再想想（D6）', () => {
     await settle(80)
     const toasts = [...el.querySelectorAll('.bj-toast:not(.bj-toast-alert)')]
     expect(toasts[0]?.textContent).toBe('已撕下 2 张，再想想') // 托盘数 = 子树大小
+    await settle(550) // 剥离意图同一条 debounce 链过缝：幸存外垫不替死纸守灵
+    expect(stored('uo').children).toEqual([cid('uo2')])
+    expect(vi.mocked(seam.app.updateCard).mock.calls.some(([, id, p]) => id === outer.id && 'children' in p)).toBe(true)
     fireEvent.click(toasts[0]!.querySelector('.bj-toast-action')!)
     await settle(80)
     expect(stored('uo').children).toEqual([cid('ui'), 'uo2']) // 内垫回到外叠的出生席位

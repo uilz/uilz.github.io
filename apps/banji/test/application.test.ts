@@ -6,9 +6,10 @@ import { createBanjiApp, CardNotFoundError, InvalidDateError, InvalidRestoreErro
 import { sha256Hex } from '../src/archive/hash'
 import { exportArchive } from '../src/archive/exportArchive'
 import { isUuidV7Shape } from '../src/domain/id'
+import { validateJournalDoc } from '../src/domain/validate'
 import type { CardId } from '../src/domain/types'
 import { containerCard, fileCard, imageCard, isoAt, textCard, tid } from './helpers'
-import { buildWorld, FIXED_NOW, seedRepoWorld, utf8, type World } from './archiveFixtures'
+import { buildWorld, FIXED_NOW, seedRepoWorld, snapshotRepo, utf8, wipeAll, type World } from './archiveFixtures'
 
 let seq = 0
 const open = async (): Promise<{ repo: Repo; name: string }> => {
@@ -331,5 +332,61 @@ describe('application: 资产 / 设置 / 月摘要用例（T0 缝）', () => {
       { date: '2026-01-11', cardCount: 3 },
     ])
     expect(await appOf(repo).getMonthSummary(2025, 12)).toEqual([])
+  })
+})
+
+// 档案中毒判死（R5 债1 · prune-at-delete-commit 的归档侧收口）：store.remove() 在 deleteCardCascade 之后的
+// 同一条串行链上发幸存父卡剥离——commitStack→diffIntents→updateCard 的接线由 UI 测试钉死（undo.test / stack-ui D6），
+// 此处按 store 过缝的同一批缝调用（级联 → children 剥离补丁）钉「库中永不存谎言档案」：
+// 过期无人回天之后，导出→wipe→重导必须整体过闸，幽灵绝不借档案还魂（中位次同时锁死 index: 1 的记录）。
+describe('application: 删除同批剥引用 → 归档往返（档案中毒判死）', () => {
+  const seedPoisonWorld = async (repo: Repo): Promise<{ parent: ReturnType<typeof containerCard>; keepA: ReturnType<typeof textCard>; gone: ReturnType<typeof textCard>; keepB: ReturnType<typeof textCard> }> => {
+    const keepA = textCard('甲', { id: tid('pz-a') })
+    const gone = textCard('乙', { id: tid('pz-gone') })
+    const keepB = textCard('丙', { id: tid('pz-b') })
+    const parent = containerCard([keepA.id, gone.id, keepB.id], { id: tid('pz-p') }) // 位次居中的引用，正是幽灵温床
+    await repo.journals.put({ date: T, cards: [parent, keepA, gone, keepB], updatedAt: isoAt() })
+    return { parent, keepA, gone, keepB }
+  }
+
+  it('given 居中子卡被撕 when 级联+剥离按 store 同批过缝 then 库内文档即过校验，导出→wipe→重导全闸放行且无幽灵还魂', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const { parent, keepA, gone, keepB } = await seedPoisonWorld(repo)
+    await app.deleteCardCascade(T, gone.id)
+    await app.updateCard(T, parent.id, { children: [keepA.id, keepB.id] }) // = commitStack 对这一张发的剥离补丁
+    const committed = await repo.journals.get(T)
+    if (committed === undefined) throw new Error('文档丢失')
+    expect(validateJournalDoc(committed).ok).toBe(true) // 不等过期、不等导出：活库落定那一拍已无谎言
+    const out = await app.exportToFile()
+    if (!out.archive.ok) throw new Error(`干净档案理应可导: ${out.archive.userMessage}`)
+    await wipeAll(repo) // 托盘过期后 wipe 库，档案是唯一指望
+    const back = await app.importFromFile(new Blob([out.archive.zip]))
+    expect(back.ok).toBe(true)
+    if (!back.ok) throw new Error(back.userMessage)
+    expect(back.stats.journals).toBe(1)
+    const revived = await repo.journals.get(T)
+    expect(revived?.cards.find((c) => c.id === parent.id)?.children).toEqual([keepA.id, keepB.id])
+    expect(revived?.cards.map((c) => c.id)).not.toContain(gone.id)
+    if (revived === undefined) throw new Error('重导入后当日丢失')
+    expect(validateJournalDoc(revived).ok).toBe(true)
+  })
+
+  it('对照（修复前旧作为）：只级联不剥离 → 自家档案死在自家 child_missing 闸前，且闸拒归拒、现有数据原封不动', async () => {
+    const { repo, name } = await open()
+    protect(repo, name)
+    const app = appOf(repo)
+    const { gone } = await seedPoisonWorld(repo)
+    await app.deleteCardCascade(T, gone.id) // v1 行为：children[] 里幽灵长住（过期后无人有权请走）
+    const out = await app.exportToFile()
+    if (!out.archive.ok) throw new Error(out.archive.userMessage) // 中毒照样出得去门——正是当年 Scenario
+    const before = await snapshotRepo(repo)
+    const back = await app.importFromFile(new Blob([out.archive.zip]))
+    expect(back.ok).toBe(false)
+    if (back.ok) throw new Error('中毒档案必须被拒')
+    expect(back.reason).toBe('journal.invalid')
+    expect(back.detail).toContain('journal.child_missing')
+    expect(await snapshotRepo(repo)).toEqual(before) // 拒得诚实：一个字节都不许动
   })
 })

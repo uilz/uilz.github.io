@@ -8,7 +8,7 @@ import { App } from '../../src/ui/App'
 import type { MockSeam } from './mocks'
 import { makeMockApp } from './mocks'
 import { tap } from './pointer'
-import { buildDeleteSnapshot } from '../../src/ui/undoSnapshot'
+import { buildDeleteSnapshot, stripDoomedRefs } from '../../src/ui/undoSnapshot'
 import { containerCard, textCard } from '../helpers'
 import type { Card, CardId } from '../../src/domain/types'
 
@@ -86,9 +86,10 @@ describe('再想想（串行往返：快照先于缝、逐字回位、单级顶�
     const parent = containerCard([victim.id, witness.id], { id: cid('u-p'), props: {}, pos: { x: 400, y: 400 } })
     openDay([parent, victim, witness])
     await deleteCard('u-1')
-    // 级联只拔卡身：幸存父卡的 children 引用在库里仍是删除前的原样（悬空引用由快照记录原位）
-    expect(seam.journals.get(DAY)?.cards.find((c) => c.id === parent.id)?.children).toEqual([victim.id, witness.id])
     await waitFor(() => expect(undoToast()).not.toBeNull())
+    // prune-at-delete-commit：幸存父卡的剥离意图与撕下同批发车（同一条 debounce 串行链）——窗过之后，悬空引用不入档。
+    await settle(550)
+    expect(seam.journals.get(DAY)?.cards.find((c) => c.id === parent.id)?.children).toEqual([witness.id])
     vi.mocked(seam.app.restoreCards).mockClear()
     fireEvent.click(undoToast()!)
     await settle(80)
@@ -110,6 +111,31 @@ describe('再想想（串行往返：快照先于缝、逐字回位、单级顶�
     expect(node?.style.top).toBe('20px')
     expect(node?.style.width).toBe('240px')
     expect(seam.journals.get(DAY)?.cards.find((c) => c.id === victim.id)).toBeDefined()
+    // 剥离之后撤销照旧逐字：parentPatches 按记录 index 重插，删除圈的账平了。
+    expect(seam.journals.get(DAY)?.cards.find((c) => c.id === parent.id)?.children).toEqual([victim.id, witness.id])
+  })
+
+  it('given 撕的是居中那张 when 剥离过缝后按「再想想」then 按记录 index=1 精确回位：UI 内存与库内同数同席（贴尾/抢头皆错）', async () => {
+    const first = card('mi-1', '先')
+    const victim = card('mi-2', '居中之纸')
+    const last = card('mi-3', '后')
+    const parent = containerCard([first.id, victim.id, last.id], { id: cid('mi-p'), props: {}, pos: { x: 620, y: 620 } })
+    openDay([parent, first, victim, last])
+    await deleteCard('mi-2')
+    await waitFor(() => expect(undoToast()).not.toBeNull())
+    await settle(550)
+    // 剥离同批过缝：居中幽灵即刻请走，库与 UI 内存（小注）同数
+    expect(seam.journals.get(DAY)?.cards.find((c) => c.id === parent.id)?.children).toEqual([first.id, last.id])
+    expect(el?.querySelector('.bj-card.be-container .bj-stack-note')?.textContent).toBe('2 张')
+    vi.mocked(seam.app.restoreCards).mockClear()
+    fireEvent.click(undoToast()!)
+    await settle(80)
+    // 快照记的是出生席位（index 1），不是尾巴也不是头
+    expect(vi.mocked(seam.app.restoreCards).mock.calls[0]?.[1]?.parentPatches).toEqual([{ parentId: parent.id, childId: victim.id, index: 1 }])
+    expect(seam.journals.get(DAY)?.cards.find((c) => c.id === parent.id)?.children).toEqual([first.id, victim.id, last.id])
+    expect(el?.querySelector('[data-card-id="mi-2"]')).not.toBeNull()
+    // reducer 的 cards/restored 也按 record 席位回填 UI 内存（dayState 与 restoreCards 同一把尺）
+    expect(el?.querySelector('.bj-card.be-container .bj-stack-note')?.textContent).toBe('3 张')
   })
 
   it('given 缝开火 when deleteCardCascade 被调用的当拍 then 纸面仍挂着将被撕的卡（快照摄于乐观移除之前）', async () => {
@@ -196,5 +222,16 @@ describe('快照簿记（undoSnapshot 纯函数）', () => {
     expect(doomed).toEqual(['s-doom'])
     expect(snapshot.cards.map((c) => c.id)).toEqual(['s-doom'])
     expect(snapshot.parentPatches).toEqual([{ parentId: refHolder.id, childId: doomedB.id, index: 0 }])
+  })
+
+  it('stripDoomedRefs：幸存父卡的 doomed 引用同批滤净；不沾引用的卡原引用交出（diff 零误伤）；删卡本身不归它管', () => {
+    const kid = card('sr-k', '将死')
+    const keep = card('sr-w', '另存')
+    const holder = containerCard([kid.id, keep.id], { id: cid('sr-p'), props: {} })
+    const plain = card('sr-o', '素纸')
+    const out = stripDoomedRefs([holder, plain, kid, keep], new Set<CardId>([kid.id]))
+    expect(out.find((c) => c.id === cid('sr-p'))?.children).toEqual([keep.id])
+    expect(out.find((c) => c.id === cid('sr-o'))).toBe(plain)
+    expect(out.some((c) => c.id === kid.id)).toBe(true) // 级联删卡归 deleteCardCascade，滤引用归这把尺
   })
 })
