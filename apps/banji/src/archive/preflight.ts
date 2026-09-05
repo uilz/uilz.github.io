@@ -18,6 +18,7 @@ export type PreflightCode =
   | 'card.dangling_asset'
   | 'edge.invalid'
   | 'edge.duplicate_id'
+  | 'edge.dangling_endpoint'
   | 'setting.invalid'
   | 'setting.duplicate_key'
   | 'asset.entry_invalid'
@@ -216,6 +217,14 @@ export function preflightArchive(input: PreflightInput): PreflightResult {
       continue
     }
     seenEdgeIds.add(id)
+    // D4 对称闸：端点必须指向本档案的卡。自家导出已剪边产生不了悬空；这道闸拦的是
+    // 第三方/手改档案把无主的线偷渡进库——库中永不存谎言档案，边也不能说谎。
+    const src = String(rawEdge['source'])
+    const tgt = String(rawEdge['target'])
+    if (!seenCardIds.has(src) || !seenCardIds.has(tgt)) {
+      say('edge.dangling_endpoint', `边 ${short(id)} 端点无卡: ${short(src)}↔${short(tgt)}`)
+      continue
+    }
     staged.push({ key: stagingKey('e', id), value: rawEdge })
     edgeCount += 1
   }

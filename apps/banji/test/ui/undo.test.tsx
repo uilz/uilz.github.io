@@ -147,7 +147,7 @@ describe('再想想（串行往返：快照先于缝、逐字回位、单级顶�
     vi.mocked(seam.app.deleteCardCascade).mockImplementation(async (date, id) => {
       // 链上异步执行到此：cards/removed 尚未 dispatch，纸面必须还完整
       if (el?.querySelector('[data-card-id="u-2"]') !== null) seen.push('alive-at-seam')
-      await original(date, id)
+      return original(date, id)
     })
     await deleteCard('u-2')
     expect(seen).toEqual(['alive-at-seam'])

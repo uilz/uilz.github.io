@@ -1,0 +1,328 @@
+/* 关系系统（R7）：同日连线、撕线签、牵线模式、线模式串珠、卡片/线段切。
+   审美铁律：线是铅笔淡痕不是电路图——发丝、暖棕、40%、无箭头、无辉光、无动效 dash；
+   暗是纸落暮色不是黑幕；一切动效只动 transform/opacity 且 ≤180ms。 */
+
+/* —— D2 同日连线 —— */
+.bj-lines {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.bj-line {
+  pointer-events: auto; /* 默认只描边命中（透明双笔），画层本身不吃事件 */
+  cursor: pointer;
+}
+
+.bj-line-ink {
+  fill: none;
+  stroke: var(--bj-thread);
+  stroke-width: 1;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.bj-line.is-hot .bj-line-ink,
+.bj-line:hover .bj-line-ink {
+  opacity: 0.7; /* 端点被选中/悬停：线醒一点，不发光 */
+}
+
+/* 隐形双笔：≥24px 触区，指尖摸得到线，眼睛看不见第二根。 */
+.bj-line-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 24;
+}
+
+/* —— D3 撕线签 —— */
+.bj-line-chip {
+  position: absolute;
+  z-index: 700;
+  transform: translate(-50%, -50%);
+  padding: 5px 12px;
+  min-height: 28px;
+  border: 1px solid var(--bj-hairline-strong);
+  border-radius: 2px;
+  background: var(--bj-card);
+  box-shadow: var(--bj-shadow);
+  color: var(--bj-accent);
+  font-family: var(--bj-display);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  margin-right: -0.14em;
+  cursor: pointer;
+}
+
+/* —— D1 牵线模式 —— */
+.bj-card.bj-link-dim {
+  opacity: var(--bj-dusk); /* 纸黄昏：非靶子全体压暗，暮不是夜 */
+  transition: opacity 160ms ease-out;
+}
+
+.bj-card.bj-link-target {
+  cursor: crosshair; /* 穿线的笔尖 */
+}
+
+.bj-card.bj-link-target:hover {
+  transform: translateY(-2px);
+}
+
+.bj-card.bj-link-origin {
+  transform: translateY(-3px);
+  box-shadow: var(--bj-shadow-lift);
+  cursor: crosshair;
+}
+
+.bj-linker-bar {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.bj-linker-hint {
+  color: var(--bj-ink-faint);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.bj-link-recent {
+  pointer-events: auto;
+  border: none;
+  background: none;
+  color: var(--bj-accent);
+  font-family: var(--bj-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: opacity 160ms ease-out;
+}
+
+.bj-link-recent:hover {
+  opacity: 0.78;
+}
+
+/* —— 「牵给近日」纸单 —— */
+.bj-veil {
+  position: fixed;
+  inset: 0;
+  background: var(--bj-veil);
+}
+
+.bj-link-veil {
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 84px 24px 24px;
+}
+
+.bj-link-modal {
+  width: min(360px, calc(100vw - 48px));
+  max-height: 62dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bj-surface);
+  border: 1px solid var(--bj-card-edge);
+  border-radius: 2px;
+  box-shadow: var(--bj-shadow-lift);
+}
+
+.bj-link-modal-title {
+  margin: 14px 18px 6px;
+  color: var(--bj-ink-soft);
+  font-family: var(--bj-display);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+}
+
+.bj-link-list {
+  max-height: 48dvh;
+  overflow: auto;
+  padding: 0 10px 10px;
+}
+
+.bj-link-row {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  border: none;
+  border-top: 1px solid var(--bj-hairline);
+  background: none;
+  color: var(--bj-ink);
+  padding: 10px 8px;
+  min-height: 44px;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bj-link-row:hover {
+  background: var(--bj-wash);
+}
+
+.bj-link-row-snippet {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bj-link-row-date {
+  flex: none;
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 12px;
+}
+
+.bj-link-quiet {
+  margin: 14px 8px;
+  color: var(--bj-ink-faint);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+/* —— D5 线模式：一串珠子,日期换组落一枚墨印分隔 —— */
+.bj-thread {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 24px;
+}
+
+.bj-thread-whisper {
+  margin: 0;
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  margin-right: -0.16em;
+}
+
+.bj-thread-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.bj-thread-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 层与层之间：一段发丝直线（是串,不是网）。 */
+.bj-thread-seg {
+  width: 28px;
+  height: 1px;
+  background: var(--bj-thread);
+  opacity: 0.5;
+  flex: none;
+}
+
+.bj-thread-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bj-thread-day {
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--bj-thread);
+}
+
+.bj-thread-bead {
+  min-width: 84px;
+  max-width: 168px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background: var(--bj-card);
+  border: 1px solid var(--bj-card-edge);
+  border-radius: 2px;
+  box-shadow: var(--bj-shadow);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--bj-move) ease-out;
+}
+
+.bj-thread-bead:hover {
+  transform: translateY(-2px);
+}
+
+.bj-thread-snippet {
+  color: var(--bj-ink);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bj-thread-bead-date {
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 11px;
+}
+
+.bj-thread-hint {
+  margin: 26px 0 0;
+  color: var(--bj-ink-faint);
+  opacity: 0.8;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+/* —— 页眉「卡片/线」双段低语（graph 模式是 R8,不留占位） —— */
+.bj-mode-seg {
+  display: inline-flex;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bj-mode-seg-btn {
+  min-height: 28px;
+  padding: 2px 12px;
+  border: none;
+  background: none;
+  color: var(--bj-ink-faint);
+  font-family: var(--bj-display);
+  font-size: 13.5px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition: background var(--bj-move) ease-out;
+}
+
+.bj-mode-seg-btn + .bj-mode-seg-btn {
+  border-left: 1px solid var(--bj-hairline);
+}
+
+.bj-mode-seg-btn.is-on {
+  background: var(--bj-wash);
+  color: var(--bj-ink);
+}

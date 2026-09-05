@@ -16,6 +16,7 @@ import { dayReducer, initialDayState } from './dayState'
 import type { Pending } from './dayState'
 import { buildDeleteSnapshot, stripDoomedRefs } from './undoSnapshot'
 import { createUndoTray, pruneStripIntent } from './undoTray'
+import { createLinkOps } from './lineOps'
 import { createAttachPipeline } from './attachPipeline'
 import { sortByZ } from './stackGeometry'
 import { ATTACH_REJECTED_COPY, DETACH_REJECTED_COPY, diffIntents, planAttach, planDetach, planMove, planResize } from './stackOps'
@@ -104,6 +105,9 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     chain(async () => {
       const doc = await app.getJournal(date)
       if (loadGenRef.current === gen) dispatch({ type: 'day/loaded', cards: doc?.cards ?? [] })
+      // R7：线跟着纸进门——触及本日卡片的边随开日一并载入（撕裂/牵线/恢复都只动这份内存账）。
+      const links = await app.listEdgesForCards((doc?.cards ?? []).map((c) => c.id))
+      if (loadGenRef.current === gen) dispatch({ type: 'links/set', links })
     })
     return () => {
       loadGenRef.current += 1 // 作废在途加载，只接受最新一次 open 的结果
@@ -147,6 +151,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
   )
 
   const tray = useMemo(() => createUndoTray(dispatch), [dispatch])
+  const linking = useMemo(() => createLinkOps({ app, chain, dispatch, getState: () => stateRef.current }), [app, chain, dispatch])
   const nextNoteId = useCallback((): number => ++noteSeqRef.current, [])
   const attaching = useMemo(
     () => createAttachPipeline({ app, chain, dispatch, getState: () => stateRef.current, probe, nextNoteId }),
@@ -166,8 +171,9 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
     () => () => {
       flushNow()
       tray.disarmTimer()
+      linking.dispose()
     },
-    [flushNow, tray],
+    [flushNow, tray, linking],
   )
 
   /** 添一张卡/造一张叠共用的新生管线：先结算在途编辑，散点落位、压顶入场。 */
@@ -190,6 +196,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
 
   const actions = useMemo<DayActions>(
     () => ({
+      ...linking,
       select(id) {
         dispatch({ type: 'ui/select', id })
         if (id !== null) bringToFront(id)
@@ -233,7 +240,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         // 撕下前拍快照：级联之后磁盘只剩 filter 的结果，UI 状态是这批纸片的最后一份完整图景。
         const all = [...stateRef.current.cards]
         const doomed = collectSubtreeIds(cardsByIdOf(all), id)
-        const { snapshot } = buildDeleteSnapshot(all, doomed)
+        const { snapshot } = buildDeleteSnapshot(all, doomed, stateRef.current.links)
         chain(async () => {
           await app.deleteCardCascade(day, id)
           dispatch({ type: 'cards/removed', ids: [...doomed] })
@@ -260,6 +267,8 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
           await app.restoreCards(ticket.date, ticket.snapshot)
           if (stateRef.current.date === ticket.date) {
             dispatch({ type: 'cards/restored', cards: ticket.snapshot.cards, parentPatches: ticket.snapshot.parentPatches })
+            // D4 的 undo 腿：线随纸同批回位——缝里已逐字重插，内存账同批重接（两本账不两样）。
+            dispatch({ type: 'links/merge', edges: ticket.snapshot.edgePatches ?? [] })
           }
         })
       },
@@ -278,10 +287,13 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
         tray.discard()
         dispatch({ type: 'ui/drop-target', id: null })
         dispatch({ type: 'ui/drag-follow', follow: null })
+        dispatch({ type: 'links/set', links: [] })
+        dispatch({ type: 'ui/linking', id: null })
+        linking.dispose()
       },
       dismissNote: () => dispatch({ type: 'note/clear' }),
     }),
-    [app, attaching, bringToFront, chain, commitStack, flushNow, runPlan, schedule, spawn, tray],
+    [app, attaching, bringToFront, chain, commitStack, flushNow, linking, runPlan, schedule, spawn, tray],
   )
 
   return { state, actions }

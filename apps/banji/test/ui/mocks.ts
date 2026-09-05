@@ -7,31 +7,40 @@ import type {
   AssetRecord,
   BanjiApp,
   Card,
+  CardAt,
   CardId,
   CardPatch,
   DeleteSnapshot,
+  EdgeRecord,
   ExportFileResult,
   ImportResult,
   JournalDoc,
   MonthMark,
   NewCardInput,
+  RecentCard,
 } from '../../src/application'
-import { cardsByIdOf, collectSubtreeIds } from '../../src/domain/gc'
+import { cardsByIdOf, collectCardHashRefs, collectSubtreeIds } from '../../src/domain/gc'
+import { edgesTouching } from '../../src/domain/edges'
+import { addDays } from '../../src/domain/date'
 
 export interface MockSeam {
   readonly app: BanjiApp
   readonly journals: Map<string, JournalDoc>
   readonly assets: Map<string, AssetRecord>
+  readonly edges: Map<string, EdgeRecord>
   readonly settings: Map<string, unknown>
   putDay(date: string, cards: Card[]): void
+  putEdge(edge: EdgeRecord): void
 }
 
 let cardSeq = 0
+let edgeSeq = 0
 const iso = (): string => new Date(0).toISOString()
 
 export function makeMockApp(): MockSeam {
   const journals = new Map<string, JournalDoc>()
   const assets = new Map<string, AssetRecord>()
+  const edges = new Map<string, EdgeRecord>()
   const settings = new Map<string, unknown>()
 
   const rewrite = (date: string, fn: (cards: Card[]) => Card[]): void => {
@@ -76,11 +85,14 @@ export function makeMockApp(): MockSeam {
     updateCard: vi.fn(async (date: string, id: CardId, patch: CardPatch): Promise<Card> => oneCard(date, id, (c) => ({ ...c, ...patch, id: c.id, createdAt: c.createdAt }))),
     moveCard: vi.fn(async (date: string, id: CardId, pos: { x: number; y: number }): Promise<Card> => oneCard(date, id, (c) => ({ ...c, pos }))),
     resizeCard: vi.fn(async (date: string, id: CardId, size: { w: number; h: number }): Promise<Card> => oneCard(date, id, (c) => ({ ...c, size }))),
-    deleteCardCascade: vi.fn(async (date: string, id: CardId): Promise<void> => {
+    deleteCardCascade: vi.fn(async (date: string, id: CardId): Promise<EdgeRecord[]> => {
       const doc = journals.get(date)
       if (doc === undefined) throw new Error(`mock: 无日志 ${date}`)
       const doomed = collectSubtreeIds(cardsByIdOf(doc.cards), id)
       rewrite(date, (cards) => cards.filter((c) => !doomed.has(c.id)))
+      const doomedEdges = edgesTouching([...edges.values()], doomed)
+      for (const e of doomedEdges) edges.delete(e.id)
+      return doomedEdges.map((e) => structuredClone(e))
     }),
     restoreCards: vi.fn(async (date: string, snapshot: DeleteSnapshot): Promise<void> => {
       let cards = [...(journals.get(date)?.cards ?? [])]
@@ -100,7 +112,47 @@ export function makeMockApp(): MockSeam {
         })
       }
       journals.set(date, { date, cards, updatedAt: iso() })
+      for (const edge of snapshot.edgePatches ?? []) {
+        if (!edges.has(edge.id)) edges.set(edge.id, structuredClone(edge))
+      }
     }),
+    addEdge: vi.fn(async (source: CardId, target: CardId): Promise<EdgeRecord | null> => {
+      if (source === target) return null
+      const live = new Set([...journals.values()].flatMap((d) => d.cards.map((c) => c.id)))
+      if (!live.has(source) || !live.has(target)) return null
+      const linked = [...edges.values()]
+      if (linked.some((e) => (e.source === source && e.target === target) || (e.source === target && e.target === source))) return null
+      const edge: EdgeRecord = { id: `mock-e${String(++edgeSeq)}`, source, target, createdAt: iso(), updatedAt: iso() }
+      edges.set(edge.id, edge)
+      return edge
+    }),
+    deleteEdge: vi.fn(async (id: string): Promise<void> => {
+      edges.delete(id)
+    }),
+    listEdgesForCards: vi.fn(async (ids: readonly CardId[]): Promise<EdgeRecord[]> => {
+      const set = new Set(ids)
+      return edgesTouching([...edges.values()], set).sort((a, b) => (a.id < b.id ? -1 : 1))
+    }),
+    getRecentCards: vi.fn(async (anchor: string, days: number): Promise<RecentCard[]> => {
+      const floor = addDays(anchor, -days)
+      const out: RecentCard[] = []
+      for (const d of journals.values()) {
+        if (d.date < floor || d.date >= anchor) continue
+        for (const card of d.cards) {
+          if (card.kind === 'container') continue
+          const hash = [...collectCardHashRefs(card.props)][0]
+          const name = hash === undefined ? undefined : assets.get(hash)?.name
+          out.push({ date: d.date, card, ...(name === undefined ? {} : { assetName: name }) })
+        }
+      }
+      return out.sort((a, b) => (a.date === b.date ? (a.card.createdAt < b.card.createdAt ? -1 : 1) : a.date < b.date ? 1 : -1))
+    }),
+    loadAllCards: vi.fn(async (): Promise<CardAt[]> =>
+      [...journals.values()]
+        .sort((a, b) => (a.date < b.date ? -1 : 1))
+        .flatMap((d) => d.cards.map((card) => ({ date: d.date, card }))),
+    ),
+    loadAllEdges: vi.fn(async (): Promise<EdgeRecord[]> => [...edges.values()].sort((a, b) => (a.id < b.id ? -1 : 1))),
     addAsset: vi.fn(async (file: AssetInput): Promise<AssetRecord> => {
       const hash = await hashBlob(file)
       const found = assets.get(hash)
@@ -136,9 +188,13 @@ export function makeMockApp(): MockSeam {
     app,
     journals,
     assets,
+    edges,
     settings,
     putDay(date, cards) {
       journals.set(date, { date, cards, updatedAt: iso() })
+    },
+    putEdge(edge) {
+      edges.set(edge.id, edge)
     },
   }
 }

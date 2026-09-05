@@ -1,5 +1,6 @@
-// 日中介的状态层 —— 纯 reducer：形状、迁移、ghost/note/回执计数。零 React hooks 之外的编排。
-import type { Card, CardId, CardPos, CardSize } from '../domain/types'
+// 日中介的状态层 —— 纯 reducer：形状、迁移、ghost/note/回执计数、关系渲染账目。零 React hooks 之外的编排。
+import type { Card, CardId, CardPos, CardSize, EdgeRecord } from '../domain/types'
+import { edgesTouching } from '../domain/edges'
 import type { CardPatch, DeleteSnapshot, ParentPatch } from '../application'
 
 /** 夹带占位（ghost）：资产未落定前的安静虚影，只活在 UI 内存，刷新即无。 */
@@ -50,6 +51,12 @@ export interface DayState {
   readonly dropTargetId: CardId | null
   /** 拖垫纸时子纸的实时跟移：瞬态视觉，抬手即熄。 */
   readonly dragFollow: DragFollow | null
+  /** 触及本日卡片的边（开日随卡载入；撕/牵/恢复都过这里）。渲染时只画两端都在本日的线。 */
+  readonly links: readonly EdgeRecord[]
+  /** 牵线进行中的起点卡 id（D1）：瞬态，刷新即无，永不过缝。 */
+  readonly linkFromId: CardId | null
+  /** 牵成后短暂安分的两张纸（180ms 落定视觉）：瞬态。 */
+  readonly settleIds: readonly CardId[]
 }
 
 export const initialDayState: DayState = {
@@ -65,6 +72,9 @@ export const initialDayState: DayState = {
   undo: null,
   dropTargetId: null,
   dragFollow: null,
+  links: [],
+  linkFromId: null,
+  settleIds: [],
 }
 
 export type Action =
@@ -79,6 +89,11 @@ export type Action =
   | { readonly type: 'ui/edit'; readonly id: CardId | null }
   | { readonly type: 'ui/drop-target'; readonly id: CardId | null }
   | { readonly type: 'ui/drag-follow'; readonly follow: DragFollow | null }
+  | { readonly type: 'links/set'; readonly links: readonly EdgeRecord[] }
+  | { readonly type: 'links/merge'; readonly edges: readonly EdgeRecord[] }
+  | { readonly type: 'link/remove'; readonly id: string }
+  | { readonly type: 'ui/linking'; readonly id: CardId | null }
+  | { readonly type: 'link/settle'; readonly ids: readonly CardId[] }
   | { readonly type: 'ghost/add'; readonly ghost: Ghost }
   | { readonly type: 'ghost/remove'; readonly token: number }
   | { readonly type: 'save/failed'; readonly count: number }
@@ -108,10 +123,12 @@ export function dayReducer(state: DayState, action: Action): DayState {
     case 'card/patched':
       return { ...state, cards: state.cards.map((c) => (c.id === action.id ? { ...c, ...action.patch } : c)) }
     case 'cards/removed': {
-      const doomed = new Set<string>(action.ids)
+      const doomed = new Set<CardId>(action.ids)
       return {
         ...state,
         cards: state.cards.filter((c) => !doomed.has(c.id)),
+        // D4：级联与剪边同批——乐观面上线也随纸离去（缝侧才是权威，这里只让视觉不骗人）。
+        links: state.links.filter((e) => !doomed.has(e.source) && !doomed.has(e.target)),
         selectedId: state.selectedId !== null && doomed.has(state.selectedId) ? null : state.selectedId,
         editingId: state.editingId !== null && doomed.has(state.editingId) ? null : state.editingId,
       }
@@ -145,6 +162,22 @@ export function dayReducer(state: DayState, action: Action): DayState {
       return { ...state, editingId: action.id }
     case 'ui/drop-target':
       return state.dropTargetId === action.id ? state : { ...state, dropTargetId: action.id }
+    case 'links/set':
+      return state.links === action.links ? state : { ...state, links: action.links }
+    case 'links/merge': {
+      const known = new Set(state.links.map((e) => e.id))
+      const extra = action.edges.filter((e) => !known.has(e.id))
+      return extra.length === 0 ? state : { ...state, links: [...state.links, ...extra] }
+    }
+    case 'link/remove':
+      return { ...state, links: state.links.filter((e) => e.id !== action.id) }
+    case 'ui/linking':
+      return state.linkFromId === action.id ? state : { ...state, linkFromId: action.id }
+    case 'link/settle': {
+      if (state.settleIds.length === 0 && action.ids.length === 0) return state
+      const same = state.settleIds.length === action.ids.length && action.ids.every((id, i) => state.settleIds[i] === id)
+      return same ? state : { ...state, settleIds: action.ids }
+    }
     case 'ui/drag-follow': {
       const same = (state.dragFollow === null && action.follow === null) ||
         (state.dragFollow !== null && action.follow !== null &&

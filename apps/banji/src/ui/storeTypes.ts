@@ -31,6 +31,14 @@ export interface DayActions {
   setDragFollow(follow: DragFollow | null): void
   /** 宇宙被整体替换（导入成功）：待撤快照、在途/在败的编辑意图、拖拽瞬态同批作废——旧世界的一切绝不复活进新宇宙。 */
   onUniverseReplaced(): void
+  /** 牵线（D1）：⋯菜单入口；起点卡再点一下即收线——自我可逆，不占托盘（R5 D7 口径）。 */
+  startLinking(id: CardId): void
+  /** 收线：Escape / 点空纸面 / 再点起点，三扇之门都走这里。 */
+  cancelLinking(): void
+  /** 点中靶纸：牵线过缝（同对/自环/端点无卡由缝静默拒）；成了才上账，两纸同落定 180ms。 */
+  linkTo(target: CardId): void
+  /** 撕线（D3）：无 undo 托盘——重新牵一根就是同一只手反过来，自我可逆。 */
+  removeLine(id: string): void
   dismissNote(): void
 }
 

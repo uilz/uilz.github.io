@@ -13,6 +13,11 @@ export function isNonEmptyId(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
 
+/** 新建边 id：与卡片同为 uuid v7；契约里 EdgeRecord.id 是普通字符串（不带 CardId 品牌）。 */
+export function newEdgeId(): string {
+  return uuidv7()
+}
+
 /** 仅用于测试/自检：确认 newCardId 产出 v7 形状。 */
 export function isUuidV7Shape(value: string): boolean {
   return UUID_V7_SHAPE.test(value)

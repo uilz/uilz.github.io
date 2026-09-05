@@ -1,136 +1,35 @@
 // 应用层：UI 单元消费的唯一用例入口。薄——只做“取文档 → 改卡片 → 戳 updatedAt → 写回”
 // 的编排，零 React/DOM 依赖（importFromFile 收 Blob 只因 File 天然继承它）。
-// 表单级校验属 UI 边界：直接用 domain/validate 的同一套纯校验器。
-import type { AssetRecord, Card, CardId, CardKind, CardPos, CardSize, JournalDoc } from '../domain/types'
-import { newCardId } from '../domain/id'
+// R7 拆分：契约类型与错误住 ./types，关系缝与删除-恢复的边端编排住 ./edgeCases（守 250 纯行天花板）。
+import type { AssetRecord, Card, CardId, JournalDoc } from '../domain/types'
 import { isValidDateString } from '../domain/date'
-import { cardsByIdOf, collectSubtreeIds } from '../domain/gc'
-import { validateJournalDoc, type ValidationIssue } from '../domain/validate'
+import { newCardId } from '../domain/id'
 import { hashBlob } from '../archive/hash'
 import type { Repo } from '../repository/types'
-import { exportArchive, type ExportResult } from '../archive/exportArchive'
-import { importArchive, type ImportArchiveOptions, type ImportResult } from '../archive/importArchive'
-import type { SchemaMigration } from '../archive/migration'
+import { exportArchive } from '../archive/exportArchive'
+import { importArchive } from '../archive/importArchive'
+import { CardNotFoundError, JournalNotFoundError, requireDate } from './types'
+import type { AppOptions, BanjiApp, CardPatch, NewCardInput } from './types'
+import {
+  addEdge,
+  deleteCardCascade,
+  deleteEdge,
+  getRecentCards,
+  listEdgesForCards,
+  loadAllCards,
+  loadAllEdges,
+  restoreCards,
+} from './edgeCases'
 
-export type { AssetRecord, Card, CardId, CardKind, JournalDoc }
+export * from './types'
+export type { AssetRecord, Card, CardId, CardKind, EdgeRecord, JournalDoc } from '../domain/types'
 export { isValidDateString, monthMatrix, monthOf, todayLocal, addDays } from '../domain/date'
-export { newCardId } from '../domain/id'
-export type { ExportResult, ImportResult }
+export { newCardId, newEdgeId } from '../domain/id'
+export type { ExportResult } from '../archive/exportArchive'
+export type { ImportResult } from '../archive/importArchive'
 
-export interface NewCardInput {
-  readonly kind: CardKind
-  readonly props: unknown
-  readonly pos?: CardPos
-  readonly size?: CardSize
-  readonly z?: number
-  readonly rot?: number
-  readonly children?: readonly CardId[]
-  readonly meta?: Record<string, unknown>
-}
-
-/** 除身份与出生时间外全部可改；kind/props 可一起换（卡片性质改造是合法操作）。 */
-export type CardPatch = Partial<Omit<Card, 'id' | 'createdAt'>>
-
-export interface ExportFileResult {
-  readonly filename: string
-  readonly archive: ExportResult
-}
-
-export class InvalidDateError extends Error {
-  constructor(readonly date: string) {
-    super(`非法日期字符串（须 YYYY-MM-DD）: ${JSON.stringify(date)}`)
-    this.name = 'InvalidDateError'
-  }
-}
-
-export class JournalNotFoundError extends Error {
-  constructor(readonly date: string) {
-    super(`该日期还没有日志: ${date}`)
-    this.name = 'JournalNotFoundError'
-  }
-}
-
-export class CardNotFoundError extends Error {
-  constructor(
-    readonly date: string,
-    readonly id: CardId,
-  ) {
-    super(`卡片不存在: ${date} / ${String(id)}`)
-    this.name = 'CardNotFoundError'
-  }
-}
-
-/** 删除撤销的完整快照：撕下的卡片群 + 幸存卡片 children[] 里被删引用的原位记录。 */
-export interface DeleteSnapshot {
-  /** 被删卡片的逐字副本：ids、createdAt/updatedAt、props、children、pos、size、z、meta —— 恢复时一件不重生。 */
-  readonly cards: readonly Card[]
-  /** 被幸存卡片 children[] 引用过的被删卡：undo 时按记录 index 重插入（越界则钳制）。 */
-  readonly parentPatches: readonly ParentPatch[]
-}
-
-export interface ParentPatch {
-  readonly parentId: CardId
-  readonly childId: CardId
-  readonly index: number
-}
-
-/** undo 恢复时快照未过校验（理论上不该发生，UI 侧构造，纯防御）。 */
-export class InvalidRestoreError extends Error {
-  constructor(
-    readonly date: string,
-    readonly issues: readonly ValidationIssue[],
-  ) {
-    super(`恢复快照校验失败: ${date}; ${issues.map((i) => i.message).join(' | ')}`)
-    this.name = 'InvalidRestoreError'
-  }
-}
-
-export interface AppOptions {
-  readonly now?: () => Date
-  readonly migrationTable?: readonly SchemaMigration[]
-}
-
-/** 月历打点：某日有内容的卡片数（墨点分层用）。 */
-export interface MonthMark {
-  readonly date: string
-  readonly cardCount: number
-}
-
-/** File 即 Blob+名字；type 缺省时落 application/octet-stream。 */
-export type AssetInput = Blob & { readonly name?: string; readonly type?: string }
-
-export interface BanjiApp {
-  /** 当月“有内容”的日期（该日 journal.cards 非空），升序 'YYYY-MM-DD'。月历打点用。 */
-  getMonth(year: number, month: number): Promise<string[]>
-  /** 同 getMonth 的口径，但带上每日卡片数（月历墨点分层）。 */
-  getMonthSummary(year: number, month: number): Promise<MonthMark[]>
-  getJournal(date: string): Promise<JournalDoc | undefined>
-  /** 当天无文档则自动创建；返回写入后的卡片（id/时间戳已填充）。 */
-  addCard(date: string, draft: NewCardInput): Promise<Card>
-  updateCard(date: string, id: CardId, patch: CardPatch): Promise<Card>
-  moveCard(date: string, id: CardId, pos: CardPos): Promise<Card>
-  resizeCard(date: string, id: CardId, size: CardSize): Promise<Card>
-  /** 容器级联删除整棵子树；资产永不自动删除（GC 只发生在导出环节）。 */
-  deleteCardCascade(date: string, id: CardId): Promise<void>
-  /** 删除撤销：快照逐字写回（无文档则建；id 已存在者跳过不重复），parentPatches 按原 index 重插，只 bump 文档 updatedAt。命令历史住 UI 内存，此为唯一过界缝。 */
-  restoreCards(date: string, snapshot: DeleteSnapshot): Promise<void>
-  /** 不落库的文件字节 → assets store（内容寻址 sha256；同字节复用既有记录，改名不去重失效）。 */
-  addAsset(file: AssetInput): Promise<AssetRecord>
-  getAsset(hash: string): Promise<AssetRecord | undefined>
-  getSetting(key: string): Promise<unknown>
-  setSetting(key: string, value: unknown): Promise<void>
-  /** 不碰 DOM：返回字节+建议文件名，下载由 UI 层完成。 */
-  exportToFile(): Promise<ExportFileResult>
-  importFromFile(source: Blob | Uint8Array, opts?: Pick<ImportArchiveOptions, 'estimate' | 'batchLimit'>): Promise<ImportResult>
-  close(): void
-}
-
-const DEFAULT_POS: CardPos = { x: 0, y: 0 }
-const DEFAULT_SIZE: CardSize = { w: 320, h: 200 }
-
-function requireDate(date: string): void {
-  if (!isValidDateString(date)) throw new InvalidDateError(date)
-}
+const DEFAULT_POS: { x: number; y: number } = { x: 0, y: 0 }
+const DEFAULT_SIZE: { w: number; h: number } = { w: 320, h: 200 }
 
 function cardFromDraft(draft: NewCardInput, stamp: string): Card {
   const card: Card = {
@@ -159,12 +58,12 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
     return doc
   }
 
-  const patchCard = async (date: string, id: CardId, fn: (card: Card) => Card): Promise<Card> => {
+  const patchCard = async (date: string, id: CardId, patch: CardPatch): Promise<Card> => {
     const doc = await getDocOrThrow(date)
     let found: Card | undefined
     const cards = doc.cards.map((card) => {
       if (card.id !== id) return card
-      found = fn(card)
+      found = { ...card, ...patch, id: card.id, createdAt: card.createdAt, updatedAt: stamp() }
       return found
     })
     if (found === undefined) throw new CardNotFoundError(date, id)
@@ -189,6 +88,29 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
         .map((d) => ({ date: d.date, cardCount: d.cards.length }))
         .sort((a, b) => (a.date < b.date ? -1 : 1))
     },
+    async getJournal(date) {
+      requireDate(date)
+      return repo.journals.get(date)
+    },
+    async addCard(date, draft) {
+      requireDate(date)
+      const card = cardFromDraft(draft, stamp())
+      const doc = await repo.journals.get(date)
+      const cards = doc === undefined ? [card] : [...doc.cards, card]
+      await repo.journals.put({ date, cards, updatedAt: stamp() })
+      return card
+    },
+    updateCard: (date, id, patch) => patchCard(date, id, patch),
+    moveCard: (date, id, pos) => patchCard(date, id, { pos }),
+    resizeCard: (date, id, size) => patchCard(date, id, { size }),
+    deleteCardCascade: (date, id) => deleteCardCascade(repo, stamp, date, id),
+    restoreCards: (date, snapshot) => restoreCards(repo, stamp, date, snapshot),
+    addEdge: (source, target) => addEdge(repo, stamp, source, target),
+    deleteEdge: (id) => deleteEdge(repo, id),
+    listEdgesForCards: (ids) => listEdgesForCards(repo, ids),
+    getRecentCards: (anchor, days) => getRecentCards(repo, anchor, days),
+    loadAllCards: () => loadAllCards(repo),
+    loadAllEdges: () => loadAllEdges(repo),
     async addAsset(file) {
       const hash = await hashBlob(file)
       const existing = await repo.assets.get(hash)
@@ -211,54 +133,6 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
     },
     async setSetting(key, value) {
       await repo.settings.put({ key, value, updatedAt: stamp() })
-    },
-    async getJournal(date) {
-      requireDate(date)
-      return repo.journals.get(date)
-    },
-    async addCard(date, draft) {
-      requireDate(date)
-      const card = cardFromDraft(draft, stamp())
-      const doc = await repo.journals.get(date)
-      const cards = doc === undefined ? [card] : [...doc.cards, card]
-      await repo.journals.put({ date, cards, updatedAt: stamp() })
-      return card
-    },
-    updateCard: (date, id, patch) =>
-      patchCard(date, id, (card) => ({ ...card, ...patch, id: card.id, createdAt: card.createdAt, updatedAt: stamp() })),
-    moveCard: (date, id, pos) => patchCard(date, id, (card) => ({ ...card, pos, updatedAt: stamp() })),
-    resizeCard: (date, id, size) => patchCard(date, id, (card) => ({ ...card, size, updatedAt: stamp() })),
-    async deleteCardCascade(date, id) {
-      const doc = await getDocOrThrow(date)
-      const byId = cardsByIdOf(doc.cards)
-      if (!byId.has(id)) throw new CardNotFoundError(date, id)
-      const doomed = collectSubtreeIds(byId, id)
-      await repo.journals.put({ ...doc, cards: doc.cards.filter((c) => !doomed.has(c.id)), updatedAt: stamp() })
-    },
-    async restoreCards(date, snapshot) {
-      requireDate(date)
-      const doc = await repo.journals.get(date)
-      let cards: Card[] = doc === undefined ? [] : [...doc.cards]
-      for (const card of structuredClone(snapshot.cards)) {
-        if (cards.some((c) => c.id === card.id)) continue
-        cards.push(card)
-      }
-      for (const patch of snapshot.parentPatches) {
-        const parentExists = cards.some((c) => c.id === patch.parentId)
-        if (!parentExists) continue
-        cards = cards.map((c) => {
-          if (c.id !== patch.parentId) return c
-          const children = c.children ?? []
-          if (children.includes(patch.childId)) return c
-          const next = [...children]
-          next.splice(Math.max(0, Math.min(next.length, Math.trunc(patch.index))), 0, patch.childId)
-          return { ...c, children: next }
-        })
-      }
-      const restored: JournalDoc = { date, cards, updatedAt: stamp() }
-      const v = validateJournalDoc(restored)
-      if (!v.ok) throw new InvalidRestoreError(date, v.issues)
-      await repo.journals.put(restored)
     },
     async exportToFile() {
       const day = stamp().slice(0, 10)

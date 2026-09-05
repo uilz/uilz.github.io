@@ -17,6 +17,9 @@
   --bj-mat-edge: rgba(126, 102, 68, 0.4);
   --bj-mat-on: rgba(233, 220, 192, 0.92);
   --bj-accent: #8c6f4a;
+  /* R7 关系：线是暖棕发丝（40%/70% 由 .bj-line-ink 的 opacity 管），暗是非靶子的纸黄昏。 */
+  --bj-thread: #8c6f4a;
+  --bj-dusk: 0.45;
   --bj-ring: #b98d52;
   --bj-dot: rgba(72, 58, 40, 0.68);
   --bj-shadow: 0 1px 2px rgba(84, 64, 38, 0.1), 0 6px 18px -6px rgba(84, 64, 38, 0.18);
@@ -47,6 +50,8 @@
   --bj-mat-edge: rgba(206, 173, 120, 0.4);
   --bj-mat-on: rgba(53, 44, 31, 0.92);
   --bj-accent: #b6905e;
+  --bj-thread: #b6905e;
+  --bj-dusk: 0.45;
   --bj-ring: #c79a5e;
   --bj-dot: rgba(240, 230, 208, 0.88);
   --bj-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px -6px rgba(0, 0, 0, 0.5);
