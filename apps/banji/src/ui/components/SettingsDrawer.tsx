@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ReactElement } from 'react'
 import type { BanjiApp } from '../../application'
 import type { ImportFailReason } from '../../archive/importArchive'
@@ -31,14 +31,27 @@ interface SettingsDrawerProps {
   readonly onImported: () => void
   readonly notify: (msg: string) => void
   readonly onClose: () => void
+  /** ⌘E 直发导出：只读动作不给确认（R11·D5），开门即交卷。 */
+  readonly autoExport?: boolean
 }
 
-export function SettingsDrawer({ app, theme, onTheme, onImported, notify, onClose }: SettingsDrawerProps): ReactElement {
+export function SettingsDrawer({ app, theme, onTheme, onImported, notify, onClose, autoExport = false }: SettingsDrawerProps): ReactElement {
   const fileRef = useRef<HTMLInputElement>(null)
   const [picked, setPicked] = useState<File | null>(null)
   const [step, setStep] = useState<ImportStep>('idle')
   const [failure, setFailure] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // Esc 退场（R11·D5 巡检补的门）：纸片/纸单/牵线早有各自的出口，抽屉是最后一块漏的。
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
 
   const pickFile = (e: ChangeEvent<HTMLInputElement>): void => {
     const f = e.target.files?.[0]
@@ -94,6 +107,11 @@ export function SettingsDrawer({ app, theme, onTheme, onImported, notify, onClos
     applyTheme(t)
     onTheme(t)
   }
+
+  // autoExport 只在开门那一拍生效一次（挂载 effect、无重跑路径）：App 侧每次关闭都会归零。
+  useEffect(() => {
+    if (autoExport) void doExport()
+  }, [])
 
   return (
     <>
@@ -165,6 +183,17 @@ export function SettingsDrawer({ app, theme, onTheme, onImported, notify, onClos
               </div>
             </div>
           ) : null}
+        </section>
+
+        <section className="bj-sec" aria-label="键术">
+          <h3>键术</h3>
+          <ul className="bj-keylist" data-keylist>
+            <li><span>添一张卡</span><kbd>⌘/Ctrl N</kbd></li>
+            <li><span>造一叠</span><kbd>⌘/Ctrl ⇧K</kbd></li>
+            <li><span>搜遍全册</span><kbd>⌘/Ctrl F</kbd></li>
+            <li><span>带走整册</span><kbd>⌘/Ctrl E</kbd></li>
+            <li><span>退场 · 取消</span><kbd>Esc</kbd></li>
+          </ul>
         </section>
 
         <p className="bj-drawer-foot">别的，以后慢慢来。</p>

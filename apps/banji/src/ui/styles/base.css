@@ -357,6 +357,36 @@ p {
   font-size: 15px;
 }
 
+/* R11·D5 键术单：抽屉里的五行发丝小字，无 modal、无新色板——kbd 是纸边刻的字不是徽章。 */
+.bj-keylist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.bj-keylist li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--bj-hairline);
+  color: var(--bj-ink-soft);
+}
+
+.bj-keylist li:last-child {
+  border-bottom: none;
+}
+
+.bj-keylist kbd {
+  font-family: var(--bj-display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--bj-accent);
+  white-space: nowrap;
+}
+
 .bj-confirm p {
   margin-bottom: 10px;
 }

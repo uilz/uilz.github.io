@@ -59,11 +59,14 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [searchOpen, setSearchOpen] = useState(false)
+  // ⌘E 的落点：抽屉开门即直发导出（只读动作，无确认；R11·D5）。
+  const [drawerExport, setDrawerExport] = useState(false)
   const [hop, setHop] = useState<CardHop | null>(null)
   const date = route.name === 'day' ? route.date : null
   const store = useDayStore(app, date, reloadKey, storeOptions)
   const today = todayOf(now)
   const { saveFailed, saveFailedCause, note } = store.state
+  const storeActions = store.actions
 
   // hop 的熄灭主路在落点侧（useCardPulse 放完即请 setHop(null)）；这里只兜 4s 无人认领的孤儿瞬态。
   useEffect(() => {
@@ -82,16 +85,39 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+      const mod = e.metaKey || e.ctrlKey
+      // ⌘F 是唯一在写字第上仍开闸的键（任务书：re-search 例外——就地换一问）。
+      if (mod && e.key.toLowerCase() === 'f') {
         e.preventDefault()
         setSearchOpen(true)
+        return
+      }
+      if (!mod) return
+      const t = e.target
+      if (t instanceof HTMLElement && (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)) return
+      const key = e.key.toLowerCase()
+      if (key === 'n' && !e.shiftKey && !e.altKey) {
+        // 月历上没有这枚 pill，就没有这个键——让位浏览器本窗（静音吞键更坏）。
+        if (route.name === 'day') {
+          e.preventDefault()
+          storeActions.addTextCard()
+        }
+      } else if (key === 'k' && e.shiftKey && !e.altKey) {
+        if (route.name === 'day') {
+          e.preventDefault()
+          storeActions.createContainer()
+        }
+      } else if (key === 'e' && !e.shiftKey && !e.altKey) {
+        e.preventDefault()
+        setDrawerExport(true)
+        setDrawerOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
     }
-  }, [])
+  }, [route.name, storeActions])
 
   useEffect(() => {
     if (toast === null) return
@@ -177,7 +203,11 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
           onTheme={changeTheme}
           onImported={onImported}
           notify={notify}
-          onClose={() => setDrawerOpen(false)}
+          autoExport={drawerExport}
+          onClose={() => {
+            setDrawerOpen(false)
+            setDrawerExport(false)
+          }}
         />
       ) : null}
       {searchOpen ? (
