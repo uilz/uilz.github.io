@@ -778,7 +778,150 @@ await page.screenshot({ path: `${SHOTS}/21-stack-detached.png`, fullPage: true }
 await page.click('.bj-back')
 await page.waitForSelector('.bj-cell')
 
-// —— 夜读主题 + theme-color 翻转 + 持久化 ——
+// —— R8 跨时间探索（桌面全程）：3 天底料（直写 IDB 契约形状，与前日一根跨日线）→
+//    放大镜开纸片（持焦+空语耳语）→ CJK 搜索按日分组新日在前+赭底高亮 → 行点=跳那天卡片模式暖脉冲（到点熄、键集⊆契约）→
+//    ⌘F/Esc → 图模式：全日记纸片+跨日发丝线 → 点异日 chip 翻回卡片模式。
+{
+  const twoDays = await page.evaluate(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 2)
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+  })
+  await page.evaluate(([td]) => new Promise((res, rej) => {
+    const iso = new Date().toISOString()
+    const r = indexedDB.open('banji-journal')
+    r.onsuccess = () => {
+      const db = r.result
+      const tx = db.transaction(['journals', 'edges'], 'readwrite')
+      tx.objectStore('journals').put({ date: td, cards: [{ id: 'r8-old-day', kind: 'text', pos: { x: 60, y: 60 }, size: { w: 220, h: 120 }, props: { text: '前日槐花帖' }, createdAt: iso, updatedAt: iso }], updatedAt: iso })
+      tx.objectStore('edges').put({ id: 'r8-cross-old', source: 'r8-old-day', target: 'r7-yesterday', createdAt: iso, updatedAt: iso })
+      tx.oncomplete = () => { db.close(); res() }
+      tx.onerror = () => { db.close(); rej(tx.error) }
+    }
+    r.onerror = () => rej(r.error)
+  }), [twoDays])
+
+  const mag = page.locator('button[aria-label="搜索手札"]')
+  check('R8 D1 放大镜居月历页眉齿轮之旁', (await mag.count()) === 1 && await mag.isVisible())
+  await mag.click()
+  await page.waitForSelector('[data-search-sheet]', { timeout: 4000 })
+  const openInfo = await page.evaluate(() => ({
+    focused: document.activeElement?.getAttribute('aria-label') ?? '',
+    whisper: document.querySelector('.bj-search-whisper')?.textContent ?? '',
+  }))
+  check('R8 D1 纸片自下升起、输入即持焦、空查询耳语「想找哪一笔？」', openInfo.focused === '搜索笔记' && openInfo.whisper === '想找哪一笔？')
+  await page.fill('.bj-search-input', '槐花')
+  await page.waitForFunction(() => document.querySelectorAll('[data-search-row]').length >= 2, null, { timeout: 8000 })
+  const grouped = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('[data-search-row]')]
+    const dates = rows.map((r) => r.getAttribute('data-search-date') ?? '')
+    const uniq = [...new Set(dates)]
+    return { n: rows.length, uniq, hl: document.querySelectorAll('.bj-search-hl').length, tag: rows[0]?.querySelector('.bj-search-day')?.textContent ?? '' }
+  })
+  const newestFirst = grouped.uniq.every((d, i) => i === 0 || grouped.uniq[i - 1] >= d)
+  check('R8 D1 CJK 搜索按日分组·新日在前·每行日期书口签+赭底高亮 span', grouped.n === 2 && newestFirst && grouped.uniq.includes(today) && grouped.uniq.includes(twoDays) && grouped.hl >= 2 && grouped.tag.includes('月'))
+  const dNow = await dump(page)
+  const flatNow = dNow.journals.flatMap((j) => j.cards)
+  const matNow = flatNow.find((c) => Array.isArray(c.children) && c.children.length > 0)
+  const kidNow = matNow === undefined ? undefined : dNow.journals.flatMap((j) => j.cards).find((c) => c.id === matNow.children[0])
+  if (matNow === undefined || kidNow === undefined || !(kidNow.text || '').trim()) throw new Error('R8 夹具：今日没有可测的收编孩子纸（容器 children 缺文本）')
+  await page.fill('.bj-search-input', kidNow.text.trim().slice(0, 3))
+  const kidRowFound = await page
+    .waitForFunction((k) => [...document.querySelectorAll('[data-search-row]')].some((r) => r.getAttribute('data-search-card') === k), kidNow.id, { timeout: 8000 })
+    .then(() => true)
+    .catch(() => false)
+  check('R8 D2 容器孩子自成一行（行指向孩子而非垫纸）', kidRowFound === true && kidNow.id !== matNow.id)
+  const dropAsset = dNow.assets.find((a) => a.name === '拖入.png')
+  if (dropAsset === undefined) throw new Error('R8 夹具：库里没有名为 拖入.png 的资产（R2 拖放纸没到底料里？）')
+  const dropCard = flatNow.find((c) => c.hash === dropAsset.hash)
+  if (dropCard === undefined) throw new Error('R8 夹具：没有引用 拖入.png 的图/文件卡')
+  // 每次输入都等「这一问自己的行」出现再断言：250ms debounce 窗里旧行不作数。
+  await page.fill('.bj-search-input', '拖入')
+  const assetRowOk = await page
+    .waitForFunction((id) => [...document.querySelectorAll('[data-search-row]')].some((r) => r.getAttribute('data-search-card') === id && (r.textContent || '').includes('拖入')), dropCard.id, { timeout: 8000 })
+    .then(() => true)
+    .catch(() => false)
+  const assetRowN = await page.evaluate(() => document.querySelectorAll('[data-search-row]').length)
+  check('R8 D2 附件名经 hash 联结入语料（「拖入」只中那张拖入.png 的图卡）', assetRowOk && assetRowN === 1)
+  await page.fill('.bj-search-input', '前日')
+  await page.waitForFunction((td) => document.querySelector(`[data-search-row][data-search-date="${td}"]`) !== null, twoDays, { timeout: 8000 })
+  await page.click(`[data-search-row][data-search-date="${twoDays}"]`)
+  const landed0 = await page.waitForFunction(() => {
+    const card = document.querySelector('[data-card-id="r8-old-day"]')
+    return card !== null && card.classList.contains('is-pulse')
+  }, null, { timeout: 2500 }).then(() => true).catch(() => false)
+  const landed = await page.evaluate(() => ({
+    hash: window.location.hash,
+    sheetGone: document.querySelector('[data-search-sheet]') === null,
+    canvas: document.querySelector('.bj-canvas') !== null,
+    graph: document.querySelector('[data-graph]') !== null,
+  }))
+  check('R8 D1 行点=跳那天的卡片模式：目标纸暖脉冲点亮、纸片退场、不残图/线视图', landed.hash === `#/d/${twoDays}` && landed.sheetGone && landed.canvas && !landed.graph && landed0)
+  const pulseGone = await page.waitForFunction(() => {
+    const card = document.querySelector('[data-card-id="r8-old-day"]')
+    return card === null || !card.classList.contains('is-pulse')
+  }, null, { timeout: 3000 }).then(() => true).catch(() => false)
+  check('R8 D4 脉冲是瞬态：到点即熄（不留描边余烧）', pulseGone)
+  const keyleak8 = await page.evaluate(() => new Promise((res) => {
+    const r = indexedDB.open('banji-journal')
+    r.onsuccess = () => {
+      const db = r.result
+      const tx = db.transaction(['journals', 'edges'], 'readonly')
+      let cardsBad = false
+      let edgesBad = false
+      tx.objectStore('journals').getAll().onsuccess = (e) => {
+        const keys = ['id', 'kind', 'pos', 'size', 'z', 'rot', 'children', 'meta', 'props', 'createdAt', 'updatedAt']
+        cardsBad = e.target.result.some((d) => d.cards.some((c) => Object.keys(c).some((k) => !keys.includes(k))))
+        tx.objectStore('edges').getAll().onsuccess = (e2) => {
+          db.close()
+          const ek = ['id', 'source', 'target', 'role', 'createdAt', 'updatedAt']
+          edgesBad = e2.target.result.some((x) => Object.keys(x).some((k) => !ek.includes(k)))
+        }
+      }
+      tx.onerror = () => res(true)
+      tx.oncomplete = () => res(cardsBad || edgesBad)
+    }
+    r.onerror = () => res(true)
+  }))
+  check('R8 D4 键集纪律（搜索跳转历遍后）：卡片与边键 ⊆ 契约字段全集', keyleak8 === false)
+  await page.click('.bj-back')
+  await page.waitForSelector('.bj-cell')
+  await page.keyboard.press('Control+f')
+  await page.waitForSelector('[data-search-sheet]', { timeout: 3000 })
+  await page.keyboard.press('Escape')
+  await page.waitForSelector('[data-search-sheet]', { state: 'detached', timeout: 3000 })
+  check('R8 D1 ⌘F/Ctrl+F 开纸、Esc 退场（桌面键位）', true)
+  await page.click(`.bj-cell[data-date="${today}"]`)
+  await page.waitForSelector('.bj-card')
+  await page.click('.bj-mode-seg-btn:has-text("图")')
+  await page.waitForSelector('[data-graph-field]', { timeout: 6000 })
+  const graph = await page.evaluate(() => ({
+    chips: document.querySelectorAll('[data-graph-chip]').length,
+    cols: [...document.querySelectorAll('[data-graph-col]')].map((c) => c.getAttribute('data-graph-col') ?? ''),
+    oldLine: document.querySelector('[data-graph-line="r8-old-day→r7-yesterday"]') !== null,
+  }))
+  const chronoOk = graph.cols.every((c, i) => i === 0 || graph.cols[i - 1] <= c)
+  const colSet = new Set(graph.cols)
+  check('R8 D3 图模式：全日记纸片排上时间轴、日期列历法升序、跨日发丝贝塞尔在', graph.chips >= 8 && chronoOk && colSet.has(today) && colSet.has(twoDays) && graph.oldLine)
+  await page.screenshot({ path: `${SHOTS}/28-graph.png`, fullPage: true })
+  await page.click('[data-graph-chip="r8-old-day"]')
+  const chipPulsed = await page.waitForFunction(() => {
+    const card = document.querySelector('[data-card-id="r8-old-day"]')
+    return card !== null && card.classList.contains('is-pulse')
+  }, null, { timeout: 2500 }).then(() => true).catch(() => false)
+  const chipJump = await page.evaluate(() => ({
+    hash: window.location.hash,
+    canvas: document.querySelector('.bj-canvas') !== null,
+    graphGone: document.querySelector('[data-graph]') === null,
+  }))
+  check('R8 D3 点异日 chip：退图模式、翻回那天的卡片并脉冲那张纸', chipJump.hash === `#/d/${twoDays}` && chipJump.canvas && chipJump.graphGone && chipPulsed)
+  await page.click('.bj-mode-seg-btn:has-text("图")')
+  await page.waitForSelector('[data-graph]', { timeout: 4000 })
+  await page.click('.bj-mode-seg-btn:has-text("卡片")')
+  await page.waitForSelector('.bj-canvas', { timeout: 4000 })
+  check('R8 D3 三段目光可来回：图↔卡片换到纸面如常', (await page.locator('.bj-card').count()) >= 1)
+}
+
 await page.click('button[aria-label="设置"]')
 await page.getByRole('button', { name: /夜读/ }).first().click().catch(async () => { await page.locator('text=夜读').first().click() })
 await page.waitForTimeout(500)
@@ -794,6 +937,36 @@ const nightColorPersisted = await page.getAttribute('meta[name="theme-color"]', 
 check('theme: night persists reload', nightPersisted === 'night')
 check('theme: theme-color persists reload (pre-paint guard)', nightColorPersisted === '#171310')
 await page.screenshot({ path: `${SHOTS}/09-night-reloaded.png`, fullPage: true })
+
+// —— R8 夜读取证：搜索纸片与图模式纸片在夜读令牌下同读（机判深底浅字，观感由截图背书）——
+await page.click('.bj-back')
+await page.waitForSelector('.bj-cell')
+await page.click('button[aria-label="搜索手札"]')
+await page.waitForSelector('[data-search-sheet]', { timeout: 4000 })
+await page.fill('.bj-search-input', '槐花')
+await page.waitForFunction(() => document.querySelectorAll('[data-search-row]').length >= 2, null, { timeout: 8000 })
+const nightSearch = await page.evaluate(() => {
+  const cs = getComputedStyle(document.querySelector('[data-search-sheet]'))
+  const row = getComputedStyle(document.querySelector('.bj-search-cut'))
+  const hl = getComputedStyle(document.querySelector('.bj-search-hl'))
+  return { bg: cs.backgroundColor, fg: row.color, hlBg: hl.backgroundColor }
+})
+check('R8 夜读搜索纸片可读：纸片底=夜面、正文=浅墨、高亮=透明赭洗', nightSearch.bg === 'rgb(33, 27, 20)' && nightSearch.fg === 'rgb(181, 166, 136)' && nightSearch.hlBg !== 'rgba(0, 0, 0, 0)')
+await page.screenshot({ path: `${SHOTS}/29-search-night.png`, fullPage: true })
+await page.keyboard.press('Escape')
+await page.waitForSelector('[data-search-sheet]', { state: 'detached', timeout: 3000 })
+await page.click(`.bj-cell[data-date="${today}"]`)
+await page.waitForSelector('.bj-card')
+await page.click('.bj-mode-seg-btn:has-text("图")')
+await page.waitForSelector('[data-graph-field]', { timeout: 6000 })
+const nightGraph = await page.evaluate(() => {
+  const chip = getComputedStyle(document.querySelector('[data-graph-chip]'))
+  const col = getComputedStyle(document.querySelector('.bj-graph-day'))
+  const line = getComputedStyle(document.querySelector('.bj-graph-line'))
+  return { chipFg: chip.color, chipBg: chip.backgroundColor, colFg: col.color, stroke: line.stroke }
+})
+check('R8 夜读图模式可读：chip 深纸浅墨、日期墨印与发丝线仍见', nightGraph.chipFg === 'rgb(233, 221, 195)' && nightGraph.chipBg === 'rgb(42, 35, 24)' && nightGraph.colFg === 'rgb(125, 112, 90)' && nightGraph.stroke === 'rgb(182, 144, 94)')
+await page.screenshot({ path: `${SHOTS}/30-graph-night.png`, fullPage: true })
 await ctx.close()
 
 // —— 移动端 390px ——
@@ -1000,6 +1173,29 @@ await mpage.screenshot({ path: `${SHOTS}/22-mobile-stack.png` })
   await mpage.waitForSelector('.bj-card')
   await mpage.waitForTimeout(1200)
   check('R7 手机 牵线过缝落库：reload 线还在', (await mpage.locator('g.bj-line').count()) === 1)
+}
+
+// —— R8 手机 390：搜索纸片可用（输入 ≥16px 防理智缩放、结果行 ≥44px 触控、行点暖脉冲）——
+{
+  await mpage.tap('.bj-back')
+  await mpage.waitForSelector('.bj-cell')
+  await mpage.tap('button[aria-label="搜索手札"]')
+  await mpage.waitForSelector('[data-search-sheet]', { timeout: 6000 })
+  const mFont = await mpage.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.bj-search-input')).fontSize))
+  check('R8 手机 搜索纸面上输入 ≥16px（键盘安全）', mFont >= 16)
+  await mpage.fill('.bj-search-input', '手机牵')
+  await mpage.waitForFunction(() => document.querySelectorAll('[data-search-row]').length >= 2, null, { timeout: 8000 })
+  const mRowBox = await mpage.locator('[data-search-row]').first().boundingBox()
+  check('R8 手机 结果行 ≥44px 可点', mRowBox !== null && mRowBox.height >= 44)
+  await mpage.locator('[data-search-row]').first().tap()
+  const mPulsed = await mpage.waitForFunction(() => document.querySelector('[data-card-id].is-pulse') !== null, null, { timeout: 2500 }).then(() => true).catch(() => false)
+  const mLanded = await mpage.evaluate((t) => ({
+    onDay: window.location.hash === `#/d/${t}`,
+    canvas: document.querySelector('.bj-canvas') !== null,
+    sheetGone: document.querySelector('[data-search-sheet]') === null,
+  }), today)
+  check('R8 手机 行点=落卡片模式并脉冲那张纸（瞬态同桌面）', mLanded.onDay && mLanded.canvas && mLanded.sheetGone && mPulsed)
+  await mpage.screenshot({ path: `${SHOTS}/31-mobile-search.png` })
 }
 await mctx.close()
 
