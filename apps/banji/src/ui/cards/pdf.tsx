@@ -4,7 +4,7 @@ import { assetLabel, humanSize, readAssetProps, useAssetUrl } from './asset'
 import { IconPdf } from '../components/icons'
 
 // 火漆小签（R9·D2）：pdf 角标 + 名 + 尺寸，tap = 原件在新页读（_blank + noopener）。
-// 内嵌预览明确不做（零依赖法，没有 pdf.js）——R10 候选，记在 ROUNDS。
+// 内嵌预览 R11·D3 拍板不做（CLOSED-BY-DECISION：PDF.js 违背零依赖+离线轻；新页翻开=浏览器全权）——永不再开账。
 function PdfView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx }): ReactElement {
   const p = readAssetProps(raw)
   const { url, asset, missing } = useAssetUrl(ctx.app, p.hash)
