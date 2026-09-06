@@ -7,16 +7,29 @@ export interface AssetView {
   readonly url: string | null
   readonly asset: AssetRecord | undefined
   readonly missing: boolean
+  /** 原件即将交给新页（点击那一拍调用）：本 URL 的释放从「立即」改判为「宽限后」。 */
+  readonly holdForHandoff: () => void
+}
+
+export interface AssetUrlOptions {
+  readonly handoffHoldMs?: number
 }
 
 // Object URL 生命周期与卡片同生死：挂载取资产建 URL，卸载/换 hash 即 revoke。
 // 建好的 url 住 ref（而非 effect 闭包里的 state），cleanup 永远拿得到最新那个去释放。
 // （jsdom 无 createObjectURL，测试里 stub。）
-export function useAssetUrl(app: BanjiApp, hash: string): AssetView {
+// R13·D3 例外通道「交棒宽限」（handoffHoldMs）：火漆签把原件递给新页后，页内首屏还在
+// 从这条 blob: 取数——卡片此刻换日/卸载就地 revoke 会掐死初载。拍板政策（假计时器可测）：
+// 交过棒的 URL 不再立即 revoke，改挂 holdMs 超时释放；同纸再次交棒时旧棒由新棒顶替。
+// 未交棒的卡（图/影/声/件）不配宽限，一字仍是即刻放——R9 原纪律原样。
+export function useAssetUrl(app: BanjiApp, hash: string, options?: AssetUrlOptions): AssetView {
+  const holdMs = options?.handoffHoldMs ?? 0
   const [url, setUrl] = useState<string | null>(null)
   const [asset, setAsset] = useState<AssetRecord | undefined>(undefined)
   const [missing, setMissing] = useState(false)
   const urlRef = useRef<string | null>(null)
+  const openedRef = useRef(false)
+  const holdRef = useRef<{ readonly timer: number; readonly url: string } | null>(null)
   useEffect(() => {
     let alive = true
     setMissing(false)
@@ -32,18 +45,39 @@ export function useAssetUrl(app: BanjiApp, hash: string): AssetView {
         return
       }
       urlRef.current = objectUrl
+      openedRef.current = false
       setAsset(found)
       setUrl(objectUrl)
     })
     return () => {
       alive = false
-      if (urlRef.current !== null) {
-        URL.revokeObjectURL(urlRef.current)
-        urlRef.current = null
+      const pending = urlRef.current
+      urlRef.current = null
+      const stale = holdRef.current
+      if (stale !== null) {
+        window.clearTimeout(stale.timer)
+        holdRef.current = null
+        URL.revokeObjectURL(stale.url)
+      }
+      if (pending === null) return
+      if (holdMs > 0 && openedRef.current) {
+        const held = pending
+        holdRef.current = {
+          timer: window.setTimeout(() => {
+            URL.revokeObjectURL(held)
+            if (holdRef.current?.url === held) holdRef.current = null
+          }, holdMs),
+          url: held,
+        }
+      } else {
+        URL.revokeObjectURL(pending)
       }
     }
-  }, [app, hash])
-  return { url, asset, missing }
+  }, [app, hash, holdMs])
+  const holdForHandoff = (): void => {
+    if (urlRef.current !== null) openedRef.current = true
+  }
+  return { url, asset, missing, holdForHandoff }
 }
 
 export function humanSize(bytes: number): string {

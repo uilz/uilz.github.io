@@ -3,11 +3,11 @@
 // 第 3 阶段要么整体生效（oncomplete）要么整体回滚（onabort），中间态不可被观察到。
 import type { CommitGate, Repo } from '../repository/types'
 import { MAX_STAGE_BATCH } from '../repository/types'
-import { isHex64 } from '../domain/validate'
-import { ASSET_DIR, FILE_EDGES, FILE_JOURNALS, FILE_MANIFEST, FILE_SETTINGS } from './format'
-import { createHashSubtle } from './hash'
-import { chunksToBlob, joinChunks, parseZipEntries } from './zip'
+import { FILE_EDGES, FILE_JOURNALS, FILE_MANIFEST, FILE_SETTINGS } from './format'
+import { GateFailure } from './guard'
 import { rejectCopy } from './rejectCopy'
+import { ZipParseError } from './zip'
+import { readAssetBodies, readCover, type Cover } from './view'
 import { preflightArchive, type AssetBody, type PreflightCode, type PreflightProblem, type PreflightStats } from './preflight'
 import type { ArchiveRejectCode, SchemaMigration } from './migration'
 
@@ -45,40 +45,15 @@ export interface ImportArchiveOptions {
   readonly commitGate?: CommitGate
 }
 
-const utf8DecodeFatal = (bytes: Uint8Array): string => new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+const ZIP_UNREADABLE = '这个文件不是可读取的伴记档案（可能已损坏或不完整），导入已中止；你现有的日记完好无损。'
 
-interface ZipView {
-  readonly fields: Map<string, string>
-  readonly assets: Map<string, AssetBody>
-}
-
-/** 流式解码 ZIP：四个 JSON 定名字段 + assets/<hash> 正文（增量 sha256，绝不信任条目名）。 */
-async function readZipView(zip: Uint8Array): Promise<ZipView> {
-  const fields = new Map<string, string>()
-  const rawAssets = new Map<string, readonly Uint8Array<ArrayBuffer>[]>()
-  parseZipEntries(zip, (entry) => {
-    if (entry.name.startsWith(ASSET_DIR)) {
-      const hash = entry.name.slice(ASSET_DIR.length)
-      if (isHex64(hash)) rawAssets.set(hash, entry.chunks)
-      return 'continue'
-    }
-    if (entry.name === FILE_MANIFEST || entry.name === FILE_JOURNALS || entry.name === FILE_EDGES || entry.name === FILE_SETTINGS) {
-      fields.set(entry.name, utf8DecodeFatal(joinChunks(entry.chunks)))
-    }
-    return 'continue'
-  })
-  if (!fields.has(FILE_MANIFEST)) throw new Error('ZIP 中找不到 manifest.json（这不是伴记档案）')
-  const assets = new Map<string, AssetBody>()
-  for (const [hash, chunks] of rawAssets) {
-    const hasher = createHashSubtle()
-    let size = 0
-    for (const c of chunks) {
-      hasher.push(c)
-      size += c.byteLength
-    }
-    assets.set(hash, { actualHash: await hasher.digestHex(), blob: chunksToBlob(chunks), size })
+/** 流读三闸的失败分诊：闸码原样进 reason（人话在 rejectCopy），解坏≠非档案。 */
+function failureFromStream(err: unknown): ImportResultFail {
+  if (err instanceof GateFailure) return failureFromProblems([{ code: err.code, detail: err.detail }])
+  if (err instanceof ZipParseError && err.inEntry) {
+    return failureFromProblems([{ code: 'archive.corrupt', detail: `${err.entryName ?? '（条目边界外）'}: ${err.message}` }])
   }
-  return { fields, assets }
+  return { ok: false, reason: 'zip_unreadable', userMessage: ZIP_UNREADABLE, detail: String(err).slice(0, 200) }
 }
 
 const CORRUPT_PREFIX = '资料校验未通过，导入已中止；你现有的日记完好无损。问题：'
@@ -101,33 +76,45 @@ async function defaultEstimate(): Promise<StorageEstimate | undefined> {
 
 export async function importArchive(zip: Uint8Array, opts: ImportArchiveOptions): Promise<ImportResult> {
   // —— 阶段 0/1：全部在内存里；此刻库中一个字节都未动过。
-  let view: ZipView
+  // R13 敌手加固后的次序：封面（名册闸+字段，零字节资产解压）→ 配额（拿 manifest 承诺说话）
+  // → 正文（双闸封顶解压）→ 预检（权威校验+分批计划）。诚实的大档案在读到正文之前就被配额拒，
+  // 谎报的小承诺在一公里处被停喂；任何失败都发生的第一次写入之前（结构性保证，同 R1）。
+  let cover: Cover
   try {
-    view = await readZipView(zip)
+    cover = readCover(zip)
   } catch (err) {
-    return { ok: false, reason: 'zip_unreadable', userMessage: '这个文件不是可读取的伴记档案（可能已损坏或不完整），导入已中止；你现有的日记完好无损。', detail: String(err).slice(0, 200) }
+    return failureFromStream(err)
   }
-  const neededBytes = [...view.assets.values()].reduce((acc, a) => acc + a.size, 0)
-  try {
-    const est = await (opts.estimate ?? defaultEstimate)()
-    if (est?.quota !== undefined && est?.usage !== undefined && est.usage + neededBytes * 1.2 > est.quota) {
-      return {
-        ok: false,
-        reason: 'quota_exceeded',
-        userMessage: '本机可用空间可能装不下这份档案，导入已中止；你现有的日记完好无损。可清理浏览器存储后重试。',
-        detail: `usage=${String(est.usage)} quota=${String(est.quota)} needed=${String(neededBytes)}`,
+  if (cover.declaration !== null) {
+    try {
+      const est = await (opts.estimate ?? defaultEstimate)()
+      if (est?.quota !== undefined && est?.usage !== undefined && est.usage + cover.declaration.neededBytes * 1.2 > est.quota) {
+        return {
+          ok: false,
+          reason: 'quota_exceeded',
+          userMessage: '本机可用空间可能装不下这份档案，导入已中止；你现有的日记完好无损。可清理浏览器存储后重试。',
+          detail: `usage=${String(est.usage)} quota=${String(est.quota)} needed=${String(cover.declaration.neededBytes)}`,
+        }
       }
+    } catch {
+      // 配额探针本身失败不构成拒绝理由（沙箱/私有模式常见不可用）。
     }
-  } catch {
-    // 配额探针本身失败不构成拒绝理由（沙箱/私有模式常见不可用）。
+  }
+  let assets: Map<string, AssetBody> = new Map()
+  if (cover.declaration !== null) {
+    try {
+      assets = await readAssetBodies(zip, cover.declaration)
+    } catch (err) {
+      return failureFromStream(err)
+    }
   }
 
   const preflighted = preflightArchive({
-    manifestJson: view.fields.get(FILE_MANIFEST) ?? '',
-    journalsJson: view.fields.get(FILE_JOURNALS) ?? '',
-    edgesJson: view.fields.get(FILE_EDGES) ?? '',
-    settingsJson: view.fields.get(FILE_SETTINGS) ?? '',
-    assets: view.assets,
+    manifestJson: cover.fields.get(FILE_MANIFEST) ?? '',
+    journalsJson: cover.fields.get(FILE_JOURNALS) ?? '',
+    edgesJson: cover.fields.get(FILE_EDGES) ?? '',
+    settingsJson: cover.fields.get(FILE_SETTINGS) ?? '',
+    assets,
     batchLimit: opts.batchLimit ?? MAX_STAGE_BATCH,
     ...(opts.migrationTable === undefined ? {} : { migrationTable: opts.migrationTable }),
   })

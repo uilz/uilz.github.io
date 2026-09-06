@@ -25,6 +25,16 @@ const OUTER_COPY: Readonly<Partial<Record<PreflightCode, string>>> = {
   'asset.hash_mismatch': '有件原件的指纹和册上登记的对不上',
   'asset.size_mismatch': '有件原件的轻重和册上登记的对不上',
   'asset.missing_body': '资产册点名的原件没在档案里',
+  // R13 敌手闸：名册与封顶。话术同例——先认病根、再说不敢收，不吓唬人也不含糊。
+  'archive.entry_name': '有一页纸的挂号名不合这本的规矩——不敢收',
+  'archive.entry_dupe': '同一页纸在档案里塞了两份，认不清哪张作数——不敢收',
+  'archive.entry_count': '档案里纸页堆得过高，数不清了——不敢收',
+  'archive.entry_oversize': '档案里有一页纸比它自报的厚——不敢收',
+  'asset.orphan_body': '有件原件在册上找不到登记，不知是谁家的——不敢收',
+  'archive.manifest_missing': '档案没有名册封面，不知从哪页开始核对——不敢收',
+  'archive.pages_missing': '名册点到的账页没随档案来——不敢收',
+  'archive.corrupt': '档案的封蜡裂了，纸页摊不开原样——不敢收',
+  'archive.counts_mismatch': '档案封皮点的数目和内页对不上——不敢收',
 }
 
 /** validate 形状码的专属病根话——inner 有专属话时点名比外层细。 */
