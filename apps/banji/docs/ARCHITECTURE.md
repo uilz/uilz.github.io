@@ -178,7 +178,7 @@ R11·D6 的人话表由 16 码扩至 25 码（+R13 敌手闸 9 枚：entry_name/
 cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸全绿才算完成
 ```
 
-构建产物 `i/banji/`（vite outDir），入口占位 `src/main.tsx` 不渲染任何 UI。
+构建产物 `i/banji/`（vite outDir），入口占位 `src/main.tsx` 不渲染任何 UI。R14 起产物另含 `sw.js`（`scripts/swPlugin.ts` 构建时生成的版本化壳缓存）、`manifest.json`、`icons/*.png`（public 直通）与源内 `index.html` 的三枚 link——服务工作者只碰壳静态文件，IndexedDB 从不过它的道（离线契约见 ROUNDS Round-14）。
 
 ## 10. 下一单元（UI）的接口面
 

@@ -312,3 +312,28 @@
 - 空宇宙必须成功：敌手轮的闸只咬谎，不咬诚实——0 卡 0 边 0 资产的合式档案是「新册初页」的正常形状，拿它试闸=拿用户数据试闸。
 - pdf 交棒宽限两头都不输：即刻 revoke 掐死正在翻开的那页，永不 revoke 漏到关页为止；10 分钟超时 + 再翻顶替 = 首屏稳落地、有界不留尸。
 - 10× 的墙钟 3.1s 让「慢轮开关」成了多余的礼节：不触线的证据天天跑，skip 只留给真慢的——证据常绿比 CI 客气值钱。
+
+## Round 14 — 2026-09-06 · 可安装与离线（PWA 诚实落地：manifest + 图标 + 版本化壳缓存 SW；已完成，待发布）
+
+**完成（一轮一件：修掉「清单让你加主屏、应用却没壳」的自相矛盾，用户可见功能零新增）**
+- D1 安装身份（T1）：`public/manifest.json` 静态入册——name/short_name「伴记」、纸感一句话描述、`start_url:'./'` + `scope:'./'` 全相对（发布在 /i/banji/ 子路径的命根子，单测钉死）、standalone、lang zh-CN、background/theme_color=白班宣纸（与 theme.ts `THEME_PAPER.light` 对账同一枚 #f2ecdf——夜读翻转仍走运行时 meta，manifest 不抢戏）。图标四枚 `scripts/make-icons.mjs` 作坊产出（playwright-core 无头 Chromium canvas 落墨，确定性画序可复跑）：宣纸底+金角纤维淡丝+发丝内框+宋体「伴」光学校正，192/512/maskable（无框缩字进安全区）/apple-touch-icon 180，PNG 作源文件入库、public 直通发布；index.html 补三枚 link（manifest/icon/apple-touch-icon 全相对）。
+- D2 版本化壳缓存（T2，本轮核心）：**手 roll 拍板**——vite-plugin-pwa 的 peer 实测拉 229 包/106MB（workbox-build+workbox-window），只为描述这 60 行 fetch 模型，零依赖法不配这个排场；且图标定名（public 直通）令 manifest 无需任何构建期注入，插件剩下的唯一价值（精确预缓存清单）不过是一次 readdir+摘要。`scripts/swPlugin.ts`：`writeBundle` 整目录收编 outDir（Vite8 Rolldown 的 index.html 不过 bundle，落盘才是构建真相；将来多一类产物自动入册，构造上无“游离资产离线变砖”），逐文件 sha256 汇成一枚 12 位壳版本（内容指纹：注释改动被 minify 吞掉=字节不变成不轮换，真改一个常量即换版+清单随哈希名走——两版实建取证 `634bc0916bb9→c7b19f4f7251`），渲染进定名 `sw.js`（注册 URL 恒定，与 emptyOutDir 发布形状同生共死）。fetch 模型：GET+同源+在册才应、导航 network-first 且 `fetch(req,{cache:'reload'})`（连浏览器 HTTP 缓存都不信）、断网落本版本自洽快照、册外放行零代理零缓存、跨源不碰。**IndexedDB 从不过这道门**（纪律 grep 入单测）。更新模型不 skipWaiting 不 clients.claim：新版本冷装、候着，下次冷开转正——纸册不催更。注册闸 `src/ui/registerSw.ts`：PROD 独占（dev 不抢）/无 SW 静默出局/load 后动手/失败吞声（离线首开注册不上是契约内的事）。
+- 外部资源审计（T3）：**零发现**——index.html 无外链、CSS 无 url()/@import、字体全系统栈（`--bj-display` Georgia/Songti/Noto Serif CJK 本地解析）、无 favicon 网络请求（本地 PNG 顶上）；无需自托任何东西。防回魂双秤：单测扫 index.html+全表 CSS（glob 一网打尽新增文件）零绝对/协议相对 URL；e2e 运行时秤「页面全部网络请求同源」。
+- D3 离线诚实（T4）：导出=blob 下载、导入=文件选择器+本地解析，全程零网络——e2e 飞行模式段实跑钉死（含离线重导自家档案的完整闭环）；首开无缓存=浏览器自出错误页，不装 offline 假页、不演戏，清单写明「只有一次：首开需要一次网络」。
+- 砖法反证（T5，一次性取证脚本，未入库）：旧壳在岗时发布新版、旧哈希资产从源站消失——三态各跑：①在线 reload：network-first 取到新页、新哈希不在旧册→放行直连网络，开成新版（旧 SW 伺候也不砖）；②断网+旧 SW：落回旧版自洽快照（旧而完整，零半砖）；③关页冷开：waiting 晋升、旧缓存清光、断网开的是新版快照（采样时间线全程留档）。**在线开机永远不依赖 SW 缓存，离线开机永远吃自洽快照**——经典「stale index.html 指向已删资产」无路可走。真机更新节奏（诚实记档）：冷载 register() 做字节比对更新检查（导航顺带检查 Chromium 只承诺 24h 窗口），故新版本至多落后一次冷开：在线用户当场见新页（network-first），壳缓存随后一次冷开追平。
+- 测试：单测 487→506（+19：壳快照纯函数 6〔双跑确定/乱序不动/单字节换版/新增入册/重名拒建/清单恒列 ./+index.html〕+ sw 渲染纪律 2〔占位符净+new Function 可编译；无 skipWaiting·claim 调用、无绝对 URL、origin 闸与 cache:'reload' 在场、IDB 不越界〕+ manifest 形状 4 + 外部资源零容忍 3 + registerSw 四闸 4）；e2e 110→120（+10：出身同源/manifest 真析/图标真 PNG/SW 认册/壳缓存自洽在册/断网冷开在线笔在眼/离线添笔落 IDB/离线导出成档/离线重导+再离线 reload 两笔俱在〔同秤开两次离线机〕）。**120/120 连跑两遍 0 console error**；既有 487/110 一字未动。
+- LOC 闸（awk 纯行 ≤250）：swPlugin 111、registerSw 21、pwa.test 159、make-icons 51、main 35；preflight 248 本轮未触。零新依赖（Node API 用 3 行手写 `scripts/node-fs.d.ts` 顶上，仓规禁请 @types/node）；tsconfig 补 `allowImportingTsExtensions`（Vite8 configLoader 点名要求带扩展名的 config 链 import）。
+
+**已知债(R15 候选)**
+1. 实机清点回执（R12 交接单，现含第 11 笔离线开关机取证 + 第 1 笔 standalone 真身）：任何一行 ✗ 回仓即 R15 工作账。iOS 16.4 前「加主屏=书签」的系统现实无法代测——清单已按实说。
+2. 卡片模式跨日线仍无形（R7 债6/R8 债5/R12 后半原样）；键术 ⌘Z/牵线撕线入口（等实测）；月历 ⌘N 让位口径（惹恼再拍板）；R13 债2 页级无承诺诚实余量（待 schemaVersion 升版补 shape）。
+3. preflight 248 纯行顶格（R13 债4 原样）：下一轮再触先拆。
+4. （小账，记而不立）壳版本是全有全无轮换：任一字節变→整壳重取（~340KB gzip 106KB）。对纸册这是诚实的简单；若未来资产膨涨再议逐文件 revision。
+
+**决策记录(R14 增量)**
+- 可安装性不是新功能是对账：R3 起清单喊「加主屏」、R12 白纸黑字——没有 manifest/SW 的主屏图标是打不开断网的手办书签。本轮零新面只补这一句真话。
+- 手 roll 过插件的判据是重量与诚实：106MB 依赖树 vs 60 行可全读的 fetch 模型；定名图标让 manifest 注入价值归零；workbox 的 runtimeCaching 反而是「NEVER cache anything else」要绕开的东西。证据（npm 实测包数体积）记档，将来壳复杂化再重议。
+- 版本住在字节里不住在时钟里：buildTime 版本每次构建都换缓存（空跑也催更）；内容指纹让「没改就是不轮换」成立——注释被 minify 吞掉即字节不变，真改才换版，两版实建取证。
+- 不催更的代价明码标价并核销：无 skipWaiting=旧壳最多再伺候一次冷开；反证脚本钉死三态皆不砖——在线靠 network-first+册外放行（旧 SW 新发布也开成新版），离线靠自洽快照（旧版旧资产同穴而眠）。砖的根因「HTML 与资产不同源不同版本」被「同一版本同一缓存穴」的构造掐死，不靠运气不靠催。
+- 离线首开不装死也不装活：浏览器错误页就是最诚实的页；文档一句「首开需要一次网络」胜过一切 offline 假面剧场。
+- 图标即纸面：宣纸底/发丝框/宋体「伴」，令牌镜像自 base.css；安装体验是纸册的封面，不是软件 onboarding。
