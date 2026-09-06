@@ -105,7 +105,7 @@ export function nameLedger(): { readonly claim: (name: string) => void; readonly
  */
 export function countLies(manifest: Record<string, unknown>, actual: { readonly journals: number; readonly cards: number; readonly edges: number; readonly assets: number }): string | null {
   const raw = manifest['counts']
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return `counts 缺失或不成形: ${JSON.stringify(raw).slice(0, 60)}`
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return `counts 缺失或不成形: ${JSON.stringify(raw) ?? String(raw)}`
   const rec = raw as Record<string, unknown>
   const got: string[] = []
   for (const key of ['journals', 'cards', 'edges', 'assets'] as const) {

@@ -4,7 +4,7 @@ import { isValidDateString } from '../domain/date'
 import { collectCardHashRefs } from '../domain/gc'
 import { readCard, validateArchiveSetting, validateEdge, validateJournalDoc } from '../domain/validate'
 import { ArchiveRejectedError, checkArchiveGates, migrateArchive, type ArchiveRecordSets, type SchemaMigration } from './migration'
-import { countLies } from './guard'
+import { countLies, type GateCode } from './guard'
 import { narrowAssetEntry, type ArchiveAssetIndexEntry } from './format'
 
 // 导入预检（阶段 1，纯内存、零写盘）。产出物 = 将要写入的完整分批清单（Plan）。
@@ -27,16 +27,7 @@ export type PreflightCode =
   | 'asset.hash_mismatch'
   | 'asset.size_mismatch'
   | 'asset.missing_body'
-  // R13 敌手闸码（流读期由 guard/view 抛出，经 failureFromStream 汇入同一张人话表）。
-  | 'archive.entry_name'
-  | 'archive.entry_dupe'
-  | 'archive.entry_count'
-  | 'archive.entry_oversize'
-  | 'asset.orphan_body'
-  | 'archive.manifest_missing'
-  | 'archive.pages_missing'
-  | 'archive.corrupt'
-  | 'archive.counts_mismatch'
+  | GateCode | 'archive.corrupt' | 'archive.counts_mismatch'
 
 export interface PreflightProblem {
   readonly code: PreflightCode
@@ -262,14 +253,8 @@ export function preflightArchive(input: PreflightInput): PreflightResult {
 
   if (problems.length > 0) return bail()
 
-  // R13 封面账（放最后一条 say，不抢既有病根的首位）：counts 是封面写给读者的第一承诺，
-  // 与内页实数对不上即整档不收。自家导出恒等；此闸拦的是手改/第三方的数目谎言。
-  const lie = countLies(rawManifest, {
-    journals: journalsField.data.length,
-    cards: journalsField.data.reduce<number>((acc, d) => acc + (isObj(d) && Array.isArray(d['cards']) ? d['cards'].length : 0), 0),
-    edges: edgesField.data.length,
-    assets: rawAssets.length,
-  })
+  // R13 封面账（放最后一条 say，不抢既有病根首位）：counts 与内页实数不符即整档不收；自家导出恒等，拦的是手改数目谎言。
+  const lie = countLies(rawManifest, { journals: journalsField.data.length, cards: journalsField.data.reduce<number>((acc, d) => acc + (isObj(d) && Array.isArray(d['cards']) ? d['cards'].length : 0), 0), edges: edgesField.data.length, assets: rawAssets.length })
   if (lie !== null) say('archive.counts_mismatch', `封面数目失信：${lie}`)
   if (problems.length > 0) return bail()
 

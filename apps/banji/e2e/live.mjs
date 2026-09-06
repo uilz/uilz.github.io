@@ -1457,6 +1457,54 @@ for (const sel of ['.bj-card.be-audio', '.bj-card.be-video', '.bj-card.be-pdf', 
   await page.waitForTimeout(250)
   await page.screenshot({ path: `${SHOTS}/33-r9-night-${sel.replace('.bj-card.be-', '')}.png` })
 }
+// —— R13 敌手闸真浏览器（产品的唯一信任边界第一次直面活体敌手）——
+//   现场 zipSync 构造，零二进制入库：①名册承诺 1024 字节的 64MB 零体资产 →闸一二选一
+//   即刻死停（拒信 ≤ 数秒，绝不放它膨胀完）；②`assets/../../../tmp/pwned` 穿越名 → 名不合册
+//   寸步不行。两档之后：人话拒信上屏、raw 码不上脸、真 IDB dump 逐字复秤、reload 原宇宙一纸不少。
+{
+  const { zipSync, strToU8 } = await import('fflate')
+  const manifestOf = (assets) => strToU8(JSON.stringify({ app: 'banji', schemaVersion: 1, hashAlgo: 'sha256', appVersion: '0.1.0', exportedAt: '2026-09-06T00:00:00.000Z', counts: { journals: 0, cards: 0, edges: 0, assets: assets.length }, assets }))
+  const pages = { 'journals.json': strToU8('[]'), 'edges.json': strToU8('[]'), 'settings.json': strToU8('[]') }
+  const bombHash = 'c'.repeat(64)
+  const oversize = zipSync({ 'manifest.json': manifestOf([{ hash: bombHash, mime: 'image/png', size: 1024 }]), ...pages, [`assets/${bombHash}`]: [new Uint8Array(64 * 1024 * 1024), { level: 9 }] })
+  writeFileSync(join(HERE, 'r13-oversize.banjizip'), oversize)
+  const traversal = zipSync({ 'manifest.json': manifestOf([]), ...pages, 'assets/../../../tmp/pwned': strToU8('x') })
+  writeFileSync(join(HERE, 'r13-traversal.banjizip'), traversal)
+
+  const before = await dump(page)
+  async function armHostile(path) {
+    await page.click('button[aria-label="设置"]')
+    await page.waitForTimeout(300)
+    await page.getByRole('button', { name: /导入/ }).click()
+    await page.setInputFiles('input.bj-hidden-file', path)
+    await page.waitForSelector('button:has-text("继续")', { timeout: 8000 })
+    await page.click('button:has-text("继续")')
+    await page.waitForSelector('button:has-text("确认替换")', { timeout: 4000 })
+    const t0 = Date.now()
+    await page.click('button:has-text("确认替换")')
+    await page.waitForSelector('button:has-text("知道了")', { timeout: 15000 })
+    const ms = Date.now() - t0
+    const face = ((await page.locator('.bj-confirm').first().textContent()) ?? '').trim()
+    await page.click('button:has-text("知道了")')
+    await page.waitForTimeout(300)
+    await page.click('button[aria-label="关闭设置"]')
+    await page.waitForTimeout(300)
+    return { ms, face }
+  }
+
+  const oversizeRun = await armHostile(join(HERE, 'r13-oversize.banjizip'))
+  await page.screenshot({ path: `${SHOTS}/35-hostile-rejected.png`, fullPage: true })
+  check('R13 64MB 伪账炸弹死于闸下（比它自报的厚——不敢收 上屏、raw 码不上脸、数秒内落判）', oversizeRun.ms < 5000 && oversizeRun.face.includes('比它自报的厚') && oversizeRun.face.includes('完好无损') && !oversizeRun.face.includes('entry_oversize'))
+  const traversalRun = await armHostile(join(HERE, 'r13-traversal.banjizip'))
+  check('R13 穿越档名不合册即拦（挂号名不合规矩——不敢收，零字节陪葬）', traversalRun.face.includes('不合这本的规矩') && !traversalRun.face.includes('entry_name'))
+  const afterHostile = await dump(page)
+  check('R13 敌手两轮之后：真 IDB dump 逐字复秤，现有日记完好无损（§14 兑现于敌手侧）', norm(afterHostile) === norm(before))
+  await page.reload()
+  await page.waitForSelector('.bj-card', { timeout: 10000 }) // reload 保持当日 hash：纸面在屏即是「一纸不少」的目证
+  const afterReload = await dump(page)
+  check('R13 reload 之后原宇宙一纸不少（敌手轮不 destabilize 正路）', norm(afterReload) === norm(before))
+}
+
 await ctx.close()
 
 // —— 移动端 390px ——

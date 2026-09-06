@@ -13,8 +13,10 @@ export interface Craft {
   readonly store?: boolean
 }
 
+type ZipLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
 export function buildArchive(crafts: readonly Craft[]): Uint8Array<ArrayBuffer> {
-  const entries: Record<string, [Uint8Array, { level: number }]> = {}
+  const entries: Record<string, [Uint8Array, { level: ZipLevel }]> = {}
   for (const c of crafts) entries[c.name] = [c.data, { level: c.store === true ? 0 : 6 }]
   return zipSync(entries)
 }
@@ -105,7 +107,8 @@ export function flipEntryBytes(zip: Uint8Array, name: string, offsets: readonly 
   const loc = findEntry(zip, name)
   if (loc === null) throw new Error(`作坊：档案里找不到条目 ${name}`)
   const out = zip.slice()
-  for (const off of offsets) out[loc.dataStart + off] ^= xor
+  const w = viewOf(out)
+  for (const off of offsets) w.setUint8(loc.dataStart + off, (w.getUint8(loc.dataStart + off) ^ xor) & 0xff)
   return out
 }
 
