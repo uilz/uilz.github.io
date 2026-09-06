@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { createBanjiApp } from './application'
 import { openRepo } from './repository/repo'
 import { App } from './ui/App'
+import { registerShellSw } from './ui/registerSw'
 import { applyTheme, themeFromStored } from './ui/theme'
 import './ui/styles/base.css'
 import './ui/styles/calendar.css'
@@ -20,6 +21,15 @@ const mirrored = (() => {
   }
 })()
 applyTheme(themeFromStored(mirrored))
+
+// 壳缓存注册排在开库之前：数据层万一有恙，壳照样该存进缓存（onIdle 闸让它等 load，不抢首屏）。
+registerShellSw({
+  prod: import.meta.env.PROD,
+  nav: navigator,
+  onIdle: (fn) => {
+    window.addEventListener('load', fn, { once: true })
+  },
+})
 
 const app = createBanjiApp(await openRepo())
 const theme = themeFromStored(await app.getSetting('theme'))
