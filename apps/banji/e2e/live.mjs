@@ -1867,6 +1867,168 @@ await mctx.close()
   await octx.close()
 }
 
+// —— R15 不可解码图的洞（全新冷上下文，桌面形）：规格第 6 条端到端判死 ——
+//   (a) 冒充 image/png 的垃圾字节过真探针（chromium 解不开=线上路必落空）：零错误回执、
+//       安静落文件卡 → 导出→wipe→重导 → 原件字节实算 sha256 逐字对秤（存得下、导得出）。
+//   (b) 跨向毒：直写契约形状种一张「iPhone 上存下的 HEIC 图纸」——本机 <img> 真解不开：
+//       quiet 折签「这台机器展不开这张纸」+ 开新页发丝在场、零碎图标；改名照常过缝落库、
+//       reload 折而不散。可解码图纸的分毫未动由上面既有的 R2/R9 各检原样把门。
+{
+  const dctx = await browser.newContext({ acceptDownloads: true, viewport: { width: 1100, height: 760 } })
+  const dpage = await dctx.newPage()
+  dpage.on('console', (m) => { if (m.type() === 'error') errors.push('[r15 console] ' + m.text()) })
+  dpage.on('pageerror', (e) => errors.push('[r15 pageerror] ' + e.message))
+  const dWait = async (fn, timeoutMs = 12000) => {
+    const t0 = Date.now()
+    for (;;) {
+      if (await fn()) return true
+      if (Date.now() - t0 > timeoutMs) return false
+      await dpage.waitForTimeout(250)
+    }
+  }
+  // reload 保 hash：在当日页 reload 落回的是当日页而非月历——两种开法都要接得住（R15 夹具自纠）。
+  const todayOrDay = async () => {
+    await dWait(() => dpage.evaluate(() => document.querySelector('.bj-cell') !== null || document.querySelector('.bj-card') !== null))
+    if ((await dpage.locator('.bj-cell').count()) > 0) await dpage.click(`.bj-cell[data-date="${today}"]`)
+    await dpage.waitForSelector('.bj-card')
+  }
+  await dpage.goto(BASE)
+  await dpage.waitForSelector('.bj-cell')
+  await dpage.click(`.bj-cell[data-date="${today}"]`)
+  await dpage.waitForSelector('.bj-empty')
+
+  // (a) 垃圾字节冒充 png：probe 必败 → D1 落点=文件卡，安静成交
+  const garbage = Buffer.from('R15·D3 这不是图：42 字节充数冒充 image/png 的敌手样例————完')
+  const gHash = createHash('sha256').update(garbage).digest('hex')
+  await dpage.setInputFiles('input[aria-label="夹带"]', { name: '假图.png', mimeType: 'image/png', buffer: garbage })
+  const landedFile = await dWait(async () => {
+    const d = await dump(dpage)
+    const cards = d.journals.flatMap((j) => j.cards)
+    return cards.some((c) => c.kind === 'file' && c.hash === gHash) && d.assets.some((a) => a.hash === gHash && a.mime === 'image/png' && a.name === '假图.png')
+  })
+  const paperState = await dpage.evaluate(() => ({
+    fileChips: document.querySelectorAll('.bj-card.be-file').length,
+    imgCards: document.querySelectorAll('.bj-card.be-image').length,
+    imgEls: document.querySelectorAll('img.bj-img').length,
+    toasts: [...document.querySelectorAll('.bj-toast')].map((el) => (el.textContent ?? '').trim()).filter((t) => t.includes('没能读进来') || t.includes('没夹上')),
+  }))
+  check('R15·D1 解不开的「图纸」安静落文件卡：原件过缝落库（mime/名一字不碰）、零碎图标、零错误回执',
+    landedFile && paperState.fileChips === 1 && paperState.imgCards === 0 && paperState.imgEls === 0 && paperState.toasts.length === 0)
+  await dpage.screenshot({ path: `${SHOTS}/37-r15-file-fallback.png`, fullPage: true })
+
+  // 导出→wipe→重导：spec 6「至少可保存和导出」的端到端正证——字节实算对秤，不是索引自报
+  await dpage.click('.bj-day-head [aria-label="设置"]')
+  await dpage.waitForTimeout(300)
+  const dDl = dpage.waitForEvent('download', { timeout: 15000 })
+  await dpage.getByRole('button', { name: /导出/ }).click()
+  await (await dDl).saveAs(join(HERE, 'r15-garbage.banjizip'))
+  await dpage.evaluate(() => new Promise((res) => {
+    const r = indexedDB.deleteDatabase('banji-journal')
+    r.onsuccess = r.onerror = r.onblocked = () => res()
+  }))
+  await dpage.goto(BASE)
+  await dpage.waitForSelector('.bj-cell')
+  await dpage.click('button[aria-label="设置"]')
+  await dpage.waitForTimeout(300)
+  await dpage.getByRole('button', { name: /导入/ }).click()
+  await dpage.setInputFiles('input.bj-hidden-file', join(HERE, 'r15-garbage.banjizip'))
+  await dpage.waitForSelector('button:has-text("继续")', { timeout: 8000 })
+  await dpage.click('button:has-text("继续")')
+  await dpage.waitForSelector('button:has-text("确认替换")', { timeout: 4000 })
+  await dpage.click('button:has-text("确认替换")')
+  await dpage.waitForTimeout(3000)
+  await dpage.reload()
+  await dpage.waitForSelector('.bj-cell')
+  await dpage.click(`.bj-cell[data-date="${today}"]`)
+  await dpage.waitForSelector('.bj-card')
+  const reImported = await dump(dpage)
+  const fileBack = reImported.journals.flatMap((j) => j.cards).some((c) => c.kind === 'file' && c.hash === gHash)
+  const bytesBack = (await idbAssetSha256(dpage, gHash)) === gHash
+  check('R15·D1+规格6 导出→wipe→重导：文件卡携原件回魂且 IDB 字节实算 sha256=原字节（存得下、导得出，判死）',
+    fileBack && bytesBack && reImported.assets.some((a) => a.hash === gHash && a.name === '假图.png' && a.mime === 'image/png'))
+
+  // (b) 跨向毒（iPhone 存的 HEIC 图纸在安卓上开）：契约形状直写下库，真 reload 真解码失败
+  const heicish = Buffer.from('ftypheic\x00\x00\x00\x18 这不是能解开的 HEIC：R15 跨向夹具 · 安卓无码 · 原件尚在')
+  const hHash = createHash('sha256').update(heicish).digest('hex')
+  await dpage.evaluate(async ([hh, isoBytes, day]) => {
+    const bytes = Uint8Array.from(atob(isoBytes), (c) => c.charCodeAt(0))
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('banji-journal')
+      r.onsuccess = () => {
+        const db = r.result
+        const iso = new Date().toISOString()
+        const tx = db.transaction(['journals', 'assets'], 'readwrite')
+        tx.objectStore('assets').put({ hash: hh, mime: 'image/heic', size: bytes.length, addedAt: iso, name: 'IMG_0001.HEIC', blob: new Blob([bytes], { type: 'image/heic' }) })
+        const jr = tx.objectStore('journals').get(day)
+        jr.onsuccess = () => {
+          const doc = jr.result
+          doc.cards.push({ id: 'r15-heic-card', kind: 'image', pos: { x: 480, y: 60 }, size: { w: 300, h: 240 }, props: { hash: hh, w: 300, h: 225 }, createdAt: iso, updatedAt: iso })
+          doc.updatedAt = iso
+          tx.objectStore('journals').put(doc)
+        }
+        tx.oncomplete = () => { db.close(); res() }
+        tx.onerror = () => { db.close(); rej(tx.error) }
+      }
+      r.onerror = () => rej(r.error)
+    })
+  }, [hHash, heicish.toString('base64'), today])
+  await dpage.reload()
+  await todayOrDay()
+  const foldedOk = await dWait(() => dpage.evaluate(() => [
+    document.querySelector('.bj-img-fold') !== null,
+    ((document.querySelector('.bj-img-fold')?.textContent) ?? '').includes('这台机器展不开这张纸'),
+    document.querySelector('.bj-card.be-image img.bj-img') === null,
+  ].every(Boolean)))
+  const handoffAttrs = await dpage.evaluate(() => {
+    const a = document.querySelector('a[data-img-handoff]')
+    return {
+      blob: (a?.getAttribute('href') ?? '').startsWith('blob:'),
+      blank: a?.getAttribute('target') === '_blank',
+      noopener: (a?.getAttribute('rel') ?? '').split(' ').includes('noopener'),
+      copy: (a?.textContent ?? '').trim() === '开新页试试',
+      label: document.querySelector('.bj-card.be-image [data-asset-name]')?.textContent?.trim() ?? '',
+    }
+  })
+  check('R15·D2 异机存的图纸本机开=quiet 折签（零碎图标）：「这台机器展不开这张纸」+ 开新页发丝 blob/_blank/noopener、题签原名照挂',
+    foldedOk && handoffAttrs.blob && handoffAttrs.blank && handoffAttrs.noopener && handoffAttrs.copy && handoffAttrs.label === 'IMG_0001.HEIC')
+  await dpage.screenshot({ path: `${SHOTS}/38-r15-quiet-fold.png`, fullPage: true })
+
+  // 折签体 data-nodrag（R4 纪律）：选中落点走卡片纸边留白带（R11 夹具纪律），不点 chip。
+  const foldPos = await dpage.evaluate(() => {
+    const el = document.querySelector('[data-card-id="r15-heic-card"]')
+    if (el === null) throw new Error('R15 夹具：跨向纸不在屏上')
+    el.scrollIntoView({ block: 'center' })
+    const r = el.getBoundingClientRect()
+    return { x: r.x + 7, y: r.y + 6 }
+  })
+  await dpage.mouse.click(foldPos.x, foldPos.y)
+  await dpage.waitForTimeout(300)
+  await dpage.click('[aria-label="卡片菜单"]')
+  await dpage.click('[data-menu-rename]')
+  await dpage.fill('[data-rename-input]', '展不开的藤花')
+  await dpage.click('[data-rename-commit]')
+  const renamedFold = await dWait(async () => {
+    const c = (await dump(dpage)).journals.flatMap((j) => j.cards).find((x) => x.id === 'r15-heic-card')
+    return c?.name === '展不开的藤花'
+  })
+  await dpage.reload()
+  await todayOrDay()
+  const foldStill = await dWait(() => dpage.evaluate(() =>
+    document.querySelector('.bj-img-fold') !== null &&
+    (document.querySelector('.bj-card.be-image [data-asset-name]')?.textContent ?? '').includes('展不开的藤花')))
+  check('R15·D2 折纸全能：重命名过缝落库、reload 后仍 quiet 折签而题签新名在列（卡不死、原件在）', renamedFold && foldStill)
+
+  // (b) 尾笔：开新页真交棒——headless 对不可渲染 blob 走下载管道与 pdf 同款两路皆收
+  const popupP = dpage.waitForEvent('popup', { timeout: 6000 }).catch(() => null)
+  const dltP = dpage.waitForEvent('download', { timeout: 6000 }).catch(() => null)
+  await dpage.click('a[data-img-handoff]')
+  const popup = await popupP
+  if (popup !== null) await popup.close().catch(() => undefined)
+  const handed = popup !== null || (await dltP) !== null
+  check('R15·D2 开新页=原件递出新页（popup 或下载管道，OS 处置权交出去）', handed)
+  await dctx.close()
+}
+
 await browser.close()
 console.log('\nCONSOLE ERRORS:', errors.length)
 errors.slice(0, 10).forEach((e) => console.log('  !', e))
