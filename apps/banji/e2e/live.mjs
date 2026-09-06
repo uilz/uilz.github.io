@@ -2029,6 +2029,73 @@ await mctx.close()
   await dctx.close()
 }
 
+// —— R16 audio parity 折签（全新冷上下文，桌面形）：R15 债复述「audio 跨向一格记而不立」立起 ——
+//   他机存的声卡（ALAC/奇 codec）以 audio 型入库（audio 无 attach 探针，R15 既拍），本机
+//   <audio> 真解不开 → onError 上桌换同一枚纸语折签 + 开新页发丝；卡照常全能（选中走
+//   R11 纸边留白带，R15 nodrag 教训）。可解码声音的分毫未动由既有 R9 真 WAV 检原样把门。
+{
+  const actx = await browser.newContext({ viewport: { width: 1100, height: 760 } })
+  const apage = await actx.newPage()
+  apage.on('console', (m) => { if (m.type() === 'error') errors.push('[r16 console] ' + m.text()) })
+  apage.on('pageerror', (e) => errors.push('[r16 pageerror] ' + e.message))
+  const aWait = async (fn, timeoutMs = 12000) => {
+    const t0 = Date.now()
+    for (;;) {
+      if (await fn()) return true
+      if (Date.now() - t0 > timeoutMs) return false
+      await apage.waitForTimeout(250)
+    }
+  }
+  await apage.goto(BASE)
+  await apage.waitForSelector('.bj-cell')
+  await apage.click(`.bj-cell[data-date="${today}"]`)
+  await apage.waitForSelector('.bj-empty')
+  // 垃圾字节冒充 audio/mp4：路由表按前缀收进声音纸（无探针过境，R15 政策），渲染期真解不开
+  const agarb = Buffer.from('R16 这不是能解开的声音：ALAC 位的跨向夹具 · 本机无码 · 原件尚在')
+  const aHash = createHash('sha256').update(agarb).digest('hex')
+  await apage.setInputFiles('input[aria-label="夹带"]', { name: '跨向的声音.m4a', mimeType: 'audio/mp4', buffer: agarb })
+  const audioLanded = await aWait(async () => {
+    const d = await dump(apage)
+    return d.journals.flatMap((j) => j.cards).some((c) => c.kind === 'audio' && c.hash === aHash)
+  })
+  const audioFolded = audioLanded && await aWait(() => apage.evaluate(() => [
+    document.querySelector('.bj-card.be-audio .bj-img-fold') !== null,
+    ((document.querySelector('.bj-card.be-audio .bj-img-fold')?.textContent) ?? '').includes('这台机器展不开这张纸'),
+    document.querySelector('.bj-card.be-audio audio.bj-audio') === null,
+  ].every(Boolean)))
+  const audioAttrs = await apage.evaluate(() => {
+    const a = document.querySelector('.bj-card.be-audio a[data-img-handoff]')
+    return {
+      blob: (a?.getAttribute('href') ?? '').startsWith('blob:'),
+      blank: a?.getAttribute('target') === '_blank',
+      noopener: (a?.getAttribute('rel') ?? '').split(' ').includes('noopener'),
+      label: document.querySelector('.bj-card.be-audio [data-asset-name]')?.textContent?.trim() ?? '',
+    }
+  })
+  // 卡全能：折签体 data-nodrag 不吃拖拽也不吞选中（R15 夹具纪律），纸边留白带落点选中→改名过缝
+  const aPos = await apage.evaluate(() => {
+    const card = [...document.querySelectorAll('.bj-card.be-audio')].pop()
+    if (!card) throw new Error('R16 夹具：跨向声音卡不在屏上')
+    card.scrollIntoView({ block: 'center' })
+    const r = card.getBoundingClientRect()
+    return { x: r.x + 7, y: r.y + 6 }
+  })
+  await apage.mouse.click(aPos.x, aPos.y)
+  await apage.waitForTimeout(300)
+  await apage.click('[aria-label="卡片菜单"]')
+  await apage.click('[data-menu-rename]')
+  await apage.fill('[data-rename-input]', '展不开的声音')
+  await apage.click('[data-rename-commit]')
+  const audioAlive = await aWait(async () => {
+    const d = await dump(apage)
+    return d.journals.flatMap((j) => j.cards).some((c) => c.hash === aHash && c.name === '展不开的声音')
+  })
+  check('R16 声音纸 parity 折签：他机声卡本机解不开=quiet 折签+开新页发丝（blob/_blank/noopener、题头原名照挂），卡全能（改名过缝落库）',
+    audioFolded && audioAttrs.blob && audioAttrs.blank && audioAttrs.noopener && audioAttrs.label === '跨向的声音.m4a' && audioAlive)
+  await apage.screenshot({ path: `${SHOTS}/39-r16-audio-fold.png`, fullPage: true })
+  await actx.close()
+}
+
 await browser.close()
 console.log('\nCONSOLE ERRORS:', errors.length)
 errors.slice(0, 10).forEach((e) => console.log('  !', e))
