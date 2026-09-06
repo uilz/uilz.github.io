@@ -1,9 +1,9 @@
 'use strict';
 // 伴记壳缓存（构建生成，勿手改——源在 apps/banji/scripts/swPlugin.ts）。
 // 只伺候本机同源的壳文件；IndexedDB 与数据从不过这道门。
-var VERSION = "634bc0916bb9";
+var VERSION = "f843ac155e61";
 var CACHE = 'banji-shell-' + VERSION;
-var PRECACHE = ["./","index.html","assets/index-CHMjn8MX.css","assets/index-DXRW-GCa.js","icons/apple-touch-icon.png","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png","manifest.json"];
+var PRECACHE = ["./","index.html","assets/index-CTcNwwq7.js","assets/index-DW59qgdV.css","icons/apple-touch-icon.png","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png","manifest.json"];
 var PRECACHE_HREFS = PRECACHE.map(function (p) { return new URL(p, self.location).href; });
 
 self.addEventListener('install', function (event) {
