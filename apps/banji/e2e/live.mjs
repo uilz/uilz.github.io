@@ -1768,6 +1768,105 @@ await mpage.screenshot({ path: `${SHOTS}/22-mobile-stack.png` })
 }
 await mctx.close()
 
+// —— R14 可安装与离线（airplane 取证，全新冷上下文=新手机首装首开）——
+// 剧本：在线首开（身份三查：请求全同源/manifest 可析/图标真 PNG）→ SW 上任并伺候 reload →
+// 版本化壳缓存自证在册 → 落一笔 → 拉航模 → 壳缓存冷开全纸在眼 → 离线添第二笔落 IDB →
+// 离线导出（blob 零网络）→ 离线全量替换重导 → 再 reload 两笔俱在。
+{
+  const octx = await browser.newContext({ acceptDownloads: true, viewport: { width: 390, height: 844 } })
+  const opage = await octx.newPage()
+  opage.on('console', (m) => { if (m.type() === 'error') errors.push('[r14 console] ' + m.text()) })
+  opage.on('pageerror', (e) => errors.push('[r14 pageerror] ' + e.message))
+  const seen = []
+  opage.on('request', (r) => seen.push(r.url()))
+  await opage.goto(BASE)
+  await opage.waitForSelector('.bj-cell')
+  check('R14 boot: online first frame normal', await opage.locator('.bj-grid').isVisible())
+  const foreign = seen.filter((u) => /^https?:/.test(u) && !u.startsWith('http://127.0.0.1:4321/'))
+  check('R14 出身: 页面全部网络请求同源（运行时外部资源零容忍）', foreign.length === 0)
+  const man = await opage.evaluate(async () => {
+    const link = document.querySelector('link[rel="manifest"]')
+    if (link === null || !link.href) return null
+    const r = await fetch(link.href)
+    return { status: r.status, url: r.url, json: await r.json() }
+  })
+  check('R14 manifest: link→200→可析→standalone 且 start_url/scope 相对',
+    man !== null && man.status === 200 && man.json.display === 'standalone' && man.json.start_url === './' && man.json.scope === './' && man.url.endsWith('/i/banji/manifest.json'))
+  const iconOk = await opage.evaluate(async () => {
+    const r = await fetch(new URL('icons/icon-192.png', document.baseURI).href)
+    const b = new Uint8Array(await r.arrayBuffer())
+    const sig = b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47
+    const w = (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19]
+    return r.status === 200 && sig && w === 192
+  })
+  check('R14 图标: icon-192 真 PNG 在册（magic+宽度对秤）', iconOk)
+  await opage.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
+  await opage.reload()
+  await opage.waitForSelector('.bj-cell')
+  const controlled = await opage.evaluate(() => navigator.serviceWorker.controller !== null &&
+    navigator.serviceWorker.controller.scriptURL.endsWith('/i/banji/sw.js'))
+  check('R14 SW: reload 页面受壳缓存伺候（controller 认册）', controlled)
+  const shellOk = await opage.evaluate(async () => {
+    const keys = (await caches.keys()).filter((k) => k.startsWith('banji-shell-'))
+    if (keys.length !== 1) return false
+    const c = await caches.open(keys[0])
+    const paths = (await c.keys()).map((r) => new URL(r.url).pathname)
+    return paths.some((p) => p === '/i/banji/') && paths.some((p) => p.endsWith('/index.html')) && paths.some((p) => p.endsWith('.js'))
+  })
+  check('R14 SW: 版本化壳缓存含 ./ + index.html + 哈希资产（自洽快照在册）', shellOk)
+
+  await opage.click(`.bj-cell[data-date="${today}"]`)
+  await opage.waitForSelector('.bj-empty, .bj-card')
+  await opage.click('.bj-add')
+  await opage.waitForSelector('textarea', { timeout: 4000 })
+  await opage.locator('textarea').first().fill('离线一笔 · 飞机已起飞')
+  await opage.waitForTimeout(1200)
+
+  await octx.setOffline(true)
+  await opage.reload()
+  await opage.waitForSelector('.bj-card', { timeout: 8000 })
+  const offBooted = await opage.evaluate(() =>
+    document.querySelector('.bj-card .bj-text-read')?.textContent?.includes('飞机已起飞') === true)
+  check('R14 离线: 壳缓存冷开全纸在眼（在线那笔断网可见）', offBooted)
+  await opage.screenshot({ path: `${SHOTS}/35-r14-offline-boot.png` })
+
+  await opage.click('.bj-add')
+  await opage.waitForSelector('textarea', { timeout: 4000 })
+  await opage.locator('textarea').first().fill('离线二笔 · 平飞中')
+  await opage.waitForTimeout(1200)
+  const od1 = await dump(opage)
+  check('R14 离线: IDB 照常落盘（数据层与网络无干）',
+    od1.journals.some((j) => j.cards.some((c) => (c.text || '').includes('平飞中'))))
+
+  await opage.click('button[aria-label="设置"]')
+  await opage.waitForTimeout(300)
+  const odl = opage.waitForEvent('download', { timeout: 15000 })
+  await opage.getByRole('button', { name: /导出/ }).click()
+  const offDl = await odl
+  const offZip = join(HERE, 'r14-offline-backup.banjizip')
+  await offDl.saveAs(offZip)
+  check('R14 离线: 导出备份成（blob 下载零网络）',
+    sha256File(offZip).length === 64 && offDl.suggestedFilename().endsWith('.banjizip'))
+
+  await opage.getByRole('button', { name: /导入/ }).click()
+  await opage.setInputFiles('input.bj-hidden-file', offZip)
+  await opage.waitForSelector('button:has-text("继续")', { timeout: 8000 })
+  await opage.click('button:has-text("继续")')
+  await opage.waitForSelector('button:has-text("确认替换")', { timeout: 4000 })
+  await opage.click('button:has-text("确认替换")')
+  await opage.waitForTimeout(3000)
+  // 还在当日页（hash 未换）：这次 reload 是第二次离线开机——壳缓存伺候 + IDB 新宇宙，两样同秤。
+  await opage.reload()
+  await opage.waitForSelector('.bj-card', { timeout: 8000 })
+  const od2 = await dump(opage)
+  const both = od2.journals.some((j) => j.cards.some((c) => (c.text || '').includes('飞机已起飞')) &&
+    j.cards.some((c) => (c.text || '').includes('平飞中')))
+  check('R14 离线: 重导+再 reload 两笔俱在（导入全程本地）', both)
+  await opage.screenshot({ path: `${SHOTS}/36-r14-offline-imported.png` })
+  await octx.setOffline(false)
+  await octx.close()
+}
+
 await browser.close()
 console.log('\nCONSOLE ERRORS:', errors.length)
 errors.slice(0, 10).forEach((e) => console.log('  !', e))
