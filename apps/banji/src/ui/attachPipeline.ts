@@ -2,7 +2,7 @@
 // 全程跑在核心注入的同一条串行链上（chain），绝不另起第二链；落笔前的结算（flushNow）亦由核心注入。
 // ghost/回执计数只住 dispatch 与内存：存储契约里没有它们的一行。
 import type { BanjiApp } from '../application'
-import type { CardPos } from '../domain/types'
+import type { CardPos, CardSize } from '../domain/types'
 import { resolveRenderer } from './cards/registry'
 import { clampCardPos, dropAt, fitWithin, imageCardSize, imageFitMaxW, scatterPos, viewportWidthNow } from './placement'
 import { sortByZ } from './stackGeometry'
@@ -49,11 +49,24 @@ export function createAttachPipeline(deps: AttachPipelineDeps): AttachPipeline {
       try {
         const record = await app.addAsset(file)
         let props: Record<string, unknown> = { hash: record.hash }
+        // R15·D1 探针能力回落：路由表永驻 mime 纯判据（attachRoute 一字不动），「这台机器
+        // 解得开解不开」是只有此刻才成立的运行时事实，只配住在这里。probe 落空（null=真
+        // 探针对解不开字节的全部表达）或直接抛（注入探针的同义信号）都不拒原件：改落文件
+        // 卡安静收——hash/name/mime 全归资产记录（契约 mime 中立），文件卡的开新页路仍在。
+        let landed = kind
         let size = resolveRenderer(kind).defaultSize
         // 图片/影纸共一条封顶血脉：imageFitMaxW 的视口感知公式，两型一处不落。
         if (kind === 'image' || kind === 'video') {
-          const nat = kind === 'image' ? await probe(file) : await probeVideo(file)
-          if (nat !== null) {
+          let nat: CardSize | null
+          try {
+            nat = kind === 'image' ? await probe(file) : await probeVideo(file)
+          } catch {
+            nat = null // 抛与 null 同义：解不开。回落脚本就走下面这一格。
+          }
+          if (nat === null) {
+            landed = 'file'
+            size = resolveRenderer(landed).defaultSize
+          } else {
             const maxW = imageFitMaxW(viewportWidthNow())
             const fit = fitWithin(nat.w, nat.h, maxW)
             props = { hash: record.hash, w: fit.w, h: fit.h }
@@ -61,7 +74,7 @@ export function createAttachPipeline(deps: AttachPipelineDeps): AttachPipeline {
           }
         }
         const maxZ = sortByZ(getState().cards).at(-1)?.z ?? 0
-        const card = await app.addCard(day, { kind, props, pos, size, z: maxZ + 1 + order * 0.5 })
+        const card = await app.addCard(day, { kind: landed, props, pos, size, z: maxZ + 1 + order * 0.5 })
         vanish()
         if (getState().date === day) dispatch({ type: 'card/added', card, edit: false })
       } catch (err) {

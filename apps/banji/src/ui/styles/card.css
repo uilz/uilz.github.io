@@ -497,6 +497,29 @@
   margin: 4px 0 0;
 }
 
+/* R15·D2 展不开的纸：占满画面位、题签一行照旧在列。淡字是「此处无画」的 quiet 血脉，
+   交棒小药丸走 .bj-file-save / .bj-pdf-open 同款发丝（可读信息不许 faint，R8 法律延伸）。 */
+.bj-img-fold {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.bj-img-handoff {
+  flex: none;
+  font-size: 15px;
+  padding: 2px 8px;
+  border: 1px solid var(--bj-hairline);
+  border-radius: 999px;
+  color: var(--bj-accent);
+  text-decoration: none;
+}
+
 /* 声音纸：题头一行 + 原生控件一枚。控件墨色跟着主题走（accent-color 是唯一正门）。 */
 .bj-audio,
 .bj-video {
