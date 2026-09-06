@@ -119,6 +119,21 @@ describe('R15·D2 图纸解不开的 quiet 折签', () => {
     expect(document.querySelector('[data-asset-name]')?.textContent).toBe('片段.mkv')
   })
 
+  it('R16 声音纸同款parity onError：解不开换同一枚纸语折签，题头一行照挂', async () => {
+    seam.assets.set(HEX, rec('现场.m4a', 'audio/mp4'))
+    seam.putDay(DAY, [card('audio', { hash: HEX })])
+    renderDay()
+    await settle()
+    fireEvent(document.querySelector('audio.bj-audio') as Element, new Event('error'))
+    await screen_find('这台机器展不开这张纸')
+    expect(document.querySelector('audio.bj-audio')).toBeNull()
+    const a = document.querySelector('a[data-img-handoff]')
+    expect(a?.getAttribute('href')).toBe(URL_A)
+    expect(a?.getAttribute('target')).toBe('_blank')
+    expect((a?.getAttribute('rel') ?? '').split(' ')).toContain('noopener')
+    expect(document.querySelector('[data-asset-name]')?.textContent).toBe('现场.m4a')
+  })
+
   it('可解码纸不受害：onError 从未开火则 <img> 恒在，quiet 折签永不抢戏', async () => {
     seam.assets.set(HEX, rec('雨后.png', 'image/png'))
     seam.putDay(DAY, [card('image', { hash: HEX })])
