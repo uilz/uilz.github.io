@@ -87,6 +87,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 - JSON 一律**确定性序列化**（`canonicalJson`：对象键排序、数组保序，字节可复现）。
 - 资产条目 STORE（level 0）存储：已是二进制/内容寻址，deflate 纯属浪费；JSON 用 deflate。
 - 读取端：`Unzip` 流式解码。**fflate 陷阱：`new Unzip()` 默认只认 store(0)，解 deflate(method 8) 前必须 `unzipper.register(UnzipInflate)`**，否则 `file.start()` 抛 `unknown compression type 8`（zip.ts 已处理，勿回退）。
+- **R13 流式读取双形态**：`parseZipEntries`（攒齐整条目再回调，夹具/导出侧用）与 `streamZipEntries`（逐块 + 条目边界前拒收，导入敌手闸用）——后者的三条 fflate 不显眼纪律（不 start=零解压 / 1KiB 馈片才可中途停喂 / 回调异常会被 UnzipInflate 截胡再递一次）记在 zip.ts 头注，闸语义记在 view.ts/guard.ts 头注。R1 债「真·流式解析大 ZIP 留给规模轮」随 streamZipEntries 闭账。
 
 ## 5. 迁移：两个整数，一张表
 
@@ -108,13 +109,23 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 ## 7. 导入 = 严格三阶段（顺序即安全）
 
 ```
-0. 配额预检：navigator.storage.estimate（可选守卫，Node/测试注入），Σ资产字节 ×1.2 余量，不足即 fail fast——零写入
-1. PREFLIGHT：纯内存、零写盘。ZIP 流式解析 → 两道闸（schemaVersion/hashAlgo/app=banji）→ 迁移 → 校验：
+0. 配额预检：navigator.storage.estimate（可选守卫，Node/测试注入），Σ manifest.assets 声明字节 ×1.2，
+   不足即 fail fast——**R13 起配额跑在解压任何东西之前**（封面遍只读定名页、资产正文零字节解），
+   诚实的 200MB 大档案死于算账而不是死于膨胀。
+1. PREFLIGHT：纯内存、零写盘。ZIP 流式解析 → 名册闸（guard/view，R13）：
+   条目名 ∈ ^(manifest|journals|edges|settings)\.json | assets/<64hex>$（../、绝对路径、空名、
+   同形字、大小写花招一律 entry_name 拒于解压之前）；同名=entry_dupe；总数>20000=entry_count；
+   名册外的 assets 正文=asset.orphan_body（收进库之前先问册）；正文膨胀=archive.entry_oversize
+   （manifest.size 承诺 + 1KB 交付窗松弛：闸一比本地头自报尺寸零字节拒，闸二边解边数流中停喂）。
+   → 两道门禁闸（schemaVersion/hashAlgo/app=banji）→ 迁移 → 校验（含 R13 counts 封面账：
+   manifest.counts ≠ 内页实数 = archive.counts_mismatch）：
    日期字符串格式、卡片 id 全局唯一、children 存在/一子一父/容器无环、
    **边端点必须指向档内存在的卡（R7，`edge.dangling_endpoint`——自家导出同批剪边产不出悬空，此闸拦第三方/手改档案偷渡）**、
    每个 props hash ∈ manifest 且 ZIP 正文 sha256 实算相等、size 相等、settings 形状；
    未知 kind 原样保留、永不因此拒绝。
    失败 ⇒ 返回 problems ⇒ 写盘代码路径根本无从执行（结构保证，不是运行时保证）。
+   解坏≠非档案：zip 流读得动而某页炸了 = archive.corrupt（entry-level inflate 失败，
+   fflate 之疯被 streamZipEntries 的抛错纪律接住），零条目定名皆无 = zip_unreadable（R1 老话术原样）。
 2. CHUNKED STAGE：txn clear staging → 批次 ≤200 `put(value, 'j:'|'a:'|'e:'|'s:'+key)`；zip 条目 → new Blob → staging。
 3. COMMIT：恰好一个 readwrite 事务横跨 journals/assets/settings/edges/staging：clear 四个活动
    store → staging 游标排干（键前缀↔内联键不一致即刻 abort）→ 每行 delete。**成功当且仅当 tx.oncomplete**。
@@ -128,6 +139,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
   直通立即提交，与注册前一字不差。
 
 导入是**全量替换**语义（档案即宇宙快照），不与现库合并；`ImportResult = {ok:true, stats} | {ok:false, reason, userMessage, detail?}`。
+R11·D6 的人话表由 16 码扩至 25 码（+R13 敌手闸 9 枚：entry_name/dupe/count/oversize、orphan_body、manifest_missing、pages_missing、corrupt、counts_mismatch——`rejectCopy.ts` 一处登记，`guard.ts` 有 `[GateCode] extends [PreflightCode]` 编译保险：加了闸忘登文案即红）。
 
 ### IndexedDB 陷阱清单（repository/ 已按此实现，改这层的人必须重新过一遍）
 
@@ -160,6 +172,7 @@ assets/<hash>  blob 原始字节，无扩展名 —— 内容寻址，CJK/转义
 - R11 长尾打磨面（408 基线）：UI `save-class.test.tsx`（8：classifySaveError 真 DOMException name/legacy code 22/1014/裸 {name} 形状/漂移三兄弟/unknown passthrough + 回执按类配文案三面 quota「手机纸不多了 · 导出旧手札」/drift·unknown 通用原样）、`asset-name.test.tsx`（5：五型 name 元素同类同链常挂、覆盖名/资产名/hash 前八三档、全集恰五枚）、`shortcuts.test.tsx`（10：⌘N/⌘⇧K/⌘E 开火+写字第守卫矩阵+⌘F 例外+月历让位纪律+Esc 矩阵〔抽屉/纸单/浮笺/纸片〕）、`perf-budget.test.ts`（5：2000 卡/600 边/200 天真缝宇宙四预算 search 1.9<50ms·layout 39.8<150ms·BFS 0.5<150ms·export 74<2000ms 钉死——增量账本 CLOSED-BY-EVIDENCE 的证据本体）、`reject-copy.test.ts`（5：16 预检码+inner 形状码人话表无一生裸 enum 互不撞文案，形状碎语不上脸）、UI `import-rejection-copy.test.tsx`（2：悬空端点/超新档两道拒信真走抽屉上屏）。e2e 97→103：R11·D5 ⌘E/⌘N/⌘⇧K/Esc 合抽屉真键盘四检 + R11·D2 四型改名 reload 全显纸面名与同 class 双检。既有 373/97 全数一字未动。
 - R10 提交屏障面（373 基线）：UI `import-barrier.test.tsx`（3：A 面悬挂开火定序 in-flight→landed→commit + 新宇宙逐字 + ack 后零过缝、B 面 commit 失败复活不吞不毒旧宇宙不换、C 面只弃旧不毒新）；R6 四面（import-discard）原样重跑。e2e 96→97：债#6 夹具改真对抗（journals.get 一次性挂起闸 + 5-store readwrite 诞生计数器：屏障下 commit 事务 1500ms 零诞生、放行后逐字节 ≡ staged；阴性对照还原旁路则双 FAIL），连跑两遍 0 console。
 - R12 小轮面（414 基线）：`graph-layout.test.ts` +6（lineDayBadge 谓词：同日 null/跨日取历法较晚端且登记序无关/跨年历法序；落位：badge 锚点住远端纸界内、反登记照旧钉远端；混线账：同日线与跨日线同图各归各标）。e2e 103→106：角标判族自 DOM 自立（chip data-graph-date 对照线段两端定 cross/same，跨日线恰一枚同日线零枚文字=远端日）+ 白班令牌（day ink-soft rgb(111,98,80)·pointer-events 穿透）+ 夜读令牌（夜 ink-soft rgb(181,166,136)·底=夜纸）；R8 图↔卡片往返回程新增 hop 熄灯前置（is-pulse 消失=hop 已 null，R11 债2 时序敏感死因）。三遍连跑 106/106 0 console。实机十笔转 docs/REAL-DEVICE-CHECKLIST.md 人收。
+- R13 敌手加固面（487 基线）：`archive/hostile.test.ts`（8：200MB 诚实承诺配额先拒·双闸 oversize 取证「停喂 3.7MB/200MB·23ms」·穿越·25k 爆量·deflate 封蜡=archive.corrupt·stored 偷改=hash 兜·混档名先死）+`hostile-lies.test.ts`（12：counts/orphan/missing_body 复秤/entry_invalid/schema 字符串/缺封 vs 缺页 vs 垃圾三张脸/重名/空宇宙必须成功/配额新形/真路三钉 R10 屏障成一次败零敲）+`archive/guard.test.ts`（43：正则 31 发实弹·账簿边界数学·declareAssets/countLies·streamZipEntries 拒收零交付+异常 identity+blob-inflated 全量物性）+UI `r13-objecturl.test.tsx`（5：pdf 交棒宽限假计时器三拍+闸码拒信上抽屉两判）+`perf-scale10x.test.ts`（5：19800 卡/5000 边/1800 日常跑 search 38<200·layout 336<600·BFS 1.3<600·export 333<8000）。e2e 106→110：炸弹/穿越真浏览器过抽屉双确认、IDB dump 逐字复秤、reload 一纸不少，110/110 连跑两遍 0 console。
 
 ```
 cd apps/banji && npm run typecheck && npm run test && npm run build   # 三闸全绿才算完成
