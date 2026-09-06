@@ -8,7 +8,7 @@ import { IconPdf } from '../components/icons'
 // R13·D3：新页初载还在从这条 blob: 取数时掐 URL 会翻出白页，永不掐又漏到整页关掉为止。
 // 拍板「交棒宽限」：点翻开即把这条 URL 的释放改挂 10 分钟超时（首屏早够时间落地；
 // 超时释放对已载入的页无伤），同纸再翻时旧棒由新棒顶替——两头都不输。
-const PDF_OPEN_HOLD_MS = 600_000
+export const PDF_OPEN_HOLD_MS = 600_000
 
 function PdfView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx }): ReactElement {
   const p = readAssetProps(raw)
