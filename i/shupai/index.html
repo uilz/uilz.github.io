@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>竖排 — 中文竖排文本生成</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --card: #ffffff; --text: #1f2328; --muted: #6b7280;
+      --line: #e5e7eb; --field: #fbfcfd; --accent: #0f172a; --accent-fg: #ffffff;
+      --warn: #b45309; --warn-bg: #fef3c7; --ok: #15803d;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0d12; --card: #12161f; --text: #e6eef8; --muted: #9aa4b2;
+        --line: #242b38; --field: #0e1118; --accent: #e6eef8; --accent-fg: #0b0d12;
+        --warn: #fbbf24; --warn-bg: rgba(180, 83, 9, 0.18); --ok: #4ade80;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100dvh;
+      display: flex; justify-content: center;
+      padding: calc(20px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));
+    }
+    main { width: min(560px, 100%); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 22px 18px; box-shadow: 0 4px 24px rgba(16, 24, 40, 0.05);
+    }
+    @media (prefers-color-scheme: dark) { .card { box-shadow: 0 6px 30px rgba(0, 0, 0, 0.45); } }
+    header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.08em; }
+    h1 small { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.02em; margin-left: 8px; }
+    .back { color: var(--muted); font-size: 13px; text-decoration: none; white-space: nowrap; }
+    .back:hover { color: var(--text); }
+    .lead { margin-top: 6px; font-size: 13px; color: var(--muted); }
+    section { margin-top: 18px; }
+    label.title { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    label.title .val {
+      font-variant-numeric: tabular-nums; background: var(--field); border: 1px solid var(--line);
+      border-radius: 6px; padding: 1px 8px; font-size: 13px; font-weight: 500;
+    }
+    label.title .numin {
+      -webkit-appearance: none; appearance: textfield; flex: none; width: 68px; height: 40px;
+      text-align: right; font: 500 16px/1 inherit; color: var(--text); font-variant-numeric: tabular-nums;
+      background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 0 8px;
+      outline: none; transition: border-color 0.15s, color 0.15s;
+    }
+    label.title .numin::-webkit-outer-spin-button, label.title .numin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    label.title .numin:focus { border-color: var(--accent); }
+    label.title .numin.over { color: var(--muted); } /* 跟随真值暂超滑块量程（拖动/点按该滑块即追平） */
+    textarea {
+      display: block; width: 100%; border: 1px solid var(--line); border-radius: 10px;
+      background: var(--field); color: var(--text); padding: 12px; font-size: 15px; line-height: 1.7;
+      resize: none; outline: none; transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: var(--muted); }
+    #input { min-height: 92px; }
+    #output {
+      width: 100%; max-height: 65vh;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, "PingFang SC", "Microsoft YaHei", monospace;
+      font-size: min(16px, 4vw); line-height: 1.6;
+      background: var(--card); border-style: dashed;
+    }
+    .slider-row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .slider-block { padding: 8px 12px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); transition: border-color 0.15s, box-shadow 0.15s; }
+    .slider-block.boss { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .tag {
+      display: none; font-size: 11px; font-weight: 600; color: var(--accent);
+      background: var(--card); border: 1px solid var(--accent); border-radius: 4px; padding: 0 5px 1px; margin-left: 6px; vertical-align: 1px;
+    }
+    .slider-block.boss .tag { display: inline-block; }
+    input[type="range"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; background: transparent; cursor: pointer; }
+    input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--line); }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 26px; height: 26px; margin-top: -10px;
+      border-radius: 50%; background: var(--accent); border: 3px solid var(--card); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+    input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--line); }
+    input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: 3px solid var(--card); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
+    .note { font-size: 12px; color: var(--muted); padding-bottom: 8px; }
+    #stat { font-size: 12px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+    .copy-bar { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    #copy {
+      flex: 1; min-height: 48px; border: none; border-radius: 10px;
+      background: var(--accent); color: var(--accent-fg);
+      font-size: 16px; font-weight: 700; letter-spacing: 0.1em; cursor: pointer;
+      transition: transform 0.08s, background-color 0.15s;
+    }
+    #copy:active { transform: scale(0.985); }
+    #copy.done { background: var(--ok); color: #fff; }
+    #status { font-size: 13px; color: var(--muted); min-width: 0; }
+    #status.err { color: var(--warn); }
+    .howto { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 14px; }
+    .howto h2 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .howto ol { padding-left: 20px; font-size: 13px; color: var(--muted); line-height: 1.9; }
+    .howto b { color: var(--text); font-weight: 600; }
+    .rule { margin-top: 8px; font-size: 12px; color: var(--muted); background: var(--field); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; line-height: 1.7; }
+    code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.95em; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card">
+      <header>
+        <h1>竖排<small>纯文本竖排生成器</small></h1>
+        <a class="back" href="../../index.html">← 返回</a>
+      </header>
+      <p class="lead">从上到下、列从右往左；拖哪个滑块哪个就是精确值，另一个自动从内容反算跟随，永不吃字。</p>
+
+      <section>
+        <label class="title" for="input">输入文字 <span class="val" id="inLen">0 字</span></label>
+        <textarea id="input" rows="3" placeholder="在这里输入要竖排的文字…（换行 = 另起一列）" autocomplete="off" spellcheck="false"></textarea>
+      </section>
+
+      <section class="slider-row">
+        <div class="slider-block" id="colsBlock">
+          <label class="title" for="cols">列数<span class="tag">以此为准</span> <input type="number" class="numin" id="colsN" inputmode="numeric" step="1" value="5" aria-label="列数，可直接键入"></label>
+          <input type="range" id="cols" min="1" max="10" value="5" step="1" aria-label="列数">
+          <p class="note">列数是宽度硬约束；字数吃不满时实际列数可能更少（是上限不是配额，永不留空列）；为塞下内容，行数可自动升高。</p>
+        </div>
+        <div class="slider-block" id="rowsBlock">
+          <label class="title" for="rows">每列行数<span class="tag">以此为准</span> <input type="number" class="numin" id="rowsN" inputmode="numeric" step="1" value="10" aria-label="每列行数，可直接键入"></label>
+          <input type="range" id="rows" min="2" max="30" value="10" step="1" aria-label="每列行数">
+          <p class="note">拖动即以「行数」为准；拖动「列数」后自动转为跟随。</p>
+        </div>
+        <div class="slider-block">
+          <label class="title" for="gap">格间距 <input type="number" class="numin" id="gapN" inputmode="numeric" step="1" value="1" aria-label="格间距，可直接键入"></label>
+          <input type="range" id="gap" min="0" max="8" value="1" step="1" aria-label="相邻文字列之间的全角空格数">
+          <p class="note">相邻文字列之间的全角空格数；0 = 紧排无间隔，3 ≈ 空一列。</p>
+        </div>
+        <p class="note">滑块量程会随内容与手写数字自动伸展，不限你定的宽/高；松手空闲后自动缩回。</p>
+      </section>
+
+      <section>
+        <label class="title" for="output">竖排结果 <span id="stat"></span></label>
+        <textarea id="output" readonly spellcheck="false" aria-label="竖排输出"></textarea>
+        <div class="copy-bar">
+          <button id="copy" type="button">复 制</button>
+          <span id="status" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <section class="howto">
+        <h2>使用说明</h2>
+        <ol>
+          <li><b>拖哪个滑块，哪个就是精确值</b>——数字也可以直接写，写哪个哪个为准，另一个从内容反算跟随（列数是上限，装不满则更少列）。</li>
+          <li><b>换行 = 另起一列</b>：新列紧贴上一段最后一列的左侧。</li>
+          <li><b>永不吃字</b>：排不下只会自动加高或超宽提示，绝不丢内容。</li>
+          <li>拖<b>格间距</b>调整列距：相邻文字列间的空格数，0 = 紧排无间隔，3 ≈ 空一列。</li>
+          <li>点<b>复制</b>，直接粘贴到聊天软件的纯文本输入框即可。</li>
+        </ol>
+        <p class="rule"><b>竖排规则：</b>字从上到下排、列从右往左排，格间以全角空格 <code>U+3000</code> 补齐，任何等宽 / CJK 环境下都能对齐。</p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+
+    // 纯函数：竖排版面计算。text 原始输入；H 每列行数；W 列数；anchor 'rows'|'cols' = 以谁为准；
+    // g = 相邻文字列间的全角空格数 U+3000（0 = 紧排无间隔；默认 1 = 原始密排，仅在参数省略时；
+    // 内部护栏钳制 [0,99]，与数字框 LIMITS.gap 一致；纯呈现：不占 W 预算、不计入 mEff；
+    // 行码点宽 = g*(m−1)+m，g=0 时即 m）。
+    // 返回 { output, visible(可见行), hEff(画布高), mEff(文字列数), kept(内容字数), anchor }。永不吃字。
+    function layout(text, H, W, anchor, g) {
+      var Hp = Math.max(2, H | 0), Wp = Math.max(1, W | 0);
+      // 归一化：按 \n 切段（换行 = 另起一列；surrogate-safe，空段丢弃）
+      var parts = text.split('\n'), paras = [], p, i, total = 0, maxLen = 0;
+      for (p = 0; p < parts.length; p++) {
+        var para = [];
+        var cps = Array.from(parts[p]);
+        for (i = 0; i < cps.length; i++) {
+          var ch = cps[i], cp = ch.codePointAt(0);
+          if (cp >= 0x21 && cp <= 0x7E) para.push(String.fromCharCode(cp + 0xFEE0)); // 半角→全角(+0xFEE0)，大小写保留
+          else if (cp === 0x20 || cp === 0x0A || cp === 0x0D || cp === 0x09) para.push('\u3000'); // 空格/CR/Tab→全角空格
+          else para.push(ch); // CJK、已有全角、emoji 原样保留
+        }
+        if (para.length > 0) {
+          paras.push(para); total += para.length;
+          if (para.length > maxLen) maxLen = para.length;
+        }
+      }
+      if (total < 1) return { output: '', visible: 0, hEff: Hp, mEff: 0, kept: 0, anchor: anchor };
+
+      var countAt = function (h) { // Σ ceil(lenᵢ/h)：关于 h 单调不增
+        var n = 0;
+        for (var q = 0; q < paras.length; q++) n += Math.ceil(paras[q].length / h);
+        return n;
+      };
+      // 以「行数」为准：h 精确 = H，列随内容铺开（哪怕超宽也不吃字）。
+      // 以「列数」为准：段数 ≤ W 时必有可行解——每段占一列 ⇒ Σ = 段数 ≤ W，故二分上界取最长段；
+      // 取最小满足 h∈[2,maxLen]。段数 > W 时每段必占一列，宽度不可避免 → 接受超宽、绝不吃字。
+      var hEff;
+      if (anchor === 'rows') {
+        hEff = Hp;
+      } else if (paras.length > Wp) {
+        hEff = 1000; // 病态：宽度必然超出 W（h 再大每段也要独占一列），列数取实际铺出值
+      } else {
+        var lo = 2, hi = Math.max(2, maxLen);
+        while (lo < hi) { var mid = (lo + hi) >> 1; if (countAt(mid) <= Wp) hi = mid; else lo = mid + 1; }
+        hEff = lo;
+      }
+      // 填充：段首必换新列（紧贴上一段最左列之左），列内自上而下，整体自右而左。r2l[0] = 最右列
+      var r2l = [];
+      for (p = 0; p < paras.length; p++) {
+        var q2 = paras[p];
+        for (var s = 0; s < q2.length; s += hEff) r2l.push(q2.slice(s, s + hEff));
+      }
+      var C = r2l.length;
+      // 画布：每列以 U+3000 补至 hEff；相邻文字列之间以 g 个 U+3000 连接（g=1 即原始每格一空格；
+      // g=3 与旧「插空列」版逐字节一致，宽度 = 4m−3）。单列时无连接符，g 天然无效。
+      // 行 = 最左列在前；底部整行全为 U+3000 则裁掉。
+      var G = g === undefined ? 1 : Math.min(99, Math.max(0, g | 0)); // 省略=1（旧 4 参调用逐字节不变）；0 合法，上限与数字框护栏一致
+      var sep = '';
+      for (var t = 0; t < G; t++) sep += '\u3000';
+      var lines = [];
+      for (i = 0; i < hEff; i++) {
+        var cells = [];
+        for (var k = C - 1; k >= 0; k--) cells.push(i < r2l[k].length ? r2l[k][i] : '\u3000');
+        lines.push(cells.join(sep));
+      }
+      var onlyPad = /^[\u3000]+$/;
+      while (lines.length > 0 && onlyPad.test(lines[lines.length - 1])) lines.pop();
+      return { output: lines.join('\n'), visible: lines.length, hEff: hEff, mEff: C, kept: total, anchor: anchor };
+    }
+
+    var $ = function (id) { return document.getElementById(id); };
+    var inputEl = $('input'), outputEl = $('output');
+    var rowsEl = $('rows'), colsEl = $('cols');
+    var rowsNEl = $('rowsN'), colsNEl = $('colsN');
+    var rowsBlock = $('rowsBlock'), colsBlock = $('colsBlock');
+    var inLenEl = $('inLen'), statEl = $('stat');
+    var gapEl = $('gap'), gapNEl = $('gapN');
+    var copyBtn = $('copy'), statusEl = $('status');
+    var copyTimer = null, anchor = 'rows';  // 最后触碰的滑块为准；初始以行数为准（随写随排）
+
+    function curH() { return parseInt(rowsEl.value, 10); }
+    function curW() { return parseInt(colsEl.value, 10); }
+    function curG() { return parseInt(gapEl.value, 10); }
+    function truthOf(dim, r) { return r[dim === 'rows' ? 'hEff' : 'mEff']; }
+    function clampTo(el, v) {
+      return Math.min(parseInt(el.max, 10), Math.max(parseInt(el.min, 10), Math.round(v)));
+    }
+    function markAnchor() {
+      rowsBlock.classList.toggle('boss', anchor === 'rows');
+      colsBlock.classList.toggle('boss', anchor === 'cols');
+    }
+    // ---- 每维 = 滑块 + 可键入数字框两个控件。崩溃安全护栏（数字框拦不住乱输，版面不能死）：
+    // rows [2,9999]、cols [1,9999]、gap [0,99]；base 为空闲缩回用的显示档。
+    // syncWidgets = 唯一同步写通道：先伸展量程（thumb 必能追到真值），再写滑块与数字框。 ----
+    var LIMITS = { rows: { base: 30, lo: 2, hi: 9999 }, cols: { base: 10, lo: 1, hi: 9999 }, gap: { base: 8, lo: 0, hi: 99 } };
+    var PAIRS = { rows: { sl: rowsEl, num: rowsNEl }, cols: { sl: colsEl, num: colsNEl }, gap: { sl: gapEl, num: gapNEl } };
+    var pressed = null;
+    function setMax(el, v) { var s = String(v); if (el.max !== s) el.max = s; }
+    function syncWidgets(dim, v, forceNum) {
+      var p = PAIRS[dim], lim = LIMITS[dim];
+      setMax(p.sl, Math.max(lim.base, v, parseInt(p.sl.value, 10)));
+      p.sl.value = String(v);
+      if (forceNum || document.activeElement !== p.num) p.num.value = String(v); // 绝不为迁就滑块把假值写进数字框
+    }
+    function grabAndSnap(el, dim) {
+      var truth = truthOf(dim, layout(inputEl.value, curH(), curW(), anchor, curG()));
+      setMax(el, Math.max(LIMITS[dim].base, truth, parseInt(el.value, 10))); // 伸展必须先于吸附，否则真值被旧上限截断
+      snapTo(el, dim);
+      if (document.activeElement !== PAIRS[dim].num) PAIRS[dim].num.value = el.value;
+    }
+    function shrinkMax(el, dim) {
+      if (el === pressed || document.activeElement === el) return;
+      setMax(el, Math.max(LIMITS[dim].base, parseInt(el.value, 10)));
+    }
+    // 记忆范围（有意为之）：只存版式设置 {H,W,gap,anchor}，永不存输入文字与输出 —— 隐私 + 每次打开都是白纸。
+    var STORE_KEY = 'shupai-settings';
+    function saveSettings() {
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify({ H: curH(), W: curW(), gap: curG(), anchor: anchor }));
+      } catch (e) { /* 隐私模式 / 容量满：静默失败，功能不受影响 */ }
+    }
+    function restoreSettings() {
+      var s = null;
+      try { s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { s = null; } // 无键 / 坏 JSON → 全默认
+      if (!s || typeof s !== 'object') s = {};
+      var pick = function (v, dim, d) { var lim = LIMITS[dim];
+        return (typeof v === 'number' && isFinite(v)) ? Math.min(lim.hi, Math.max(lim.lo, Math.round(v))) : d; };
+      // 存值可高于基础档：走 setDim 同步通道伸展量程而非悄悄截断（恢复不 save）
+      syncWidgets('rows', pick(s.H, 'rows', 10));
+      syncWidgets('cols', pick(s.W, 'cols', 5));
+      syncWidgets('gap', pick(s.gap, 'gap', 1));
+      anchor = s.anchor === 'cols' ? 'cols' : 'rows'; // 未知/缺失锚定值 → 默认 行数
+    }
+    // 数字框按角色显示：BOSS 框 = 自己滑块的提交值——列数是「上限」，绝不被内容阶梯真值反写；
+    // 阶梯现实（实际分出几列）归状态行。跟随框 = 反算真值，超出当前滑块量程 → .over 置灰（非钳制）。
+    // gap 框恒为自己的滑块值（无锚定维）。
+    function showNum(dim, value, followed) {
+      var p = PAIRS[dim];
+      if (document.activeElement !== p.num) p.num.value = String(value);
+      p.num.classList.toggle('over', !!followed && value > parseInt(p.sl.max, 10));
+    }
+    function update() {
+      var r = layout(inputEl.value, curH(), curW(), anchor, curG());
+      outputEl.value = r.output;
+      inLenEl.textContent = Array.from(inputEl.value).length + ' 字';
+      var followEl = anchor === 'rows' ? colsEl : rowsEl;
+      var out = anchor === 'rows' ? r.mEff : r.hEff; // 跟随维的真值
+      showNum('rows', anchor === 'rows' ? curH() : r.hEff, anchor === 'cols');
+      showNum('cols', anchor === 'cols' ? curW() : r.mEff, anchor === 'rows');
+      showNum('gap', curG(), false);
+      var under = anchor === 'cols' && r.kept > 0 && r.mEff < curW(); // 装不满：上限≠配额
+      statEl.textContent = '以「' + (anchor === 'rows' ? '行数' : '列数') + '」为准 · 实际 '
+        + r.visible + ' 行 \u00D7 ' + r.mEff + ' 列 · ' + r.kept + ' 字'
+        + (under ? '（内容仅分 ' + r.mEff + ' 列，' + curW() + ' 列装不满）' : '')
+        + (out > parseInt(followEl.max, 10) ? '（跟随已超出滑块上限）' : '');
+      outputEl.rows = Math.min(Math.max(r.visible + 1, 3), 24); // 超高时输出框内部滚动
+      shrinkMax(rowsEl, 'rows'); shrinkMax(colsEl, 'cols'); shrinkMax(gapEl, 'gap'); // 未在手中即缩回基础档（按住者跳过；改动才写回）
+    }
+    // 关键吸附：抓住「非锚定」滑块时，先把它的值跳到当前反算真值，拖动接管时滑块就位
+    // （指针拖动必触发 pointerdown；键盘经 focus/blur 兜底）。切换锚定维时版面不跳变。
+    function snapTo(el, dim) {
+      if (anchor === dim) return;
+      el.value = String(clampTo(el, truthOf(dim, layout(inputEl.value, curH(), curW(), anchor))));
+    }
+    function wireSlider(el, dim) {
+      el.addEventListener('input', function () {
+        anchor = dim; // 值已被用户定夺，绝不回头改写（吸附只发生在 pointerdown/focus）
+        markAnchor();
+        update();
+        saveSettings();
+      });
+      var snap = function () { grabAndSnap(el, dim); };
+      el.addEventListener('pointerdown', function () { pressed = el; snap(); });
+      el.addEventListener('focus', snap);
+      var release = function () { if (pressed === el) pressed = null; shrinkMax(el, dim); };
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('lostpointercapture', release);
+      el.addEventListener('blur', function () {
+        pressed = null;
+        if (anchor === dim) update(); else shrinkMax(el, dim);
+      });
+    }
+    // 直接键入数字 = 提交：四舍五入取整并以护栏钳制；空/乱输 → 回退上一提交值。
+    // 行数/列数维提交同时换锚定（写哪个哪个为准，与拖动同一法则），并伸展量程让 thumb 追平。
+    function attachNum(dim) {
+      var p = PAIRS[dim], lim = LIMITS[dim];
+      var commit = function () {
+        var n = Math.round(parseFloat(p.num.value));
+        var v = isFinite(n) ? Math.min(lim.hi, Math.max(lim.lo, n))
+          : (dim === 'rows' ? curH() : dim === 'cols' ? curW() : curG());
+        if (dim !== 'gap' && anchor !== dim) { anchor = dim; markAnchor(); }
+        syncWidgets(dim, v, true); // forceNum：Enter/blur 归一化显示钳后真值
+        saveSettings();
+        update();
+      };
+      p.num.addEventListener('change', commit);
+      p.num.addEventListener('blur', commit);
+      p.num.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); commit(); } });
+    }
+    // 注意：只给两把锚定滑块装 input/吸附；格间距滑块独立接线（不参与锚定逻辑），
+    // 故不再 querySelectorAll('input[type="range"]') 通配，避免误伤。
+    wireSlider(rowsEl, 'rows');
+    wireSlider(colsEl, 'cols');
+    (function () { // 格间距滑块参与量程伸缩护栏，但不参与锚定
+      var hold = function () { pressed = gapEl; };
+      var free = function () { if (pressed === gapEl) pressed = null; shrinkMax(gapEl, 'gap'); };
+      gapEl.addEventListener('pointerdown', hold);
+      gapEl.addEventListener('pointerup', free);
+      gapEl.addEventListener('pointercancel', free);
+      gapEl.addEventListener('lostpointercapture', free);
+    })();
+    attachNum('rows'); attachNum('cols'); attachNum('gap');
+
+    function setStatus(msg, isErr) {
+      statusEl.textContent = msg;
+      statusEl.className = isErr ? 'err' : '';
+    }
+    function flashCopied() {
+      copyBtn.textContent = '已复制';
+      copyBtn.classList.add('done');
+      setStatus('已复制到剪贴板，去粘贴吧', false);
+      if (copyTimer) clearTimeout(copyTimer);
+      copyTimer = setTimeout(function () {
+        copyBtn.textContent = '复 制';
+        copyBtn.classList.remove('done');
+        setStatus('', false);
+      }, 1500);
+    }
+    function fallbackCopy() {
+      // http / 旧 WebView 环境：execCommand + 全选输出框
+      try {
+        outputEl.select();
+        outputEl.setSelectionRange(0, outputEl.value.length);
+        return document.execCommand('copy') === true;
+      } catch (e) {
+        return false;
+      }
+    }
+    function doCopy() {
+      if (outputEl.value === '') { setStatus('输入为空，暂无可复制内容', true); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(outputEl.value).then(flashCopied, function () {
+          if (fallbackCopy()) flashCopied();
+          else setStatus('复制失败，请长按 / 全选手动复制', true);
+        });
+      } else {
+        if (fallbackCopy()) flashCopied();
+        else setStatus('复制失败，请长按 / 全选手动复制', true);
+      }
+    }
+
+    inputEl.addEventListener('input', update); // 输入文字只驱动版面，绝不经 saveSettings 落库
+    gapEl.addEventListener('input', function () { update(); saveSettings(); }); // 即时重排；g 状态即滑块值
+    copyBtn.addEventListener('click', doCopy);
+    restoreSettings(); // 恢复滑块/锚定（不 save：恢复本身不算用户改动，也不覆盖存储）
+    markAnchor();
+    update();
+  </script>
+</body>
+</html>

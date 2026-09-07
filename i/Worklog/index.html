@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f6fb">
+<title>工作日志 · v5.3</title>
+<style>
+:root{
+  --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
+  --border:#e2e8f0;--accent:#2563eb;--accent-soft:#eff6ff;--success:#059669;--warning:#d97706;--danger:#dc2626;
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 28px rgba(15,23,42,.05);
+  --radius:14px;--radius-sm:10px;--font:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif
+}
+[data-theme="dark"]{
+  --bg:#0b1220;--surface:#111827;--surface-2:#0f172a;--hover:#18243a;--text:#e5e7eb;--muted:#94a3b8;--faint:#64748b;
+  --border:#243244;--accent:#60a5fa;--accent-soft:#12243e;--success:#34d399;--warning:#f59e0b;--danger:#f87171;
+  --shadow:0 8px 28px rgba(0,0,0,.22)
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+.app{max-width:1680px;margin:auto;padding:12px 14px 24px}
+.header{position:sticky;top:8px;z-index:50;display:flex;align-items:center;gap:10px;flex-wrap:nowrap;padding:10px 12px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}.brand-mark{width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:15px}.badge{font-size:10px;color:var(--accent);background:var(--accent-soft);padding:3px 7px;border-radius:999px;font-weight:700}
+.workspace{display:flex;align-items:center;gap:6px;min-width:165px}.workspace-select{max-width:180px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:7px 9px;font-size:12px;outline:none}.workspace-select:focus{border-color:var(--accent)}
+.nav{display:flex;align-items:center;gap:4px}.icon-btn,.pill-btn,.toolbar-btn{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:9px;padding:7px 10px;transition:.16s ease}.icon-btn:hover,.pill-btn:hover,.toolbar-btn:hover{background:var(--hover);color:var(--text);border-color:var(--border)}.pill-btn.today{background:var(--accent);color:#fff;border-color:var(--accent)}
+.week-info{min-width:175px;text-align:center}.week-title{font-weight:750;font-size:14px}.week-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.toolbar{display:flex;align-items:center;gap:5px;margin-left:auto;flex-wrap:nowrap;min-width:0;overflow-x:auto;scrollbar-width:none}.toolbar::-webkit-scrollbar{display:none}.toolbar-btn.primary{background:var(--accent);color:#fff}.toolbar-btn.success{background:#ecfdf5;color:#047857}.toolbar-btn.warning{background:#fffbeb;color:#b45309}.sep{width:1px;height:22px;background:var(--border);margin:0 2px}.control{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px}.control select,.control input{width:auto;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:7px;padding:5px 6px;outline:none}.control input{width:48px;text-align:center}.control select:focus,.control input:focus{border-color:var(--accent)}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.stat{display:flex;align-items:center;gap:7px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:11px}.stat strong{color:var(--text);font-size:14px}
+.searchbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}.searchbox{position:relative;display:flex;align-items:center;flex:1;background:var(--surface);border:1px solid var(--border);border-radius:999px}.search-icon{padding-left:13px;color:var(--faint)}.searchbox input{flex:1;border:0;outline:0;background:transparent;color:var(--text);padding:9px 8px;font-size:12px}.search-shortcut{font-size:10px;color:var(--faint);padding-right:11px}.clear{border:0;background:transparent;color:var(--faint);font-size:18px;padding:3px 10px}.clear:hover{color:var(--danger)}.search-results{font-size:11px;color:var(--muted);min-width:120px;text-align:right}
+.table-shell{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;box-shadow:var(--shadow)}table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:940px}th,td{padding:0;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:top}th:last-child,td:last-child{border-right:0}.time-col{width:72px;min-width:72px;background:var(--surface-2);color:var(--faint);text-align:center;font-size:10px;position:sticky;left:0;z-index:25;border-right:2px solid var(--border)!important}.time-col{height:54px}.table-shell thead th{position:sticky;top:0;z-index:20;background:var(--surface-2);padding:7px 4px;color:var(--muted);font-size:10px;border-bottom:2px solid var(--border)}thead th.today{background:var(--accent-soft);color:var(--accent)}.day-head{display:flex;justify-content:center;align-items:baseline;gap:5px}.day-name{font-weight:600}.day-num{font-size:17px;font-weight:800;color:var(--text)}thead th.today .day-num{color:var(--accent)}
+.cell{height:54px;min-height:54px;padding:6px 7px;cursor:pointer;transition:.1s;background:var(--surface);position:relative}.cell:hover{background:var(--hover);box-shadow:inset 0 0 0 2px var(--accent);z-index:2}.cell.has{background:color-mix(in srgb,var(--accent-soft) 18%,var(--surface))}.cell.today{background:color-mix(in srgb,var(--accent-soft) 35%,var(--surface))}.cell.selected{outline:2px solid var(--accent);outline-offset:-2px}.cell.search-hit{box-shadow:inset 0 0 0 2px #f59e0b;background:#fff7d6}.empty{display:grid;place-items:center;height:100%;color:var(--border);font-size:17px;opacity:.6}.cell:hover .empty{opacity:1;color:var(--accent)}.title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}.title.done{text-decoration:line-through;opacity:.6}.body{font-size:10px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}.line{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:9px;color:var(--faint)}.chip{display:inline-block;padding:1px 5px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:8px;margin-right:2px}.day-sep td{border-bottom-color:var(--border)}
+.mobile-summary{display:none}
+.statusbar{display:flex;align-items:center;gap:7px;color:var(--faint);font-size:10px;padding:8px 4px}.dot{width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block}.help{margin-top:6px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:11px;color:var(--muted)}kbd{border:1px solid var(--border);background:var(--surface-2);border-radius:5px;padding:1px 5px;font-size:10px;color:var(--text)}
+.toast-root{position:fixed;right:14px;bottom:14px;z-index:1000;display:flex;flex-direction:column;gap:7px;pointer-events:none}.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:9px;padding:9px 12px;font-size:12px;max-width:340px;animation:toastIn .2s ease}.toast.err{border-left:3px solid var(--danger)}.toast.warn{border-left:3px solid var(--warning)}.toast.ok{border-left:3px solid var(--success)}@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.overlay{position:fixed;inset:0;background:rgba(2,6,23,.42);backdrop-filter:blur(4px);z-index:900;display:none;align-items:center;justify-content:center;padding:16px}.overlay.open{display:flex}.modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(2,6,23,.25);overflow:hidden}.modal.small{width:min(470px,100%)}.modal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface-2);border-bottom:1px solid var(--border)}.modal-title{font-size:14px;font-weight:750}.modal-meta{margin-left:8px;color:var(--muted);font-size:11px}.modal-body{overflow:auto;padding:15px 16px}.modal-foot{display:flex;gap:8px;align-items:center;padding:11px 16px;background:var(--surface-2);border-top:1px solid var(--border)}.spacer{flex:1}.field{margin-bottom:12px}.field:last-child{margin-bottom:0}.field-label{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none}.field textarea{min-height:120px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:8px 12px;font-size:12px}.btn:hover{background:var(--hover)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.file-zone{border:1px dashed var(--border);padding:10px;border-radius:10px}.hidden-file{display:none}.file-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid var(--border);background:var(--surface-2);border-radius:999px;font-size:10px}.file-pill button{border:0;background:transparent;color:var(--faint);padding:0}.dialog-text{font-size:12px;color:var(--muted);line-height:1.65}.command-list{padding:4px}.command{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:10px;color:var(--text)}.command:hover{background:var(--hover)}.command-main{font-size:12px;font-weight:650}.command-desc{font-size:10px;color:var(--muted)}.workspace-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.workspace-settings{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}
+.week-picker{position:relative;border:1px solid transparent;background:transparent;color:var(--text);font:inherit;cursor:pointer;padding:2px 28px 2px 10px;border-radius:10px;min-width:175px}.week-picker:hover{background:var(--hover);border-color:var(--border)}.week-picker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.week-caret{position:absolute;right:8px;top:50%;transform:translateY(-42%);font-size:16px;color:var(--muted);transition:transform .16s ease}.week-picker[aria-expanded="true"] .week-caret{transform:translateY(-42%) rotate(180deg)}
+.week-popover{position:fixed;z-index:850;width:304px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 50px rgba(2,6,23,.18);padding:12px;display:none}.week-popover.open{display:block;animation:calIn .14s ease}.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.cal-month{font-size:13px;font-weight:750}.cal-nav{display:flex;gap:3px}.cal-nav button{width:30px;height:30px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px}.cal-nav button:hover{background:var(--hover)}.cal-weekdays,.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal-weekdays div{text-align:center;color:var(--faint);font-size:9px;padding:3px 0}.cal-day{height:34px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:8px;font-size:11px}.cal-day:hover{background:var(--hover);border-color:var(--border)}.cal-day.muted{color:var(--faint)}.cal-day.today{color:var(--accent);font-weight:800}.cal-day.in-week{background:var(--accent-soft);color:var(--accent);font-weight:700}.cal-day.selected{box-shadow:inset 0 0 0 2px var(--accent)}.cal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)}.cal-today{border:0;background:transparent;color:var(--accent);font-size:10px;font-weight:700}.mobile-summary{display:none}.mobile-day{padding:10px 11px;border-bottom:1px solid var(--border);background:var(--surface)}.mobile-day:last-child{border-bottom:0}.mobile-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.mobile-day-name{font-size:12px;font-weight:750}.mobile-day-date{font-size:10px;color:var(--muted)}.mobile-record{display:flex;align-items:flex-start;gap:9px;padding:9px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:6px;cursor:pointer}.mobile-record:active{transform:scale(.995)}.mobile-time{font-size:10px;font-variant-numeric:tabular-nums;color:var(--faint);width:42px;flex:0 0 42px;padding-top:1px}.mobile-record-main{min-width:0;flex:1}.mobile-record-title{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mobile-record-body{font-size:10px;color:var(--muted);line-height:1.4;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.mobile-empty{padding:20px 0;text-align:center;color:var(--faint);font-size:11px}.mobile-day.today{background:color-mix(in srgb,var(--accent-soft) 24%,var(--surface))}
+@keyframes calIn{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:none}}
+
+/* v5.3 compact header */
+.header{transition:transform .24s cubic-bezier(.22,.7,.25,1),box-shadow .2s ease;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden;contain:layout paint style;overflow:visible}
+.header.collapsed{transform:translate3d(0,calc(-100% + 34px),0);box-shadow:0 5px 20px rgba(15,23,42,.10)}
+.header-toggle{position:absolute;right:12px;bottom:-10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:13px;transition:transform .2s ease,background .16s ease,box-shadow .16s ease;z-index:4;box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.header-toggle:hover{background:var(--hover);color:var(--text);box-shadow:0 4px 12px rgba(15,23,42,.12)}
+.header.collapsed .header-toggle{transform:rotate(180deg)}
+.view-switch{display:flex;gap:2px;padding:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;order:8}.view-btn{border:0;background:transparent;color:var(--muted);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700}.view-btn.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(15,23,42,.08)}
+.content-shell{min-height:0}.day-view{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.day-view.open{display:block}.day-view-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface-2);border-bottom:1px solid var(--border)}.day-view-date{font-size:16px;font-weight:800}.day-view-sub{font-size:11px;color:var(--muted);margin-top:2px}.day-view-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.day-view-list{padding:8px}.day-row{display:grid;grid-template-columns:72px minmax(0,1fr);min-height:64px;border-bottom:1px solid var(--border)}.day-row:last-child{border-bottom:0}.day-time{padding:10px 8px;text-align:center;color:var(--faint);font-size:10px;border-right:1px solid var(--border);background:var(--surface-2)}.day-slot{padding:7px;cursor:pointer}.day-slot:hover{background:var(--hover)}.day-slot.has{background:color-mix(in srgb,var(--accent-soft) 18%,var(--surface))}.day-slot-inner{min-height:48px;border-radius:9px;padding:7px 8px}.day-slot-title{font-size:12px;font-weight:750}.day-slot-body{font-size:10px;color:var(--muted);margin-top:2px;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}.day-slot-empty{height:100%;min-height:48px;display:grid;place-items:center;color:var(--border);font-size:18px}.day-slot:hover .day-slot-empty{color:var(--accent)}
+.week-popover{z-index:10000;pointer-events:auto;max-height:min(78vh,420px);overflow:auto}
+@media(max-width:700px){.header{position:sticky;top:4px}.view-switch{order:4;margin-left:auto}.toolbar{order:20}.header.collapsed .nav{margin-left:0}.day-view{display:none}.day-view.open{display:block}.day-row{grid-template-columns:54px minmax(0,1fr)}.day-time{font-size:9px;padding-left:4px;padding-right:4px}.view-switch{flex:0 0 auto}.view-btn{padding:6px 11px}}
+
+@media(max-width:1050px){.header{flex-wrap:wrap}.workspace{order:2}.nav{order:3}.view-switch{order:4}.toolbar{order:5;width:100%;margin-left:0;flex-wrap:wrap;overflow:visible}.header{gap:7px}.week-info{min-width:135px}.search-results{display:none}}
+@media(max-width:700px){.app{padding:8px 8px calc(18px + env(safe-area-inset-bottom))}.header{top:4px;padding:9px}.brand{width:100%}.workspace{width:100%}.workspace-select{max-width:none;flex:1}.nav{width:100%;justify-content:space-between}.week-info{flex:1;min-width:0}.toolbar{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.view-switch{width:max-content}.toolbar-btn{padding:8px 5px;min-height:36px}.header-toggle{right:10px;bottom:-9px}.stats{display:grid;grid-template-columns:repeat(2,1fr);margin:8px 0}.stat{padding:8px}.searchbar{margin-bottom:8px}.table-shell{overflow:visible}.table-shell table{display:none}.mobile-summary{display:block}.statusbar{padding:9px 3px}.help{font-size:10px}.modal{max-height:calc(100vh - 20px);border-radius:14px}.modal-body{padding:13px}.modal-foot{padding-bottom:calc(11px + env(safe-area-inset-bottom))}.week-popover{width:min(304px,calc(100vw - 16px))}}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.3</span></div>
+    <div class="workspace">
+      <span style="font-size:11px;color:var(--faint)">工作区</span>
+      <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
+      <button class="icon-btn" id="workspaceManage" title="工作区设置">⚙</button>
+    </div>
+    <div class="nav">
+      <button class="icon-btn" id="prevBtn" title="上一周 ←">←</button>
+      <button class="week-info week-picker" id="weekPicker" type="button" aria-haspopup="dialog" aria-expanded="false"><div class="week-title" id="weekTitle"></div><div class="week-sub" id="weekSub"></div><span class="week-caret">⌄</span></button>
+      <button class="icon-btn" id="nextBtn" title="下一周 →">→</button>
+      <button class="pill-btn today" id="todayBtn">今天</button>
+    </div>
+    <div class="view-switch" role="group" aria-label="视图模式">
+      <button class="view-btn active" id="weekViewBtn" data-view="week" type="button">周</button>
+      <button class="view-btn" id="dayViewBtn" data-view="day" type="button">日</button>
+    </div>
+    <div class="toolbar">
+      <button class="toolbar-btn primary" id="newBtn">＋ 新建</button>
+      <button class="toolbar-btn" id="icsBtn">📅 日历</button>
+      <button class="toolbar-btn" id="commandBtn">⌘</button>
+      <button class="toolbar-btn" id="themeBtn" title="主题">☾</button>
+    </div>
+    <button class="header-toggle" id="headerToggle" type="button" title="收起/展开顶栏" aria-expanded="true">⌃</button>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><span>当前周记录</span><strong id="sWeek">0</strong></div>
+    <div class="stat"><span>当前工作区</span><strong id="sAll">0</strong></div>
+    <div class="stat"><span>标签</span><strong id="sTags">0</strong></div>
+    <div class="stat"><span>附件</span><strong id="sFiles">0</strong></div>
+    <div class="stat"><span>已完成</span><strong id="sDone">0</strong></div>
+  </section>
+
+  <div class="searchbar">
+    <div class="searchbox"><span class="search-icon">⌕</span><input id="searchInput" placeholder="搜索标题、内容、标签、地点、附件……"><span class="search-shortcut">/ 聚焦</span><button class="clear" id="clearSearch">×</button></div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
+  <main class="content-shell">
+    <section class="table-shell" id="tableShell">
+      <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+    </section>
+    <div class="mobile-summary" id="mobileSummary"></div>
+    <section class="day-view" id="dayView"></section>
+  </main>
+  <div class="statusbar"><span class="dot"></span><span id="saveStatus">本地保存 · IndexedDB</span><span>·</span><span id="statusWorkspace">当前工作区</span></div>
+  <div class="help" id="help" hidden><kbd>←</kbd><kbd>→</kbd> 翻周　<kbd>T</kbd> 今天　<kbd>G</kbd> 跳日期　<kbd>N</kbd> 新建　<kbd>/</kbd> 搜索　<kbd>W</kbd> 工作区　<kbd>?</kbd> 帮助　<kbd>Esc</kbd> 关闭</div>
+</div>
+
+<div class="week-popover" id="weekPopover" role="dialog" aria-label="选择日期"><div class="cal-head"><div class="cal-month" id="calMonth"></div><div class="cal-nav"><button id="calPrev" aria-label="上个月">‹</button><button id="calNext" aria-label="下个月">›</button></div></div><div class="cal-weekdays" id="calWeekdays"></div><div class="cal-days" id="calDays"></div><div class="cal-foot"><span id="calHint">点击日期切换到所在周</span><button class="cal-today" id="calToday">回到今天</button></div></div>
+
+<div class="toast-root" id="toastRoot"></div>
+
+<div class="overlay" id="editOverlay">
+  <section class="modal">
+    <div class="modal-head"><div><span class="modal-title">编辑工作块</span><span class="modal-meta" id="editMeta"></span></div><button class="icon-btn" id="editClose">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="field-label">标题</label><input id="fTitle" autocomplete="off" placeholder="今天做了什么？"></div>
+      <div class="field"><label class="field-label">内容</label><textarea id="fBody" placeholder="记录进展、结论、问题或下一步……"></textarea></div>
+      <div class="meta-grid">
+        <div class="field"><label class="field-label">标签</label><input id="fTags" placeholder="学习, 项目, 会议"></div>
+        <div class="field"><label class="field-label">地点</label><input id="fLoc" placeholder="地点"></div>
+        <div class="field"><label class="field-label">优先级</label><select id="fPrio"><option value="">无</option><option value="高">🔴 高</option><option value="中">🟡 中</option><option value="低">🟢 低</option></select></div>
+        <div class="field"><label class="field-label">状态</label><select id="fStatus"><option value="">未开始</option><option value="进行中">🔄 进行中</option><option value="已完成">✅ 已完成</option></select></div>
+      </div>
+      <div class="field"><label class="field-label">附件</label><div class="file-zone"><button class="btn" id="pickFile">＋ 添加附件</button><input class="hidden-file" type="file" id="fileInput" multiple><div class="file-list" id="fileList"></div></div></div>
+    </div>
+    <div class="modal-foot"><button class="btn danger" id="deleteBtn">删除</button><div class="spacer"></div><button class="btn" id="cancelBtn">取消</button><button class="btn primary" id="saveBtn">保存</button></div>
+  </section>
+</div>
+
+<div class="overlay" id="dialogOverlay"><section class="modal small" id="dialogBox"></section></div>
+
+<div class="overlay" id="workspaceOverlay">
+  <section class="modal small">
+    <div class="modal-head"><span class="modal-title">工作区设置</span><button class="icon-btn" id="workspaceClose">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="field-label">工作区名称</label><input id="wsName" placeholder="例如：学习、项目、工作"></div>
+      <div class="field"><label class="field-label">每周起始日</label><select id="wsWeekStart"><option value="1">周一</option><option value="0">周日</option><option value="2">周二</option><option value="3">周三</option><option value="4">周四</option><option value="5">周五</option><option value="6">周六</option></select></div>
+      <div class="workspace-settings"><div style="font-size:11px;font-weight:700;margin-bottom:8px">工作区显示参数</div><div class="meta-grid"><div class="field"><label class="field-label">粒度</label><select id="wsGran"><option value="60">60 分钟</option><option value="30">30 分钟</option><option value="15">15 分钟</option></select></div><div class="field"><label class="field-label">开始小时</label><input id="wsSh" type="number" min="0" max="23"></div><div class="field"><label class="field-label">结束小时</label><input id="wsEh" type="number" min="1" max="24"></div></div></div>
+      <div class="workspace-actions"><button class="btn" id="wsNew">＋ 新工作区</button><button class="btn danger" id="wsDelete">删除当前工作区</button></div>
+    </div>
+    <div class="modal-foot"><div class="spacer"></div><button class="btn" id="wsCancel">取消</button><button class="btn primary" id="wsSave">保存设置</button></div>
+  </section>
+</div>
+
+<div class="overlay" id="commandOverlay">
+  <section class="modal small">
+    <div class="modal-head"><span class="modal-title">命令</span><button class="icon-btn" id="commandClose">×</button></div>
+    <div class="modal-body command-list">
+      <button class="command" data-command="new"><span><span class="command-main">新建记录</span><br><span class="command-desc">在当前周第一个时间槽创建</span></span><kbd>N</kbd></button>
+      <button class="command" data-command="workspace"><span><span class="command-main">工作区设置</span><br><span class="command-desc">切换、创建或设置独立工作区</span></span><kbd>W</kbd></button>
+      <button class="command" data-command="today"><span><span class="command-main">回到今天</span><br><span class="command-desc">定位到当前工作区的本周</span></span><kbd>T</kbd></button>
+      <button class="command" data-command="search"><span><span class="command-main">搜索</span><br><span class="command-desc">定位并聚焦搜索框</span></span><kbd>/</kbd></button>
+      <button class="command" data-command="ics"><span><span class="command-main">导入 ICS</span><br><span class="command-desc">将日历事件导入当前工作区</span></span></button>
+      <button class="command" data-command="export"><span><span class="command-main">导出完整 ZIP</span><br><span class="command-desc">全部工作区、记录、附件和设置</span></span></button>
+      <button class="command" data-command="help"><span><span class="command-main">快捷键帮助</span></span><kbd>?</kbd></button>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const pad = n => String(n).padStart(2,'0');
+const uid = () => crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+const APP='worklog';
+const VIEW_MODES={WEEK:'week',DAY:'day'};
+const DB_NAME='worklog-v5';
+const DB_VER=5;
+const OLD_DB_NAME='worklog-v3';
+const LEGACY_DB_NAME='worklog-blocks';
+const DEFAULT_WS={gran:60,sh:8,eh:20,weekStart:1};
+const state={week:new Date(),workspaceId:null,search:'',selected:new Set(),editingKey:null,editFiles:[],editNewFiles:[],modalDirty:false,viewMode:VIEW_MODES.WEEK,dayDate:new Date(),headerCollapsed:false,headerManual:'none',lastScrollY:window.scrollY||0,lastScrollDirection:0,headerAutoTimer:0,headerScrollLockUntil:0};
+let db=null,workspaces=[],currentBlocks=[],fileCache=new Map(),searchIndex=[],slots=[],weekDays=[],hitKeys=new Set();
+let appSettings={theme:'light'};
+
+function escapeHTML(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function formatDate(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function parseDate(s){const [y,m,d]=String(s).split('-').map(Number);return new Date(y,m-1,d,0,0,0,0)}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+function startOfDay(d){const x=new Date(d);x.setHours(0,0,0,0);return x}
+function startOfWeek(d,ws){const x=startOfDay(d),day=x.getDay();const offset=(day-ws+7)%7;x.setDate(x.getDate()-offset);return x}
+function isoWeek(d){const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-day);const y=x.getUTCFullYear();const start=new Date(Date.UTC(y,0,1));return Math.ceil((((x-start)/86400000)+1)/7)}
+function dayName(i){return ['周日','周一','周二','周三','周四','周五','周六'][i]}
+function keyFor(date,time){return `${formatDate(date)}_${time}`}
+function slotKeyFromBlock(b){return b.slotKey||b.key?.split('::').pop()||b.key}
+function blockDbKey(wsId,slotKey){return `${wsId}::${slotKey}`}
+function partsKey(key){const raw=slotKeyFromBlock({key});const i=raw.lastIndexOf('_');return [raw.slice(0,i),raw.slice(i+1)]}
+function todayKey(){return formatDate(new Date())}
+function isToday(d){return formatDate(d)===todayKey()}
+function isSameDate(a,b){return !!a&&!!b&&formatDate(a)===formatDate(b)}
+function normalizeTags(v){const raw=Array.isArray(v)?v.join(','):String(v||'');return [...new Set(raw.split(/[,，]/).map(x=>x.trim()).filter(Boolean))].slice(0,30)}
+function recordHasContent(b){return !!b&&(!!(b.title||b.body||b.tags?.length||b.prio||b.status||b.loc||b.fileIds?.length||b.startTime||b.endTime))}
+function validateWs(w){return [15,30,60].includes(Number(w.gran))&&Number(w.sh)>=0&&Number(w.sh)<24&&Number(w.eh)>Number(w.sh)&&Number(w.eh)<=24&&Number(w.weekStart)>=0&&Number(w.weekStart)<=6}
+function currentWs(){return workspaces.find(w=>w.id===state.workspaceId)||workspaces[0]||null}
+function currentWeekStart(){const ws=currentWs()||DEFAULT_WS;return startOfWeek(state.week,ws.weekStart)}
+function timeSlots(gran,sh,eh){const out=[];for(let m=sh*60;m<eh*60;m+=gran)out.push(`${pad(Math.floor(m/60))}:${pad(m%60)}`);return out}
+function weekLabel(start){const end=addDays(start,6);return `${start.getFullYear()} · 第 ${isoWeek(start)} 周`}
+function weekSpan(start){const end=addDays(start,6);return `${formatDate(start)} — ${formatDate(end)}`}
+function formatBytes(n){if(!n)return '0 B';const u=['B','KB','MB','GB'];const i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),u.length-1);return `${(n/1024**i).toFixed(i?1:0)} ${u[i]}`}
+function dataURLToBlob(data){const m=String(data).match(/^data:([^;,]+)?(;base64)?,(.*)$/);if(!m)throw new Error('invalid data URL');const type=m[1]||'application/octet-stream';const bytes=m[2]?Uint8Array.from(atob(m[3]),c=>c.charCodeAt(0)):new TextEncoder().encode(decodeURIComponent(m[3]));return new Blob([bytes],{type})}
+function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+
+/* ---------- IndexedDB ---------- */
+function openDB(){
+  if(db)return Promise.resolve(db);
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result, old=e.oldVersion;
+      if(!d.objectStoreNames.contains('workspaces')){
+        const ws=d.createObjectStore('workspaces',{keyPath:'id'});ws.createIndex('updatedAt','updatedAt');
+      }
+      if(!d.objectStoreNames.contains('blocks')){
+        const bs=d.createObjectStore('blocks',{keyPath:'key'});bs.createIndex('workspaceId','workspaceId');bs.createIndex('slotKey','slotKey');bs.createIndex('updatedAt','updatedAt');
+      }else if(old<4){
+        const bs=e.target.transaction.objectStore('blocks');
+        if(!bs.indexNames.contains('workspaceId'))bs.createIndex('workspaceId','workspaceId');
+        if(!bs.indexNames.contains('slotKey'))bs.createIndex('slotKey','slotKey');
+        if(!bs.indexNames.contains('updatedAt'))bs.createIndex('updatedAt','updatedAt');
+      }
+      if(!d.objectStoreNames.contains('files')){const fs=d.createObjectStore('files',{keyPath:'id'});fs.createIndex('workspaceId','workspaceId');fs.createIndex('updatedAt','updatedAt')}
+    };
+    req.onsuccess=e=>{db=e.target.result;db.onversionchange=()=>db.close();resolve(db)};
+    req.onerror=()=>reject(req.error);
+  })
+}
+function reqP(req){return new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)})}
+async function all(store){const d=await openDB();return reqP(d.transaction(store,'readonly').objectStore(store).getAll())}
+async function put(store,val){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).put(val))}
+async function remove(store,key){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).delete(key))}
+async function clear(store){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).clear())}
+async function replaceStores(data){
+  const d=await openDB();
+  await new Promise((resolve,reject)=>{
+    const t=d.transaction(['workspaces','blocks','files'],'readwrite');
+    t.objectStore('workspaces').clear();t.objectStore('blocks').clear();t.objectStore('files').clear();
+    for(const w of data.workspaces)t.objectStore('workspaces').put(w);
+    for(const b of data.blocks)t.objectStore('blocks').put(b);
+    for(const f of data.files)t.objectStore('files').put(f);
+    t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);
+  });
+}
+
+/* ---------- 配置 / 初始化 / 迁移 ---------- */
+function loadAppSettings(){try{const v=JSON.parse(localStorage.getItem('worklog:v4:app')||'null');if(v)appSettings={...appSettings,...v};else{const t=localStorage.getItem('worklog_theme');if(t==='dark'||t==='light')appSettings.theme=t}}catch{}applyTheme()}
+function saveAppSettings(){localStorage.setItem('worklog:v4:app',JSON.stringify(appSettings))}
+function applyTheme(){document.documentElement.dataset.theme=appSettings.theme;$('#themeBtn').textContent=appSettings.theme==='dark'?'☀':'☾'}
+async function ensureDefaultWorkspace(){
+  // 默认工作区必须是一个长期存在的系统工作区：
+  // 不能只在“完全没有任何工作区”时创建，否则升级旧版本后会丢失入口。
+  const existingDefault=workspaces.find(w=>w.isDefault===true||w.name==='默认工作区');
+  if(existingDefault){
+    if(!existingDefault.isDefault){existingDefault.isDefault=true;existingDefault.updatedAt=Date.now();await put('workspaces',existingDefault)}
+    return existingDefault;
+  }
+  let legacyCfg={};try{legacyCfg=JSON.parse(localStorage.getItem('worklog:v3:cfg')||localStorage.getItem('worklog_cfg')||'{}')||{}}catch{}
+  const ws={
+    id:uid(),
+    name:'默认工作区',
+    isDefault:true,
+    createdAt:Date.now(),
+    updatedAt:Date.now(),
+    gran:Number(legacyCfg.gran)||60,
+    sh:Number(legacyCfg.sh??8),
+    eh:Number(legacyCfg.eh??20),
+    weekStart:Number(legacyCfg.weekStart??legacyCfg.ws??1)
+  };
+  if(!validateWs(ws))Object.assign(ws,DEFAULT_WS);
+  await put('workspaces',ws);
+  workspaces=await all('workspaces');
+  return ws;
+}
+async function importLegacyDB(name){
+  if(!indexedDB.databases)return 0;
+  const list=await indexedDB.databases();if(!list.some(x=>x.name===name))return 0;
+  let legacy;try{legacy=await new Promise((res,rej)=>{const r=indexedDB.open(name);r.onsuccess=e=>res(e.target.result);r.onerror=()=>rej(r.error)})}catch{return 0}
+  if(!legacy.objectStoreNames.contains('blocks')){legacy.close();return 0}
+  let items=[];try{items=await new Promise((res,rej)=>{const r=legacy.transaction('blocks','readonly').objectStore('blocks').getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}catch{legacy.close();return 0}
+  let legacyFiles=[];
+  if(legacy.objectStoreNames.contains('files')){
+    try{legacyFiles=await new Promise((res,rej)=>{const r=legacy.transaction('files','readonly').objectStore('files').getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}catch{}
+  }
+  legacy.close();if(!items.length)return 0;
+  if(!workspaces.length){
+    let legacyCfg={};try{legacyCfg=JSON.parse(localStorage.getItem('worklog:v3:cfg')||localStorage.getItem('worklog_cfg')||'{}')||{}}catch{}
+    const ws={id:uid(),name:'默认工作区',createdAt:Date.now(),updatedAt:Date.now(),gran:Number(legacyCfg.gran)||60,sh:Number(legacyCfg.sh??8),eh:Number(legacyCfg.eh??20),weekStart:Number(legacyCfg.weekStart??legacyCfg.ws??1)};
+    if(!validateWs(ws))Object.assign(ws,DEFAULT_WS);
+    await put('workspaces',ws);workspaces=[ws];
+  }
+  const ws=currentWs();
+  const copiedFileIds=new Map();
+  for(const f of legacyFiles){
+    if(!f?.id)continue;
+    try{
+      let blob=f.blob;
+      if(!(blob instanceof Blob)&&f.data)blob=dataURLToBlob(f.data);
+      if(!blob)continue;
+      const id=f.id;
+      const rec={id,workspaceId:ws.id,name:f.name||'附件',type:f.type||blob.type||'application/octet-stream',size:Number(f.size)||blob.size,blob,createdAt:f.createdAt||Date.now(),updatedAt:f.updatedAt||Date.now()};
+      await put('files',rec);copiedFileIds.set(String(f.id),id);
+    }catch{}
+  }
+  let count=0;
+  for(const raw of items){
+    if(!raw?.key)continue;
+    const slot=raw.slotKey||(raw.key.includes('::')?raw.key.split('::').pop():raw.key);
+    const fileIds=[];
+    if(Array.isArray(raw.fileIds))for(const fid of raw.fileIds){const id=copiedFileIds.get(String(fid));if(id)fileIds.push(id)}
+    for(const f of (raw.files||[])){
+      if(!f?.data)continue;
+      const id=uid();const blob=dataURLToBlob(f.data);const rec={id,workspaceId:ws.id,name:f.name||'附件',type:f.type||blob.type,size:Number(f.size)||blob.size,blob,createdAt:Date.now(),updatedAt:Date.now()};await put('files',rec);fileIds.push(id)
+    }
+    await put('blocks',{key:blockDbKey(ws.id,slot),slotKey:slot,workspaceId:ws.id,title:String(raw.title||''),body:String(raw.body||''),tags:normalizeTags(raw.tags),prio:raw.prio||'',status:raw.status||'',loc:String(raw.loc||''),fileIds:[...new Set(fileIds)],updatedAt:Number(raw.updatedAt)||Date.now(),version:4});count++;
+  }
+  return count;
+}
+async function migrateCurrentV3(){
+  const arr=await all('blocks');if(!arr.length)return 0;
+  let migrated=0, needs=false;
+  for(const b of arr){if(!b.workspaceId){needs=true;break}}
+  if(!needs)return 0;
+  const ws=currentWs();
+  const oldFiles=await all('files');const fileById=new Map(oldFiles.map(x=>[x.id,x]));
+  for(const b of arr){
+    if(b.workspaceId)continue;const slot=b.slotKey||b.key.replace(/^[^:]+::/,'');let fileIds=Array.isArray(b.fileIds)?[...b.fileIds]:[];
+    if(b.files?.length){for(const f of b.files){if(!f?.data)continue;const id=uid();const blob=dataURLToBlob(f.data);await put('files',{id,workspaceId:ws.id,name:f.name||'附件',type:f.type||blob.type,size:Number(f.size)||blob.size,blob,createdAt:Date.now(),updatedAt:Date.now()});fileIds.push(id)}}
+    const nb={key:blockDbKey(ws.id,slot),slotKey:slot,workspaceId:ws.id,title:String(b.title||''),body:String(b.body||''),tags:normalizeTags(b.tags),prio:b.prio||'',status:b.status||'',loc:String(b.loc||''),fileIds,updatedAt:Number(b.updatedAt)||Date.now(),version:4};
+    await put('blocks',nb);await remove('blocks',b.key);migrated++;
+  }
+  for(const f of fileById.values())if(f.blob===undefined&&f.data===undefined){};
+  return migrated;
+}
+async function initData(){
+  loadAppSettings();await openDB();
+  workspaces=await all('workspaces');
+  if(!workspaces.length){
+    await importLegacyDB(LEGACY_DB_NAME);
+    workspaces=await all('workspaces');
+    if(!workspaces.length){
+      await importLegacyDB(OLD_DB_NAME);
+      workspaces=await all('workspaces');
+    }
+  }
+  // 无论数据库里已有多少普通工作区，都保证“默认工作区”存在。
+  const defaultWs=await ensureDefaultWorkspace();
+  await migrateCurrentV3();
+  workspaces=await all('workspaces');
+  state.workspaceId=defaultWs?.id || workspaces.find(w=>w.isDefault)?.id || workspaces[0]?.id || null;
+  await loadCurrentWorkspace();
+}
+
+/* ---------- 工作区 ---------- */
+function renderWorkspaceSelect(){
+  const s=$('#workspaceSelect');
+  const ordered=[...workspaces].sort((a,b)=>(b.isDefault?1:0)-(a.isDefault?1:0));
+  s.innerHTML=ordered.map(w=>`<option value="${escapeHTML(w.id)}">${escapeHTML(w.name)}${w.isDefault?' · 默认':''}</option>`).join('');
+  s.value=state.workspaceId;
+  $('#statusWorkspace').textContent=`工作区：${currentWs()?.name||''}`;
+}
+async function switchWorkspace(id){if(!workspaces.some(w=>w.id===id))return;state.workspaceId=id;state.week=new Date();state.dayDate=new Date();state.selected.clear();state.search='';$('#searchInput').value='';await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();render();notify(`已切换到「${currentWs().name}」`)}
+function renderWorkspaceForm(){const w=currentWs();if(!w)return;$('#wsName').value=w.name;$('#wsWeekStart').value=w.weekStart;$('#wsGran').value=w.gran;$('#wsSh').value=w.sh;$('#wsEh').value=w.eh}
+async function loadCurrentWorkspace(){
+  const w=currentWs();if(!w)return;const d=await openDB();let arr=[];const store=d.transaction('blocks','readonly').objectStore('blocks');if(store.indexNames.contains('workspaceId'))arr=await reqP(store.index('workspaceId').getAll(w.id));else arr=(await reqP(store.getAll())).filter(x=>x.workspaceId===w.id);
+  currentBlocks=arr;fileCache=new Map();const fs=await all('files');for(const f of fs)if(f.workspaceId===w.id)fileCache.set(f.id,f);slots=timeSlots(w.gran,w.sh,w.eh);searchIndex=buildSearchIndex();
+}
+async function saveWorkspaceSettings(){
+  const w=currentWs();if(!w)return;const next={...w,name:$('#wsName').value.trim()||w.name,weekStart:Number($('#wsWeekStart').value),gran:Number($('#wsGran').value),sh:Number($('#wsSh').value),eh:Number($('#wsEh').value),updatedAt:Date.now()};
+  if(!validateWs(next)){notify('工作区参数无效','err');return false}
+  await put('workspaces',next);workspaces=workspaces.map(x=>x.id===next.id?next:x);slots=timeSlots(next.gran,next.sh,next.eh);saveWorkspaceForm();await loadCurrentWorkspace();renderWorkspaceSelect();return true;
+}
+function saveWorkspaceForm(){}
+async function createWorkspace(){
+  showDialog('新建工作区','输入新的工作区名称',[
+    {text:'取消'},
+    {text:'创建',primary:true,action:async()=>{const input=$('#dialogInput');const name=(input?.value||'').trim();if(!name){notify('名称不能为空','err');return}const ws={id:uid(),name,createdAt:Date.now(),updatedAt:Date.now(),...DEFAULT_WS};await put('workspaces',ws);workspaces=await all('workspaces');state.workspaceId=ws.id;state.week=new Date();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();render();notify(`已创建「${name}」`)}}
+  ]);
+  const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">工作区数据与其他工作区完全隔离。</div><input id="dialogInput" style="width:100%;margin-top:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none" placeholder="工作区名称">';setTimeout(()=>$('#dialogInput')?.focus(),20);
+}
+async function deleteWorkspace(){
+  if(workspaces.length<=1){notify('至少保留一个工作区','warn');return}
+  const w=currentWs();const blocks=currentBlocks.length;const files=[...fileCache.values()].length;
+  showDialog('删除工作区',`将删除「${w.name}」及其 ${blocks} 条记录、${files} 个附件，且无法恢复。`,[
+    {text:'取消'},
+    {text:'彻底删除',danger:true,action:async()=>{try{
+      const ds=await all('blocks');for(const b of ds)if(b.workspaceId===w.id)await remove('blocks',b.key);const fs=await all('files');for(const f of fs)if(f.workspaceId===w.id)await remove('files',f.id);await remove('workspaces',w.id);workspaces=await all('workspaces');state.workspaceId=workspaces[0].id;await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();render();notify('工作区已删除');
+    }catch(e){console.error(e);notify('删除失败','err')}}}
+  ]);
+}
+$('#workspaceSelect').onchange=e=>switchWorkspace(e.target.value);
+$('#workspaceManage').onclick=()=>{renderWorkspaceForm();$('#workspaceOverlay').classList.add('open')};
+$('#workspaceClose').onclick=()=>$('#workspaceOverlay').classList.remove('open');
+$('#wsCancel').onclick=()=>$('#workspaceOverlay').classList.remove('open');
+$('#wsNew').onclick=async()=>{await createWorkspace();};
+$('#wsDelete').onclick=deleteWorkspace;
+$('#wsSave').onclick=async()=>{if(await saveWorkspaceSettings()){$('#workspaceOverlay').classList.remove('open');notify('工作区设置已保存');render()}};
+
+/* ---------- 搜索 / 渲染 ---------- */
+function buildSearchIndex(){return currentBlocks.filter(recordHasContent).map(b=>({key:b.key,text:[b.title,b.body,b.loc,b.prio,b.status,b.startTime,b.endTime,...(b.tags||[]),...(b.fileIds||[]).map(id=>fileCache.get(id)?.name||'')].join(' ').toLocaleLowerCase()}))}
+function searchKeys(q){if(!q)return new Set();const tokens=q.toLocaleLowerCase().split(/\s+/).filter(Boolean);return new Set(searchIndex.filter(x=>tokens.every(t=>x.text.includes(t))).map(x=>x.key))}
+function setViewMode(mode){
+  state.viewMode=mode===VIEW_MODES.DAY?VIEW_MODES.DAY:VIEW_MODES.WEEK;
+  $('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);
+  $('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);
+  $('#tableShell').style.display=state.viewMode===VIEW_MODES.WEEK?'block':'none';
+  $('#mobileSummary').style.display='none';
+  $('#dayView').classList.toggle('open',state.viewMode===VIEW_MODES.DAY);
+  render();
+}
+function setHeaderState(next,source='auto'){
+  const collapsed=!!next;
+  if(source==='manual'){
+    state.headerManual=collapsed?'collapsed':'expanded';
+    state.headerScrollLockUntil=performance.now()+500;
+  } else if(source==='auto' && state.headerManual!=='none'){
+    return;
+  }
+  if(state.headerCollapsed===collapsed) return;
+  state.headerCollapsed=collapsed;
+  const h=$('.header');
+  h.classList.toggle('collapsed',collapsed);
+  $('#headerToggle').setAttribute('aria-expanded',String(!collapsed));
+  $('#headerToggle').textContent=collapsed?'⌄':'⌃';
+}
+function releaseHeaderManual(){
+  state.headerManual='none';
+  state.headerScrollLockUntil=performance.now()+450;
+}
+function handleHeaderScroll(){
+  const now=performance.now();
+  const y=window.scrollY||0;
+  const delta=y-state.lastScrollY;
+  state.lastScrollY=y;
+  if(now<state.headerScrollLockUntil || Math.abs(delta)<18) return;
+  const dir=delta>0?1:-1;
+  state.lastScrollDirection=dir;
+  clearTimeout(state.headerAutoTimer);
+  state.headerAutoTimer=setTimeout(()=>{
+    if(state.headerManual!=='none') return;
+    const currentY=window.scrollY||0;
+    if(currentY<=24){ setHeaderState(false,'auto'); return; }
+    if(dir>0 && currentY>96) setHeaderState(true,'auto');
+    else if(dir<0) setHeaderState(false,'auto');
+  },60);
+}
+function renderDayView(w){
+  const d=startOfDay(state.dayDate||state.week); const slotsToday=timeSlots(w.gran,w.sh,w.eh); const map=new Map(currentBlocks.filter(b=>b.workspaceId===w.id).map(b=>[b.slotKey,b]));
+  const title=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+  const weekday=dayName(d.getDay());
+  let html=`<div class="day-view-head"><div><div class="day-view-date">${escapeHTML(title)}</div><div class="day-view-sub">${escapeHTML(weekday)} · ${escapeHTML(w.name)}</div></div><div class="day-view-actions"><button class="btn" data-day-nav="prev">← 前一天</button><button class="btn" data-day-nav="today">今天</button><button class="btn" data-day-nav="next">后一天 →</button></div></div><div class="day-view-list">`;
+  for(const time of slotsToday){const slot=keyFor(d,time),dbKey=blockDbKey(w.id,slot),b=map.get(slot);const has=recordHasContent(b);html+=`<div class="day-row"><div class="day-time">${time}</div><div class="day-slot${has?' has':''}" data-day-key="${escapeHTML(dbKey)}">${has?`<div class="day-slot-inner"><div class="day-slot-title">${escapeHTML(b.title||'未命名')}</div>${b.body?`<div class="day-slot-body">${escapeHTML(b.body)}</div>`:''}</div>`:'<div class="day-slot-empty">＋</div>'}</div></div>`}
+  html+='</div>';$('#dayView').innerHTML=html;
+  $('#dayView').querySelectorAll('[data-day-key]').forEach(el=>el.onclick=()=>openEditor(el.dataset.dayKey));
+  $('#dayView').querySelector('[data-day-nav="prev"]').onclick=()=>{state.dayDate=addDays(d,-1);state.week=state.dayDate;renderDayView(currentWs())};
+  $('#dayView').querySelector('[data-day-nav="next"]').onclick=()=>{state.dayDate=addDays(d,1);state.week=state.dayDate;renderDayView(currentWs())};
+  $('#dayView').querySelector('[data-day-nav="today"]').onclick=()=>{state.dayDate=new Date();state.week=state.dayDate;renderDayView(currentWs())};
+}
+
+function render(){
+  const w=currentWs();if(!w)return;$('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);weekDays=Array.from({length:7},(_,i)=>addDays(currentWeekStart(),i));slots=timeSlots(w.gran,w.sh,w.eh);hitKeys=searchKeys(state.search);
+  $('#weekTitle').textContent=state.viewMode===VIEW_MODES.DAY?`${formatDate(startOfDay(state.dayDate||new Date()))} · 日视图`:weekLabel(weekDays[0]);$('#weekSub').textContent=state.viewMode===VIEW_MODES.DAY?'点击周标题选择日期':weekSpan(weekDays[0]);$('#statusWorkspace').textContent=`工作区：${w.name}`;
+  const blockMap=new Map(currentBlocks.map(b=>[b.key,b]));
+  const total=currentBlocks.filter(recordHasContent).length;const tags=new Set(currentBlocks.flatMap(b=>b.tags||[]));const files=currentBlocks.reduce((n,b)=>n+(b.fileIds?.length||0),0);const done=currentBlocks.filter(b=>b.status==='已完成').length;
+  $('#sAll').textContent=total;$('#sTags').textContent=tags.size;$('#sFiles').textContent=files;$('#sDone').textContent=done;
+  if(state.viewMode===VIEW_MODES.DAY){$('#sWeek').textContent=currentBlocks.filter(b=>recordHasContent(b)&&String(b.slotKey||'').startsWith(formatDate(state.dayDate||new Date())+'_')).length;renderDayView(w);$('#tableShell').style.display='none';$('#mobileSummary').style.display='none';return;}
+  $('#tableShell').style.display='block';$('#dayView').classList.remove('open');
+  const names=weekDays.map(d=>dayName(d.getDay()));let th='<tr><th class="time-col">时间</th>';weekDays.forEach((d,i)=>{th+=`<th class="${isToday(d)?'today':''}"><div class="day-head"><span class="day-name">${names[i]}</span><span class="day-num">${d.getDate()}</span></div></th>`});$('#thead').innerHTML=th+'</tr>';
+  let body='';let weekCount=0;
+  for(const time of slots){body+=`<tr><td class="time-col">${time}</td>`;for(const d of weekDays){const slot=keyFor(d,time);const dbKey=blockDbKey(w.id,slot);const b=blockMap.get(dbKey);const has=recordHasContent(b);if(has)weekCount++;const cls=['cell',has?'has':'',isToday(d)?'today':'',state.selected.has(dbKey)?'selected':'',hitKeys.has(dbKey)?'search-hit':''].filter(Boolean).join(' ');if(!has){body+=`<td class="${cls}" data-key="${escapeHTML(dbKey)}"><div class="empty">＋</div></td>`;continue}const statusIcon=b.status==='已完成'?'✓':b.status==='进行中'?'↻':'';const prioIcon=b.prio?({'高':'🔴','中':'🟡','低':'🟢'}[b.prio]||''):'';const tags=(b.tags||[]).slice(0,2).map(t=>`<span class="chip">#${escapeHTML(t)}</span>`).join('');const attach=b.fileIds?.length?`<span>📎 ${b.fileIds.length}</span>`:'';const interval=b.startTime?`<span>◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}</span>`:'';body+=`<td class="${cls}" data-key="${escapeHTML(dbKey)}"><div class="${b.status==='已完成'?'title done':'title'}">${escapeHTML(b.title||'未命名')}</div>${b.body?`<div class="body">${escapeHTML(b.body)}</div>`:''}<div class="line">${prioIcon||''}${statusIcon?`<span>${statusIcon}</span>`:''}${interval}${attach}</div>${tags}</td>`}body+='</tr>'}
+  $('#tbody').innerHTML=body;
+  renderMobileSummary(w, weekDays, slots, blockMap);
+  $('#sWeek').textContent=weekCount;$('#searchResults').textContent=state.search?`命中 ${hitKeys.size} 条`:'';
+  $$('.cell').forEach(el=>el.onclick=()=>openEditor(el.dataset.key));
+}
+
+function renderMobileSummary(w,days,slots,blockMap){const root=$('#mobileSummary');if(!root)return;let html='';for(const d of days){const records=[];for(const time of slots){const key=blockDbKey(w.id,keyFor(d,time)),b=blockMap.get(key);if(recordHasContent(b))records.push([time,key,b])}html+=`<section class="mobile-day${isToday(d)?' today':''}"><div class="mobile-day-head"><span class="mobile-day-name">${escapeHTML(dayName(d.getDay()))}</span><span class="mobile-day-date">${escapeHTML(formatDate(d))}</span></div>${records.length?records.map(([time,key,b])=>`<div class="mobile-record" data-mobile-key="${escapeHTML(key)}"><span class="mobile-time">${escapeHTML(time)}</span><div class="mobile-record-main"><div class="mobile-record-title">${escapeHTML(b.title||'未命名')}</div>${b.body?`<div class="mobile-record-body">${escapeHTML(b.body)}</div>`:''}</div></div>`).join(''):'<div class="mobile-empty">暂无记录 · 点击“＋ 新建”开始记录</div>'}</section>`}root.innerHTML=html;root.querySelectorAll('[data-mobile-key]').forEach(el=>el.onclick=()=>openEditor(el.dataset.mobileKey))}
+
+/* ---------- 编辑器 ---------- */
+function fileRecord(id){return fileCache.get(id)||null}
+function updateEditMeta(dbKey){const raw=slotKeyFromBlock({key:dbKey});const [date,time]=partsKey(raw);const d=parseDate(date);$('#editMeta').textContent=`${date} · ${dayName(d.getDay())} · ${time} · ${currentWs().name}`}
+function renderFileList(){const list=$('#fileList');list.innerHTML=state.editFiles.length?state.editFiles.map((f,i)=>`<span class="file-pill"><span>📎</span><span title="${escapeHTML(f.name)}">${escapeHTML(f.name.length>24?f.name.slice(0,21)+'…':f.name)}</span><span style="color:var(--faint)">${formatBytes(f.size)}</span><button data-file-index="${i}" title="移除">×</button></span>`).join(''):'<span style="font-size:10px;color:var(--faint)">暂无附件</span>';list.querySelectorAll('[data-file-index]').forEach(b=>b.onclick=e=>{e.stopPropagation();state.editFiles.splice(Number(b.dataset.fileIndex),1);renderFileList();state.modalDirty=true})}
+function openEditor(dbKey){
+  state.editingKey=dbKey;const b=currentBlocks.find(x=>x.key===dbKey)||{};$('#fTitle').value=b.title||'';$('#fBody').value=b.body||'';$('#fTags').value=(b.tags||[]).join(', ');$('#fLoc').value=b.loc||'';$('#fPrio').value=b.prio||'';$('#fStatus').value=b.status||'';state.editFiles=(b.fileIds||[]).map(fileRecord).filter(Boolean);state.editNewFiles=[];state.modalDirty=false;updateEditMeta(dbKey);renderFileList();$('#editOverlay').classList.add('open');setTimeout(()=>$('#fTitle').focus(),20)}
+function closeEditor(force=false){if(!force&&state.modalDirty){showDialog('未保存的修改','当前工作块有未保存的修改，确定关闭吗？',[{text:'继续编辑'},{text:'放弃修改',primary:true,action:()=>{hideOverlay('#editOverlay');state.editingKey=null}}]);return}hideOverlay('#editOverlay');state.editingKey=null}
+function hideOverlay(id){$(id).classList.remove('open')}
+function readEditor(){return{title:$('#fTitle').value.trim(),body:$('#fBody').value.trim(),tags:normalizeTags($('#fTags').value),loc:$('#fLoc').value.trim(),prio:$('#fPrio').value,status:$('#fStatus').value,fileIds:state.editFiles.map(f=>f.id)}}
+async function saveEditor(){
+  const dbKey=state.editingKey;if(!dbKey)return;const old=currentBlocks.find(b=>b.key===dbKey);const v=readEditor();
+  if(!v.title&&!v.body&&!v.tags.length&&!v.loc&&!v.prio&&!v.status&&!v.fileIds.length){await deleteBlock(dbKey);closeEditor(true);render();return}
+  try{
+    for(const f of state.editNewFiles){await put('files',f);fileCache.set(f.id,f)}
+    const keep=new Set(v.fileIds);for(const oldId of (old?.fileIds||[]))if(!keep.has(oldId)){await remove('files',oldId);fileCache.delete(oldId)}
+    const slot=slotKeyFromBlock({key:dbKey});const next={key:dbKey,slotKey:slot,workspaceId:state.workspaceId,title:v.title,body:v.body,tags:v.tags,loc:v.loc,prio:v.prio,status:v.status,fileIds:v.fileIds,startTime:old?.startTime||'',endTime:old?.endTime||'',allDay:!!old?.allDay,source:old?.source||'manual',externalId:old?.externalId||'',updatedAt:Date.now(),version:4};await put('blocks',next);currentBlocks=currentBlocks.filter(b=>b.key!==dbKey).concat(next);searchIndex=buildSearchIndex();state.modalDirty=false;closeEditor(true);render();$('#saveStatus').textContent=`已保存 · ${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}`;notify('已保存')
+  }catch(e){console.error(e);notify('保存失败：'+(e.message||'未知错误'),'err')}
+}
+async function deleteBlock(dbKey){const b=currentBlocks.find(x=>x.key===dbKey);if(!b)return;for(const id of b.fileIds||[]){await remove('files',id);fileCache.delete(id)}await remove('blocks',dbKey);currentBlocks=currentBlocks.filter(x=>x.key!==dbKey);searchIndex=buildSearchIndex()}
+function deleteEditor(){const dbKey=state.editingKey;if(!dbKey)return;showDialog('删除记录','删除后无法从当前备份外恢复，确定继续吗？',[{text:'取消'},{text:'删除',danger:true,action:async()=>{try{await deleteBlock(dbKey);closeEditor(true);render();notify('已删除')}catch{notify('删除失败','err')}}}])}
+$('#pickFile').onclick=()=>$('#fileInput').click();
+$('#fileInput').onchange=async e=>{for(const f of [...e.target.files]){if(f.size>50*1024*1024){notify(`${f.name} 超过 50MB`,'warn');continue}const rec={id:uid(),workspaceId:state.workspaceId,name:f.name,type:f.type||'application/octet-stream',size:f.size,blob:f,createdAt:Date.now(),updatedAt:Date.now()};state.editFiles.push(rec);state.editNewFiles.push(rec)}e.target.value='';renderFileList();state.modalDirty=true};
+['fTitle','fBody','fTags','fLoc','fPrio','fStatus'].forEach(id=>$('#'+id).addEventListener('input',()=>state.modalDirty=true));$('#saveBtn').onclick=saveEditor;$('#deleteBtn').onclick=deleteEditor;$('#cancelBtn').onclick=()=>closeEditor();$('#editClose').onclick=()=>closeEditor();$('#editOverlay').onclick=e=>{if(e.target.id==='editOverlay')closeEditor()};
+
+/* ---------- 通用弹窗 ---------- */
+function showDialog(title,text,buttons=[{text:'确定',primary:true}]){const box=$('#dialogBox');box.innerHTML=`<div class="modal-head"><span class="modal-title">${escapeHTML(title)}</span><button class="icon-btn" data-close>×</button></div><div class="modal-body"><div class="dialog-text">${escapeHTML(text)}</div></div><div class="modal-foot"><div class="spacer"></div>${buttons.map((b,i)=>`<button class="btn ${b.primary?'primary':''} ${b.danger?'danger':''}" data-dialog="${i}">${escapeHTML(b.text)}</button>`).join('')}</div>`;box.querySelector('[data-close]').onclick=()=>hideOverlay('#dialogOverlay');buttons.forEach((b,i)=>box.querySelector(`[data-dialog="${i}"]`).onclick=()=>{hideOverlay('#dialogOverlay');b.action?.()});$('#dialogOverlay').classList.add('open')}
+
+/* ---------- ZIP：无第三方依赖，导出标准 ZIP ---------- */
+const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0}return t})();
+function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0}
+function dosTimeDate(date=new Date()){let time=(date.getHours()<<11)|(date.getMinutes()<<5)|Math.floor(date.getSeconds()/2);let y=Math.max(1980,date.getFullYear());let dd=((y-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate();return{time,date:dd}}
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function concatBytes(parts){let len=parts.reduce((n,p)=>n+p.length,0),out=new Uint8Array(len),o=0;for(const p of parts){out.set(p,o);o+=p.length}return out}
+function zipStore(entries){const enc=new TextEncoder(),parts=[],central=[],{time,date}=dosTimeDate();let offset=0;for(const entry of entries){const name=enc.encode(entry.name),data=entry.data,crc=crc32(data);const local=concatBytes([u32(0x04034b50),u16(20),u16(0x800),u16(0),u16(time),u16(date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);parts.push(local);const cd=concatBytes([u32(0x02014b50),u16(20),u16(20),u16(0x800),u16(0),u16(time),u16(date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]);central.push(cd);offset+=local.length}const centralBytes=concatBytes(central);const end=concatBytes([u32(0x06054b50),u16(0),u16(0),u16(entries.length),u16(entries.length),u32(centralBytes.length),u32(offset),u16(0)]);return concatBytes([...parts,centralBytes,end])}
+function extForFile(f){const m=(f.name||'').match(/\.([A-Za-z0-9]{1,10})$/);return m?m[1]:'bin'}
+async function exportZip(){
+  try{
+    const allWs=await all('workspaces'),allB=await all('blocks'),allF=await all('files');const manifest={app:APP,schema:5,exportedAt:new Date().toISOString(),appSettings,workspaces:allWs,blocks:allB.map(({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})=>({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})),files:allF.map(f=>({id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type,size:f.size,createdAt:f.createdAt,updatedAt:f.updatedAt,path:`attachments/${f.id}.${extForFile(f)}` }))};
+    const entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(manifest,null,2))}];
+    for(const f of allF){const bytes=new Uint8Array(await f.blob.arrayBuffer());entries.push({name:`attachments/${f.id}.${extForFile(f)}`,data:bytes})}
+    const zip=zipStore(entries);downloadBlob(new Blob([zip],{type:'application/zip'}),`worklog-backup-${todayKey()}.zip`);notify(`已导出 ${allWs.length} 个工作区、${allB.length} 条记录、${allF.length} 个附件`)
+  }catch(e){console.error(e);notify('导出失败：'+(e.message||'未知错误'),'err')}
+}
+async function parseZipStore(blob){
+  const bytes=new Uint8Array(await blob.arrayBuffer());const dv=new DataView(bytes.buffer);let eocd=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65558);i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break}}if(eocd<0)throw new Error('ZIP 结构无效');const count=dv.getUint16(eocd+10,true),cdOffset=dv.getUint32(eocd+16,true);let p=cdOffset;const out=new Map(),dec=new TextDecoder();for(let i=0;i<count;i++){if(dv.getUint32(p,true)!==0x02014b50)throw new Error('ZIP 中央目录无效');const method=dv.getUint16(p+10,true),compSize=dv.getUint32(p+20,true),nameLen=dv.getUint16(p+28,true),extraLen=dv.getUint16(p+30,true),commentLen=dv.getUint16(p+32,true),localOffset=dv.getUint32(p+42,true),name=dec.decode(bytes.slice(p+46,p+46+nameLen));const lp=localOffset;if(dv.getUint32(lp,true)!==0x04034b50)throw new Error('ZIP 文件头无效');const ln=dv.getUint16(lp+26,true),le=dv.getUint16(lp+28,true),dataStart=lp+30+ln+le;let data=bytes.slice(dataStart,dataStart+compSize);if(method===8){if(typeof DecompressionStream==='undefined')throw new Error('当前浏览器不支持 ZIP 压缩流');const stream=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));data=new Uint8Array(await new Response(stream).arrayBuffer())}else if(method!==0)throw new Error(`不支持 ZIP 压缩方式：${method}`);out.set(name,data);p+=46+nameLen+extraLen+commentLen}return out}
+async function importZip(file){
+  try{const entries=await parseZipStore(file);const raw=entries.get('manifest.json');if(!raw)throw new Error('找不到 manifest.json');const m=JSON.parse(new TextDecoder().decode(raw));if(m.app!==APP||m.schema<4||!Array.isArray(m.workspaces)||!Array.isArray(m.blocks)||!Array.isArray(m.files))throw new Error('不是有效的 Worklog ZIP 备份');const files=[];for(const f of m.files){const data=entries.get(f.path);if(!data)throw new Error(`缺少附件：${f.name}`);files.push({id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type||'application/octet-stream',size:Number(f.size)||data.length,blob:new Blob([data],{type:f.type||'application/octet-stream'}),createdAt:f.createdAt||Date.now(),updatedAt:f.updatedAt||Date.now()})}showDialog('导入完整备份',`发现 ${m.workspaces.length} 个工作区、${m.blocks.length} 条记录、${files.length} 个附件。导入将替换当前应用的全部本地数据。`,[{text:'取消'},{text:'替换全部数据',primary:true,action:async()=>{try{await replaceStores({workspaces:m.workspaces,blocks:m.blocks,files});if(m.appSettings)appSettings={...appSettings,...m.appSettings};saveAppSettings();workspaces=await all('workspaces');state.workspaceId=workspaces[0]?.id||null;await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();applyTheme();render();notify('完整备份导入完成')}catch(e){console.error(e);notify('导入失败：'+(e.message||'未知错误'),'err')}}}])}catch(e){console.error(e);notify('ZIP 导入失败：'+(e.message||'文件无效'),'err')}}
+async function importLegacyJson(file){try{const obj=JSON.parse(await file.text());if(!Array.isArray(obj.blocks))throw new Error('不是旧版 JSON 备份');const ws=currentWs();let n=0;for(const b of obj.blocks){if(!b?.key)continue;const slot=b.key.includes('::')?b.key.split('::').pop():b.key;await put('blocks',{key:blockDbKey(ws.id,slot),slotKey:slot,workspaceId:ws.id,title:String(b.title||''),body:String(b.body||''),tags:normalizeTags(b.tags),prio:b.prio||'',status:b.status||'',loc:String(b.loc||''),fileIds:[],updatedAt:Number(b.updatedAt)||Date.now(),version:4});n++}await loadCurrentWorkspace();render();notify(`已兼容导入旧 JSON：${n} 条记录`)}catch(e){notify('JSON 导入失败：'+(e.message||'格式错误'),'err')}}
+
+
+/* ---------- ICS ---------- */
+function unfoldICS(text){return text.replace(/\r?\n[ \t]/g,'').split(/\r?\n/)}
+function unescapeICS(v){return String(v||'').replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\')}
+function parseICSDate(value,prop){const v=value.trim();const tz=/TZID=([^;:]+)/i.exec(prop||'')?.[1];if(/^\d{8}$/.test(v))return{date:new Date(Number(v.slice(0,4)),Number(v.slice(4,6))-1,Number(v.slice(6,8)),0,0,0,0),allDay:true};const z=v.endsWith('Z');const s=z?v.slice(0,-1):v;const y=Number(s.slice(0,4)),m=Number(s.slice(4,6))-1,d=Number(s.slice(6,8)),hh=Number(s.slice(9,11)||0),mm=Number(s.slice(11,13)||0),ss=Number(s.slice(13,15)||0);if(z)return{date:new Date(Date.UTC(y,m,d,hh,mm,ss)),allDay:false,utc:true};return{date:new Date(y,m,d,hh,mm,ss),allDay:false,tz:tz||null}}
+function parseICS(text){const lines=unfoldICS(text),events=[];let cur=null;for(const line of lines){if(line==='BEGIN:VEVENT'){cur={};continue}if(line==='END:VEVENT'){if(cur)events.push(cur);cur=null;continue}if(!cur)continue;const m=/^([^:;]+)(?:;([^:]+))?:(.*)$/.exec(line);if(!m)continue;cur[m[1].toUpperCase()]={value:m[3],params:m[2]||''}}return events.map(e=>{const s=e.DTSTART?parseICSDate(e.DTSTART.value,e.DTSTART.params):null;const end=e.DTEND?parseICSDate(e.DTEND.value,e.DTEND.params):null;return{uid:unescapeICS(e.UID?.value||uid()),summary:unescapeICS(e.SUMMARY?.value||'无标题日历事件'),description:unescapeICS(e.DESCRIPTION?.value||''),location:unescapeICS(e.LOCATION?.value||''),start:s?.date||null,end:end?.date||null,allDay:!!s?.allDay,rawStart:e.DTSTART,rawEnd:e.DTEND}}).filter(e=>e.start)}
+function toLocalDateTime(d){return{date:formatDate(d),time:`${pad(d.getHours())}:${pad(d.getMinutes())}`}}
+function nearestSlot(time,gran,sh,eh){const [h,m]=time.split(':').map(Number);let mins=h*60+m;mins=Math.floor(mins/gran)*gran;mins=Math.max(sh*60,Math.min(eh*60-gran,mins));return `${pad(Math.floor(mins/60))}:${pad(mins%60)}`}
+function findImportSlot(date,time,w,used){const base=nearestSlot(time,w.gran,w.sh,w.eh);const slotsToday=timeSlots(w.gran,w.sh,w.eh);let idx=Math.max(0,slotsToday.indexOf(base));for(let i=idx;i<slotsToday.length;i++){const k=keyFor(date,slotsToday[i]);if(!used.has(k))return k}for(let i=0;i<idx;i++){const k=keyFor(date,slotsToday[i]);if(!used.has(k))return k}return keyFor(date,base)}
+async function importICS(file){
+  try{const events=parseICS(await file.text());if(!events.length){notify('ICS 中没有可导入的事件','warn');return}const w=currentWs();const used=new Set(currentBlocks.map(b=>b.slotKey));const existingExternal=new Set(currentBlocks.filter(b=>b.source==='ics'&&b.externalId).map(b=>b.externalId));let created=0,skipped=0;for(const ev of events){if(existingExternal.has(ev.uid)){skipped++;continue}const localStart=ev.start;const startParts=toLocalDateTime(localStart);const slot=findImportSlot(localStart,startParts.time,w,used);used.add(slot);const end=ev.end?toLocalDateTime(ev.end):null;const lines=[];if(ev.description)lines.push(ev.description);if(end)lines.push(`日历时间：${startParts.time}–${end.time}`);if(ev.allDay)lines.push('全天事件');const dbKey=blockDbKey(w.id,slot);await put('blocks',{key:dbKey,slotKey:slot,workspaceId:w.id,title:ev.summary,body:lines.join('\n\n'),tags:['日历'],prio:'',status:'',loc:ev.location,fileIds:[],startTime:startParts.time,endTime:end?.time||'',allDay:ev.allDay,source:'ics',externalId:ev.uid,updatedAt:Date.now(),version:4});created++}await loadCurrentWorkspace();render();notify(`ICS 导入完成：${created} 个事件`)}catch(e){console.error(e);notify('ICS 导入失败：'+(e.message||'格式错误'),'err')}}
+$('#icsBtn').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.ics,text/calendar';i.onchange=e=>e.target.files[0]&&importICS(e.target.files[0]);i.click()}
+
+/* ---------- 周选择器 / 小日历 ---------- */
+let calCursor=new Date();
+function positionWeekPopover(){const btn=$('#weekPicker'),pop=$('#weekPopover');if(!btn||!pop||!pop.classList.contains('open'))return;const r=btn.getBoundingClientRect();const width=Math.min(304,window.innerWidth-16);const height=Math.min(420,window.innerHeight-16);let left=Math.round(r.left+r.width/2-width/2);left=Math.max(8,Math.min(window.innerWidth-width-8,left));let top=Math.round(r.bottom+8);if(top+height>window.innerHeight-8)top=Math.max(8,Math.round(r.top-height-8));pop.style.width=width+'px';pop.style.maxHeight=height+'px';pop.style.left=left+'px';pop.style.top=top+'px'}
+function renderMiniCalendar(){const w=currentWs();if(!w)return;const monthStart=new Date(calCursor.getFullYear(),calCursor.getMonth(),1);const gridStart=startOfWeek(monthStart,w.weekStart);const selectedStart=currentWeekStart();$('#calMonth').textContent=`${monthStart.getFullYear()}年 ${monthStart.getMonth()+1}月`;
+  const wd=[];for(let i=0;i<7;i++){const d=addDays(gridStart,i);wd.push(dayName(d.getDay()).replace('周','')||'日')}$('#calWeekdays').innerHTML=wd.map(x=>`<div>${escapeHTML(x)}</div>`).join('');
+  let html='';for(let i=0;i<42;i++){const d=addDays(gridStart,i);const inMonth=d.getMonth()===monthStart.getMonth();const inWeek=startOfWeek(d,w.weekStart).getTime()===selectedStart.getTime();const cls=['cal-day',inMonth?'':'muted',isToday(d)?'today':'',inWeek?'in-week':'',isSameDate(d,selectedStart)?'selected':''].filter(Boolean).join(' ');html+=`<button class="${cls}" data-cal-date="${formatDate(d)}">${d.getDate()}</button>`}$('#calDays').innerHTML=html;$('#calDays').querySelectorAll('[data-cal-date]').forEach(b=>b.onclick=()=>{state.week=parseDate(b.dataset.calDate);state.dayDate=parseDate(b.dataset.calDate);state.viewMode=VIEW_MODES.WEEK;state.selected.clear();render();closeWeekPicker()});}
+function openWeekPicker(){const pop=$('#weekPopover');if(pop.parentElement!==document.body)document.body.appendChild(pop);calCursor=new Date(currentWeekStart().getFullYear(),currentWeekStart().getMonth(),1);renderMiniCalendar();pop.classList.add('open');$('#weekPicker').setAttribute('aria-expanded','true');requestAnimationFrame(()=>{positionWeekPopover();requestAnimationFrame(positionWeekPopover)})}
+function closeWeekPicker(){$('#weekPopover').classList.remove('open');$('#weekPicker').setAttribute('aria-expanded','false')}
+$('#weekPicker').onclick=e=>{e.preventDefault();e.stopPropagation();$('#weekPopover').classList.contains('open')?closeWeekPicker():openWeekPicker()};$('#weekPopover').onclick=e=>e.stopPropagation();$('#calPrev').onclick=e=>{e.stopPropagation();calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderMiniCalendar();positionWeekPopover()};$('#calNext').onclick=e=>{e.stopPropagation();calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderMiniCalendar();positionWeekPopover()};$('#calToday').onclick=e=>{e.stopPropagation();state.week=new Date();state.dayDate=new Date();state.viewMode=VIEW_MODES.WEEK;render();closeWeekPicker()};document.addEventListener('click',e=>{const pop=$('#weekPopover'),btn=$('#weekPicker');if(pop.classList.contains('open')&&!pop.contains(e.target)&&!btn.contains(e.target))closeWeekPicker()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#weekPopover').classList.contains('open')){e.preventDefault();closeWeekPicker()}});window.addEventListener('resize',()=>{if($('#weekPopover').classList.contains('open'))positionWeekPopover()});
+
+/* ---------- 新建 / 导航 / 搜索 / 设置 ---------- */
+function newRecord(){const d=currentWeekStart();openEditor(blockDbKey(state.workspaceId,keyFor(d,slots[0]||'08:00')))}
+$('#weekViewBtn').onclick=()=>setViewMode(VIEW_MODES.WEEK);$('#dayViewBtn').onclick=()=>setViewMode(VIEW_MODES.DAY);$('#headerToggle').onclick=()=>setHeaderState(!state.headerCollapsed,'manual');window.addEventListener('scroll',handleHeaderScroll,{passive:true});
+$('#newBtn').onclick=newRecord;$('#prevBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.dayDate=addDays(state.dayDate||new Date(),-1);state.week=state.dayDate;render()}else{state.week=addDays(currentWeekStart(),-7);state.selected.clear();render()}};$('#nextBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.dayDate=addDays(state.dayDate||new Date(),1);state.week=state.dayDate;render()}else{state.week=addDays(currentWeekStart(),7);state.selected.clear();render()}};$('#todayBtn').onclick=()=>{state.week=new Date();state.dayDate=new Date();state.selected.clear();render()};
+$('#searchInput').oninput=e=>{state.search=e.target.value.trim();$('#clearSearch').style.visibility=state.search?'visible':'hidden';render()};$('#clearSearch').onclick=()=>{$('#searchInput').value='';state.search='';$('#clearSearch').style.visibility='hidden';render();$('#searchInput').focus()};$('#clearSearch').style.visibility='hidden';
+
+$('#themeBtn').onclick=()=>{appSettings.theme=appSettings.theme==='dark'?'light':'dark';applyTheme();saveAppSettings()};
+$('#commandBtn').onclick=()=>$('#commandOverlay').classList.add('open');$('#commandClose').onclick=()=>hideOverlay('#commandOverlay');$('#commandOverlay').onclick=e=>{if(e.target.id==='commandOverlay')hideOverlay('#commandOverlay')};
+$$('[data-command]').forEach(b=>b.onclick=()=>{const c=b.dataset.command;hideOverlay('#commandOverlay');if(c==='new')newRecord();if(c==='workspace')$('#workspaceManage').click();if(c==='today'){$('#todayBtn').click()}if(c==='search')$('#searchInput').focus();if(c==='ics')$('#icsBtn').click();if(c==='export')exportZip();if(c==='help')$('#help').hidden=false});
+$('#dialogOverlay').onclick=e=>{if(e.target.id==='dialogOverlay')hideOverlay('#dialogOverlay')};$('#workspaceOverlay').onclick=e=>{if(e.target.id==='workspaceOverlay')hideOverlay('#workspaceOverlay')};
+
+document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#commandOverlay').classList.contains('open')){hideOverlay('#commandOverlay');return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;else if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#dialogInput')?.value;if(v){state.week=parseDate(v);render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="dialogInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#dialogInput')?.focus(),20)}});
+
+(async()=>{try{await initData();renderWorkspaceSelect();renderWorkspaceForm();$('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);render();notify(`工作日志就绪 · ${currentWs().name}`)}catch(e){console.error(e);notify('初始化失败：'+(e.message||'未知错误'),'err')}})();
+})();
+</script>
+</body>
+</html>
