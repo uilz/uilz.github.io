@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.8.7</title>
+<title>工作日志 · v5.8.24</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -17,6 +17,20 @@
   --border:#243244;--accent:#60a5fa;--accent-soft:#12243e;--success:#34d399;--warning:#f59e0b;--danger:#f87171;
   --shadow:0 8px 28px rgba(0,0,0,.22)
 }
+
+/* unified navigation icon language: all directional indicators use the same CSS chevron */
+.nav-chevron,.cal-chevron,.inline-chevron{position:relative;display:inline-grid;place-items:center;flex:0 0 auto;font-size:0;color:currentColor}
+.nav-chevron::before,.cal-chevron::before,.inline-chevron::before{content:"";display:block;width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor}
+.nav-prev::before,.cal-prev::before,.inline-prev::before{transform:rotate(135deg);margin-left:2px}
+.nav-next::before,.cal-next::before,.inline-next::before{transform:rotate(-45deg);margin-right:2px}
+.week-caret{display:block;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-65%) rotate(45deg);transition:transform .16s ease}
+.week-picker[aria-expanded="true"] .week-caret{transform:translateY(-20%) rotate(225deg)}
+.header-toggle{display:grid;place-items:center}
+.header-toggle::before{content:"";width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform .18s ease}
+.header-toggle.is-expanded::before{transform:translateY(2px) rotate(225deg)}
+.day-nav-btn{display:inline-flex;align-items:center;gap:7px}
+.cal-chevron{width:32px;height:32px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);border-radius:8px;display:grid;place-items:center}
+.cal-chevron:hover{background:var(--hover);color:var(--text);border-color:var(--border)}.cal-chevron:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 body{min-height:100vh}
@@ -38,8 +52,8 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .statusbar{display:flex;align-items:center;gap:7px;color:var(--faint);font-size:calc(10px * var(--font-scale));padding:8px 4px}.dot{width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block}.help{margin-top:6px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:calc(11px * var(--font-scale));color:var(--muted)}kbd{border:1px solid var(--border);background:var(--surface-2);border-radius:5px;padding:1px 5px;font-size:calc(10px * var(--font-scale));color:var(--text)}
 .toast-root{position:fixed;right:14px;bottom:14px;z-index:1000;display:flex;flex-direction:column;gap:7px;pointer-events:none}.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:9px;padding:9px 12px;font-size:calc(12px * var(--font-scale));max-width:340px;animation:toastIn .2s ease}.toast.err{border-left:3px solid var(--danger)}.toast.warn{border-left:3px solid var(--warning)}.toast.ok{border-left:3px solid var(--success)}@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .overlay{position:fixed;inset:0;background:rgba(2,6,23,.42);backdrop-filter:blur(4px);z-index:900;display:none;align-items:center;justify-content:center;padding:16px}.overlay.open{display:flex}.modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(2,6,23,.25);overflow:hidden}.modal.small{width:min(470px,100%)}.modal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface-2);border-bottom:1px solid var(--border)}.modal-title{font-size:calc(14px * var(--font-scale));font-weight:750}.modal-meta{margin-left:8px;color:var(--muted);font-size:calc(11px * var(--font-scale))}.modal-body{overflow:auto;padding:15px 16px}.modal-foot{display:flex;gap:8px;align-items:center;padding:11px 16px;background:var(--surface-2);border-top:1px solid var(--border)}.spacer{flex:1}.field{margin-bottom:12px}.field:last-child{margin-bottom:0}.field-label{display:block;color:var(--muted);font-size:calc(10px * var(--font-scale));margin-bottom:5px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none}.field textarea{min-height:120px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:8px 12px;font-size:calc(12px * var(--font-scale))}.btn:hover{background:var(--hover)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.file-zone{border:1px dashed var(--border);padding:10px;border-radius:10px}.hidden-file{display:none}.file-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid var(--border);background:var(--surface-2);border-radius:999px;font-size:calc(10px * var(--font-scale))}.file-pill button{border:0;background:transparent;color:var(--faint);padding:0}.dialog-text{font-size:calc(12px * var(--font-scale));color:var(--muted);line-height:1.65}.command-list{padding:4px}.command{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:10px;color:var(--text)}.command:hover{background:var(--hover)}.command-main{font-size:calc(12px * var(--font-scale));font-weight:650}.command-desc{font-size:calc(10px * var(--font-scale));color:var(--muted)}.workspace-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.workspace-settings{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}
-.week-picker{position:relative;border:1px solid transparent;background:transparent;color:var(--text);font:inherit;cursor:pointer;padding:2px 28px 2px 10px;border-radius:10px;min-width:175px}.week-picker:hover{background:var(--hover);border-color:var(--border)}.week-picker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.week-caret{position:absolute;right:8px;top:50%;transform:translateY(-42%);font-size:calc(16px * var(--font-scale));color:var(--muted);transition:transform .16s ease}.week-picker[aria-expanded="true"] .week-caret{transform:translateY(-42%) rotate(180deg)}
-.week-popover{position:fixed;z-index:850;width:304px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 50px rgba(2,6,23,.18);padding:12px;display:none}.week-popover.open{display:block;animation:calIn .14s ease}.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.cal-month{font-size:calc(13px * var(--font-scale));font-weight:750}.cal-nav{display:flex;gap:3px}.cal-nav button{width:30px;height:30px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px}.cal-nav button:hover{background:var(--hover)}.cal-weekdays,.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal-weekdays div{text-align:center;color:var(--faint);font-size:calc(9px * var(--font-scale));padding:3px 0}.cal-day{height:34px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:8px;font-size:calc(11px * var(--font-scale))}.cal-day:hover{background:var(--hover);border-color:var(--border)}.cal-day.muted{color:var(--faint)}.cal-day.today{color:var(--accent);font-weight:800}.cal-day.in-week{background:var(--accent-soft);color:var(--accent);font-weight:700}.cal-day.selected{box-shadow:inset 0 0 0 2px var(--accent)}.cal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font-size:calc(10px * var(--font-scale));color:var(--muted)}.cal-today{border:0;background:transparent;color:var(--accent);font-size:calc(10px * var(--font-scale));font-weight:700}.mobile-summary{display:none}.mobile-day{padding:10px 11px;border-bottom:1px solid var(--border);background:var(--surface)}.mobile-day:last-child{border-bottom:0}.mobile-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.mobile-day-name{font-size:calc(12px * var(--font-scale));font-weight:750}.mobile-day-date{font-size:calc(10px * var(--font-scale));color:var(--muted)}.mobile-record{display:flex;align-items:flex-start;gap:9px;padding:9px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:6px;cursor:pointer}.mobile-record:active{transform:scale(.995)}.mobile-time{font-size:calc(10px * var(--font-scale));font-variant-numeric:tabular-nums;color:var(--faint);width:42px;flex:0 0 42px;padding-top:1px}.mobile-record-main{min-width:0;flex:1}.mobile-record-title{font-size:calc(12px * var(--font-scale));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mobile-record-body{font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.4;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.mobile-empty{padding:20px 0;text-align:center;color:var(--faint);font-size:calc(11px * var(--font-scale))}.mobile-day.today{background:color-mix(in srgb,var(--accent-soft) 24%,var(--surface))}
+.week-picker{position:relative;border:1px solid transparent;background:transparent;color:var(--text);font:inherit;cursor:pointer;padding:2px 28px 2px 10px;border-radius:10px;min-width:175px}.week-picker:hover{background:var(--hover);border-color:var(--border)}.week-picker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.week-caret{position:absolute;right:10px;top:50%;color:var(--muted)}
+.week-popover{position:fixed;z-index:850;width:304px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 50px rgba(2,6,23,.18);padding:12px;display:none}.week-popover.open{display:block;animation:calIn .14s ease}.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.cal-month{font-size:calc(13px * var(--font-scale));font-weight:750}.cal-nav{display:flex;gap:3px}.cal-nav button{width:30px;height:30px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px}.cal-nav button:hover{background:var(--hover)}.cal-weekdays,.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal-weekdays div{text-align:center;color:var(--faint);font-size:calc(9px * var(--font-scale));padding:3px 0}.cal-day{height:34px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:8px;font-size:calc(11px * var(--font-scale))}.cal-day:hover{background:var(--hover);border-color:var(--border)}.cal-day.muted{color:var(--faint)}.cal-day.today{color:var(--accent);font-weight:800}.cal-day.in-week{background:var(--accent-soft);color:var(--accent);font-weight:700}.cal-day.selected{box-shadow:inset 0 0 0 2px var(--accent)}.cal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font-size:calc(10px * var(--font-scale));color:var(--muted)}.cal-today{border:0;background:transparent;color:var(--accent);font-size:calc(10px * var(--font-scale));font-weight:700}.mobile-summary{display:none}.mobile-day{padding:10px 11px;border-bottom:1px solid var(--border);background:var(--surface)}.mobile-day:last-child{border-bottom:0}.mobile-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.mobile-day-name{font-size:calc(12px * var(--font-scale));font-weight:750}.mobile-day-date{font-size:calc(10px * var(--font-scale));color:var(--muted)}.mobile-record{display:flex;align-items:flex-start;gap:9px;padding:9px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:6px;cursor:pointer}.mobile-record:active{transform:scale(.995)}.mobile-time{font-size:calc(10px * var(--font-scale));font-variant-numeric:tabular-nums;color:var(--faint);width:42px;flex:0 0 42px;padding-top:1px}.mobile-record-main{min-width:0;flex:1}.mobile-record-title{font-size:calc(12px * var(--font-scale));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mobile-record-body{font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.4;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.mobile-empty{display:block;width:100%;padding:20px 8px;text-align:center;color:var(--faint);font-size:calc(11px * var(--font-scale));background:transparent;border:0;cursor:pointer}.mobile-empty span{color:var(--accent);font-weight:700}.mobile-empty:active{opacity:.7}.mobile-day.today{background:color-mix(in srgb,var(--accent-soft) 24%,var(--surface))}
 @keyframes calIn{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:none}}
 
 /* v5.3 compact header */
@@ -47,8 +61,8 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .header.collapsed{transform:translate3d(0,calc(-100% + 34px),0);box-shadow:0 5px 20px rgba(15,23,42,.10)}
 .header-toggle{position:absolute;right:12px;bottom:-10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);width:28px;height:28px;border-radius:8px;font-size:calc(13px * var(--font-scale));transition:transform .2s ease,background .16s ease,box-shadow .16s ease;z-index:4;box-shadow:0 2px 8px rgba(15,23,42,.08)}
 .header-toggle:hover{background:var(--hover);color:var(--text);box-shadow:0 4px 12px rgba(15,23,42,.12)}
-.header.collapsed .header-toggle{transform:rotate(180deg)}
-.view-switch{display:flex;gap:2px;padding:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;order:8}.view-btn{border:0;background:transparent;color:var(--muted);padding:5px 9px;border-radius:7px;font-size:calc(11px * var(--font-scale));font-weight:700}.view-btn.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(15,23,42,.08)}
+.header.collapsed .header-toggle{transform:none}
+.view-switch{display:flex;gap:2px;padding:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;order:8}.view-compact-option{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 7px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);border-radius:8px;font-size:calc(10px * var(--font-scale));font-weight:650;white-space:nowrap;cursor:pointer}.view-compact-option:hover{background:var(--hover);color:var(--text)}.view-compact-option input{width:13px;height:13px;margin:0;accent-color:var(--accent)}.view-btn{border:0;background:transparent;color:var(--muted);padding:5px 9px;border-radius:7px;font-size:calc(11px * var(--font-scale));font-weight:700}.view-btn.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(15,23,42,.08)}
 .content-shell{min-height:0}.day-view{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.day-view.open{display:block}.day-view-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface-2);border-bottom:1px solid var(--border)}.day-view-date{font-size:calc(16px * var(--font-scale));font-weight:800}.day-view-sub{font-size:calc(11px * var(--font-scale));color:var(--muted);margin-top:2px}.day-view-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.day-view-list{padding:8px}.day-row{display:grid;grid-template-columns:72px minmax(0,1fr);min-height:64px;border-bottom:1px solid var(--border)}.day-row:last-child{border-bottom:0}.day-time{padding:10px 8px;text-align:center;color:var(--faint);font-size:calc(10px * var(--font-scale));border-right:1px solid var(--border);background:var(--surface-2)}.day-slot{padding:7px;cursor:pointer}.day-slot:hover{background:var(--hover)}.day-slot.has{background:color-mix(in srgb,var(--accent-soft) 18%,var(--surface))}.day-slot-inner{min-height:48px;border-radius:9px;padding:7px 8px}.day-slot-title{font-size:calc(12px * var(--font-scale));font-weight:750}.day-slot-body{font-size:calc(10px * var(--font-scale));color:var(--muted);margin-top:2px;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}.day-slot-empty{height:100%;min-height:48px;display:grid;place-items:center;color:var(--border);font-size:calc(18px * var(--font-scale))}.day-slot:hover .day-slot-empty{color:var(--accent)}
 .day-schedule-board{position:relative;display:grid;grid-template-columns:72px minmax(0,1fr);min-height:var(--schedule-height);background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}.day-schedule-rail{position:relative;background:var(--surface-2);border-right:1px solid var(--border);min-height:var(--schedule-height)}.day-schedule-time{position:absolute;left:0;right:0;height:var(--row-h);box-sizing:border-box;padding:9px 8px;text-align:center;color:var(--faint);font-size:calc(10px * var(--font-scale));border-bottom:1px solid var(--border)}.day-schedule-track{position:relative;min-height:var(--schedule-height);background:repeating-linear-gradient(to bottom,transparent 0,var(--surface) calc(var(--row-h) - 1px),var(--border) calc(var(--row-h) - 1px),var(--border) var(--row-h))}.day-schedule-slot-hit{position:absolute;left:0;width:100%;border:0;background:transparent;cursor:pointer;z-index:1;padding:0}.day-schedule-slot-hit:hover{background:var(--hover)}.day-schedule-event{position:absolute;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 8px;text-align:left;overflow:hidden;z-index:4;box-shadow:0 1px 2px rgba(0,0,0,.04);cursor:pointer}.day-schedule-event:hover{border-color:var(--accent);background:var(--hover);z-index:8}.day-schedule-event.selected{outline:2px solid var(--accent);outline-offset:-2px}.day-schedule-event.search-hit{box-shadow:inset 0 0 0 2px #f59e0b}.day-schedule-event-title{display:block;font-size:calc(11px * var(--font-scale));font-weight:750;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.day-schedule-event-body{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:calc(9.5px * var(--font-scale));color:var(--muted);line-height:1.35;margin-top:3px;white-space:normal}.day-schedule-event-meta{display:block;font-size:calc(8.5px * var(--font-scale));color:var(--faint);line-height:1.25;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.day-schedule-event.short .day-schedule-event-body{display:none}.day-schedule-event.short{padding:5px 6px}.day-schedule-event.continues-before{border-top-left-radius:4px;border-top-right-radius:4px}.day-schedule-event.continues-after{border-bottom-left-radius:4px;border-bottom-right-radius:4px}
 .week-popover{z-index:10000;pointer-events:auto;max-height:min(78vh,420px);overflow:auto}
@@ -95,7 +109,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .time-hint{font-size:calc(10px * var(--font-scale));color:var(--faint);margin-top:5px}
 .header{transform:translateZ(0);transition:transform .22s cubic-bezier(.22,.7,.25,1),box-shadow .2s ease,background .2s ease}
 .header.collapsed{transform:translate3d(0,calc(-100% + 44px),0);}
-.header.collapsed .header-toggle{transform:rotate(180deg)}
+.header.collapsed .header-toggle{transform:none}
 .header-toggle{transition:transform .2s ease,background .16s ease,box-shadow .16s ease}
 .header-peek{display:none}
 @media(max-width:700px){
@@ -159,9 +173,9 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 
 /* v5.6 refinements */
 .overlay#workspaceOverlay{z-index:1100}.overlay#searchOverlay{z-index:1150}.overlay#commandOverlay{z-index:1200}.overlay#editOverlay{z-index:1300}.overlay#dialogOverlay{z-index:1500}
-.header-toggle{display:grid!important;place-items:center;position:absolute;right:10px;bottom:-10px;z-index:30;width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);box-shadow:0 2px 8px rgba(15,23,42,.08);pointer-events:auto}
+.header-toggle{display:grid!important;place-items:center;position:absolute;right:10px;bottom:-10px;z-index:30;transform:none!important;width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);box-shadow:0 2px 8px rgba(15,23,42,.08);pointer-events:auto}
 .header.collapsed{transform:translate3d(0,calc(-100% + 38px),0)!important}
-.header.collapsed .header-toggle{display:grid!important;transform:rotate(180deg)!important}
+.header.collapsed .header-toggle{display:grid!important;transform:none!important}
 .cal-head-title{display:flex;align-items:center;gap:2px}.cal-title-btn{border:0;background:transparent;color:var(--text);font-weight:800;font-size:calc(13px * var(--font-scale));padding:4px 7px;border-radius:7px}.cal-title-btn:hover,.cal-title-btn.active{background:var(--hover);color:var(--accent)}.cal-sep{color:var(--faint)}.cal-grid-12{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.cal-month-cell,.cal-year-cell{border:1px solid transparent;background:var(--surface-2);color:var(--text);border-radius:9px;padding:11px 5px;font-size:calc(11px * var(--font-scale));font-weight:700}.cal-month-cell:hover,.cal-year-cell:hover{background:var(--hover);border-color:var(--border)}.cal-month-cell.current,.cal-year-cell.current{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 25%,transparent)}.cal-year-scroll{max-height:300px;overflow:auto;padding-right:2px}.cal-year-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.cal-day.disabled{opacity:.25;cursor:not-allowed}.cal-day.disabled:hover{background:transparent;border-color:transparent}
 .searchbar{position:relative}.search-preview{position:fixed;z-index:950;display:none;padding:0;background:transparent;pointer-events:none}.search-preview.open{display:block}.search-preview-inner{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 45px rgba(2,6,23,.18);pointer-events:auto;overflow:hidden}.preview-head{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--border);font-size:calc(11px * var(--font-scale));color:var(--muted)}.preview-list{max-height:300px;overflow:auto}.preview-item{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--border);background:transparent;padding:10px 12px;color:var(--text)}.preview-item:hover{background:var(--hover)}.preview-title{font-size:calc(12px * var(--font-scale));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.preview-meta{font-size:calc(10px * var(--font-scale));color:var(--muted);margin-top:3px}.preview-more{border:0;background:transparent;color:var(--accent);font-size:calc(11px * var(--font-scale));font-weight:750;padding:3px 0}.search-modal{width:min(860px,100%)}.search-modal-bar{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface-2);border-radius:10px;padding:0 8px}.search-modal-bar input{flex:1;border:0;background:transparent;outline:0;color:var(--text);padding:10px 4px}.search-filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.search-filter{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);font-size:calc(10px * var(--font-scale));color:var(--muted)}.search-filter select{border:0;background:transparent;color:var(--text);outline:0}.search-result-meta{font-size:calc(10px * var(--font-scale));color:var(--muted);margin-bottom:8px}.advanced-results{display:flex;flex-direction:column;gap:6px}.advanced-item{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);cursor:pointer}.advanced-item:hover{background:var(--hover)}.advanced-date{font-size:calc(10px * var(--font-scale));color:var(--faint)}.advanced-title{font-size:calc(12px * var(--font-scale));font-weight:750}.advanced-body{font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.45;margin-top:2px}.advanced-workspace{font-size:calc(10px * var(--font-scale));color:var(--accent);white-space:nowrap}.search-empty{padding:26px;text-align:center;color:var(--faint);font-size:calc(11px * var(--font-scale))}
 .time-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.time-fields .field{margin-bottom:0}.time-hint{font-size:calc(10px * var(--font-scale));color:var(--faint);margin-top:5px}
@@ -174,35 +188,36 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   .header .brand{min-width:78px;gap:7px}.header .brand-mark{width:27px;height:27px}.header .brand span:nth-child(2){font-size:calc(13px * var(--font-scale))}
   .header .workspace{grid-area:workspace;width:100%;min-width:0;display:flex}.header .workspace-select{width:100%;min-width:0;max-width:none;padding:6px 8px;font-size:calc(11px * var(--font-scale))}.header .workspace .icon-btn{width:30px;flex:0 0 30px;padding:5px}
   .header .toolbar{grid-area:tools;display:flex!important;width:auto;gap:3px}.header .toolbar .toolbar-btn{min-width:31px;width:31px;height:31px;padding:4px;font-size:calc(12px * var(--font-scale))}
-  .header .nav{grid-area:nav;width:100%;min-width:0}.header .nav .pill-btn{padding:6px 9px}.header .week-info{padding:2px 22px 2px 6px}.header .nav .view-switch{margin-left:2px}
-  .header .nav .view-switch{display:flex!important;align-items:center}.header .nav .view-btn{padding:5px 8px;min-width:30px}
+  .header .nav{grid-area:nav;width:100%;min-width:0;position:relative;padding-bottom:34px}.header .nav .pill-btn{padding:6px 9px}.header .week-info{padding:2px 22px 2px 6px}.header .nav .view-switch{margin-left:2px}
+  .header .nav .view-switch{display:flex!important;align-items:center}.header .nav .view-btn{padding:5px 8px;min-width:30px}.header .nav .view-compact-option{position:absolute;right:0;bottom:0;height:28px;padding:0 6px;font-size:calc(9px * var(--font-scale));gap:4px;margin:0}
 }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.8.7</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.8.24</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
       <button class="icon-btn" id="workspaceManage" title="工作区设置">⚙</button>
     </div>
     <div class="nav">
-      <button class="icon-btn" id="prevBtn" title="上一周 ←">←</button>
-      <button class="week-info week-picker" id="weekPicker" type="button" aria-haspopup="dialog" aria-expanded="false"><div class="week-title" id="weekTitle"></div><div class="week-sub" id="weekSub"></div><span class="week-caret">⌄</span></button>
-      <button class="icon-btn" id="nextBtn" title="下一周 →">→</button>
+      <button class="icon-btn nav-chevron nav-prev" id="prevBtn" title="上一周" aria-label="上一周"></button>
+      <button class="week-info week-picker" id="weekPicker" type="button" aria-haspopup="dialog" aria-expanded="false"><div class="week-title" id="weekTitle"></div><div class="week-sub" id="weekSub"></div><span class="week-caret" aria-hidden="true"></span></button>
+      <button class="icon-btn nav-chevron nav-next" id="nextBtn" title="下一周" aria-label="下一周"></button>
       <button class="pill-btn today" id="todayBtn">今天</button>
       <div class="view-switch" role="group" aria-label="视图模式">
         <button class="view-btn active" id="weekViewBtn" data-view="week" type="button">周</button>
         <button class="view-btn" id="dayViewBtn" data-view="day" type="button">日</button>
       </div>
+      <label class="view-compact-option" title="隐藏没有任何工作块覆盖的时间行"><input id="hideEmptyRows" type="checkbox"><span>隐藏空白行</span></label>
     </div>
     <div class="toolbar">
       <button class="toolbar-btn" id="commandBtn" title="命令">⌘</button>
       <button class="toolbar-btn" id="themeBtn" title="主题">☾</button>
     </div>
-    <button class="header-toggle" id="headerToggle" type="button" title="收起/展开顶栏" aria-expanded="true">⌃</button>
+    <button class="header-toggle nav-chevron" id="headerToggle" type="button" title="收起/展开顶栏" aria-expanded="true" aria-label="收起/展开顶栏"></button>
   </header>
 
   <section class="stats">
@@ -229,7 +244,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 </div>
 
 <div class="week-popover" id="weekPopover" role="dialog" aria-label="选择日期">
-  <div class="cal-head"><div class="cal-head-title"><button class="cal-title-btn" id="calYearBtn" type="button"></button><span class="cal-sep">·</span><button class="cal-title-btn" id="calMonthBtn" type="button"></button></div><div class="cal-nav"><button id="calPrev" aria-label="上一个">‹</button><button id="calNext" aria-label="下一个">›</button></div></div>
+  <div class="cal-head"><div class="cal-head-title"><button class="cal-title-btn" id="calYearBtn" type="button"></button><span class="cal-sep">·</span><button class="cal-title-btn" id="calMonthBtn" type="button"></button></div><div class="cal-nav"><button id="calPrev" class="cal-chevron cal-prev" type="button" aria-label="上一个"></button><button id="calNext" class="cal-chevron cal-next" type="button" aria-label="下一个"></button></div></div>
   <div id="calContent"></div>
   <div class="cal-foot"><span id="calHint">点击日期切换到所在周</span><button class="cal-today" id="calToday">回到今天</button></div>
 </div>
@@ -275,7 +290,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
         <div class="field"><label class="field-label">每周起始日</label><select id="wsWeekStart"><option value="1">周一</option><option value="0">周日</option><option value="2">周二</option><option value="3">周三</option><option value="4">周四</option><option value="5">周五</option><option value="6">周六</option></select></div>
         <div class="field"><label class="field-label">工作区起始日期</label><input id="wsStartDate" type="date"></div>
       </div>
-      <div class="workspace-settings"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">工作区显示参数</div><div class="meta-grid"><div class="field"><label class="field-label">粒度</label><select id="wsGran"><option value="60">60 分钟</option><option value="30">30 分钟</option><option value="15">15 分钟</option></select></div><div class="field"><label class="field-label">开始小时</label><input id="wsSh" type="number" min="0" max="23"></div><div class="field"><label class="field-label">结束小时</label><input id="wsEh" type="number" min="1" max="24"></div></div></div>
+      <div class="workspace-settings"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">工作区显示参数</div><div style="font-size:calc(10px * var(--font-scale));color:var(--muted);margin:-2px 0 10px">仅决定时间轴的显示刻度，不限制工作块的实际开始/结束时间。</div><div class="meta-grid"><div class="field"><label class="field-label">显示粒度</label><select id="wsGran"><option value="60">60 分钟</option><option value="30">30 分钟</option><option value="15">15 分钟</option></select></div><div class="field"><label class="field-label">开始小时</label><input id="wsSh" type="number" min="0" max="23"></div><div class="field"><label class="field-label">结束小时</label><input id="wsEh" type="number" min="1" max="24"></div></div></div>
       <div class="workspace-settings" style="margin-top:12px"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">界面显示</div><div class="field"><label class="field-label">字体大小</label><select id="appFontSize"><option value="small">小</option><option value="smallMedium">中小</option><option value="medium">标准</option><option value="largeMedium">中大</option><option value="large">大</option></select><div style="font-size:calc(10px * var(--font-scale));color:var(--faint);margin-top:6px">全局生效，刷新后保留。</div></div></div>
       <div class="workspace-actions"><button class="btn" id="wsNew">＋ 新工作区</button><button class="btn danger" id="wsClear">清空当前数据</button><button class="btn danger" id="wsDelete">删除当前工作区</button></div>
     </div>
@@ -307,7 +322,8 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
       <button class="command" data-command="today"><span><span class="command-main">回到今天</span><br><span class="command-desc">定位到当前工作区的本周</span></span><kbd>T</kbd></button>
       <button class="command" data-command="search"><span><span class="command-main">搜索</span><br><span class="command-desc">定位并聚焦搜索框</span></span><kbd>/</kbd></button>
       <button class="command" data-command="ics"><span><span class="command-main">导入 ICS</span><br><span class="command-desc">将日历事件导入当前工作区</span></span></button>
-      <button class="command" data-command="export"><span><span class="command-main">导出完整 ZIP</span><br><span class="command-desc">全部工作区、记录、附件和设置</span></span></button>
+      <button class="command" data-command="backupImport"><span><span class="command-main">导入完整备份</span><br><span class="command-desc">从 ZIP 备份恢复全部本地数据</span></span></button>
+      <button class="command" data-command="export"><span><span class="command-main">导出完整备份</span><br><span class="command-desc">普通数据 ZIP；大数据 ZIP64 流式备份</span></span></button>
       <button class="command" data-command="clear"><span><span class="command-main">清空当前工作区</span><br><span class="command-desc">删除当前工作区全部记录和附件</span></span></button>
       <button class="command" data-command="help"><span><span class="command-main">快捷键帮助</span></span><kbd>?</kbd></button>
     </div>
@@ -329,7 +345,7 @@ const DB_VER=5;
 const OLD_DB_NAME='worklog-v3';
 const LEGACY_DB_NAME='worklog-blocks';
 const DEFAULT_WS={gran:60,sh:8,eh:20,weekStart:1,startDate:formatDate(new Date())};
-const state={week:new Date(),workspaceId:null,search:'',selected:new Set(),editingKey:null,editFiles:[],editNewFiles:[],modalDirty:false,viewMode:VIEW_MODES.WEEK,dayDate:new Date(),headerCollapsed:false,headerManual:'none',lastScrollY:window.scrollY||0,lastScrollDirection:0,headerAutoTimer:0,headerScrollLockUntil:0};
+const state={week:new Date(),workspaceId:null,search:'',selected:new Set(),editingKey:null,editFiles:[],editNewFiles:[],modalDirty:false,viewMode:VIEW_MODES.WEEK,dayDate:new Date(),hideEmptyRows:false,headerCollapsed:false,headerManual:'none',lastScrollY:window.scrollY||0,lastScrollDirection:0,headerAutoTimer:0,headerScrollLockUntil:0};
 let db=null,workspaces=[],currentBlocks=[],fileCache=new Map(),searchIndex=[],slots=[],weekDays=[],hitKeys=new Set();
 let appSettings={theme:'light',fontSize:'medium'};
 const FONT_SIZE_PRESETS={small:0.94,smallMedium:1.04,medium:1.12,largeMedium:1.20,large:1.30};
@@ -407,6 +423,9 @@ function openDB(){
 }
 function reqP(req){return new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)})}
 async function all(store){const d=await openDB();return reqP(d.transaction(store,'readonly').objectStore(store).getAll())}
+async function allFileMeta(){const d=await openDB();return new Promise((resolve,reject)=>{const out=[];const r=d.transaction('files','readonly').objectStore('files').openCursor();r.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(out);const v=c.value;out.push({id:v.id,workspaceId:v.workspaceId,name:v.name,type:v.type,size:Number(v.size)||v.blob?.size||0,createdAt:v.createdAt,updatedAt:v.updatedAt});c.continue()};r.onerror=()=>reject(r.error)})}
+async function getFile(id){const d=await openDB();return reqP(d.transaction('files','readonly').objectStore('files').get(id))}
+async function fileMetaForWorkspace(wsId){const d=await openDB();return new Promise((resolve,reject)=>{const out=[];const store=d.transaction('files','readonly').objectStore('files');const req=store.indexNames.contains('workspaceId')?store.index('workspaceId').openCursor(IDBKeyRange.only(wsId)):store.openCursor();req.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(out);const v=c.value;if(v.workspaceId===wsId)out.push({id:v.id,workspaceId:v.workspaceId,name:v.name,type:v.type,size:Number(v.size)||v.blob?.size||0,createdAt:v.createdAt,updatedAt:v.updatedAt});c.continue()};req.onerror=()=>reject(req.error)})}
 async function put(store,val){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).put(val))}
 async function remove(store,key){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).delete(key))}
 async function clear(store){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).clear())}
@@ -559,7 +578,7 @@ async function switchWorkspace(id){if(!workspaces.some(w=>w.id===id))return;stat
 function renderWorkspaceForm(){const w=currentWs();if(!w)return;$('#wsName').value=w.name;$('#wsWeekStart').value=w.weekStart;$('#wsStartDate').value=w.startDate||todayKey();$('#wsGran').value=w.gran;$('#wsSh').value=w.sh;$('#wsEh').value=w.eh}
 async function loadCurrentWorkspace(){
   const w=currentWs();if(!w)return;const d=await openDB();let arr=[];const store=d.transaction('blocks','readonly').objectStore('blocks');if(store.indexNames.contains('workspaceId'))arr=await reqP(store.index('workspaceId').getAll(w.id));else arr=(await reqP(store.getAll())).filter(x=>x.workspaceId===w.id);
-  currentBlocks=arr;fileCache=new Map();const fs=await all('files');for(const f of fs)if(f.workspaceId===w.id)fileCache.set(f.id,f);slots=timeSlots(w.gran,w.sh,w.eh);searchIndex=buildSearchIndex();
+  currentBlocks=arr;fileCache=new Map();const fs=await fileMetaForWorkspace(w.id);for(const f of fs)fileCache.set(f.id,f);slots=timeSlots(w.gran,w.sh,w.eh);searchIndex=buildSearchIndex();
 }
 async function saveWorkspaceSettings(){
   const w=currentWs();if(!w)return false;
@@ -644,12 +663,12 @@ function setViewMode(mode){
   render();
 }
 const UI_PREF='worklog:v5:ui';
-function loadUiPrefs(){try{const p=JSON.parse(localStorage.getItem(UI_PREF)||'null');if(!p||typeof p!=='object')return;if(p.workspaceId&&workspaces.some(w=>w.id===p.workspaceId))state.workspaceId=p.workspaceId;const d=p.dayDate&&/^\d{4}-\d{2}-\d{2}$/.test(p.dayDate)?parseDate(p.dayDate):null;const wk=p.week&&/^\d{4}-\d{2}-\d{2}$/.test(p.week)?parseDate(p.week):null;if(d)state.dayDate=d;if(wk)state.week=wk;if(p.viewMode===VIEW_MODES.DAY||p.viewMode===VIEW_MODES.WEEK)state.viewMode=p.viewMode;}catch{}}
-function persistUiPrefs(){try{const w=currentWs();localStorage.setItem(UI_PREF,JSON.stringify({workspaceId:w?.id||state.workspaceId||null,week:formatDate(state.week||new Date()),dayDate:formatDate(state.dayDate||new Date()),viewMode:state.viewMode||VIEW_MODES.WEEK}))}catch{}}
+function loadUiPrefs(){try{const p=JSON.parse(localStorage.getItem(UI_PREF)||'null');if(!p||typeof p!=='object')return;if(p.workspaceId&&workspaces.some(w=>w.id===p.workspaceId))state.workspaceId=p.workspaceId;const d=p.dayDate&&/^\d{4}-\d{2}-\d{2}$/.test(p.dayDate)?parseDate(p.dayDate):null;const wk=p.week&&/^\d{4}-\d{2}-\d{2}$/.test(p.week)?parseDate(p.week):null;if(d)state.dayDate=d;if(wk)state.week=wk;if(p.viewMode===VIEW_MODES.DAY||p.viewMode===VIEW_MODES.WEEK)state.viewMode=p.viewMode;state.hideEmptyRows=!!p.hideEmptyRows;}catch{}}
+function persistUiPrefs(){try{const w=currentWs();localStorage.setItem(UI_PREF,JSON.stringify({workspaceId:w?.id||state.workspaceId||null,week:formatDate(state.week||new Date()),dayDate:formatDate(state.dayDate||new Date()),viewMode:state.viewMode||VIEW_MODES.WEEK,hideEmptyRows:!!state.hideEmptyRows}))}catch{}}
 const HEADER_PREF='worklog:v5:header';
 function loadHeaderPrefs(){try{const p=JSON.parse(localStorage.getItem(HEADER_PREF)||'null');if(p&&typeof p==='object'){state.headerCollapsed=!!p.collapsed;state.headerManualUntil=Number(p.manualUntil)||0;state.headerMode=Number(p.manualUntil)>Date.now()?'manual':'auto';}}catch{}}
 function persistHeaderPrefs(){try{localStorage.setItem(HEADER_PREF,JSON.stringify({collapsed:state.headerCollapsed,manualUntil:state.headerManualUntil||0,mode:state.headerMode||'auto'}))}catch{}}
-function applyHeaderState(){const h=$('.header'),b=$('#headerToggle');if(!h||!b)return;h.classList.toggle('collapsed',state.headerCollapsed);b.setAttribute('aria-expanded',String(!state.headerCollapsed));b.textContent=state.headerCollapsed?'⌄':'⌃';b.title=state.headerCollapsed?'展开顶栏':'收起顶栏'}
+function applyHeaderState(){const h=$('.header'),b=$('#headerToggle');if(!h||!b)return;h.classList.toggle('collapsed',state.headerCollapsed);b.setAttribute('aria-expanded',String(!state.headerCollapsed));b.innerHTML='';b.classList.toggle('is-expanded',!state.headerCollapsed);b.title=state.headerCollapsed?'展开顶栏':'收起顶栏'}
 function setHeaderState(next,source='auto'){const collapsed=!!next;if(source==='manual'){state.headerMode='manual';state.headerManualUntil=Date.now()+60000}else if(state.headerMode==='manual'){if(Date.now()<state.headerManualUntil)return;state.headerMode='auto';state.headerManualUntil=0}if(state.headerCollapsed===collapsed){persistHeaderPrefs();return}state.headerCollapsed=collapsed;applyHeaderState();persistHeaderPrefs()}
 function handleHeaderScroll(){positionSearchPreview();const y=window.scrollY||0,delta=y-state.lastScrollY;state.lastScrollY=y;if(state.headerMode==='manual'&&Date.now()<state.headerManualUntil)return;if(state.headerMode==='manual'&&Date.now()>=state.headerManualUntil){state.headerMode='auto';state.headerManualUntil=0;persistHeaderPrefs()}if(y<=4){setHeaderState(false,'auto');return}if(delta>10)setHeaderState(true,'auto')}
 
@@ -666,38 +685,49 @@ function blocksCoveringSlot(blocks,w,date,slotTime){
     const x=getBlockInterval(b,w);return x.date===formatDate(date)&&x.start!==null&&m!==null&&m>=x.start&&m<x.end;
   }).sort((a,b)=>(timeToMinutes(a.startTime)||0)-(timeToMinutes(b.startTime)||0)||(a.updatedAt||0)-(b.updatedAt||0));
 }
+function visibleSlotIndexesForRecords(records,w,slotList){
+  if(!state.hideEmptyRows) return slotList.map((_,i)=>i);
+  const out=[];
+  for(let i=0;i<slotList.length;i++){
+    const slotMin=timeToMinutes(slotList[i]);
+    const covered=records.some(b=>{
+      const x=getBlockInterval(b,w);
+      return x.start!==null&&x.end>x.start&&slotMin!==null&&x.start<slotMin+w.gran&&x.end>slotMin;
+    });
+    if(covered)out.push(i);
+  }
+  return out;
+}
+function visualOffset(minute,w,visibleIndices,slotList){
+  if(!visibleIndices.length)return 0;
+  const grid=Math.max(0,(minute-w.sh*60)/w.gran),base=Math.floor(grid),frac=grid-base;
+  const p=visibleIndices.indexOf(base);
+  if(p>=0)return p+frac;
+  let count=0;while(count<visibleIndices.length&&visibleIndices[count]<base)count++;
+  return count;
+}
 function renderDayView(w){
   const d=clampToWorkspaceStart(startOfDay(state.dayDate||state.week));
-  const slotsToday=timeSlots(w.gran,w.sh,w.eh);
-  const rowH=72, headerH=46, totalH=slotsToday.length*rowH;
+  const slotsToday=timeSlots(w.gran,w.sh,w.eh),rowH=72;
   const dayRecords=currentBlocks.filter(b=>recordHasContent(b)&&getBlockInterval(b,w).date===formatDate(d));
+  const visibleIndices=visibleSlotIndexesForRecords(dayRecords,w,slotsToday);
+  const totalH=Math.max(1,visibleIndices.length)*rowH;
   const laneInfo=eventLanes(dayRecords,w,d);
   const title=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`,weekday=dayName(d.getDay());
-  const firstHourTop=w.sh*60;
-  let html=`<div class="day-view-head"><div><div class="day-view-date">${escapeHTML(title)}</div><div class="day-view-sub">${escapeHTML(weekday)} · ${escapeHTML(w.name)}</div></div><div class="day-view-actions"><button class="btn" data-day-nav="prev">← 前一天</button><button class="btn" data-day-nav="today">今天</button><button class="btn" data-day-nav="next">后一天 →</button></div></div>`;
+  let html=`<div class="day-view-head"><div><div class="day-view-date">${escapeHTML(title)}</div><div class="day-view-sub">${escapeHTML(weekday)} · ${escapeHTML(w.name)}</div></div><div class="day-view-actions"><button class="btn day-nav-btn" data-day-nav="prev"><span class="inline-chevron inline-prev" aria-hidden="true"></span>前一天</button><button class="btn" data-day-nav="today">今天</button><button class="btn day-nav-btn" data-day-nav="next">后一天<span class="inline-chevron inline-next" aria-hidden="true"></span></button></div></div>`;
   html+=`<div class="day-schedule-board" style="--row-h:${rowH}px;--schedule-height:${totalH}px">`;
-  html+=`<div class="day-schedule-rail">${slotsToday.map((time,i)=>`<div class="day-schedule-time" style="top:${i*rowH}px">${time}</div>`).join('')}</div>`;
+  html+=`<div class="day-schedule-rail">${visibleIndices.map((i,pos)=>`<div class="day-schedule-time" style="top:${pos*rowH}px">${slotsToday[i]}</div>`).join('')}</div>`;
   html+=`<div class="day-schedule-track" data-day-date="${formatDate(d)}">`;
-  slotsToday.forEach((time,i)=>{
-    const dbKey=blockDbKey(w.id,keyFor(d,time));
-    html+=`<button class="day-schedule-slot-hit" data-slot-key="${escapeHTML(dbKey)}" style="top:${i*rowH}px;height:${rowH}px" aria-label="${escapeHTML(formatDate(d)+' '+time)}"></button>`;
-  });
+  visibleIndices.forEach((i,pos)=>{const time=slotsToday[i],dbKey=blockDbKey(w,keyFor(d,time));html+=`<button class="day-schedule-slot-hit" data-slot-key="${escapeHTML(dbKey)}" style="top:${pos*rowH}px;height:${rowH}px" aria-label="${escapeHTML(formatDate(d)+' '+time)}"></button>`});
   for(const {b,x,lane} of laneInfo.items){
-    const startOffset=Math.max(0,(x.start-firstHourTop)/w.gran)*rowH;
-    const duration=Math.max(1,(x.end-x.start)/w.gran)*rowH;
-    const totalLanes=x.totalLanes||laneInfo.totalLanes||1;
-    const leftPct=(lane/totalLanes)*100, widthPct=(1/totalLanes)*100;
-    const short=duration<rowH*0.85?' short':'';
-    const selected=state.selected.has(b.key)?' selected':'';
-    const hit=hitKeys.has(b.key)?' search-hit':'';
-    const statusIcon=b.status==='已完成'?'✓':b.status==='进行中'?'↻':'';
+    const startGrid=visualOffset(x.start,w,visibleIndices,slotsToday),endGrid=visualOffset(x.end,w,visibleIndices,slotsToday),startOffset=startGrid*rowH,duration=Math.max(8,(endGrid-startGrid)*rowH);
+    const totalLanes=x.totalLanes||laneInfo.totalLanes||1,leftPct=(lane/totalLanes)*100,widthPct=(1/totalLanes)*100;
+    const short=duration<rowH*.85?' short':'',selected=state.selected.has(b.key)?' selected':'',hit=hitKeys.has(b.key)?' search-hit':'',statusIcon=b.status==='已完成'?'✓':b.status==='进行中'?'↻':'';
     const bodyText=b.body?`<span class="day-schedule-event-body">${escapeHTML(b.body)}</span>`:'';
     const meta=`${b.startTime?`◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}`:''}${b.loc?` · ${escapeHTML(b.loc)}`:''}${statusIcon?` · ${statusIcon}`:''}${b.fileIds?.length?` · 📎 ${b.fileIds.length}`:''}`;
-    const continuesBefore=x.start<firstHourTop, continuesAfter=x.end>w.eh*60;
-    html+=`<button class="day-schedule-event${short}${selected}${hit}${continuesBefore?' continues-before':''}${continuesAfter?' continues-after':''}" data-day-key="${escapeHTML(b.key)}" style="top:${startOffset}px;height:${duration}px;left:calc(${leftPct}% + 4px);width:calc(${widthPct}% - 8px)" title="${escapeHTML(b.title||'未命名')}"><span class="day-schedule-event-title">${escapeHTML(b.title||'未命名')}</span>${bodyText}<span class="day-schedule-event-meta">${meta}</span></button>`;
+    html+=`<button class="day-schedule-event${short}${selected}${hit}${x.start<w.sh*60?' continues-before':''}${x.end>w.eh*60?' continues-after':''}" data-day-key="${escapeHTML(b.key)}" style="top:${startOffset}px;height:${duration}px;left:calc(${leftPct}% + 4px);width:calc(${widthPct}% - 8px)" title="${escapeHTML(b.title||'未命名')}"><span class="day-schedule-event-title">${escapeHTML(b.title||'未命名')}</span>${bodyText}<span class="day-schedule-event-meta">${meta}</span></button>`;
   }
-  html+='</div></div>';
-  $('#dayView').innerHTML=html;
+  html+='</div></div>'; $('#dayView').innerHTML=html;
   $('#dayView').querySelectorAll('[data-day-key]').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.dayKey)});
   $('#dayView').querySelectorAll('.day-schedule-slot-hit').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.slotKey)});
   $('#dayView').querySelector('[data-day-nav="prev"]').onclick=()=>{const n=addDays(d,-1);if(!isBeforeWorkspaceStart(n)){state.dayDate=n;state.week=n;persistUiPrefs();render()}};
@@ -705,69 +735,31 @@ function renderDayView(w){
   $('#dayView').querySelector('[data-day-nav="today"]').onclick=()=>{const n=clampToWorkspaceStart(new Date());state.dayDate=n;state.week=n;persistUiPrefs();render()};
 }
 function eventLanes(records,w,date){
-  const items=records.map(b=>({b,x:getBlockInterval(b,w)}))
-    .filter(v=>v.x.date===formatDate(date)&&v.x.start!==null&&v.x.end>v.x.start)
-    .sort((a,b)=>a.x.start-b.x.start||b.x.end-a.x.end||String(a.b.key).localeCompare(String(b.b.key)));
+  const items=records.map(b=>({b,x:getBlockInterval(b,w)})).filter(v=>v.x.date===formatDate(date)&&v.x.start!==null&&v.x.end>v.x.start).sort((a,b)=>a.x.start-b.x.start||b.x.end-a.x.end||String(a.b.key).localeCompare(String(b.b.key)));
   const out=[];let cluster=[];let clusterEnd=-1;
-  const flush=()=>{
-    if(!cluster.length)return;
-    const laneEnds=[];let maxLane=0;
-    for(const item of cluster){
-      let lane=0;
-      while(lane<laneEnds.length&&laneEnds[lane]>item.x.start)lane++;
-      if(lane===laneEnds.length)laneEnds.push(item.x.end);else laneEnds[lane]=item.x.end;
-      item.lane=lane;maxLane=Math.max(maxLane,lane+1);
-    }
-    for(const item of cluster)item.totalLanes=maxLane;
-    out.push(...cluster);cluster=[];clusterEnd=-1;
-  };
-  for(const item of items){
-    if(cluster.length&&item.x.start>=clusterEnd)flush();
-    cluster.push(item);clusterEnd=Math.max(clusterEnd,item.x.end);
-  }
-  flush();
+  const flush=()=>{if(!cluster.length)return;const laneEnds=[];let maxLane=0;for(const item of cluster){let lane=0;while(lane<laneEnds.length&&laneEnds[lane]>item.x.start)lane++;if(lane===laneEnds.length)laneEnds.push(item.x.end);else laneEnds[lane]=item.x.end;item.lane=lane;maxLane=Math.max(maxLane,lane+1)}for(const item of cluster)item.totalLanes=maxLane;out.push(...cluster);cluster=[];clusterEnd=-1};
+  for(const item of items){if(cluster.length&&item.x.start>=clusterEnd)flush();cluster.push(item);clusterEnd=Math.max(clusterEnd,item.x.end)}flush();
   return {items:out,totalLanes:Math.max(1,...out.map(x=>x.totalLanes||1))};
 }
 function renderWeekGrid(w){
-  const rowH=72, headerH=46, totalH=slots.length*rowH;
-  const board=document.createElement('div');board.className='schedule-board';
-  board.style.setProperty('--row-h',rowH+'px');board.style.setProperty('--schedule-height',totalH+'px');
+  const rowH=72,weekRecords=weekDays.flatMap(d=>currentBlocks.filter(b=>recordHasContent(b)&&getBlockInterval(b,w).date===formatDate(d))),visibleIndices=visibleSlotIndexesForRecords(weekRecords,w,slots),totalH=Math.max(1,visibleIndices.length)*rowH;
+  const board=document.createElement('div');board.className='schedule-board';board.style.setProperty('--row-h',rowH+'px');board.style.setProperty('--schedule-height',totalH+'px');
   let html=`<div class="schedule-corner">时间</div>`;
   weekDays.forEach((d,i)=>{html+=`<div class="schedule-day-head${isToday(d)?' today':''}" style="grid-column:${i+2};grid-row:1"><div class="schedule-day-head-inner"><span class="day-name">${escapeHTML(dayName(d.getDay()))}</span><span class="day-num">${d.getDate()}</span></div></div>`});
-  html+=`<div class="schedule-time-rail">`;
-  slots.forEach((time,i)=>{html+=`<div class="schedule-time-label" style="top:${i*rowH}px">${time}</div>`});
-  html+=`</div>`;
+  html+=`<div class="schedule-time-rail">`;visibleIndices.forEach((idx,pos)=>{html+=`<div class="schedule-time-label" style="top:${pos*rowH}px">${slots[idx]}</div>`});html+=`</div>`;
   let weekCount=0;
   weekDays.forEach((d,i)=>{
-    const dateKey=formatDate(d), records=currentBlocks.filter(b=>recordHasContent(b)&&getBlockInterval(b,w).date===dateKey);
-    weekCount+=records.length;
-    const laneInfo=eventLanes(records,w,d), max=laneInfo.totalLanes;
+    const dateKey=formatDate(d),records=currentBlocks.filter(b=>recordHasContent(b)&&getBlockInterval(b,w).date===dateKey);weekCount+=records.length;const laneInfo=eventLanes(records,w,d),max=laneInfo.totalLanes;
     html+=`<div class="schedule-day-track${isToday(d)?' today':''}" data-day-date="${dateKey}" style="grid-column:${i+2};grid-row:2">`;
-    slots.forEach((time,slotIndex)=>{
-      const dbKey=blockDbKey(w,keyFor(d,time));
-      html+=`<button class="schedule-slot-hit" data-slot-key="${escapeHTML(dbKey)}" style="top:${slotIndex*rowH}px;height:${rowH}px" aria-label="${escapeHTML(dateKey+' '+time)}"></button>`;
-    });
+    visibleIndices.forEach((slotIndex,pos)=>{const time=slots[slotIndex],dbKey=blockDbKey(w,keyFor(d,time));html+=`<button class="schedule-slot-hit" data-slot-key="${escapeHTML(dbKey)}" style="top:${pos*rowH}px;height:${rowH}px" aria-label="${escapeHTML(dateKey+' '+time)}"></button>`});
     for(const {b,x,lane} of laneInfo.items){
-      const startOffset=Math.max(0,(x.start-w.sh*60)/w.gran)*rowH;
-      const duration=Math.max(1,(x.end-x.start)/w.gran)*rowH;
-      const totalLanes=x.totalLanes||max||1;
-      const leftPct=(lane/totalLanes)*100, widthPct=(1/totalLanes)*100;
-      const short=duration<rowH*0.85?' short':'';
-      const selected=state.selected.has(b.key)?' selected':'';
-      const hit=hitKeys.has(b.key)?' search-hit':'';
-      const statusIcon=b.status==='已完成'?'✓':b.status==='进行中'?'↻':'';
-      const bodyText=b.body?`<span class="schedule-event-body">${escapeHTML(b.body)}</span>`:'';
-      const meta=`${b.startTime?`◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}`:''}${b.loc?` · ${escapeHTML(b.loc)}`:''}${statusIcon?` · ${statusIcon}`:''}${b.fileIds?.length?` · 📎 ${b.fileIds.length}`:''}`;
-      const continuesBefore=x.start<w.sh*60, continuesAfter=x.end>w.eh*60;
-      html+=`<button class="schedule-event${short}${selected}${hit}${continuesBefore?' continues-before':''}${continuesAfter?' continues-after':''}" data-key="${escapeHTML(b.key)}" style="top:${startOffset}px;height:${duration}px;left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px)" title="${escapeHTML(b.title||'未命名')}"><span class="schedule-event-title">${escapeHTML(b.title||'未命名')}</span>${bodyText}<span class="schedule-event-meta">${meta}</span></button>`;
+      const startGrid=visualOffset(x.start,w,visibleIndices,slots),endGrid=visualOffset(x.end,w,visibleIndices,slots),startOffset=startGrid*rowH,duration=Math.max(8,(endGrid-startGrid)*rowH),leftPct=(lane/max)*100,widthPct=(1/max)*100,short=duration<rowH*.85?' short':'',selected=state.selected.has(b.key)?' selected':'',hit=hitKeys.has(b.key)?' search-hit':'',statusIcon=b.status==='已完成'?'✓':b.status==='进行中'?'↻':'';
+      const bodyText=b.body?`<span class="schedule-event-body">${escapeHTML(b.body)}</span>`:'';const meta=`${b.startTime?`◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}`:''}${b.loc?` · ${escapeHTML(b.loc)}`:''}${statusIcon?` · ${statusIcon}`:''}${b.fileIds?.length?` · 📎 ${b.fileIds.length}`:''}`;
+      html+=`<button class="schedule-event${short}${selected}${hit}${x.start<w.sh*60?' continues-before':''}${x.end>w.eh*60?' continues-after':''}" data-key="${escapeHTML(b.key)}" style="top:${startOffset}px;height:${duration}px;left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px)" title="${escapeHTML(b.title||'未命名')}"><span class="schedule-event-title">${escapeHTML(b.title||'未命名')}</span>${bodyText}<span class="schedule-event-meta">${meta}</span></button>`;
     }
     html+='</div>';
   });
-  board.innerHTML=html;
-  $('#tableShell').innerHTML='';$('#tableShell').appendChild(board);
-  board.querySelectorAll('.schedule-event').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.key)});
-  board.querySelectorAll('.schedule-slot-hit').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.slotKey)});
-  return weekCount;
+  board.innerHTML=html;$('#tableShell').innerHTML='';$('#tableShell').appendChild(board);board.querySelectorAll('.schedule-event').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.key)});board.querySelectorAll('.schedule-slot-hit').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.slotKey)});return weekCount;
 }
 function render(){
   const w=currentWs();if(!w)return;
@@ -794,18 +786,19 @@ function render(){
   $('#sWeek').textContent=weekCount;$('#searchResults').textContent=state.search?`命中 ${hitKeys.size} 条`:'';
 }
 
-function renderMobileSummary(w,days,slots,blockMap){const root=$('#mobileSummary');if(!root)return;let html='';for(const d of days){const records=[];const seen=new Set();for(const b of currentBlocks){if(!recordHasContent(b))continue;const x=getBlockInterval(b,w);if(x.date!==formatDate(d))continue;if(seen.has(b.key))continue;seen.add(b.key);records.push(b)}records.sort((a,b)=>(timeToMinutes(a.startTime)||timeToMinutes(partsKey(a.key)[1])||0)-(timeToMinutes(b.startTime)||timeToMinutes(partsKey(b.key)[1])||0));html+=`<section class="mobile-day${isToday(d)?' today':''}"><div class="mobile-day-head"><span class="mobile-day-name">${escapeHTML(dayName(d.getDay()))}</span><span class="mobile-day-date">${escapeHTML(formatDate(d))}</span></div>${records.length?records.map(b=>{const key=b.key;const start=b.startTime||partsKey(key)[1];return `<div class="mobile-record" data-mobile-key="${escapeHTML(key)}"><span class="mobile-time">${escapeHTML(start)}</span><div class="mobile-record-main"><div class="mobile-record-title">${escapeHTML(b.title||'未命名')}</div>${b.endTime?`<div class="mobile-record-body">${escapeHTML(start)}–${escapeHTML(b.endTime)}</div>`:''}${b.body?`<div class="mobile-record-body">${escapeHTML(b.body)}</div>`:''}</div></div>`}).join(''):'<div class="mobile-empty">暂无记录 · 点击“＋ 新建”开始记录</div>'}</section>`}root.innerHTML=html;root.querySelectorAll('[data-mobile-key]').forEach(el=>el.onclick=()=>openEditor(el.dataset.mobileKey))}
+function renderMobileSummary(w,days,slots,blockMap){const root=$('#mobileSummary');if(!root)return;let html='';for(const d of days){const records=[];const seen=new Set();for(const b of currentBlocks){if(!recordHasContent(b))continue;const x=getBlockInterval(b,w);if(x.date!==formatDate(d))continue;if(seen.has(b.key))continue;seen.add(b.key);records.push(b)}records.sort((a,b)=>(timeToMinutes(a.startTime)||timeToMinutes(partsKey(a.key)[1])||0)-(timeToMinutes(b.startTime)||timeToMinutes(partsKey(b.key)[1])||0));html+=`<section class="mobile-day${isToday(d)?' today':''}"><div class="mobile-day-head"><span class="mobile-day-name">${escapeHTML(dayName(d.getDay()))}</span><span class="mobile-day-date">${escapeHTML(formatDate(d))}</span></div>${records.length?records.map(b=>{const key=b.key;const start=b.startTime||partsKey(b.key)[1];return `<div class="mobile-record" data-mobile-key="${escapeHTML(key)}"><span class="mobile-time">${escapeHTML(start)}</span><div class="mobile-record-main"><div class="mobile-record-title">${escapeHTML(b.title||'未命名')}</div>${b.endTime?`<div class="mobile-record-body">${escapeHTML(start)}–${escapeHTML(b.endTime)}</div>`:''}${b.body?`<div class="mobile-record-body">${escapeHTML(b.body)}</div>`:''}</div></div>`}).join(''):`<button type="button" class="mobile-empty" data-mobile-new-date="${formatDate(d)}">暂无记录 · <span>点击开始记录</span></button>`}</section>`}root.innerHTML=html;root.querySelectorAll('[data-mobile-key]').forEach(el=>el.onclick=()=>openEditor(el.dataset.mobileKey));root.querySelectorAll('[data-mobile-new-date]').forEach(el=>el.onclick=()=>{const d=el.dataset.mobileNewDate;const w=currentWs();const t=slots[0]||`${pad(w.sh)}:00`;openEditor(blockDbKey(w.id,keyFor(parseDate(d),t)))});}
+
 
 /* ---------- 编辑器 ---------- */
 function fileRecord(id){return fileCache.get(id)||null}
 function updateEditMeta(dbKey){const raw=slotKeyFromBlock({key:dbKey});const [date,time]=partsKey(raw);const d=parseDate(date);$('#editMeta').textContent=`${date} · ${dayName(d.getDay())} · ${time} · ${currentWs().name}`}
 function renderFileList(){const list=$('#fileList');list.innerHTML=state.editFiles.length?state.editFiles.map((f,i)=>`<span class="file-pill"><span>📎</span><span title="${escapeHTML(f.name)}">${escapeHTML(f.name.length>24?f.name.slice(0,21)+'…':f.name)}</span><span style="color:var(--faint)">${formatBytes(f.size)}</span><button data-file-index="${i}" title="移除">×</button></span>`).join(''):'<span style="font-size:calc(10px * var(--font-scale));color:var(--faint)">暂无附件</span>';list.querySelectorAll('[data-file-index]').forEach(b=>b.onclick=e=>{e.stopPropagation();state.editFiles.splice(Number(b.dataset.fileIndex),1);renderFileList();state.modalDirty=true})}
-function openEditor(dbKey){
+async function openEditor(dbKey){
   state.editingKey=dbKey;const b=currentBlocks.find(x=>x.key===dbKey)||{};const raw=slotKeyFromBlock({key:dbKey});const [date,time]=partsKey(raw);
-  const w=currentWs();const start=b.startTime||time||slots[0]||'08:00';const end=b.endTime||minutesToTime((timeToMinutes(start)||480)+60);
-  $('#fDate').value=date||formatDate(clampToWorkspaceStart(new Date()));$('#fDate').min=w?.startDate||'';$('#fStart').min=w?`${pad(w.sh)}:00`:'';$('#fEnd').min=w?`${pad(w.sh)}:00`:'';$('#fStart').max=w?`${pad(w.eh)}:00`:'';$('#fEnd').max=w?`${pad(w.eh)}:00`:'';$('#fStart').step=(Number(w?.gran)||60)*60;$('#fEnd').step=(Number(w?.gran)||60)*60;
+  const w=currentWs();const start=b.startTime||time||slots[0]||'08:00';const end=b.endTime||minutesToTime(Math.min((timeToMinutes(start)||480)+60,(w?.eh||20)*60));
+  $('#fDate').value=date||formatDate(clampToWorkspaceStart(new Date()));$('#fDate').min=w?.startDate||'';$('#fStart').min=w?`${pad(w.sh)}:00`:'';$('#fEnd').min=w?`${pad(w.sh)}:00`:'';$('#fStart').max=w?`${pad(w.eh)}:00`:'';$('#fEnd').max=w?`${pad(w.eh)}:00`:'';$('#fStart').step=60;$('#fEnd').step=60;
   $('#fTitle').value=b.title||'';$('#fBody').value=b.body||'';$('#fTags').value=(b.tags||[]).join(', ');$('#fLoc').value=b.loc||'';$('#fPrio').value=b.prio||'';$('#fStatus').value=b.status||'';$('#fStart').value=start;$('#fEnd').value=end;
-  const d=durationFromTimes(start,end);$('#fDuration').value=[15,30,45,60,90,120,180].includes(d)?String(d):'custom';syncDurationFields('end');state.editFiles=(b.fileIds||[]).map(fileRecord).filter(Boolean);state.editNewFiles=[];state.modalDirty=false;updateEditMeta(dbKey);renderFileList();$('#editOverlay').classList.add('open');setTimeout(()=>$('#fTitle').focus(),20)
+  const d=durationFromTimes(start,end);$('#fDuration').value=[15,30,45,60,90,120,180].includes(d)?String(d):'custom';syncDurationFields('end');state.editFiles=[];for(const id of (b.fileIds||[])){const meta=fileCache.get(id)||await getFile(id);if(meta)state.editFiles.push(meta);if(meta?.blob)fileCache.set(id,meta)}state.editNewFiles=[];state.modalDirty=false;updateEditMeta(dbKey);renderFileList();$('#editOverlay').classList.add('open');setTimeout(()=>$('#fTitle').focus(),20)
 }
 function closeEditor(force=false){if(!force&&state.modalDirty){showDialog('未保存的修改','当前工作块有未保存的修改，确定关闭吗？',[{text:'继续编辑'},{text:'放弃修改',primary:true,action:()=>{hideOverlay('#editOverlay');state.editingKey=null}}]);return}hideOverlay('#editOverlay');state.editingKey=null}
 function hideOverlay(id){const el=$(id);if(el)el.classList.remove('open')}
@@ -815,7 +808,6 @@ async function saveEditor(){
   if(!v.date){notify('请选择日期','err');return}const date=parseDate(v.date);if(isBeforeWorkspaceStart(date)){notify(`日期不能早于工作区起始日 ${w.startDate}`,'err');return}
   const startMin=timeToMinutes(v.startTime),endMin=timeToMinutes(v.endTime);if(startMin===null||endMin===null||endMin<=startMin){notify('时间范围无效：结束时间必须晚于开始时间','err');return}
   if(startMin<w.sh*60||startMin>=w.eh*60||endMin>w.eh*60){notify(`时间必须位于工作区时段 ${pad(w.sh)}:00–${pad(w.eh)}:00 内`,'err');return}
-  if(startMin%(Number(w.gran)||60)!==0){notify(`开始时间需要按 ${w.gran} 分钟粒度设置`,'err');return}
   if(!v.title&&!v.body&&!v.tags.length&&!v.loc&&!v.prio&&!v.status&&!v.fileIds.length){await deleteBlock(dbKey);closeEditor(true);render();return}
   try{
     for(const f of state.editNewFiles){await put('files',f);fileCache.set(f.id,f)}
@@ -836,26 +828,103 @@ function showDialog(title,text,buttons=[{text:'确定',primary:true}]){const box
 
 /* ---------- ZIP：无第三方依赖，导出标准 ZIP ---------- */
 const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0}return t})();
-function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0}
-function dosTimeDate(date=new Date()){let time=(date.getHours()<<11)|(date.getMinutes()<<5)|Math.floor(date.getSeconds()/2);let y=Math.max(1980,date.getFullYear());let dd=((y-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate();return{time,date:dd}}
-function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return(c^0xffffffff)>>>0}
+function crc32Update(crc,bytes){let c=crc>>>0;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return c>>>0}
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}
+function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function u64(n){n=BigInt(n);const o=new Uint8Array(8);for(let i=0;i<8;i++){o[i]=Number(n&255n);n>>=8n}return o}
 function concatBytes(parts){let len=parts.reduce((n,p)=>n+p.length,0),out=new Uint8Array(len),o=0;for(const p of parts){out.set(p,o);o+=p.length}return out}
 function zipStore(entries){const enc=new TextEncoder(),parts=[],central=[],{time,date}=dosTimeDate();let offset=0;for(const entry of entries){const name=enc.encode(entry.name),data=entry.data,crc=crc32(data);const local=concatBytes([u32(0x04034b50),u16(20),u16(0x800),u16(0),u16(time),u16(date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);parts.push(local);const cd=concatBytes([u32(0x02014b50),u16(20),u16(20),u16(0x800),u16(0),u16(time),u16(date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]);central.push(cd);offset+=local.length}const centralBytes=concatBytes(central);const end=concatBytes([u32(0x06054b50),u16(0),u16(0),u16(entries.length),u16(entries.length),u32(centralBytes.length),u32(offset),u16(0)]);return concatBytes([...parts,centralBytes,end])}
+function dosTimeDate(d=new Date()){
+  const time=((d.getHours()&31)<<11)|((d.getMinutes()&63)<<5)|((Math.floor(d.getSeconds()/2))&31);
+  const date=(((d.getFullYear()-1980)&127)<<9)|(((d.getMonth()+1)&15)<<5)|(d.getDate()&31);
+  return {time,date};
+}
+function zip64LocalExtra(){return concatBytes([u16(1),u16(16),u64(0n),u64(0n)])}
+function zip64CentralExtra(size,offset){return concatBytes([u16(1),u16(24),u64(size),u64(size),u64(offset)])}
 function extForFile(f){const m=(f.name||'').match(/\.([A-Za-z0-9]{1,10})$/);return m?m[1]:'bin'}
 async function exportZip(){
   try{
-    const allWs=await all('workspaces'),allB=await all('blocks'),allF=await all('files');const manifest={app:APP,schema:5,exportedAt:new Date().toISOString(),appSettings,workspaces:allWs,blocks:allB.map(({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})=>({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})),files:allF.map(f=>({id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type,size:f.size,createdAt:f.createdAt,updatedAt:f.updatedAt,path:`attachments/${f.id}.${extForFile(f)}` }))};
+    const allWs=await all('workspaces'),allB=await all('blocks'),allF=await allFileMeta();
+    const manifest={app:APP,schema:5,exportedAt:new Date().toISOString(),appSettings,workspaces:allWs,blocks:allB.map(({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})=>({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})),files:allF.map(f=>({id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type,size:f.size,createdAt:f.createdAt,updatedAt:f.updatedAt,path:`attachments/${f.id}.${extForFile(f)}`}))};
+    const totalBytes=allF.reduce((n,f)=>n+(Number(f.size)||0),0);
+    if(totalBytes>=512*1024*1024) return await exportLargeBackupZip64(manifest,allF,totalBytes);
     const entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(manifest,null,2))}];
-    for(const f of allF){const bytes=new Uint8Array(await f.blob.arrayBuffer());entries.push({name:`attachments/${f.id}.${extForFile(f)}`,data:bytes})}
+    for(const meta of allF){const f=await getFile(meta.id);if(!f?.blob)throw new Error(`附件不存在：${meta.name}`);const bytes=new Uint8Array(await f.blob.arrayBuffer());entries.push({name:`attachments/${meta.id}.${extForFile(meta)}`,data:bytes})}
     const zip=zipStore(entries);downloadBlob(new Blob([zip],{type:'application/zip'}),`worklog-backup-${todayKey()}.zip`);notify(`已导出 ${allWs.length} 个工作区、${allB.length} 条记录、${allF.length} 个附件`)
   }catch(e){console.error(e);notify('导出失败：'+(e.message||'未知错误'),'err')}
 }
-async function parseZipStore(blob){
-  const bytes=new Uint8Array(await blob.arrayBuffer());const dv=new DataView(bytes.buffer);let eocd=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65558);i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break}}if(eocd<0)throw new Error('ZIP 结构无效');const count=dv.getUint16(eocd+10,true),cdOffset=dv.getUint32(eocd+16,true);let p=cdOffset;const out=new Map(),dec=new TextDecoder();for(let i=0;i<count;i++){if(dv.getUint32(p,true)!==0x02014b50)throw new Error('ZIP 中央目录无效');const method=dv.getUint16(p+10,true),compSize=dv.getUint32(p+20,true),nameLen=dv.getUint16(p+28,true),extraLen=dv.getUint16(p+30,true),commentLen=dv.getUint16(p+32,true),localOffset=dv.getUint32(p+42,true),name=dec.decode(bytes.slice(p+46,p+46+nameLen));const lp=localOffset;if(dv.getUint32(lp,true)!==0x04034b50)throw new Error('ZIP 文件头无效');const ln=dv.getUint16(lp+26,true),le=dv.getUint16(lp+28,true),dataStart=lp+30+ln+le;let data=bytes.slice(dataStart,dataStart+compSize);if(method===8){if(typeof DecompressionStream==='undefined')throw new Error('当前浏览器不支持 ZIP 压缩流');const stream=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));data=new Uint8Array(await new Response(stream).arrayBuffer())}else if(method!==0)throw new Error(`不支持 ZIP 压缩方式：${method}`);out.set(name,data);p+=46+nameLen+extraLen+commentLen}return out}
+async function exportLargeBackupZip64(manifest,files,totalBytes){
+  if(typeof window.showSaveFilePicker==='function' && window.isSecureContext && (location.protocol==='https:' || location.protocol==='http:')){
+    let handle,writable;
+    try{
+      handle=await window.showSaveFilePicker({suggestedName:`worklog-backup-${todayKey()}.zip`,types:[{description:'Worklog ZIP 备份',accept:{'application/zip':['.zip']}}]});
+      writable=await handle.createWritable();
+      const enc=new TextEncoder(),{time,date}=dosTimeDate(),central=[];let offset=0n;
+      const write=async bytes=>{await writable.write(bytes);offset+=BigInt(bytes.byteLength)};
+      const writeEntry=async(name,blob)=>{
+        const nameBytes=enc.encode(name),extra=zip64LocalExtra(),localOffset=offset;
+        await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0xffffffff),u32(0xffffffff),u16(nameBytes.length),u16(extra.length),nameBytes,extra]));
+        let crc=0xffffffff,size=0n,reader=blob.stream().getReader();
+        try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;crc=crc32Update(crc,value);size+=BigInt(value.byteLength);await writable.write(value);offset+=BigInt(value.byteLength)}}finally{reader.releaseLock()}
+        crc=(crc^0xffffffff)>>>0;
+        await write(concatBytes([u32(0x08074b50),u32(crc),u64(size),u64(size)]));
+        central.push({nameBytes,extra:zip64CentralExtra(size,localOffset),crc,size,offset:localOffset});
+      };
+      const manifestBlob=new Blob([JSON.stringify({...manifest,backupMode:'zip64-stream',totalAttachmentBytes:totalBytes},null,2)],{type:'application/json'});
+      await writeEntry('manifest.json',manifestBlob);
+      let done=0;
+      for(const meta of files){const f=await getFile(meta.id);if(!f?.blob)throw new Error(`附件不存在：${meta.name}`);await writeEntry(`attachments/${meta.id}.${extForFile(meta)}`,f.blob);done+=Number(meta.size)||0;if(done%((128*1024*1024))<(Number(meta.size)||0))notify(`导出中：${formatBytes(done)} / ${formatBytes(totalBytes)}`,'ok')}
+      const centralOffset=offset;let centralSize=0n;
+      for(const c of central){const methodFlags=0x808;const head=concatBytes([u32(0x02014b50),u16(45),u16(45),u16(methodFlags),u16(0),u16(0),u16(0),u32(c.crc),u32(0xffffffff),u32(0xffffffff),u16(c.nameBytes.length),u16(c.extra.length),u16(0),u16(0),u16(0),u32(0),u32(0xffffffff),c.nameBytes,c.extra]);await write(head);centralSize+=BigInt(head.byteLength)}
+      const eocd64Offset=offset;
+      await write(concatBytes([u32(0x06064b50),u64(44n),u16(45),u16(45),u32(0),u32(0),u64(BigInt(central.length)),u64(BigInt(central.length)),u64(centralSize),u64(centralOffset)]));
+      await write(concatBytes([u32(0x07064b50),u32(0),u64(eocd64Offset),u32(1)]));
+      await write(concatBytes([u32(0x06054b50),u16(0xffff),u16(0xffff),u16(0xffff),u16(0xffff),u32(0xffffffff),u32(0xffffffff),u16(0)]));
+      await writable.close();notify(`ZIP64 大数据备份完成：${formatBytes(totalBytes)}`,'ok');return;
+    }catch(e){if(e?.name==='AbortError')return;console.error(e);try{await writable?.abort?.()}catch{};notify(`ZIP64 导出失败：${e.message||'未知错误'}`,'err');return}
+  }
+  showDialog('无法导出 5GB 级 ZIP',`当前页面是 file:// 本地文件，或浏览器不提供可用的文件流式保存 API。5GB 级 ZIP64 备份不能安全地走普通下载，否则会把巨型 ZIP 放进内存。请用 localhost 或 HTTPS 打开 Worklog（例如本机静态服务器），再进行大数据备份。`,[{text:'知道了',primary:true}]);
+}
+
+async function parseZipDirectory(file){
+  const endSize=Math.min(Number(file.size),131072);const tail=new Uint8Array(await file.slice(file.size-endSize).arrayBuffer());const dv=new DataView(tail.buffer);let eocd=-1;
+  for(let i=tail.length-22;i>=0;i--)if(dv.getUint32(i,true)===0x06054b50){eocd=i;break}
+  if(eocd<0)throw new Error('ZIP 结束记录不存在');
+  let count=BigInt(dv.getUint16(eocd+10,true)),cdSize=BigInt(dv.getUint32(eocd+12,true)),cdOffset=BigInt(dv.getUint32(eocd+16,true));
+  if(count===65535n||cdSize===0xffffffffn||cdOffset===0xffffffffn){let loc=-1;for(let i=tail.length-20;i>=0;i--)if(dv.getUint32(i,true)===0x07064b50){loc=i;break}if(loc<0)throw new Error('ZIP64 定位记录不存在');const zoff=Number(BigInt(file.size-endSize)+BigInt(loc));const z= new DataView(await file.slice(zoff,zoff+20).arrayBuffer());const e64Off=Number(z.getBigUint64(8,true));const e64=new DataView(await file.slice(e64Off,e64Off+56).arrayBuffer());if(e64.getUint32(0,true)!==0x06064b50)throw new Error('ZIP64 结束记录无效');count=e64.getBigUint64(32,true);cdSize=e64.getBigUint64(40,true);cdOffset=e64.getBigUint64(48,true)}
+  if(cdSize>128n*1024n*1024n)throw new Error('ZIP 中央目录过大，超过 128MB 安全限制');
+  const bytes=new Uint8Array(await file.slice(Number(cdOffset),Number(cdOffset+cdSize)).arrayBuffer());const dv2=new DataView(bytes.buffer),dec=new TextDecoder();let p=0,out=[];
+  for(let i=0n;i<count;i++){if(dv2.getUint32(p,true)!==0x02014b50)throw new Error('ZIP 中央目录无效');const method=dv2.getUint16(p+10,true),flags=dv2.getUint16(p+8,true),crc=dv2.getUint32(p+16,true);let comp=BigInt(dv2.getUint32(p+20,true)),raw=BigInt(dv2.getUint32(p+24,true));const nameLen=dv2.getUint16(p+28,true),extraLen=dv2.getUint16(p+30,true),commentLen=dv2.getUint16(p+32,true);let localOff=BigInt(dv2.getUint32(p+42,true));const name=dec.decode(bytes.slice(p+46,p+46+nameLen));let ex=bytes.slice(p+46+nameLen,p+46+nameLen+extraLen),xd=new DataView(ex.buffer),ep=0;while(ep+4<=ex.length){const id=xd.getUint16(ep,true),len=xd.getUint16(ep+2,true);if(id===1){let q=ep+4;if(raw===0xffffffffn&&q+8<=ep+4+len){raw=xd.getBigUint64(q,true);q+=8}if(comp===0xffffffffn&&q+8<=ep+4+len){comp=xd.getBigUint64(q,true);q+=8}if(localOff===0xffffffffn&&q+8<=ep+4+len){localOff=xd.getBigUint64(q,true)}}ep+=4+len}
+    out.push({name,method,flags,crc,compressedSize:comp,size:raw,localOffset:localOff});p+=46+nameLen+extraLen+commentLen}
+  return out;
+}
+async function getZipEntryBlob(file,entry){
+  if(entry.method!==0)throw new Error('当前版本只支持 ZIP store/ZIP64 store 备份');const head=new DataView(await file.slice(Number(entry.localOffset),Number(entry.localOffset)+30).arrayBuffer());if(head.getUint32(0,true)!==0x04034b50)throw new Error('ZIP 文件头无效');const ln=head.getUint16(26,true),le=head.getUint16(28,true);const start=Number(entry.localOffset)+30+ln+le;return file.slice(start,start+Number(entry.size));
+}
 async function importZip(file){
-  try{const entries=await parseZipStore(file);const raw=entries.get('manifest.json');if(!raw)throw new Error('找不到 manifest.json');const m=JSON.parse(new TextDecoder().decode(raw));if(m.app!==APP||m.schema<4||!Array.isArray(m.workspaces)||!Array.isArray(m.blocks)||!Array.isArray(m.files))throw new Error('不是有效的 Worklog ZIP 备份');const files=[];for(const f of m.files){const data=entries.get(f.path);if(!data)throw new Error(`缺少附件：${f.name}`);files.push({id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type||'application/octet-stream',size:Number(f.size)||data.length,blob:new Blob([data],{type:f.type||'application/octet-stream'}),createdAt:f.createdAt||Date.now(),updatedAt:f.updatedAt||Date.now()})}showDialog('导入完整备份',`发现 ${m.workspaces.length} 个工作区、${m.blocks.length} 条记录、${files.length} 个附件。导入将替换当前应用的全部本地数据。`,[{text:'取消'},{text:'替换全部数据',primary:true,action:async()=>{try{await replaceStores({workspaces:m.workspaces,blocks:m.blocks,files});if(m.appSettings)appSettings=normalizeAppSettings(m.appSettings);saveAppSettings();workspaces=await all('workspaces');state.workspaceId=workspaces[0]?.id||null;state.week=clampToWorkspaceStart(new Date());state.dayDate=state.week;persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();applyTheme();render();notify('完整备份导入完成')}catch(e){console.error(e);notify('导入失败：'+(e.message||'未知错误'),'err')}}}])}catch(e){console.error(e);notify('ZIP 导入失败：'+(e.message||'文件无效'),'err')}}
+  try{const entries=await parseZipDirectory(file),map=new Map(entries.map(e=>[e.name,e]));const raw=map.get('manifest.json');if(!raw)throw new Error('找不到 manifest.json');const m=JSON.parse(await (await getZipEntryBlob(file,raw)).text());if(m.app!==APP||m.schema<4||!Array.isArray(m.workspaces)||!Array.isArray(m.blocks)||!Array.isArray(m.files))throw new Error('不是有效的 Worklog ZIP 备份');showDialog('导入完整备份',`发现 ${m.workspaces.length} 个工作区、${m.blocks.length} 条记录、${m.files.length} 个附件。将逐个附件从 ZIP 写入本地，不会一次性加载 5GB。`,[{text:'取消'},{text:'替换全部数据',primary:true,action:async()=>{try{
+      const d=await openDB();await new Promise((resolve,reject)=>{const t=d.transaction(['workspaces','blocks','files'],'readwrite');t.objectStore('workspaces').clear();t.objectStore('blocks').clear();t.objectStore('files').clear();for(const w of m.workspaces)t.objectStore('workspaces').put(w);for(const b of m.blocks)t.objectStore('blocks').put(b);t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error)});
+      let done=0,total=0;for(const x of m.files)total+=Number(x.size)||0;for(const meta of m.files){const e=map.get(meta.path);if(!e)throw new Error(`缺少附件：${meta.name}`);const blob=await getZipEntryBlob(file,e);if(Number(meta.size)&&blob.size!==Number(meta.size))throw new Error(`附件大小不一致：${meta.name}`);await put('files',{id:meta.id,workspaceId:meta.workspaceId,name:meta.name,type:meta.type||'application/octet-stream',size:Number(meta.size)||blob.size,blob,createdAt:meta.createdAt||Date.now(),updatedAt:meta.updatedAt||Date.now()});done+=blob.size;if(done%((64*1024*1024))<blob.size)notify(`导入中：${formatBytes(done)} / ${formatBytes(total)}`,'ok')}
+      if(m.appSettings)appSettings=normalizeAppSettings(m.appSettings);saveAppSettings();workspaces=await all('workspaces');state.workspaceId=workspaces[0]?.id||null;const today=clampToWorkspaceStart(new Date());state.week=today;state.dayDate=today;persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();applyTheme();render();notify('完整 ZIP 备份导入完成','ok');
+    }catch(e){console.error(e);notify('导入失败：'+(e.message||'未知错误'),'err')}}}]);
+  }catch(e){console.error(e);notify('ZIP 导入失败：'+(e.message||'文件无效'),'err')}}
 async function importLegacyJson(file){try{const obj=JSON.parse(await file.text());if(!Array.isArray(obj.blocks))throw new Error('不是旧版 JSON 备份');const ws=currentWs();let n=0;for(const b of obj.blocks){if(!b?.key)continue;const slot=b.key.includes('::')?b.key.split('::').pop():b.key;await put('blocks',{key:blockDbKey(ws.id,slot),slotKey:slot,workspaceId:ws.id,title:String(b.title||''),body:String(b.body||''),tags:normalizeTags(b.tags),prio:b.prio||'',status:b.status||'',loc:String(b.loc||''),fileIds:[],updatedAt:Number(b.updatedAt)||Date.now(),version:4});n++}await loadCurrentWorkspace();render();notify(`已兼容导入旧 JSON：${n} 条记录`)}catch(e){notify('JSON 导入失败：'+(e.message||'格式错误'),'err')}}
 
+
+function triggerBackupImport(){
+  const i=document.createElement('input');
+  i.type='file';
+  i.accept='.zip,application/zip,.json,application/json';
+  i.onchange=e=>{
+    const f=e.target.files?.[0];
+    if(!f)return;
+    if(/\.json$/i.test(f.name))importLegacyJson(f);
+    else if(/\.zip$/i.test(f.name)||f.type==='application/zip'||!f.type)importZip(f);
+    else notify('请选择 ZIP 备份文件','warn');
+  };
+  i.click();
+}
 
 /* ---------- ICS ---------- */
 function unfoldICS(text){return text.replace(/\r?\n[ \t]/g,'').split(/\r?\n/)}
@@ -863,8 +932,9 @@ function unescapeICS(v){return String(v||'').replace(/\\n/gi,'\n').replace(/\\,/
 function parseICSDate(value,prop){const v=value.trim();const tz=/TZID=([^;:]+)/i.exec(prop||'')?.[1];if(/^\d{8}$/.test(v))return{date:new Date(Number(v.slice(0,4)),Number(v.slice(4,6))-1,Number(v.slice(6,8)),0,0,0,0),allDay:true};const z=v.endsWith('Z');const s=z?v.slice(0,-1):v;const y=Number(s.slice(0,4)),m=Number(s.slice(4,6))-1,d=Number(s.slice(6,8)),hh=Number(s.slice(9,11)||0),mm=Number(s.slice(11,13)||0),ss=Number(s.slice(13,15)||0);if(z)return{date:new Date(Date.UTC(y,m,d,hh,mm,ss)),allDay:false,utc:true};return{date:new Date(y,m,d,hh,mm,ss),allDay:false,tz:tz||null}}
 function parseICS(text){const lines=unfoldICS(text),events=[];let cur=null;for(const line of lines){if(line==='BEGIN:VEVENT'){cur={};continue}if(line==='END:VEVENT'){if(cur)events.push(cur);cur=null;continue}if(!cur)continue;const m=/^([^:;]+)(?:;([^:]+))?:(.*)$/.exec(line);if(!m)continue;cur[m[1].toUpperCase()]={value:m[3],params:m[2]||''}}return events.map(e=>{const s=e.DTSTART?parseICSDate(e.DTSTART.value,e.DTSTART.params):null;const end=e.DTEND?parseICSDate(e.DTEND.value,e.DTEND.params):null;return{uid:unescapeICS(e.UID?.value||uid()),summary:unescapeICS(e.SUMMARY?.value||'无标题日历事件'),description:unescapeICS(e.DESCRIPTION?.value||''),location:unescapeICS(e.LOCATION?.value||''),start:s?.date||null,end:end?.date||null,allDay:!!s?.allDay,rawStart:e.DTSTART,rawEnd:e.DTEND}}).filter(e=>e.start)}
 function toLocalDateTime(d){return{date:formatDate(d),time:`${pad(d.getHours())}:${pad(d.getMinutes())}`}}
-function nearestSlot(time,gran,sh,eh){const [h,m]=time.split(':').map(Number);let mins=h*60+m;mins=Math.floor(mins/gran)*gran;mins=Math.max(sh*60,Math.min(eh*60-gran,mins));return `${pad(Math.floor(mins/60))}:${pad(mins%60)}`}
-function findImportSlot(date,time,w,used){const base=nearestSlot(time,w.gran,w.sh,w.eh);const slotsToday=timeSlots(w.gran,w.sh,w.eh);let idx=Math.max(0,slotsToday.indexOf(base));for(let i=idx;i<slotsToday.length;i++){const k=keyFor(date,slotsToday[i]);if(!used.has(k))return k}for(let i=0;i<idx;i++){const k=keyFor(date,slotsToday[i]);if(!used.has(k))return k}return keyFor(date,base)}
+function nearestSlot(time,gran,sh,eh){const mins=timeToMinutes(time);if(mins===null)return `${pad(sh)}:00`;const clamped=Math.max(sh*60,Math.min(eh*60-1,mins));return minutesToTime(clamped)}
+function findImportSlot(date,time,w,used){const base=nearestSlot(time,w.gran,w.sh,w.eh);const exact=keyFor(date,base);if(!used.has(exact))return exact;for(let delta=1;delta<=24*60;delta++){const up=timeToMinutes(base)+delta;if(up<ehBound(w)){const k=keyFor(date,minutesToTime(up));if(!used.has(k))return k}const down=timeToMinutes(base)-delta;if(down>=w.sh*60){const k=keyFor(date,minutesToTime(down));if(!used.has(k))return k}}return exact}
+function ehBound(w){return w.eh*60-1}
 async function importICS(file){
   try{const events=parseICS(await file.text());if(!events.length){notify('ICS 中没有可导入的事件','warn');return}const w=currentWs();const used=new Set(currentBlocks.map(b=>b.slotKey));const existingExternal=new Set(currentBlocks.filter(b=>b.source==='ics'&&b.externalId).map(b=>b.externalId));let created=0,skipped=0;for(const ev of events){if(existingExternal.has(ev.uid)){skipped++;continue}const localStart=ev.start;const startParts=toLocalDateTime(localStart);const slot=findImportSlot(localStart,startParts.time,w,used);used.add(slot);const end=ev.end?toLocalDateTime(ev.end):null;const lines=[];if(ev.description)lines.push(ev.description);if(end)lines.push(`日历时间：${startParts.time}–${end.time}`);if(ev.allDay)lines.push('全天事件');const dbKey=blockDbKey(w.id,slot);await put('blocks',{key:dbKey,slotKey:slot,workspaceId:w.id,title:ev.summary,body:lines.join('\n\n'),tags:['日历'],prio:'',status:'',loc:ev.location,fileIds:[],startTime:startParts.time,endTime:end?.time||'',allDay:ev.allDay,source:'ics',externalId:ev.uid,updatedAt:Date.now(),version:4});created++}await loadCurrentWorkspace();render();notify(`ICS 导入完成：${created} 个事件`)}catch(e){console.error(e);notify('ICS 导入失败：'+(e.message||'格式错误'),'err')}}
 function triggerICSImport(){const i=document.createElement('input');i.type='file';i.accept='.ics,text/calendar';i.onchange=e=>e.target.files[0]&&importICS(e.target.files[0]);i.click()}
@@ -908,9 +978,9 @@ $('#weekPicker').onclick=e=>{e.preventDefault();e.stopPropagation();$('#weekPopo
 function searchableText(b,fmap=fileCache){return [b.title,b.body,b.loc,b.prio,b.status,b.startTime,b.endTime,...(b.tags||[]),...(b.fileIds||[]).map(id=>fmap.get(id)?.name||'')].join(' ').toLocaleLowerCase()}
 function matchQuery(b,q,fmap=fileCache){const tokens=q.toLocaleLowerCase().split(/\s+/).filter(Boolean);if(!tokens.length)return true;const text=searchableText(b,fmap);return tokens.every(t=>text.includes(t))}
 function positionSearchPreview(){const root=$('#searchPreview'),input=$('#searchInput');if(!root||!input||root.hidden)return;const r=input.getBoundingClientRect();const width=Math.min(760,Math.max(280,window.innerWidth-r.left-12));root.style.left=Math.round(r.left)+'px';root.style.top=Math.round(r.bottom+6)+'px';root.style.width=Math.round(width)+'px'}
-function renderSearchPreview(){const root=$('#searchPreview'),q=state.search.trim();if(!q){root.hidden=true;root.classList.remove('open');return}const results=currentBlocks.filter(recordHasContent).filter(b=>matchQuery(b,q)).slice(0,6);root.hidden=false;root.classList.add('open');root.innerHTML=`<div class="search-preview-inner"><div class="preview-head"><span>${results.length?`预览 ${results.length}${results.length===6?'+':''} 条`:'没有找到结果'}</span><button class="preview-more" id="previewMore">更多搜索 →</button></div><div class="preview-list">${results.map(b=>{const [date,time]=partsKey(b.key);return `<button class="preview-item" data-preview-key="${escapeHTML(b.key)}"><div class="preview-title">${escapeHTML(b.title||'未命名')}</div><div class="preview-meta">${escapeHTML(date)} · ${escapeHTML(time)}${b.body?' · '+escapeHTML(b.body.slice(0,90)):''}</div></button>`}).join('')}</div>${results.length?'':'<div class="search-empty">换一个关键词试试</div>'}</div>`;root.querySelectorAll('[data-preview-key]').forEach(el=>el.onclick=()=>{root.hidden=true;root.classList.remove('open');openEditor(el.dataset.previewKey)});root.querySelector('#previewMore').onclick=()=>openAdvancedSearch(q);positionSearchPreview()}
+function renderSearchPreview(){const root=$('#searchPreview'),q=state.search.trim();if(!q){root.hidden=true;root.classList.remove('open');return}const results=currentBlocks.filter(recordHasContent).filter(b=>matchQuery(b,q)).slice(0,6);root.hidden=false;root.classList.add('open');root.innerHTML=`<div class="search-preview-inner"><div class="preview-head"><span>${results.length?`预览 ${results.length}${results.length===6?'+':''} 条`:'没有找到结果'}</span><button class="preview-more" id="previewMore">更多搜索 <span class="inline-chevron inline-next" aria-hidden="true"></span></button></div><div class="preview-list">${results.map(b=>{const [date,time]=partsKey(b.key);return `<button class="preview-item" data-preview-key="${escapeHTML(b.key)}"><div class="preview-title">${escapeHTML(b.title||'未命名')}</div><div class="preview-meta">${escapeHTML(date)} · ${escapeHTML(time)}${b.body?' · '+escapeHTML(b.body.slice(0,90)):''}</div></button>`}).join('')}</div>${results.length?'':'<div class="search-empty">换一个关键词试试</div>'}</div>`;root.querySelectorAll('[data-preview-key]').forEach(el=>el.onclick=()=>{root.hidden=true;root.classList.remove('open');openEditor(el.dataset.previewKey)});root.querySelector('#previewMore').onclick=()=>openAdvancedSearch(q);positionSearchPreview()}
 async function openAdvancedSearch(q=state.search){$('#searchOverlay').classList.add('open');$('#advancedSearchInput').value=q;await renderAdvancedSearch()}
-async function renderAdvancedSearch(){const q=$('#advancedSearchInput').value.trim(),scope=$('#searchWorkspace').value,dateScope=$('#searchDateScope').value,root=$('#advancedSearchResults');let rows=[];const d=await openDB();const allBlocks=scope==='all'?await reqP(d.transaction('blocks','readonly').objectStore('blocks').getAll()):currentBlocks;const allFiles=scope==='all'?await all('files'): [...fileCache.values()];const fmap=new Map(allFiles.map(f=>[f.id,f]));rows=allBlocks.filter(recordHasContent).filter(b=>matchQuery(b,q,fmap));
+async function renderAdvancedSearch(){const q=$('#advancedSearchInput').value.trim(),scope=$('#searchWorkspace').value,dateScope=$('#searchDateScope').value,root=$('#advancedSearchResults');let rows=[];const d=await openDB();const allBlocks=scope==='all'?await reqP(d.transaction('blocks','readonly').objectStore('blocks').getAll()):currentBlocks;const allFiles=scope==='all'?await allFileMeta(): [...fileCache.values()];const fmap=new Map(allFiles.map(f=>[f.id,f]));rows=allBlocks.filter(recordHasContent).filter(b=>matchQuery(b,q,fmap));
   if(dateScope==='week'){const a=currentWeekStart(),z=addDays(a,6);rows=rows.filter(b=>{const x=parseDate(partsKey(b.key)[0]);return x>=a&&x<=z})}
   if(dateScope==='workspaceStart'){rows=rows.filter(b=>{const ww=workspaces.find(w=>w.id===b.workspaceId);return !ww||parseDate(partsKey(b.key)[0])>=parseDate(ww.startDate||todayKey())})}
   rows.sort((a,b)=>String(b.updatedAt||0).localeCompare(String(a.updatedAt||0)));$('#advancedSearchMeta').textContent=`${rows.length} 条结果`;
@@ -918,20 +988,20 @@ async function renderAdvancedSearch(){const q=$('#advancedSearchInput').value.tr
   root.querySelectorAll('[data-advanced-key]').forEach(el=>el.onclick=async()=>{const key=el.dataset.advancedKey;$('#searchOverlay').classList.remove('open');const found=currentBlocks.find(b=>b.key===key);if(found){openEditor(found.key);return}const [date]=partsKey(key),wid=key.split('::')[0];if(workspaces.some(w=>w.id===wid)){state.workspaceId=wid;state.week=parseDate(date);state.dayDate=parseDate(date);persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();render();notify(`已切换到「${currentWs().name}」`)}else notify('找不到该工作区','warn')})}
 
 function newRecord(){const d=currentWeekStart();openEditor(blockDbKey(state.workspaceId,keyFor(d,slots[0]||'08:00')))}
-$('#weekViewBtn').onclick=()=>setViewMode(VIEW_MODES.WEEK);$('#dayViewBtn').onclick=()=>setViewMode(VIEW_MODES.DAY);$('#headerToggle').onclick=()=>setHeaderState(!state.headerCollapsed,'manual');window.addEventListener('scroll',handleHeaderScroll,{passive:true});
+$('#weekViewBtn').onclick=()=>setViewMode(VIEW_MODES.WEEK);$('#dayViewBtn').onclick=()=>setViewMode(VIEW_MODES.DAY);$('#hideEmptyRows').onchange=e=>{state.hideEmptyRows=!!e.target.checked;persistUiPrefs();render()};$('#headerToggle').onclick=()=>setHeaderState(!state.headerCollapsed,'manual');window.addEventListener('scroll',handleHeaderScroll,{passive:true});
 $('#prevBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.dayDate=clampToWorkspaceStart(addDays(state.dayDate||new Date(),-1));state.week=state.dayDate;persistUiPrefs();render()}else{state.week=clampToWorkspaceStart(addDays(currentWeekStart(),-7));state.selected.clear();persistUiPrefs();render()}};$('#nextBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.dayDate=addDays(state.dayDate||new Date(),1);state.week=state.dayDate;persistUiPrefs();render()}else{state.week=addDays(currentWeekStart(),7);state.selected.clear();persistUiPrefs();render()}};$('#todayBtn').onclick=()=>{const today=clampToWorkspaceStart(new Date());state.week=today;state.dayDate=today;state.selected.clear();persistUiPrefs();render()};
 $('#searchInput').oninput=e=>{state.search=e.target.value.trim();$('#clearSearch').style.visibility=state.search?'visible':'hidden';render();renderSearchPreview()};$('#clearSearch').onclick=()=>{$('#searchInput').value='';state.search='';$('#clearSearch').style.visibility='hidden';render();renderSearchPreview();$('#searchInput').focus()};$('#clearSearch').style.visibility='hidden';
 
 $('#themeBtn').onclick=()=>{appSettings.theme=appSettings.theme==='dark'?'light':'dark';applyTheme();saveAppSettings()};$('#searchClose').onclick=()=>$('#searchOverlay').classList.remove('open');$('#searchOverlay').onclick=e=>{if(e.target.id==='searchOverlay')$('#searchOverlay').classList.remove('open')};$('#advancedSearchInput').oninput=renderAdvancedSearch;$('#searchWorkspace').onchange=renderAdvancedSearch;$('#searchDateScope').onchange=renderAdvancedSearch;$('#advancedSearchClear').onclick=()=>{$('#advancedSearchInput').value='';renderAdvancedSearch();$('#advancedSearchInput').focus()};document.addEventListener('click',e=>{if(!e.target.closest('.searchbox')&&!e.target.closest('#searchPreview')){const r=$('#searchPreview');r.hidden=true;r.classList.remove('open')}});
 $('#commandBtn').onclick=()=>$('#commandOverlay').classList.add('open');$('#commandClose').onclick=()=>hideOverlay('#commandOverlay');$('#commandOverlay').onclick=e=>{if(e.target.id==='commandOverlay')hideOverlay('#commandOverlay')};
-$$('[data-command]').forEach(b=>b.onclick=()=>{const c=b.dataset.command;hideOverlay('#commandOverlay');if(c==='new')newRecord();if(c==='workspace')$('#workspaceManage').click();if(c==='today'){$('#todayBtn').click()}if(c==='search')$('#searchInput').focus();if(c==='ics')triggerICSImport();if(c==='export')exportZip();if(c==='clear')clearCurrentWorkspace();if(c==='help')$('#help').hidden=false});
+$$('[data-command]').forEach(b=>b.onclick=()=>{const c=b.dataset.command;hideOverlay('#commandOverlay');if(c==='new')newRecord();if(c==='workspace')$('#workspaceManage').click();if(c==='today'){$('#todayBtn').click()}if(c==='search')$('#searchInput').focus();if(c==='ics')triggerICSImport();if(c==='backupImport')triggerBackupImport();if(c==='export')exportZip();if(c==='clear')clearCurrentWorkspace();if(c==='help')$('#help').hidden=false});
 $('#dialogOverlay').onclick=e=>{if(e.target.id==='dialogOverlay')hideOverlay('#dialogOverlay')};$('#workspaceOverlay').onclick=e=>{if(e.target.id==='workspaceOverlay')hideOverlay('#workspaceOverlay')};
 
 document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){hideOverlay('#commandOverlay');return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;else if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#dialogInput')?.value;if(v){state.week=clampToWorkspaceStart(parseDate(v));state.dayDate=state.week;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="dialogInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#dialogInput')?.focus(),20)}});
 
 
 loadHeaderPrefs();applyHeaderState();
-(async()=>{try{await initData();renderWorkspaceSelect();renderWorkspaceForm();$('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);render();notify(`工作日志就绪 · ${currentWs().name}`)}catch(e){console.error(e);notify('初始化失败：'+(e.message||'未知错误'),'err')}})();
+(async()=>{try{await initData();renderWorkspaceSelect();renderWorkspaceForm();$('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);$('#hideEmptyRows').checked=!!state.hideEmptyRows;render();notify(`工作日志就绪 · ${currentWs().name}`)}catch(e){console.error(e);notify('初始化失败：'+(e.message||'未知错误'),'err')}})();
 })();
 </script>
 </body>
