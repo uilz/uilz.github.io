@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.46</title>
+<title>工作日志 · v5.9.47</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -218,7 +218,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .reading-day-tools button{font-weight:650}.reading-day-tools button:hover{color:var(--accent)}
 @media(max-width:700px){.reading-view{border-radius:10px}.reading-head{position:sticky;top:0}.reading-body{padding:18px 12px 34px}.reading-entry{padding-left:48px;padding-bottom:28px}.reading-entry+.reading-entry{padding-top:24px}.reading-entry-main:hover{background:transparent}.reading-time{left:0;width:40px}.reading-entry-body{max-width:none}.reading-day+.reading-day{padding-top:24px}.reading-day-meta{font-size:calc(9px * var(--font-scale))}}
 
-/* v5.9.46 release polish */
+/* v5.9.47 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{
     display:grid;
@@ -252,7 +252,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   .view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}
 }
 
-/* v5.9.46 release polish */
+/* v5.9.47 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{display:grid;grid-template-columns:34px minmax(0,1fr) 34px auto;grid-template-rows:auto auto;align-items:center;gap:6px 5px;padding:0 0 2px}
   .header:not(.collapsed) .nav .nav-prev{grid-column:1;grid-row:1}
@@ -278,7 +278,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.46</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.47</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -432,7 +432,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.46',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.47',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -1520,13 +1520,15 @@ async function downloadNextSplitExportPart(){
 async function registerDownloadServiceWorker(){diagLog('SW:register:start',{secure:!!window.isSecureContext,protocol:location.protocol,hasSW:'serviceWorker' in navigator});try{if(!('serviceWorker' in navigator)||!window.isSecureContext||!/^https?:$/.test(location.protocol))return null;const reg=await navigator.serviceWorker.register(new URL('worklog-download-sw.js',location.href),{scope:new URL('./',location.href).pathname});await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller){await new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;navigator.serviceWorker.removeEventListener('controllerchange',finish);resolve()};navigator.serviceWorker.addEventListener('controllerchange',finish,{once:true});setTimeout(finish,1200)})}diagLog('SW:register:success',{scope:reg.scope,controlled:!!navigator.serviceWorker.controller,active:!!reg.active});return reg}catch(e){diagLog('SW:register:error',{name:e?.name,message:e?.message});console.warn('流式下载 Service Worker 不可用',e);return null}}
 function sanitizeDownloadName(name){return String(name||'worklog-backup.zip').replace(/[\\"\r\n]/g,'_').replace(/[<>:*?|]/g,'_')||'worklog-backup.zip'}
 async function createServiceWorkerDownloadSink(name){diagLog('SW:sink:start',{name});const reg=await registerDownloadServiceWorker(),worker=reg?.active;if(!worker)return null;const token=uid(),channel=new MessageChannel();let startedResolve,startedReject,closeResolve,closeReject,failed=null,closed=false;const startedPromise=new Promise((r,j)=>{startedResolve=r;startedReject=j}),closePromise=new Promise((r,j)=>{closeResolve=r;closeReject=j}),acks=[];channel.port1.onmessage=e=>{const m=e.data||{};if(m.type==='started')startedResolve(true);else if(m.type==='ack')acks.shift()?.();else if(m.type==='closed'){closed=true;closeResolve(Number(m.bytes)||0)}else if(m.type==='error'){failed=new Error(m.message||'流式下载失败');startedReject(failed);closeReject(failed);while(acks.length)acks.shift()()}};channel.port1.start?.();diagLog('SW:sink:init-post',{token,name});worker.postMessage({type:'worklog-download-init',token,name:sanitizeDownloadName(name)},[channel.port2]);const a=document.createElement('a');a.href=`${new URL('./__worklog_download__',location.href).href}?token=${encodeURIComponent(token)}`;a.download=sanitizeDownloadName(name);a.style.display='none';document.body.appendChild(a);a.click();a.remove();diagLog('SW:sink:waiting-start');await Promise.race([startedPromise,new Promise((_,j)=>setTimeout(()=>j(new Error('浏览器下载通道启动超时')),8000))]);diagLog('SW:sink:started');const write=bytes=>new Promise((resolve,reject)=>{if(failed)return reject(failed);const copy=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);acks.push(resolve);try{channel.port1.postMessage({type:'chunk',bytes:copy},[copy.buffer])}catch(e){acks.pop();reject(e)}});const close=async()=>{if(closed)return;diagLog('SW:sink:close:start');channel.port1.postMessage({type:'close'});const n=await Promise.race([closePromise,new Promise((_,j)=>setTimeout(()=>j(new Error('浏览器下载通道关闭超时')),15000))]);channel.port1.close();diagLog('SW:sink:close:success',{bytes:n});return n};const abort=async(reason)=>{try{channel.port1.postMessage({type:'abort',message:String(reason||'导出已中止')})}catch{}try{channel.port1.close()}catch{}};return{write,close,abort}}
-async function writeZip64PackageToWritable(manifest,files,totalBytes,writable,label='正在导出 ZIP64 备份'){let crcWorker=null;const enc=new TextEncoder(),{time,date}=dosTimeDate(),central=[];let offset=0n;try{crcWorker=createCrcWorker();const write=async bytes=>{await writable.write(bytes);offset+=BigInt(bytes.byteLength)},writeEntry=async(name,blob,onChunk)=>{const nameBytes=enc.encode(name),localOffset=offset;await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0),u32(0),u16(nameBytes.length),u16(0),nameBytes]));let crc=0xffffffff,size=0n,reader=(blob&&typeof blob.getReader==='function'?blob:blob?.stream?.()).getReader();try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;const crcTask=crcWorker?crcWorker.update(crc,value):Promise.resolve(crc32Update(crc,value));size+=BigInt(value.byteLength);await crcTask;await writable.write(value);offset+=BigInt(value.byteLength);onChunk?.(value.byteLength);crc=await crcTask}}finally{reader.releaseLock()}crc=(crc^0xffffffff)>>>0;await write(concatBytes([u32(0x08074b50),u32(crc),u64(size),u64(size)]));central.push({nameBytes,extra:zip64CentralExtra(size,localOffset),crc,size,offset:localOffset});return size};await writeEntry('manifest.json',new Blob([JSON.stringify({...manifest,backupMode:'zip64-stream',totalAttachmentBytes:totalBytes},null,2)],{type:'application/json'}));let done=0;startProgressToast(label,totalBytes,'准备写入附件…');for(const file of files){const source=file.stream||file.blob?.stream?.();if(!source)throw new Error(`附件读取流不可用：${file.name}`);const n=await writeEntry(attachmentZipPath(file.id),source,b=>{done=Math.min(totalBytes,done+(Number(b)||0));updateProgressToast(done,totalBytes,`正在导出：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`)});if(Number(n)!==Number(file.size))throw new Error(`附件读取大小不一致：${file.name}`)}updateProgressToast(totalBytes,totalBytes,'正在封装 ZIP…','附件已全部写入，正在写入目录并完成文件封口');progressState.finalizing=true;const centralOffset=offset;let centralSize=0n;for(const c of central){const h=concatBytes([u32(0x02014b50),u16(45),u16(45),u16(0x808),u16(0),u16(0),u16(0),u32(c.crc),u32(0xffffffff),u32(0xffffffff),u16(c.nameBytes.length),u16(c.extra.length),u16(0),u16(0),u16(0),u32(0),u32(0xffffffff),c.nameBytes,c.extra]);await write(h);centralSize+=BigInt(h.byteLength)}const e64=offset;await write(concatBytes([u32(0x06064b50),u64(44n),u16(45),u16(45),u32(0),u32(0),u64(BigInt(central.length)),u64(BigInt(central.length)),u64(centralSize),u64(centralOffset)]));await write(concatBytes([u32(0x07064b50),u32(0),u64(e64),u32(1)]));await write(concatBytes([u32(0x06054b50),u16(0xffff),u16(0xffff),u16(0xffff),u16(0xffff),u32(0xffffffff),u32(0xffffffff),u16(0)]));return{bytes:Number(offset),entries:central.length}}finally{try{crcWorker?.terminate?.()}catch{}}}
+async function writeZip64PackageToWritable(manifest,files,totalBytes,writable,label='正在导出 ZIP64 备份'){let crcWorker=null;const enc=new TextEncoder(),{time,date}=dosTimeDate(),central=[];let offset=0n;try{crcWorker=createCrcWorker();const write=async bytes=>{await writable.write(bytes);offset+=BigInt(bytes.byteLength)},writeEntry=async(name,blob,onChunk)=>{const nameBytes=enc.encode(name),localOffset=offset;await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0),u32(0),u16(nameBytes.length),u16(0),nameBytes]));let crc=0xffffffff,size=0n,reader=(blob&&typeof blob.getReader==='function'?blob:blob?.stream?.()).getReader();try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;const crcTask=crcWorker?crcWorker.update(crc,value):Promise.resolve(crc32Update(crc,value));size+=BigInt(value.byteLength);await crcTask;await writable.write(value);offset+=BigInt(value.byteLength);onChunk?.(value.byteLength);crc=await crcTask}}finally{reader.releaseLock()}crc=(crc^0xffffffff)>>>0;await write(concatBytes([u32(0x08074b50),u32(crc),u64(size),u64(size)]));central.push({nameBytes,extra:zip64CentralExtra(size,localOffset),crc,size,offset:localOffset});return size};await writeEntry('manifest.json',new Blob([JSON.stringify({...manifest,backupMode:'zip64-stream',totalAttachmentBytes:totalBytes},null,2)],{type:'application/json'}));let done=0;if(!activeProgressToast)startProgressToast(label,totalBytes,'准备写入附件…');else updateProgressToast(progressState.done,totalBytes,label,'准备写入附件…');for(const file of files){const source=file.stream||file.blob?.stream?.();if(!source)throw new Error(`附件读取流不可用：${file.name}`);const n=await writeEntry(attachmentZipPath(file.id),source,b=>{done=Math.min(totalBytes,done+(Number(b)||0));updateProgressToast(done,totalBytes,`正在导出：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`)});if(Number(n)!==Number(file.size))throw new Error(`附件读取大小不一致：${file.name}`)}updateProgressToast(totalBytes,totalBytes,'正在封装 ZIP…','附件已全部写入，正在写入目录并完成文件封口');progressState.finalizing=true;const centralOffset=offset;let centralSize=0n;for(const c of central){const h=concatBytes([u32(0x02014b50),u16(45),u16(45),u16(0x808),u16(0),u16(0),u16(0),u32(c.crc),u32(0xffffffff),u32(0xffffffff),u16(c.nameBytes.length),u16(c.extra.length),u16(0),u16(0),u16(0),u32(0),u32(0xffffffff),c.nameBytes,c.extra]);await write(h);centralSize+=BigInt(h.byteLength)}const e64=offset;await write(concatBytes([u32(0x06064b50),u64(44n),u16(45),u16(45),u32(0),u32(0),u64(BigInt(central.length)),u64(BigInt(central.length)),u64(centralSize),u64(centralOffset)]));await write(concatBytes([u32(0x07064b50),u32(0),u64(e64),u32(1)]));await write(concatBytes([u32(0x06054b50),u16(0xffff),u16(0xffff),u16(0xffff),u16(0xffff),u32(0xffffffff),u32(0xffffffff),u16(0)]));return{bytes:Number(offset),entries:central.length}}finally{try{crcWorker?.terminate?.()}catch{}}}
 
 async function exportLargeBackupZip64(manifest,files,totalBytes){
   const ua=String(navigator.userAgent||'').toLowerCase();
   const isHuaweiBrowser=/(huaweibrowser|huaweistbrowser|; hmos|harmonyos)/.test(ua);
   diagLog('largeExport:start',{files:files.length,totalBytes,secure:!!window.isSecureContext,protocol:location.protocol,hasFSA:typeof window.showSaveFilePicker==='function',hasSW:'serviceWorker' in navigator,isHuaweiBrowser});
   const fileName=`worklog-backup-${todayKey()}.zip`;
+  startProgressToast('正在准备大数据备份',totalBytes,'正在检查可用的下载方式…');
+  updateProgressToast(0,totalBytes,'正在准备大数据备份',`附件 ${files.length} 个 · ${formatBytes(totalBytes)}`);
   const fsaAvailable=typeof window.showSaveFilePicker==='function'&&window.isSecureContext&&/^https?:$/.test(location.protocol)&&!isHuaweiBrowser;
   diagLog('largeExport:capabilities',{fsaAvailable,reason:isHuaweiBrowser?'huawei-fsa-disabled':'normal'});
   if(fsaAvailable){
@@ -1552,16 +1554,20 @@ async function exportLargeBackupZip64(manifest,files,totalBytes){
       diagLog('largeExport:FSA:error',{name:e?.name,message:e?.message});
       try{await writable?.abort?.()}catch{}
       if(e?.name==='AbortError'){
-        diagLog('largeExport:FSA:fallback',{reason:isHuaweiBrowser?'huawei-abort-error':'abort-error'});
+        diagLog('largeExport:FSA:fallback',{reason:isHuaweiBrowser?'huawei-abort-error':'abort-error'});updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
+      updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
       }else{
-        diagLog('largeExport:FSA:fallback',{reason:'fsa-error'});
+        diagLog('largeExport:FSA:fallback',{reason:'fsa-error'});updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
+      updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
       }
     }
   }else{
-    diagLog('largeExport:FSA:skip',{reason:isHuaweiBrowser?'huawei-browser':'api-or-context-unavailable'});
+    diagLog('largeExport:FSA:skip',{reason:isHuaweiBrowser?'huawei-browser':'api-or-context-unavailable'});updateProgressToast(0,totalBytes,'正在连接下载通道…',isHuaweiBrowser?'当前浏览器跳过原生文件保存':'当前环境不支持原生文件保存');
+    updateProgressToast(0,totalBytes,'正在连接下载通道…',isHuaweiBrowser?'当前浏览器跳过原生文件保存':'当前环境不支持原生文件保存');
   }
   try{
-    diagLog('largeExport:path','ServiceWorker');
+    diagLog('largeExport:path','ServiceWorker');updateProgressToast(progressState.done,totalBytes,'正在连接流式下载…','正在与浏览器下载通道建立连接');
+    updateProgressToast(progressState.done,totalBytes,'正在连接流式下载…','正在与浏览器下载通道建立连接');
     const sink=await createServiceWorkerDownloadSink(fileName);
     if(sink){
       const result=await writeZip64PackageToWritable(manifest,files,totalBytes,sink,'正在流式导出 ZIP64 备份');
@@ -1571,14 +1577,16 @@ async function exportLargeBackupZip64(manifest,files,totalBytes){
       finishProgressToast(`ZIP64 大数据备份已发送至浏览器下载：${formatBytes(result.bytes)}`,'ok');
       return;
     }
-    diagLog('largeExport:SW:unavailable');
+    diagLog('largeExport:SW:unavailable');updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','流式单文件下载不可用，正在准备低内存分卷');
+    updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','流式单文件下载不可用，正在准备低内存分卷');
   }catch(e){
     diagLog('largeExport:SW:error',{name:e?.name,message:e?.message});
     console.warn('Service Worker 流式导出不可用，退回低内存分卷',e);
     stopProgressToast();
   }
   try{
-    diagLog('largeExport:path','split');
+    diagLog('largeExport:path','split');updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','正在计算分卷计划');
+    updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','正在计算分卷计划');
     const mobileLike=/(android|iphone|ipad|ipod|mobile|harmonyos|huaweibrowser|huaweistbrowser)/.test(ua)||Number(window.innerWidth||0)<800;
     const payloadLimit=(mobileLike?256:384)*1024*1024,chunkSize=payloadLimit,chunks=[];
     for(const file of files){const count=Math.max(1,Math.ceil(file.size/chunkSize));for(let i=0;i<count;i++){const start=i*chunkSize,end=Math.min(file.size,start+chunkSize);chunks.push({file,index:i,count,start,end,size:Math.max(0,end-start),path:attachmentChunkZipPath(file.id,i)})}}
@@ -1682,7 +1690,8 @@ async function importZipParts(files){
   try{
     const ordered=[...files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
     const manifests=[];const fileMetaById=new Map();const payloads=new Map();let exportId=null;let mode=null;
-    for(const file of ordered){
+    for(const source of ordered){
+      const file=await materializeSplitPartSource(source);
       const entries=await parseZipDirectory(file);validateZipEntries(entries);const map=new Map(entries.map(e=>[e.name,e]));
       const raw=map.get('manifest.json');if(!raw)throw new Error(`分卷缺少 manifest.json：${file.name}`);
       if(Number(raw.size)>MAX_MANIFEST_BYTES)throw new Error(`分卷 manifest.json 过大：${file.name}`);
@@ -1747,6 +1756,26 @@ async function importZipParts(files){
 }
 
 let activeSplitImportQueue=null;
+function isNestedSplitZipEntry(entry){
+  const name=String(entry?.name||'');
+  return /\.zip$/i.test(name)&&/(?:\.part\d{1,4}-of-\d{1,4}|part\d{1,4}(?:-|_)of[_-]?\d{1,4})/i.test(name);
+}
+async function materializeSplitPartSource(source){
+  if(!source?.__nestedSplitSource)return source;
+  const blob=await getZipEntryBlob(source.outer,source.entry);
+  return new File([blob],source.name,{type:'application/zip',lastModified:Date.now()});
+}
+async function inspectSplitPartSource(source){
+  const file=source?.__nestedSplitSource?await materializeSplitPartSource(source):source;
+  const result=await inspectSplitPartFile(file);
+  if(source?.__nestedSplitSource){result.source=source;result.file=null;result.displayName=source.name;result.size=Number(source.size)||Number(file.size)||0;}
+  return result;
+}
+async function openNestedSplitBundle(outer,entries){
+  const sources=entries.filter(isNestedSplitZipEntry).map(entry=>({__nestedSplitSource:true,outer,entry,name:String(entry.name),size:Number(entry.size)||0}));
+  if(!sources.length)throw new Error('这个压缩包里没有识别到 Worklog 分卷 ZIP');
+  openSplitImportQueue(sources);
+}
 async function inspectSplitPartFile(file){
   const dir=await parseZipDirectory(file);validateZipEntries(dir);
   const map=new Map(dir.map(e=>[e.name,e]));
@@ -1763,7 +1792,7 @@ async function inspectSplitPartFile(file){
     if(info.format!=='worklog-split-part'||Number(info.version)!==2)throw new Error(`分卷信息格式无效：${file.name}`);
     if(String(info.exportId)!==String(m.exportId)||Number(info.partIndex)!==partIndex||Number(info.partCount)!==partCount)throw new Error(`分卷身份信息与 manifest 不一致：${file.name}`);
   }
-  return {file,manifest:m,partIndex,partCount,exportId:String(m.exportId||''),size:Number(file.size)||0};
+  return {file,manifest:m,partIndex,partCount,exportId:String(m.exportId||''),size:Number(file.size)||0,displayName:String(file.name||'')};
 }
 function closeSplitImportQueue(){
   activeSplitImportQueue=null;
@@ -1781,8 +1810,8 @@ function refreshSplitImportQueueUi(){
   $('#splitImportCancel').onclick=closeSplitImportQueue;
   $('#splitImportAdd').onclick=()=>addSplitImportFiles();
   $('#splitImportClear').onclick=()=>{q.parts.clear();q.exportId='';q.partCount=null;refreshSplitImportQueueUi()};
-  $('#splitImportStart').onclick=()=>{const files=[...q.parts.values()].sort((a,b)=>a.partIndex-b.partIndex).map(x=>x.file);if(files.length)importZipParts(files)};
-  const list=$('#splitImportList');if(list){for(const x of sorted){const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:10px';row.innerHTML=`<span style="min-width:56px;font-variant-numeric:tabular-nums">${String(x.partIndex).padStart(3,'0')}/${String(x.partCount).padStart(3,'0')}</span><span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(x.file.name)}</span><span style="color:var(--muted);white-space:nowrap">${formatBytes(x.file.size)}</span><button class="icon-btn" data-remove-part="${x.partIndex}" title="移除">×</button>`;list.appendChild(row)}}
+  $('#splitImportStart').onclick=()=>{const files=[...q.parts.values()].sort((a,b)=>a.partIndex-b.partIndex).map(x=>x.source||x.file);if(files.length)importZipParts(files)};
+  const list=$('#splitImportList');if(list){for(const x of sorted){const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:10px';row.innerHTML=`<span style="min-width:56px;font-variant-numeric:tabular-nums">${String(x.partIndex).padStart(3,'0')}/${String(x.partCount).padStart(3,'0')}</span><span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(x.displayName||x.file?.name||x.source?.name||'分卷')}</span><span style="color:var(--muted);white-space:nowrap">${formatBytes(Number(x.size||x.file?.size||x.source?.size)||0)}</span><button class="icon-btn" data-remove-part="${x.partIndex}" title="移除">×</button>`;list.appendChild(row)}}
   list?.querySelectorAll('[data-remove-part]').forEach(b=>b.onclick=()=>{q.parts.delete(Number(b.dataset.removePart));if(q.parts.size===0){q.exportId='';q.partCount=null}refreshSplitImportQueueUi()});
   const hint=$('#splitImportHint');if(hint){if(q.partCount){hint.textContent=missing.length?`还缺少：${missing.map(i=>`第 ${i} 片`).join('、')}。你可以继续点击“添加分片”，不用一次性选择全部文件。`:'分片已齐全，可以开始导入。'}else hint.textContent='先添加任意一个分片，系统会自动识别这次备份需要多少片。'}
 }
@@ -1795,7 +1824,9 @@ async function addSplitImportFiles(initialFiles){
 }
 async function addSplitImportFile(file){
   const q=activeSplitImportQueue;if(!q||!file)return;
-  const x=await inspectSplitPartFile(file);
+  const x=await inspectSplitPartSource(file);
+  x.source=x.source||((file&&file.__nestedSplitSource)?file:null);
+  if(x.source)x.file=null;
   if(q.exportId&&x.exportId!==q.exportId)throw new Error(`不是同一次备份的分片：${file.name}`);
   if(q.partCount&&x.partCount!==q.partCount)throw new Error(`分片总数不一致：${file.name}`);
   if(q.parts.has(x.partIndex))throw new Error(`第 ${x.partIndex} 片已经添加：${file.name}`);
@@ -1810,7 +1841,7 @@ function selectAndImportSplitParts(initialFiles=[]){const files=Array.isArray(in
 function triggerBackupImport(){
   const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.zip,application/zip,.json,application/json';
   i.onchange=async e=>{const files=[...(e.target.files||[])];if(!files.length)return;const json=files.find(f=>/\.json$/i.test(f.name));if(json){if(files.length>1){notify('JSON 只能单文件导入，请只选择一个 JSON 备份','warn');return}return importLegacyJson(json)}
-    if(files.length===1){try{const dir=await parseZipDirectory(files[0]);const me=dir.find(x=>x.name==='manifest.json');if(me){const m=JSON.parse(await (await getZipEntryBlob(files[0],me)).text());if(m.backupMode==='split-zip'||m.backupMode==='split-zip-v2')return selectAndImportSplitParts(files[0]);}}catch(err){console.warn('导入格式预检失败，将交给普通 ZIP 导入',err)}return importZip(files[0]);}
+    if(files.length===1){diagLog('import:start',{name:files[0].name,size:files[0].size});try{const dir=await parseZipDirectory(files[0]);const me=dir.find(x=>x.name==='manifest.json');if(me){const m=JSON.parse(await (await getZipEntryBlob(files[0],me)).text());if(m.backupMode==='split-zip'||m.backupMode==='split-zip-v2')return selectAndImportSplitParts(files[0]);}const nestedParts=dir.filter(isNestedSplitZipEntry);if(nestedParts.length)return openNestedSplitBundle(files[0],nestedParts);}catch(err){console.warn('导入格式预检失败，将交给普通 ZIP 导入',err)}return importZip(files[0]);}
     try{const first=files[0];const dir=await parseZipDirectory(first);const me=dir.find(x=>x.name==='manifest.json');if(me){const m=JSON.parse(await (await getZipEntryBlob(first,me)).text());if(m.backupMode==='split-zip'||m.backupMode==='split-zip-v2')return selectAndImportSplitParts(files)}}catch(err){console.warn('分卷预检失败',err)}
     return importZipParts(files);
   };i.click();
