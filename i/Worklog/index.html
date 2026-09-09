@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.55</title>
+<title>工作日志 · v5.9.57</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -218,7 +218,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .reading-day-tools button{font-weight:650}.reading-day-tools button:hover{color:var(--accent)}
 @media(max-width:700px){.reading-view{border-radius:10px}.reading-head{position:sticky;top:0}.reading-body{padding:18px 12px 34px}.reading-entry{padding-left:48px;padding-bottom:28px}.reading-entry+.reading-entry{padding-top:24px}.reading-entry-main:hover{background:transparent}.reading-time{left:0;width:40px}.reading-entry-body{max-width:none}.reading-day+.reading-day{padding-top:24px}.reading-day-meta{font-size:calc(9px * var(--font-scale))}}
 
-/* v5.9.55 release polish */
+/* v5.9.57 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{
     display:grid;
@@ -252,7 +252,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   .view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}
 }
 
-/* v5.9.55 release polish */
+/* v5.9.57 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{display:grid;grid-template-columns:34px minmax(0,1fr) 34px auto;grid-template-rows:auto auto;align-items:center;gap:6px 5px;padding:0 0 2px}
   .header:not(.collapsed) .nav .nav-prev{grid-column:1;grid-row:1}
@@ -273,12 +273,14 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   .header:not(.collapsed) .nav .view-btn{padding-left:7px;padding-right:7px;min-width:28px}
 }
 @media(any-pointer:coarse){.view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}}
+
+.export-choice-grid{display:grid;gap:10px}.export-choice{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--border);border-radius:11px;cursor:pointer;background:var(--surface-2)}.export-choice:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}.export-choice input{margin-top:3px}.export-choice-main{min-width:0}.export-choice-title{font-weight:650;font-size:calc(12px * var(--font-scale))}.export-choice-desc{margin-top:3px;color:var(--muted);font-size:calc(10px * var(--font-scale));line-height:1.55}.export-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.export-choice-row .field{margin-bottom:0}@media(max-width:700px){.export-choice-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.55</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.57</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -432,7 +434,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.55',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.57',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -675,6 +677,23 @@ const fileStorage=(()=>{
     if(expected>IDB_CHUNK_BYTES*8){const reader=stream.getReader();let pending=[],pendingBytes=0,index=0;try{while(true){const q=await reader.read();if(q.done)break;acceptChunk(q.value);pending.push(q.value);pendingBytes+=q.value.byteLength;if(pendingBytes>=IDB_CHUNK_BYTES){const blob=new Blob(pending,{type:meta.type||'application/octet-stream'});await put('fileChunks',{fileId:String(meta.id),index,blob,size:blob.size});index++;pending=[];pendingBytes=0}}if(pendingBytes){const blob=new Blob(pending,{type:meta.type||'application/octet-stream'});await put('fileChunks',{fileId:String(meta.id),index,blob,size:blob.size});index++}if(total!==expected)throw new Error(`附件「${meta?.name||meta?.id||'未知'}」实际大小 ${total} 字节，与声明的 ${expected} 字节不一致`);return {...meta,workspaceId,storage:'idb-chunks',blob:undefined,size:total,chunkCount:index};}catch(e){try{await reader.cancel(e)}catch{};try{await deleteFileChunks(meta.id)}catch{};throw e}finally{reader.releaseLock()}}
     const reader=stream.getReader(),chunks=[];try{while(true){const q=await reader.read();if(q.done)break;acceptChunk(q.value);chunks.push(q.value)}}catch(e){try{await reader.cancel(e)}catch{};throw e}finally{reader.releaseLock()};if(total!==expected)throw new Error(`附件「${meta?.name||meta?.id||'未知'}」实际大小 ${total} 字节，与声明的 ${expected} 字节不一致`);const blob=new Blob(chunks,{type:meta.type||'application/octet-stream'});if(blob.size!==total)throw new Error(`附件「${meta?.name||meta?.id||'未知'}」内存封装大小校验失败`);return {...meta,workspaceId,storage:'idb',blob,size:total}
   }
+  async function actualSize(record){
+    if(!record)throw new Error('附件记录不存在');
+    if(record.storage==='idb-chunks'){
+      const d=await openDB();
+      return await new Promise((resolve,reject)=>{const tx=d.transaction('fileChunks','readonly');const idx=tx.objectStore('fileChunks').index('fileId');let total=0;const r=idx.openCursor(IDBKeyRange.only(String(record.id)));r.onsuccess=e=>{const c=e.target.result;if(!c){resolve(total);return}total+=Number(c.value?.size)||Number(c.value?.blob?.size)||0;c.continue()};r.onerror=()=>reject(r.error)});
+    }
+    const blob=await read(record);if(!blob)throw new Error(`附件不存在：${record.name||record.id}`);return Number(blob.size)||0;
+  }
+  async function readRange(record,start,end){
+    const a=Math.max(0,Number(start)||0),b=Math.max(a,Number(end)||0);
+    if(record?.storage==='idb-chunks'){
+      const d=await openDB();const first=Math.floor(a/IDB_CHUNK_BYTES),last=Math.max(first,Math.ceil(b/IDB_CHUNK_BYTES)-1),rows=[];
+      await new Promise((resolve,reject)=>{const tx=d.transaction('fileChunks','readonly');const idx=tx.objectStore('fileChunks').index('fileId');const r=idx.openCursor(IDBKeyRange.only(String(record.id)));r.onsuccess=e=>{const c=e.target.result;if(!c){resolve();return}const i=Number(c.value?.index);if(i>=first&&i<=last)rows.push(c.value);c.continue()};r.onerror=()=>reject(r.error)});
+      rows.sort((x,y)=>Number(x.index)-Number(y.index));let total=0;const parts=[];for(const row of rows){const blob=row.blob;const rs=Math.max(0,a-Number(row.index)*IDB_CHUNK_BYTES),re=Math.min(blob.size,b-Number(row.index)*IDB_CHUNK_BYTES);if(re>rs){const bytes=new Uint8Array(await blob.slice(rs,re).arrayBuffer());parts.push(bytes);total+=bytes.byteLength}}const out=new Uint8Array(total);let off=0;for(const x of parts){out.set(x,off);off+=x.byteLength}return out;
+    }
+    const blob=await read(record);if(!blob)throw new Error(`附件不存在：${record?.name||record?.id}`);return new Uint8Array(await blob.slice(a,b).arrayBuffer());
+  }
   async function stream(workspaceId,fileId,record){if(record?.storage==='idb-chunks')return idbChunkStream(record);const blob=await read(record);return blob||null}
   async function migrateRecord(record,onChunk){
     if(record?.storage==='opfs')return false;if(!(await isOPFSAvailable()))return false;const source=record?.storage?await getFile(record.id):record;if(!source?.blob)return false;const meta={id:source.id,workspaceId:source.workspaceId,name:source.name||'附件',type:source.type||source.blob.type||'application/octet-stream',size:Number(source.size)||source.blob.size,createdAt:source.createdAt||Date.now(),updatedAt:Date.now()};const stored=await importStream(source.workspaceId,meta,source.blob.stream(),onChunk);stored.blob=source.blob;await put('files',stored);return true
@@ -682,7 +701,7 @@ const fileStorage=(()=>{
   async function legacyFileCount(validRecords=[]){
     if(!(await isOPFSAvailable()))return 0;const ids=new Set(validRecords.map(x=>String(x.workspaceId)));const r=await originRoot();let count=0;for await(const [name,h] of r.entries())if(h.kind==='directory'&&ids.has(String(name)))for await(const [childName,child] of h.entries())if(child.kind==='file')count++;return count
   }
-  return {isOPFSAvailable,write,read,remove:removeFile,removeWorkspaceDir,inspectOPFS,cleanupOrphans,importBlob,importStream,migrateRecord,stream,legacyFileCount}
+  return {isOPFSAvailable,write,read,remove:removeFile,removeWorkspaceDir,inspectOPFS,cleanupOrphans,importBlob,importStream,migrateRecord,stream,readRange,actualSize,legacyFileCount}
 })();
 
 async function getFileMeta(id){const d=await openDB();return reqP(d.transaction('files','readonly').objectStore('files').get(id))}
@@ -1391,11 +1410,9 @@ async function buildExportSnapshot(){
   for(const meta of allF){
     if(meta.workspaceId&&!wsIds.has(String(meta.workspaceId)))throw new Error(`附件「${meta.name||meta.id}」引用了不存在的工作区`);
     const rec=await getFileMeta(meta.id);
-    const source=await fileStorage.stream(meta.workspaceId,meta.id,rec);
-    if(!source)throw new Error(`附件不存在：${meta.name||meta.id}`);
-    const size=Number(meta.size);
+    const size=await fileStorage.actualSize(rec);
     if(!Number.isFinite(size)||size<0||size>MAX_ATTACHMENT_BYTES)throw new Error(`附件「${meta.name||meta.id}」实际大小无效`);
-    files.push({id:String(meta.id),workspaceId:meta.workspaceId,name:meta.name||'附件',type:meta.type||source.type||'application/octet-stream',size,createdAt:meta.createdAt,updatedAt:meta.updatedAt,blob:source,storage:meta.storage,stream:source?.getReader?source:null});
+    files.push({id:String(meta.id),workspaceId:meta.workspaceId,name:meta.name||'附件',type:meta.type||rec?.type||'application/octet-stream',size,createdAt:meta.createdAt,updatedAt:meta.updatedAt,record:rec,storage:meta.storage});
     totalBytes+=size;
   }
   const fileIds=new Set(files.map(f=>f.id));
@@ -1415,10 +1432,10 @@ async function exportZip(){
   diagLog('exportZip:start');
   try{
     const {manifest,files,totalBytes}=await buildExportSnapshot();
-    if(totalBytes>=512*1024*1024||files.some(f=>f.storage==='idb-chunks')) return await exportLargeBackupZip64(manifest,files,totalBytes);
+    if(totalBytes>=512*1024*1024||files.some(f=>f.storage==='idb-chunks')) return await chooseLargeExportMode(manifest,files,totalBytes);
     const entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(manifest,null,2))}];
     for(const file of files){
-      const bytes=new Uint8Array(await file.blob.arrayBuffer());
+      const bytes=await fileStorage.readRange(file.record,0,file.size);
       if(bytes.byteLength!==file.size)throw new Error(`附件读取大小不一致：${file.name}`);
       entries.push({name:attachmentZipPath(file.id),data:bytes});
     }
@@ -1440,7 +1457,7 @@ function openSplitExportQueue(queue){
   activeSplitExportQueue=queue;
   const box=$('#dialogBox');
   const part=queue.index+1;
-  box.innerHTML=`<div class="modal-head"><span class="modal-title">大数据备份 · 自动分卷下载</span><button class="icon-btn" data-split-close title="停止下载">×</button></div><div class="modal-body"><div class="dialog-text" id="splitExportText"></div><div id="splitExportProgress" style="margin-top:12px;height:5px;background:var(--border);border-radius:99px;overflow:hidden"><div id="splitExportProgressBar" style="height:100%;width:0;background:var(--accent);transition:width .2s"></div></div><div id="splitExportHint" class="dialog-text" style="margin-top:10px"></div></div><div class="modal-foot"><button class="btn" id="splitExportClose">停止下载</button><div class="spacer"></div><button class="btn primary" id="splitExportNext">下载第 ${part} 卷</button></div>`;
+  box.innerHTML=`<div class="modal-head"><span class="modal-title">大数据备份 · 分卷下载</span><button class="icon-btn" data-split-close title="停止下载">×</button></div><div class="modal-body"><div class="dialog-text" id="splitExportText"></div><div id="splitExportProgress" style="margin-top:12px;height:5px;background:var(--border);border-radius:99px;overflow:hidden"><div id="splitExportProgressBar" style="height:100%;width:0;background:var(--accent);transition:width .2s"></div></div><div id="splitExportHint" class="dialog-text" style="margin-top:10px"></div></div><div class="modal-foot"><button class="btn" id="splitExportClose">停止下载</button><div class="spacer"></div><button class="btn primary" id="splitExportNext">下载第 ${part} 卷</button></div>`;
   box.querySelector('[data-split-close]').onclick=closeSplitExportQueue;
   $('#splitExportClose').onclick=closeSplitExportQueue;
   $('#splitExportNext').onclick=downloadNextSplitExportPart;
@@ -1454,29 +1471,20 @@ function refreshSplitExportQueueUi(){
   const pct=q.totalBytes?Math.min(1,q.done/q.totalBytes):1;
   bar.style.width=(pct*100).toFixed(2)+'%';
   if(q.closed||q.index>=q.partCount){
-    text.textContent=`全部 ${q.partCount} 个分卷已连续发起下载。`;
-    hint.textContent=`文件名统一为 ${q.baseName}.part001-of-${String(q.partCount).padStart(3,'0')}.zip … ${q.baseName}.part${String(q.partCount).padStart(3,'0')}-of-${String(q.partCount).padStart(3,'0')}.zip；如浏览器拦截了后续自动下载，请在浏览器提示中允许“多个下载”。`;
+    text.textContent=`全部 ${q.partCount} 个分卷已处理。`;
+    hint.textContent=`文件名统一为 ${q.baseName}.part001-of-${String(q.partCount).padStart(3,'0')}.zip … ${q.baseName}.part${String(q.partCount).padStart(3,'0')}-of-${String(q.partCount).padStart(3,'0')}.zip。`;
     btn.textContent='完成';btn.disabled=false;btn.onclick=closeSplitExportQueue;return;
   }
-  if(q.autoStarted){
-    text.textContent=`正在自动连续下载：第 ${Math.min(q.index+1,q.partCount)} / ${q.partCount} 卷`;
-    hint.textContent=`已准备 ${formatBytes(q.done)} / ${formatBytes(q.totalBytes)} · 每次只生成一卷 · 下一卷将自动继续。`;
-    btn.textContent='自动下载中…';btn.disabled=true;btn.onclick=null;return;
+  if(q.autoStarted&&q.busy){
+    text.textContent=`正在生成第 ${Math.min(q.index+1,q.partCount)} / ${q.partCount} 卷`;
+    hint.textContent=`每次只生成一卷 · ${q.waitMode==='confirm'?'当前采用逐卷确认，避免手机跳过下载。':'当前为自动连续尝试，浏览器可能拦截后续下载。'}`;
+    btn.textContent='处理中…';btn.disabled=true;btn.onclick=null;return;
   }
-  text.textContent=`备份共 ${q.partCount} 卷，将按固定顺序自动连续下载。`;
-  hint.textContent=`单卷 ≤ ${formatBytes(q.chunkSize)}；首次点击后自动连续生成与下载。若浏览器要求允许多个下载，请选择允许。`;
-  btn.textContent='开始自动下载';btn.disabled=false;btn.onclick=startSplitExportAuto;
+  text.textContent=`备份共 ${q.partCount} 卷，单卷 ≤ ${formatBytes(q.chunkSize)}。`;
+  hint.textContent=q.waitMode==='confirm'?`第 ${Math.min(q.index+1,q.partCount)} 卷生成后，请在浏览器下载界面确认已开始，再点击“下一卷”。网页无法读取系统下载完成状态。`:`将按顺序自动发起下载，但手机浏览器可能只接受当前一个下载请求。`;
+  btn.textContent=q.index===0?'下载第 1 卷':`下载第 ${q.index+1} 卷`;btn.disabled=false;btn.onclick=downloadNextSplitExportPart;
 }
-async function startSplitExportAuto(){
-  const q=activeSplitExportQueue;if(!q||q.busy||q.closed)return;
-  q.autoStarted=true;
-  refreshSplitExportQueueUi();
-  await downloadNextSplitExportPart();
-}
-function scheduleNextSplitExportPart(){
-  const q=activeSplitExportQueue;if(!q||q.closed||!q.autoStarted||q.index>=q.partCount)return;
-  window.setTimeout(()=>{if(activeSplitExportQueue===q&&!q.closed)downloadNextSplitExportPart().catch(e=>console.error(e))},650);
-}
+function startSplitExportAuto(){const q=activeSplitExportQueue;if(!q||q.busy||q.closed)return;q.autoStarted=true;downloadNextSplitExportPart().catch(e=>console.error(e))}
 async function downloadNextSplitExportPart(){
   const q=activeSplitExportQueue;if(!q||q.busy||q.closed)return;
   if(q.index>=q.partCount){q.closed=true;finishProgressToast(`大数据备份完成：${q.partCount} 个 ZIP 分卷，${q.filesCount} 个附件全部包含`,'ok');refreshSplitExportQueueUi();return;}
@@ -1488,7 +1496,7 @@ async function downloadNextSplitExportPart(){
     const enc=new TextEncoder();
     const entries=[{name:'manifest.json',data:enc.encode(JSON.stringify(partManifest,null,2))},{name:'worklog-part.json',data:enc.encode(JSON.stringify(partInfo,null,2))}];
     for(const chunk of chunks){
-      const bytes=new Uint8Array(await chunk.file.blob.slice(chunk.start,chunk.end).arrayBuffer());
+      const bytes=await fileStorage.readRange(chunk.file.record,chunk.start,chunk.end);
       if(bytes.byteLength!==chunk.size)throw new Error(`附件分块读取大小不一致：${chunk.file.name} / ${chunk.index+1}`);
       entries.push({name:chunk.path,data:bytes});
       q.done=Math.min(q.totalBytes,q.done+bytes.byteLength);
@@ -1506,18 +1514,22 @@ async function downloadNextSplitExportPart(){
     for(const e of entries){const ve=verifyMap.get(e.name);if(!ve||Number(ve.size)!==e.data.byteLength)throw new Error(`第 ${partIndex} 卷条目大小校验失败：${e.name}`)}
     const partName=`${q.baseName}.part${String(partIndex).padStart(3,'0')}-of-${String(q.partCount).padStart(3,'0')}.zip`;
     downloadBlob(blob,partName);
+    diagLog('largeExport:split:download-requested',{partIndex,partCount:q.partCount,name:partName,bytes:blob.size});
     q.index=partIndex;
     if(q.index>=q.partCount){finishProgressToast(`大数据备份完成：${q.partCount} 个 ZIP 分卷，${q.filesCount} 个附件全部包含`,'ok');q.closed=true}
-    else{updateProgressToast(q.done,q.totalBytes,`已发起第 ${partIndex} / ${q.partCount} 卷`,'自动准备下一卷…');if(q.autoStarted)scheduleNextSplitExportPart()}
+    else{
+      if(q.waitMode==='auto'&&!q.mobileLike){q.autoStarted=true;updateProgressToast(q.done,q.totalBytes,`第 ${partIndex} / ${q.partCount} 卷已提交`,'桌面端将稍后自动发起下一卷');window.setTimeout(()=>{if(activeSplitExportQueue===q&&!q.closed&&!q.busy)downloadNextSplitExportPart().catch(e=>console.error(e))},1800)}
+      else{q.autoStarted=false;updateProgressToast(q.done,q.totalBytes,`第 ${partIndex} / ${q.partCount} 卷已提交`,'请确认浏览器已开始下载后再继续下一卷');}
+    }
     refreshSplitExportQueueUi();
   }catch(e){
     console.error(e);q.autoStarted=false;finishProgressToast(`分卷 ${idx+1} 导出失败：${e.message||'未知错误'}`,'err');notify(`分卷 ${idx+1} 导出失败：${e.message||'未知错误'}`,'err');refreshSplitExportQueueUi();
   }finally{
-    q.busy=false;const b=$('#splitExportNext');if(b&&!q.closed&&!q.autoStarted){b.disabled=false;b.classList.remove('busy');b.textContent='继续自动下载'}
+    q.busy=false;const b=$('#splitExportNext');if(b&&!q.closed&&!q.autoStarted){b.disabled=false;b.classList.remove('busy');b.textContent='继续下载下一卷'}
   }
 }
 
-async function registerDownloadServiceWorker(){diagLog('SW:register:start',{secure:!!window.isSecureContext,protocol:location.protocol,hasSW:'serviceWorker' in navigator});try{if(!('serviceWorker' in navigator)||!window.isSecureContext||!/^https?:$/.test(location.protocol))return null;const reg=await navigator.serviceWorker.register(new URL('worklog-download-sw.js',location.href),{scope:new URL('./',location.href).pathname});await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller){await new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;navigator.serviceWorker.removeEventListener('controllerchange',finish);resolve()};navigator.serviceWorker.addEventListener('controllerchange',finish,{once:true});setTimeout(finish,1200)})}diagLog('SW:register:success',{scope:reg.scope,controlled:!!navigator.serviceWorker.controller,active:!!reg.active});return reg}catch(e){diagLog('SW:register:error',{name:e?.name,message:e?.message});console.warn('流式下载 Service Worker 不可用',e);return null}}
+async function registerDownloadServiceWorker(){const ua=String(navigator.userAgent||'').toLowerCase();const isHuawei=/(huaweibrowser|huaweistbrowser|; hmos|harmonyos)/.test(ua);diagLog('SW:register:start',{secure:!!window.isSecureContext,protocol:location.protocol,hasSW:'serviceWorker' in navigator,isHuawei});if(isHuawei){diagLog('SW:register:skip',{reason:'huawei-stream-download-unsupported'});return null}try{if(!('serviceWorker' in navigator)||!window.isSecureContext||!/^https?:$/.test(location.protocol))return null;const reg=await navigator.serviceWorker.register(new URL('worklog-download-sw.js',location.href),{scope:new URL('./',location.href).pathname});await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller){await new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;navigator.serviceWorker.removeEventListener('controllerchange',finish);resolve()};navigator.serviceWorker.addEventListener('controllerchange',finish,{once:true});setTimeout(finish,1200)})}diagLog('SW:register:success',{scope:reg.scope,controlled:!!navigator.serviceWorker.controller,active:!!reg.active});return reg}catch(e){diagLog('SW:register:error',{name:e?.name,message:e?.message});console.warn('流式下载 Service Worker 不可用',e);return null}}
 function sanitizeDownloadName(name){return String(name||'worklog-backup.zip').replace(/[\\"\r\n]/g,'_').replace(/[<>:*?|]/g,'_')||'worklog-backup.zip'}
 function zip64ManifestBytes(manifest,totalBytes){
   return new TextEncoder().encode(JSON.stringify({...manifest,backupMode:'zip64-stream',totalAttachmentBytes:totalBytes},null,2));
@@ -1638,16 +1650,59 @@ async function createServiceWorkerDownloadSink(name,contentLength=null){
   const abort=async reason=>{try{channel.port1.postMessage({type:'abort',message:String(reason||'导出已中止')})}catch{};try{popup?.close?.()}catch{};try{channel.port1.close()}catch{};};
   return{write,close,abort,get started(){return started}};
 }
-async function writeZip64PackageToWritable(manifest,files,totalBytes,writable,label='正在导出 ZIP64 备份'){let crcWorker=null;const enc=new TextEncoder(),{time,date}=dosTimeDate(),central=[];let offset=0n;try{crcWorker=createCrcWorker();const write=async bytes=>{await writable.write(bytes);offset+=BigInt(bytes.byteLength)},writeEntry=async(name,blob,onChunk)=>{const nameBytes=enc.encode(name),localOffset=offset;await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0),u32(0),u16(nameBytes.length),u16(0),nameBytes]));let crc=0xffffffff,size=0n,reader=(blob&&typeof blob.getReader==='function'?blob:blob?.stream?.()).getReader();try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;const crcTask=crcWorker?crcWorker.update(crc,value):Promise.resolve(crc32Update(crc,value));size+=BigInt(value.byteLength);await crcTask;await writable.write(value);offset+=BigInt(value.byteLength);onChunk?.(value.byteLength);crc=await crcTask}}finally{reader.releaseLock()}crc=(crc^0xffffffff)>>>0;await write(concatBytes([u32(0x08074b50),u32(crc),u64(size),u64(size)]));central.push({nameBytes,extra:zip64CentralExtra(size,localOffset),crc,size,offset:localOffset});return size};await writeEntry('manifest.json',new Blob([zip64ManifestBytes(manifest,totalBytes)],{type:'application/json'}));let done=0;if(!activeProgressToast)startProgressToast(label,totalBytes,'准备写入附件…');else updateProgressToast(progressState.done,totalBytes,label,'准备写入附件…');for(const file of files){const source=file.stream||file.blob?.stream?.();if(!source)throw new Error(`附件读取流不可用：${file.name}`);const n=await writeEntry(attachmentZipPath(file.id),source,b=>{done=Math.min(totalBytes,done+(Number(b)||0));updateProgressToast(done,totalBytes,`正在导出：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`)});if(Number(n)!==Number(file.size))throw new Error(`附件读取大小不一致：${file.name}`)}updateProgressToast(totalBytes,totalBytes,'正在封装 ZIP…','附件已全部写入，正在写入目录并完成文件封口');progressState.finalizing=true;const centralOffset=offset;let centralSize=0n;for(const c of central){const h=concatBytes([u32(0x02014b50),u16(45),u16(45),u16(0x808),u16(0),u16(0),u16(0),u32(c.crc),u32(0xffffffff),u32(0xffffffff),u16(c.nameBytes.length),u16(c.extra.length),u16(0),u16(0),u16(0),u32(0),u32(0xffffffff),c.nameBytes,c.extra]);await write(h);centralSize+=BigInt(h.byteLength)}const e64=offset;await write(concatBytes([u32(0x06064b50),u64(44n),u16(45),u16(45),u32(0),u32(0),u64(BigInt(central.length)),u64(BigInt(central.length)),u64(centralSize),u64(centralOffset)]));await write(concatBytes([u32(0x07064b50),u32(0),u64(e64),u32(1)]));await write(concatBytes([u32(0x06054b50),u16(0xffff),u16(0xffff),u16(0xffff),u16(0xffff),u32(0xffffffff),u32(0xffffffff),u16(0)]));return{bytes:Number(offset),entries:central.length}}finally{try{crcWorker?.terminate?.()}catch{}}}
+async function writeZip64PackageToWritable(manifest,files,totalBytes,writable,label='正在导出 ZIP64 备份'){let crcWorker=null;const enc=new TextEncoder(),{time,date}=dosTimeDate(),central=[];let offset=0n;try{crcWorker=createCrcWorker();const write=async bytes=>{await writable.write(bytes);offset+=BigInt(bytes.byteLength)},writeEntry=async(name,blob,onChunk)=>{const nameBytes=enc.encode(name),localOffset=offset;await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0),u32(0),u16(nameBytes.length),u16(0),nameBytes]));let crc=0xffffffff,size=0n,reader=(blob&&typeof blob.getReader==='function'?blob:blob?.stream?.()).getReader();try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;const crcTask=crcWorker?crcWorker.update(crc,value):Promise.resolve(crc32Update(crc,value));size+=BigInt(value.byteLength);await crcTask;await writable.write(value);offset+=BigInt(value.byteLength);onChunk?.(value.byteLength);crc=await crcTask}}finally{reader.releaseLock()}crc=(crc^0xffffffff)>>>0;await write(concatBytes([u32(0x08074b50),u32(crc),u64(size),u64(size)]));central.push({nameBytes,extra:zip64CentralExtra(size,localOffset),crc,size,offset:localOffset});return size};await writeEntry('manifest.json',new Blob([zip64ManifestBytes(manifest,totalBytes)],{type:'application/json'}));let done=0;if(!activeProgressToast)startProgressToast(label,totalBytes,'准备写入附件…');else updateProgressToast(progressState.done,totalBytes,label,'准备写入附件…');for(const file of files){const source=await fileStorage.stream(file.workspaceId,file.id,file.record);if(!source)throw new Error(`附件读取流不可用：${file.name}`);const n=await writeEntry(attachmentZipPath(file.id),source,b=>{done=Math.min(totalBytes,done+(Number(b)||0));updateProgressToast(done,totalBytes,`正在导出：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`)});if(Number(n)!==Number(file.size))throw new Error(`附件读取大小不一致：${file.name}`)}updateProgressToast(totalBytes,totalBytes,'正在封装 ZIP…','附件已全部写入，正在写入目录并完成文件封口');progressState.finalizing=true;const centralOffset=offset;let centralSize=0n;for(const c of central){const h=concatBytes([u32(0x02014b50),u16(45),u16(45),u16(0x808),u16(0),u16(0),u16(0),u32(c.crc),u32(0xffffffff),u32(0xffffffff),u16(c.nameBytes.length),u16(c.extra.length),u16(0),u16(0),u16(0),u32(0),u32(0xffffffff),c.nameBytes,c.extra]);await write(h);centralSize+=BigInt(h.byteLength)}const e64=offset;await write(concatBytes([u32(0x06064b50),u64(44n),u16(45),u16(45),u32(0),u32(0),u64(BigInt(central.length)),u64(BigInt(central.length)),u64(centralSize),u64(centralOffset)]));await write(concatBytes([u32(0x07064b50),u32(0),u64(e64),u32(1)]));await write(concatBytes([u32(0x06054b50),u16(0xffff),u16(0xffff),u16(0xffff),u16(0xffff),u32(0xffffffff),u32(0xffffffff),u16(0)]));return{bytes:Number(offset),entries:central.length}}finally{try{crcWorker?.terminate?.()}catch{}}}
 
-async function exportLargeBackupZip64(manifest,files,totalBytes){
+async function chooseLargeExportMode(manifest,files,totalBytes){
+  const ua=String(navigator.userAgent||'').toLowerCase();
+  const mobileLike=/(android|iphone|ipad|ipod|mobile|harmonyos|huaweibrowser|huaweistbrowser)/.test(ua)||Number(window.innerWidth||0)<800;
+  const isHuawei=/(huaweibrowser|huaweistbrowser|; hmos|harmonyos)/.test(ua);
+  const hasFsa=typeof window.showSaveFilePicker==='function'&&window.isSecureContext&&/^https?:$/.test(location.protocol)&&!isHuawei;
+  const hasSw=!isHuawei&&'serviceWorker' in navigator&&window.isSecureContext&&/^https?:$/.test(location.protocol);
+  const last=(()=>{try{return JSON.parse(localStorage.getItem('worklog-large-export-prefs')||'{}')}catch{return {}}})();
+  const defaultMode=last.mode||(hasFsa||hasSw?'single':'split');
+  const defaultSize=Math.max(64,Math.min(1024,Number(last.chunkSizeMiB)||256));
+  const defaultWait=last.waitMode||(mobileLike?'confirm':'auto');
+  const box=$('#dialogBox');
+  box.innerHTML=`<div class="modal-head"><span class="modal-title">大数据备份</span><button class="icon-btn" data-large-export-close title="取消">×</button></div><div class="modal-body"><div class="dialog-text">本次备份包含 ${files.length} 个附件，共 ${formatBytes(totalBytes)}。请选择下载方式。</div><div class="export-choice-grid" style="margin-top:12px"><label class="export-choice"><input type="radio" name="largeExportMode" value="single" ${defaultMode==='single'?'checked':''}><span class="export-choice-main"><span class="export-choice-title">单文件 ZIP</span><span class="export-choice-desc">生成一个完整备份文件。${hasFsa?'当前浏览器支持原生文件写入。':hasSw?'当前浏览器可尝试流式单文件下载。':'当前浏览器没有可靠的大文件流式写入，单文件可能占用大量内存。'}</span></span></label><label class="export-choice"><input type="radio" name="largeExportMode" value="split" ${defaultMode!=='single'?'checked':''}><span class="export-choice-main"><span class="export-choice-title">分卷 ZIP</span><span class="export-choice-desc">低内存方案。可自定义单卷大小，手机浏览器推荐。</span></span></label></div><div class="export-choice-row"><div class="field"><label class="field-label" for="largeExportChunkSize">分卷大小</label><select id="largeExportChunkSize"><option value="128">128 MiB</option><option value="256">256 MiB</option><option value="384">384 MiB</option><option value="512">512 MiB</option><option value="768">768 MiB</option><option value="1024">1 GiB</option></select></div><div class="field"><label class="field-label" for="largeExportWaitMode">分卷下载方式</label><select id="largeExportWaitMode"><option value="confirm">逐卷确认（手机推荐）</option><option value="auto">自动连续尝试（桌面端）</option></select></div></div><div id="largeExportModeHint" class="dialog-text" style="margin-top:10px"></div></div><div class="modal-foot"><button class="btn" id="largeExportCancel">取消</button><div class="spacer"></div><button class="btn primary" id="largeExportStart">继续</button></div>`;
+  $('#largeExportChunkSize').value=String(defaultSize);
+  $('#largeExportWaitMode').value=defaultWait==='confirm'?'confirm':'auto';
+  const hint=$('#largeExportModeHint'),modeInputs=box.querySelectorAll('input[name="largeExportMode"]');
+  const sync=()=>{const mode=box.querySelector('input[name="largeExportMode"]:checked')?.value||'split';const split=mode==='split';$('#largeExportChunkSize').disabled=!split;$('#largeExportWaitMode').disabled=!split;hint.textContent=mode==='single'&&!(hasFsa||hasSw)?'注意：此浏览器没有可靠的大文件流式写入，单文件方案可能占用较多内存；失败时不会自动把半成品当作成功。':split&&mobileLike?'手机无法向网页报告“上一卷已经真正下载完成”，推荐逐卷确认，避免浏览器丢掉后续下载请求。':split?'网页无法可靠知道系统下载器何时真正完成，自动连续仅表示依次发起下载请求。':'';
+  };
+  modeInputs.forEach(x=>x.addEventListener('change',sync));sync();
+  $('#largeExportCancel').onclick=()=>hideOverlay('#dialogOverlay');$('#largeExportClose').onclick=()=>hideOverlay('#dialogOverlay');$('#largeExportStart').onclick=async()=>{const mode=box.querySelector('input[name="largeExportMode"]:checked')?.value||'split';const chunkSizeMiB=Math.max(128,Math.min(1024,Number($('#largeExportChunkSize').value)||256));const waitMode=mobileLike?'confirm':($('#largeExportWaitMode').value==='confirm'?'confirm':'auto');try{localStorage.setItem('worklog-large-export-prefs',JSON.stringify({mode,chunkSizeMiB,waitMode}))}catch{}hideOverlay('#dialogOverlay');if(mode==='single')return exportLargeBackupZip64(manifest,files,totalBytes,{preferredMode:'single'});return exportLargeBackupZip64(manifest,files,totalBytes,{preferredMode:'split',chunkSizeMiB,waitMode})};
+  $('#dialogOverlay').classList.add('open');
+}
+
+async function exportLargeOneShotBlob(manifest,files,totalBytes){
+  const entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify({...manifest,backupMode:'zip64-single-fallback',totalAttachmentBytes:totalBytes},null,2))}];
+  let done=0;startProgressToast('正在生成单文件 ZIP',totalBytes,'大数据单文件模式');
+  for(const file of files){
+    const bytes=await fileStorage.readRange(file.record,0,file.size);
+    if(bytes.byteLength!==Number(file.size))throw new Error(`附件读取大小不一致：${file.name}`);
+    entries.push({name:attachmentZipPath(file.id),data:bytes});done=Math.min(totalBytes,done+bytes.byteLength);updateProgressToast(done,totalBytes,`正在读取：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`);
+  }
+  const zip=zipStore(entries);const blob=new Blob([zip],{type:'application/zip'});
+  const verified=await parseZipDirectory(blob);validateZipEntries(verified);
+  const expected=new Set(entries.map(e=>e.name));if(verified.length!==expected.size||verified.some(e=>!expected.has(e.name)))throw new Error('单文件 ZIP 目录校验失败');
+  const byName=new Map(verified.map(e=>[e.name,e]));for(const f of files){const e=byName.get(attachmentZipPath(f.id));if(!e||Number(e.size)!==Number(f.size))throw new Error(`导出 ZIP 附件大小校验失败：${f.name}`)}
+  const name=`worklog-backup-${todayKey()}.zip`;downloadBlob(blob,name);finishProgressToast(`单文件 ZIP 已提交下载：${formatBytes(blob.size)}`,'ok');diagLog('largeExport:single:success',{bytes:blob.size});
+}
+
+async function exportLargeBackupZip64(manifest,files,totalBytes,options={}){
   const ua=String(navigator.userAgent||'').toLowerCase();
   const isHuaweiBrowser=/(huaweibrowser|huaweistbrowser|; hmos|harmonyos)/.test(ua);
+  const preferredMode=options.preferredMode||'auto';
+  const preferredChunkSize=Number(options.chunkSizeMiB)||256;
+  const preferredWaitMode=options.waitMode==='confirm'?'confirm':'auto';
+  const forceSplit=preferredMode==='split';
+  const forceSingle=preferredMode==='single';
+  if(isHuaweiBrowser)diagLog('largeExport:compat','Huawei Browser detected: SW streaming disabled; using split ZIP fallback');
   diagLog('largeExport:start',{files:files.length,totalBytes,secure:!!window.isSecureContext,protocol:location.protocol,hasFSA:typeof window.showSaveFilePicker==='function',hasSW:'serviceWorker' in navigator,isHuaweiBrowser});
   const fileName=`worklog-backup-${todayKey()}.zip`;
   startProgressToast('正在准备大数据备份',totalBytes,'正在检查可用的下载方式…');
   updateProgressToast(0,totalBytes,'正在准备大数据备份',`附件 ${files.length} 个 · ${formatBytes(totalBytes)}`);
-  const fsaAvailable=typeof window.showSaveFilePicker==='function'&&window.isSecureContext&&/^https?:$/.test(location.protocol)&&!isHuaweiBrowser;
+  const fsaAvailable=!forceSplit&&typeof window.showSaveFilePicker==='function'&&window.isSecureContext&&/^https?:$/.test(location.protocol)&&!isHuaweiBrowser;
   diagLog('largeExport:capabilities',{fsaAvailable,reason:isHuaweiBrowser?'huawei-fsa-disabled':'normal'});
   if(fsaAvailable){
     let handle=null,writable=null;
@@ -1673,52 +1728,57 @@ async function exportLargeBackupZip64(manifest,files,totalBytes){
       try{await writable?.abort?.()}catch{}
       if(e?.name==='AbortError'){
         diagLog('largeExport:FSA:fallback',{reason:isHuaweiBrowser?'huawei-abort-error':'abort-error'});updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
-      updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
       }else{
         diagLog('largeExport:FSA:fallback',{reason:'fsa-error'});updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
-      updateProgressToast(progressState.done,totalBytes,'正在切换下载方式…','原生文件保存不可用，正在尝试流式下载');
       }
     }
   }else{
-    diagLog('largeExport:FSA:skip',{reason:isHuaweiBrowser?'huawei-browser':'api-or-context-unavailable'});updateProgressToast(0,totalBytes,'正在连接下载通道…',isHuaweiBrowser?'当前浏览器跳过原生文件保存':'当前环境不支持原生文件保存');
-    updateProgressToast(0,totalBytes,'正在连接下载通道…',isHuaweiBrowser?'当前浏览器跳过原生文件保存':'当前环境不支持原生文件保存');
+    diagLog('largeExport:FSA:skip',{reason:isHuaweiBrowser?'huawei-browser':'api-or-context-unavailable'});updateProgressToast(0,totalBytes,'正在选择下载方式…',isHuaweiBrowser?'当前浏览器使用自动分卷下载':'当前环境不支持原生文件保存');
   }
-  try{
-    diagLog('largeExport:path','ServiceWorker');updateProgressToast(progressState.done,totalBytes,'正在连接流式下载…','正在与浏览器下载通道建立连接');
-    updateProgressToast(progressState.done,totalBytes,'正在连接流式下载…','正在与浏览器下载通道建立连接');
-    const archiveBytes=estimateZip64ArchiveBytes(manifest,files,totalBytes);diagLog('largeExport:archive-size',{bytes:Number(archiveBytes),human:formatBytes(Number(archiveBytes))});
-    const sink=await createServiceWorkerDownloadSink(fileName,archiveBytes);
-    if(sink){
-      const result=await writeZip64PackageToWritable(manifest,files,totalBytes,sink,'正在流式导出 ZIP64 备份');
-      const sent=await sink.close();
-      if(Number(sent)!==result.bytes)throw new Error(`浏览器下载通道写入大小异常：应为 ${formatBytes(result.bytes)}，实际 ${formatBytes(Number(sent))}`);
-      diagLog('largeExport:SW:success',{bytes:result.bytes,sent:Number(sent)});
-      finishProgressToast(`ZIP64 大数据备份已发送至浏览器下载：${formatBytes(result.bytes)}`,'ok');
-      return;
+  if(!forceSplit&&!isHuaweiBrowser){
+    try{
+      diagLog('largeExport:path','ServiceWorker');updateProgressToast(progressState.done,totalBytes,'正在连接流式下载…','正在与浏览器下载通道建立连接');
+      const archiveBytes=estimateZip64ArchiveBytes(manifest,files,totalBytes);diagLog('largeExport:archive-size',{bytes:Number(archiveBytes),human:formatBytes(Number(archiveBytes))});
+      const sink=await createServiceWorkerDownloadSink(fileName,archiveBytes);
+      if(sink){
+        const result=await writeZip64PackageToWritable(manifest,files,totalBytes,sink,'正在流式导出 ZIP64 备份');
+        const sent=await sink.close();
+        if(Number(sent)!==result.bytes)throw new Error(`浏览器下载通道写入大小异常：应为 ${formatBytes(result.bytes)}，实际 ${formatBytes(Number(sent))}`);
+        diagLog('largeExport:SW:success',{bytes:result.bytes,sent:Number(sent)});
+        finishProgressToast(`ZIP64 大数据备份已发送至浏览器下载：${formatBytes(result.bytes)}`,'ok');
+        return;
+      }
+      diagLog('largeExport:SW:unavailable');updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','流式单文件下载不可用，正在准备低内存分卷');
+    }catch(e){
+      diagLog('largeExport:SW:error',{name:e?.name,message:e?.message,code:e?.code||''});
+      console.warn('Service Worker 流式导出不可用',e);
+      if(e?.code==='SW_DOWNLOAD_START_TIMEOUT'){
+        finishProgressToast('浏览器没有启动单文件下载','err');
+        notify('浏览器没有启动下载，请重新点击导出或使用分卷备份','warn',5200);
+        return;
+      }
+      stopProgressToast();
     }
-    diagLog('largeExport:SW:unavailable');updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','流式单文件下载不可用，正在准备低内存分卷');
-    updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','流式单文件下载不可用，正在准备低内存分卷');
-  }catch(e){
-    diagLog('largeExport:SW:error',{name:e?.name,message:e?.message,code:e?.code||''});
-    console.warn('Service Worker 流式导出不可用',e);
-    if(e?.code==='SW_DOWNLOAD_START_TIMEOUT'){
-      finishProgressToast('浏览器没有启动单文件下载','err');
-      notify('浏览器没有启动下载，请重新点击导出或使用分卷备份','warn',5200);
-      return;
+  }else{
+    diagLog('largeExport:SW:skip',{reason:forceSplit?'user-selected-split':(isHuaweiBrowser?'huawei-streaming-download-unsupported':'forced-single')});
+    if(forceSingle){
+      updateProgressToast(progressState.done,totalBytes,'正在准备单文件 ZIP…','当前环境将尝试一次性生成完整 ZIP，可能占用较多内存');
+      try{await exportLargeOneShotBlob(manifest,files,totalBytes);return}catch(e){diagLog('largeExport:single:error',{name:e?.name,message:e?.message});console.warn('单文件大数据导出失败，将停止，不自动切换为分卷',e);finishProgressToast('单文件导出失败：'+(e.message||'未知错误'),'err');return}
     }
-    stopProgressToast();
+    updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','当前浏览器的流式单文件下载不可用，改用低内存分卷');
   }
+  if(forceSingle) return;
   try{
     diagLog('largeExport:path','split');updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','正在计算分卷计划');
-    updateProgressToast(progressState.done,totalBytes,'正在准备分卷备份…','正在计算分卷计划');
     const mobileLike=/(android|iphone|ipad|ipod|mobile|harmonyos|huaweibrowser|huaweistbrowser)/.test(ua)||Number(window.innerWidth||0)<800;
-    const payloadLimit=(mobileLike?256:384)*1024*1024,chunkSize=payloadLimit,chunks=[];
+    const chunkSize=Math.max(128,Math.min(1024,preferredChunkSize)) * 1024 * 1024;const payloadLimit=chunkSize,chunks=[];
+    diagLog('largeExport:split-plan',{payloadLimit,chunkSize,mobileLike});
     for(const file of files){const count=Math.max(1,Math.ceil(file.size/chunkSize));for(let i=0;i<count;i++){const start=i*chunkSize,end=Math.min(file.size,start+chunkSize);chunks.push({file,index:i,count,start,end,size:Math.max(0,end-start),path:attachmentChunkZipPath(file.id,i)})}}
     const buckets=[];let bucket=[],bucketBytes=0;
     for(const c of chunks){if(bucket.length&&bucketBytes+c.size>payloadLimit){buckets.push(bucket);bucket=[];bucketBytes=0}bucket.push(c);bucketBytes+=c.size}
     if(bucket.length||!chunks.length)buckets.push(bucket);
     const baseName=`worklog-backup-${todayKey()}`;
-    const q={buckets,manifest,totalBytes,partCount:buckets.length,filesCount:files.length,chunkSize,done:0,index:0,mobileLike,closed:false,autoStarted:false,baseName};
+    const q={buckets,manifest,totalBytes,partCount:buckets.length,filesCount:files.length,chunkSize,done:0,index:0,mobileLike,closed:false,autoStarted:false,waitMode:preferredWaitMode,baseName};
     startProgressToast('正在准备大数据分卷备份',totalBytes,`浏览器不支持流式单文件下载，退回 ${q.partCount} 卷`);
     window.__worklogSplitExportQueue=q;openSplitExportQueue(q);
   }catch(e){console.error(e);finishProgressToast('分卷备份失败：'+(e.message||'未知错误'),'err')}}
