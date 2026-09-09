@@ -46,7 +46,7 @@ self.addEventListener('message',event=>{
     try{port.close?.()}catch{}
     return;
   }
-  const session={token,name:safeName(m.name),port,controller:null,queue:[],done:0,closed:false,error:null,pendingAcks:[],started:false,detached:false,reattachTimer:null,expireTimer:setTimeout(()=>failSession(session,'下载会话已过期'),10*60*1000)};
+  const session={token,name:safeName(m.name),contentLength:Number.isFinite(Number(m.contentLength))?Number(m.contentLength):null,port,controller:null,queue:[],done:0,closed:false,error:null,pendingAcks:[],started:false,detached:false,reattachTimer:null,expireTimer:setTimeout(()=>failSession(session,'下载会话已过期'),10*60*1000)};
   sessions.set(token,session);
   const list=waiters.get(token)||[];waiters.delete(token);for(const w of list)w.resolve(session);
   port.onmessage=ev=>{
@@ -92,6 +92,6 @@ self.addEventListener('fetch',event=>{
         failSession(session,`浏览器下载已取消：${message}`);
       }
     });
-    return new Response(stream,{headers:{'Content-Type':'application/zip','Content-Disposition':`attachment; filename="${safeName(session.name)}"; filename*=UTF-8''${encodeURIComponent(session.name)}`,'Cache-Control':'no-store, no-cache, must-revalidate','Pragma':'no-cache','X-Content-Type-Options':'nosniff'} });
+    return new Response(stream,{headers:{'Content-Type':'application/zip','Content-Disposition':`attachment; filename="${safeName(session.name)}"; filename*=UTF-8''${encodeURIComponent(session.name)}`,'Cache-Control':'no-store, no-cache, must-revalidate','Pragma':'no-cache','X-Content-Type-Options':'nosniff',...(session.contentLength!=null?{'Content-Length':String(session.contentLength)}:{})} });
   })());
 });
