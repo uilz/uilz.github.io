@@ -6,7 +6,7 @@ function streamBytes(total,chunk=64*1024){let sent=0;return new ReadableStream({
 function infoBlob(kind){if(kind==='blob-cl')return new Blob([fixedBytes(64*1024)],{type:'application/octet-stream'});if(kind==='blob-nolen')return new Blob([fixedBytes(64*1024)],{type:'application/octet-stream'});return null}
 function headers(name,len,withLen=true){const h={'Content-Type':'application/octet-stream','Content-Disposition':`attachment; filename="${name.replace(/"/g,'')}"`,'Cache-Control':'no-store'};if(withLen)h['Content-Length']=String(len);return h}
 self.addEventListener('message',e=>{const d=e.data||{};if(d.type==='download-probe-start'){try{e.source?.postMessage({type:'download-prepared',id:d.id})}catch{}}});
-self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.hostname!=='download-probe.invalid')return;const p=u.pathname.split('/').filter(Boolean);const kind=p[0]||'';const id=decodeURIComponent(p[1]||'');const qs=u.searchParams;let body, len, withLen=true, name='probe.bin';
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin!==self.location.origin)return;const p=u.pathname.split('/').filter(Boolean);const kind=p[0]||'';const id=decodeURIComponent(p[1]||'');const qs=u.searchParams;let body, len, withLen=true, name='probe.bin';
 if(kind==='blob-cl'){body=fixedBytes(64*1024);len=body.byteLength;name='probe-04-sw-blob.bin'}
 else if(kind==='blob-nolen'){body=new Blob([fixedBytes(64*1024)]);len=body.size;withLen=false;name='probe-05-sw-blob-nolen.bin'}
 else if(kind==='bytes'){body=fixedBytes(64*1024);len=body.byteLength;name='probe-06-sw-bytes.bin'}
