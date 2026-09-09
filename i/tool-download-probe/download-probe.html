@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Download Probe</title>
+<style>
+:root{color-scheme:light dark}*{box-sizing:border-box}body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;background:#f5f5f7;color:#111}main{max-width:900px;margin:0 auto;padding:18px 14px 42px}.card{background:#fff;border:1px solid #ddd;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #0000000b}h1{font-size:22px;margin:0 0 6px}.muted{color:#666;font-size:13px;line-height:1.55}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}.test{border:1px solid #ddd;border-radius:12px;padding:12px}.test b{display:block;margin-bottom:4px}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button{border:1px solid #c9c9c9;background:#fff;border-radius:10px;padding:9px 11px;font-size:14px}button.primary{font-weight:700}button:disabled{opacity:.45}button.ok{background:#e7f7eb}button.err{background:#fde7e7}pre{white-space:pre-wrap;word-break:break-word;background:#111;color:#d7ffd7;padding:12px;border-radius:12px;max-height:48vh;overflow:auto;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eee;font-size:12px;margin:4px 4px 0 0}.okb{background:#dff6e5}.warn{background:#fff4ce}.errb{background:#ffe0e0}.status{font-size:12px;margin-top:7px;min-height:18px;color:#666}.small{font-size:12px}.sep{height:1px;background:#e6e6e6;margin:12px 0}@media(max-width:420px){main{padding:12px 10px 30px}.card{padding:13px}.grid{grid-template-columns:1fr}button{width:100%}.row button{width:auto;flex:1}}
+</style>
+</head>
+<body><main>
+<div class="card"><h1>Download Probe</h1><div class="muted">独立下载能力探针，不读取、不修改 Worklog 数据。建议在与 Worklog 相同的 HTTPS 域名下测试。每个测试都只生成极小文件，避免占用存储。</div><div id="env"></div></div>
+
+<div class="card"><div><b>怎么测试</b></div><div class="muted">每项测试都会尝试触发一次下载。有些浏览器会弹出下载确认，属于正常现象。请在浏览器下载列表中判断：①出现下载入口；②文件最终成功；然后在对应测试下点“成功”或“失败”。</div><div class="row"><button id="runAll" class="primary">按顺序运行所有测试</button><button id="stopAll">停止自动测试</button></div><div id="allStatus" class="status"></div></div>
+
+<div class="card"><div><b>下载测试</b></div><div class="muted small">建议重点跑 3、4、5、6、7、8，尤其是 Service Worker + 流式 Response。</div><div class="grid" id="tests"></div></div>
+
+<div class="card"><div><b>额外能力测试</b></div><div class="grid">
+<div class="test"><b>F · File System Access</b><div class="muted">测试 showSaveFilePicker 是否真的能弹出并完成写入。</div><div class="row"><button id="runF">运行 F</button></div><div id="fStatus" class="status"></div></div>
+<div class="test"><b>G · OPFS</b><div class="muted">只测试 OPFS 可写性，不涉及下载。</div><div class="row"><button id="runG">运行 G</button></div><div id="gStatus" class="status"></div></div>
+<div class="test"><b>H · Origin / SW 控制</b><div class="muted">记录 Service Worker controller / scope / HTTPS 等环境信息。</div><div class="row"><button id="runH">运行 H</button></div><div id="hStatus" class="status"></div></div>
+</div></div>
+
+<div class="card"><div><b>诊断日志</b></div><div class="row"><button id="copy">复制日志</button><button id="clear">清空</button></div><pre id="log"></pre></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const logs=[]; let autoRunning=false;
+function safeJson(v){try{return JSON.stringify(v)}catch{return String(v)}}
+function log(tag,data){const t=new Date().toLocaleTimeString('zh-CN',{hour12:false});const s=typeof data==='string'?data:safeJson(data);logs.push(`[${t}] ${tag} | ${s}`);if(logs.length>500)logs.shift();$('log').textContent=logs.join('\n');$('log').scrollTop=$('log').scrollHeight}
+function errInfo(e){return {name:e?.name||'Error',message:e?.message||String(e),code:e?.code||'',stack:e?.stack||''}}
+const ua=navigator.userAgent, secure=window.isSecureContext, hasSW='serviceWorker' in navigator, hasFSA='showSaveFilePicker' in window, hasStreams='ReadableStream' in window, hasDS='DecompressionStream' in window, hasBC='BroadcastChannel' in window, hasOPFS=!!navigator.storage?.getDirectory, isHuawei=/HuaweiBrowser/i.test(ua);
+$('env').innerHTML=`<span class="badge ${secure?'okb':'errb'}">secure:${secure}</span><span class="badge ${hasSW?'okb':'warn'}">SW:${hasSW}</span><span class="badge ${hasFSA?'okb':'warn'}">FSA:${hasFSA}</span><span class="badge ${hasStreams?'okb':'warn'}">ReadableStream:${hasStreams}</span><span class="badge ${hasOPFS?'okb':'warn'}">OPFS:${hasOPFS}</span><span class="badge ${isHuawei?'warn':'okb'}">Huawei:${isHuawei}</span><div class="muted" style="margin-top:8px;word-break:break-word">${ua}</div>`;
+log('probe:start',{version:'download-probe-v2',protocol:location.protocol,origin:location.origin,secure,hasSW,hasFSA,hasStreams,hasDS,hasBC,hasOPFS,isHuawei,ua});
+
+async function ensureSW(){if(!hasSW)throw new Error('Service Worker 不可用');log('SW:register:start',{url:'./download-probe-sw.js',scope:'./'});const reg=await navigator.serviceWorker.register('./download-probe-sw.js',{scope:'./'});log('SW:register:success',{scope:reg.scope,active:!!reg.active,waiting:!!reg.waiting,installing:!!reg.installing,controller:!!navigator.serviceWorker.controller});if(!navigator.serviceWorker.controller){await new Promise((resolve,reject)=>{const tm=setTimeout(()=>reject(new Error('等待 SW controller 超时')),15000);navigator.serviceWorker.addEventListener('controllerchange',()=>{clearTimeout(tm);resolve()},{once:true})});log('SW:controller:ready',{controller:!!navigator.serviceWorker.controller})}return reg}
+
+function markStatus(id,text,kind=''){const el=$(id);if(!el)return;el.textContent=text;el.className='status '+kind}
+function triggerAnchor(url,name,target='_blank'){return new Promise((resolve,reject)=>{const a=document.createElement('a');a.href=url;a.download=name;a.target=target;a.rel='noopener';a.style.display='none';document.body.appendChild(a);try{a.click();log('download:anchor-click',{name,target,scheme:url.split(':')[0]});setTimeout(()=>{a.remove();resolve()},900)}catch(e){a.remove();reject(e)}})}
+function blobOf(text,type='text/plain'){return new Blob([text],{type})}
+function b64(s){return btoa(unescape(encodeURIComponent(s)))}
+
+const tests=[
+{id:'t1',label:'1 · Blob URL + download 属性',desc:'最普通的 Blob URL 下载。',run:async()=>{const blob=blobOf('Download Probe A\n');const u=URL.createObjectURL(blob);try{await triggerAnchor(u,'probe-01-blob-url.txt');}finally{setTimeout(()=>URL.revokeObjectURL(u),5000)}}},
+{id:'t2',label:'2 · Blob URL + 新标签页',desc:'Blob URL，但由 target=_blank 导航触发。',run:async()=>{const blob=blobOf('Download Probe B\n');const u=URL.createObjectURL(blob);try{await triggerAnchor(u,'probe-02-blob-blank.txt','_blank')}finally{setTimeout(()=>URL.revokeObjectURL(u),5000)}}},
+{id:'t3',label:'3 · Data URL 下载',desc:'不经过 Blob/HTTP，测试浏览器原生下载处理。',run:async()=>{const u='data:text/plain;charset=utf-8,'+encodeURIComponent('Download Probe C\n');await triggerAnchor(u,'probe-03-data.txt') }},
+{id:'t4',label:'4 · SW Blob Response + Content-Length',desc:'Service Worker 返回 Blob Response，带 Content-Length。',run:async()=>{await ensureSW();return swStartDownload('blob-cl','probe-04-sw-blob.bin')}},
+{id:'t5',label:'5 · SW Blob Response，无 Content-Length',desc:'Service Worker 返回 Blob Response，但不声明长度。',run:async()=>{await ensureSW();return swStartDownload('blob-nolen','probe-05-sw-blob-nolen.bin')}},
+{id:'t6',label:'6 · SW Uint8Array Response + Content-Length',desc:'Service Worker 返回固定二进制 Response。',run:async()=>{await ensureSW();return swStartDownload('bytes','probe-06-sw-bytes.bin')}},
+{id:'t7',label:'7 · SW ReadableStream + Content-Length',desc:'核心测试：Service Worker 动态 ReadableStream。',run:async()=>{await ensureSW();return swStartDownload('stream','probe-07-sw-stream.bin')}},
+{id:'t8',label:'8 · SW ReadableStream，无 Content-Length',desc:'核心对照：同样的流，但不提供 Content-Length。',run:async()=>{await ensureSW();return swStartDownload('stream-nolen','probe-08-sw-stream-nolen.bin')}},
+{id:'t9',label:'9 · SW 大小 8MB 流 + Content-Length',desc:'更接近 Worklog，大一些但仍适合测试。',run:async()=>{await ensureSW();return swStartDownload('stream-8m','probe-09-sw-stream-8m.bin')}},
+{id:'t10',label:'10 · SW 流 + attachment 文件名（中文）',desc:'测试 Content-Disposition 与非 ASCII 文件名。',run:async()=>{await ensureSW();return swStartDownload('stream-utf8','probe-10-中文文件名.bin')}},
+{id:'t11',label:'11 · SW POST/Token 请求流',desc:'下载请求携带查询 token，测试动态会话路由。',run:async()=>{await ensureSW();const token=crypto.randomUUID();return swStartDownload('stream-token','probe-11-token.bin',token)}},
+{id:'t12',label:'12 · SW cache → Response',desc:'Service Worker 从 Cache 读取静态 Response，再交给下载器。',run:async()=>{await ensureSW();return swStartDownload('cache','probe-12-cache.bin')}}
+];
+
+function renderTests(){const c=$('tests');c.innerHTML='';for(const t of tests){const el=document.createElement('div');el.className='test';el.innerHTML=`<b>${t.label}</b><div class="muted">${t.desc}</div><div class="row"><button data-run="${t.id}">运行</button><button data-ok="${t.id}">成功</button><button data-err="${t.id}">失败</button></div><div id="${t.id}-status" class="status">未运行</div>`;c.appendChild(el)}}
+renderTests();
+
+document.addEventListener('click',async e=>{const run=e.target.closest('[data-run]'),ok=e.target.closest('[data-ok]'),bad=e.target.closest('[data-err]');if(ok||bad){const id=(ok||bad).dataset.ok|| (bad&&bad.dataset.err);markStatus(id+'-status',ok?'用户确认：下载成功':'用户确认：下载失败',ok?'ok':'err');log(id.toUpperCase()+':user-result',ok?'success':'failure');return}if(!run)return;const t=tests.find(x=>x.id===run.dataset.run);if(!t)return;markStatus(t.id+'-status','运行中…');log(t.id.toUpperCase()+':start');try{await t.run();markStatus(t.id+'-status','已触发，请观察下载列表后点击结果');log(t.id.toUpperCase()+':triggered')}catch(e){markStatus(t.id+'-status','运行失败：'+(e?.message||e),'err');log(t.id.toUpperCase()+':error',errInfo(e))}});
+
+function swStartDownload(kind,name,token=''){return new Promise((resolve,reject)=>{const id=crypto.randomUUID();const url=`https://download-probe.invalid/${kind}/${encodeURIComponent(id)}${token?'?token='+encodeURIComponent(token):''}`;const timeoutMs=20000;let started=false;const onMsg=e=>{const d=e.data||{};if(d.id!==id)return;if(d.type==='download-started'){started=true;log('SW:download-started',{id,kind,name,bytes:d.bytes,contentLength:d.contentLength});navigator.serviceWorker.removeEventListener('message',onMsg);resolve()}else if(d.type==='download-error'){navigator.serviceWorker.removeEventListener('message',onMsg);reject(new Error(d.message||'SW error'))}};navigator.serviceWorker.addEventListener('message',onMsg);try{const ctl=navigator.serviceWorker.controller;if(!ctl)throw new Error('当前页面没有被 Service Worker 控制');ctl.postMessage({type:'download-probe-start',id,kind,name,token});log('SW:prepare',{id,kind,name});const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();a.remove();log('SW:navigation',{id,method:'anchor-target-blank',url:url.replace('https://download-probe.invalid','')});setTimeout(()=>{if(!started){navigator.serviceWorker.removeEventListener('message',onMsg);reject(new Error('SW started 超时'))}},timeoutMs)}catch(e){navigator.serviceWorker.removeEventListener('message',onMsg);reject(e)}})}
+
+$('runF').onclick=async()=>{markStatus('fStatus','运行中…');log('F:start');try{if(!hasFSA)throw new Error('showSaveFilePicker 不存在');const h=await showSaveFilePicker({suggestedName:'probe-fsa.txt',types:[{description:'Text',accept:{'text/plain':['.txt']}}]});const w=await h.createWritable();await w.write('Download Probe F\n');await w.close();markStatus('fStatus','FSA 写入成功','ok');log('F:success')}catch(e){markStatus('fStatus','FSA 失败：'+(e?.message||e),'err');log('F:error',errInfo(e))}};
+$('runG').onclick=async()=>{markStatus('gStatus','运行中…');log('G:start');try{if(!hasOPFS)throw new Error('OPFS API 不存在');const root=await navigator.storage.getDirectory();const dir=await root.getDirectoryHandle('download-probe',{create:true});const h=await dir.getFileHandle('opfs-test.txt',{create:true});const w=await h.createWritable();await w.write('ok');await w.close();await dir.removeEntry('opfs-test.txt');markStatus('gStatus','OPFS 写入/删除成功','ok');log('G:success')}catch(e){markStatus('gStatus','OPFS 失败：'+(e?.message||e),'err');log('G:error',errInfo(e))}};
+$('runH').onclick=async()=>{try{const reg=hasSW?await ensureSW():null;const info={controller:!!navigator.serviceWorker?.controller,scope:reg?.scope||'',active:!!reg?.active,location:location.href,origin:location.origin,base:new URL('./',location.href).href};markStatus('hStatus','环境信息已写入日志','ok');log('H:info',info)}catch(e){markStatus('hStatus','失败：'+(e?.message||e),'err');log('H:error',errInfo(e))}};
+$('runAll').onclick=async()=>{if(autoRunning)return;autoRunning=true;$('allStatus').textContent='自动测试进行中：每项都会触发下载，请观察后在各项点击成功/失败。';log('ALL:start');for(const t of tests){if(!autoRunning)break;markStatus(t.id+'-status','运行中…');try{await t.run();markStatus(t.id+'-status','已触发，请观察下载后标记成功/失败');log(t.id.toUpperCase()+':triggered')}catch(e){markStatus(t.id+'-status','运行失败：'+(e?.message||e),'err');log(t.id.toUpperCase()+':error',errInfo(e))}await new Promise(r=>setTimeout(r,1200))}autoRunning=false;$('allStatus').textContent='自动测试结束。';log('ALL:end')};
+$('stopAll').onclick=()=>{autoRunning=false;$('allStatus').textContent='已停止自动测试';log('ALL:stopped')};
+$('clear').onclick=()=>{logs.length=0;$('log').textContent='';log('probe:cleared')};
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(logs.join('\n'));log('log:copied')}catch(e){log('log:copy-error',errInfo(e))}};
+window.addEventListener('error',e=>log('window:error',{message:e.message,filename:e.filename,lineno:e.lineno,colno:e.colno}));window.addEventListener('unhandledrejection',e=>log('unhandledrejection',{reason:e.reason?.message||String(e.reason)}));
+log('probe:ready',{tests:tests.length});
+</script></main></body></html>
