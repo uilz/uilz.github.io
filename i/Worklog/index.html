@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.48</title>
+<title>工作日志 · v5.9.49</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -218,7 +218,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .reading-day-tools button{font-weight:650}.reading-day-tools button:hover{color:var(--accent)}
 @media(max-width:700px){.reading-view{border-radius:10px}.reading-head{position:sticky;top:0}.reading-body{padding:18px 12px 34px}.reading-entry{padding-left:48px;padding-bottom:28px}.reading-entry+.reading-entry{padding-top:24px}.reading-entry-main:hover{background:transparent}.reading-time{left:0;width:40px}.reading-entry-body{max-width:none}.reading-day+.reading-day{padding-top:24px}.reading-day-meta{font-size:calc(9px * var(--font-scale))}}
 
-/* v5.9.48 release polish */
+/* v5.9.49 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{
     display:grid;
@@ -252,7 +252,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   .view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}
 }
 
-/* v5.9.48 release polish */
+/* v5.9.49 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{display:grid;grid-template-columns:34px minmax(0,1fr) 34px auto;grid-template-rows:auto auto;align-items:center;gap:6px 5px;padding:0 0 2px}
   .header:not(.collapsed) .nav .nav-prev{grid-column:1;grid-row:1}
@@ -278,7 +278,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.48</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.49</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -432,7 +432,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.48',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.49',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -1549,14 +1549,17 @@ async function createServiceWorkerDownloadSink(name){
   const url=`${new URL('./__worklog_download__',location.href).href}?token=${encodeURIComponent(token)}`;
   diagLog('SW:sink:init-post',{token,name,usedController:!!activeWorker});
   worker.postMessage({type:'worklog-download-init',token,name:sanitizeDownloadName(name)},[channel.port2]);
-  // Must start the navigation before any await when possible, otherwise some mobile browsers
-  // discard the transient user activation and never issue the download request.
-  const frame=document.createElement('iframe');
-  frame.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
-  frame.setAttribute('aria-hidden','true');
-  frame.src=url;
-  document.body.appendChild(frame);
-  diagLog('SW:sink:navigation-start',{method:'iframe',synchronous:!!activeWorker});
+  // Start a real same-origin download navigation immediately while the user activation is fresh.
+  // Hidden iframes may be cancelled by mobile browsers before the attachment response is accepted.
+  const anchor=document.createElement('a');
+  anchor.href=url;
+  anchor.target='_blank';
+  anchor.rel='noopener';
+  anchor.setAttribute('aria-hidden','true');
+  anchor.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  diagLog('SW:sink:navigation-start',{method:'anchor-target-blank',synchronous:true});
   const startedAt=Date.now();
   try{
     await Promise.race([
@@ -1564,7 +1567,7 @@ async function createServiceWorkerDownloadSink(name){
       new Promise((_,j)=>setTimeout(()=>j(Object.assign(new Error('浏览器下载通道启动超时：浏览器没有发起下载请求'),{code:'SW_DOWNLOAD_START_TIMEOUT'})),60000))
     ]);
   }catch(e){
-    try{frame.remove()}catch{}
+    try{anchor.remove()}catch{}
     try{channel.port1.postMessage({type:'abort',message:e.message})}catch{}
     try{channel.port1.close()}catch{}
     throw e;
@@ -1582,13 +1585,13 @@ async function createServiceWorkerDownloadSink(name){
     diagLog('SW:sink:close:start');
     channel.port1.postMessage({type:'close'});
     const n=await Promise.race([closePromise,new Promise((_,j)=>setTimeout(()=>j(new Error('浏览器下载通道关闭超时')),60000))]);
-    closed=true;try{frame.remove()}catch{}try{channel.port1.close()}catch{}
+    closed=true;try{anchor.remove()}catch{}try{channel.port1.close()}catch{}
     diagLog('SW:sink:close:success',{bytes:n});
     return n;
   };
   const abort=async(reason)=>{
     try{channel.port1.postMessage({type:'abort',message:String(reason||'导出已中止')})}catch{}
-    try{frame.remove()}catch{}
+    try{anchor.remove()}catch{}
     try{channel.port1.close()}catch{}
   };
   return{write,close,abort}
