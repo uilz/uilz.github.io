@@ -1,165 +1,10 @@
-<!--
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  工作日志 (Worklog) v5.8.24
-  单文件零依赖 · IndexedDB 持久化 · 暗色/亮色主题
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  一、整体架构
-  ────────────
-  整个应用封装在一个 IIFE (() => { ... })() 中，无全局变量泄漏。
-  设计原则：纯函数内核 + 状态驱动渲染。所有数据操作（IndexedDB CRUD、
-  ZIP 压缩、ICS 解析）都是纯函数或 async 函数，渲染层读取 state 直接
-  生成 innerHTML，无虚拟 DOM。
-
-  二、HTML 结构（<body> 内）
-  ─────────────────────────
-  .app
-  ├─ header.header          — 吸顶导航栏（品牌 · 工作区选择 · 周导航 · 视图切换 · 命令/主题）
-  ├─ section.stats           — 统计卡片（当前周记录 / 总记录 / 标签 / 附件 / 已完成）
-  ├─ div.searchbar           — 搜索框 + 实时预览下拉
-  ├─ div.search-preview      — 搜索结果浮层（position:fixed）
-  ├─ main.content-shell      — 主内容区
-  │   ├─ section.table-shell — 周视图：CSS Grid 日历看板（schedule-board）
-  │   ├─ div.mobile-summary  — 移动端：按天折叠的卡片列表
-  │   └─ section.day-view    — 日视图：单日时间轴看板（day-schedule-board）
-  └─ div.statusbar           — 底部状态栏
-
-  浮层（overlay）：
-  ├─ #editOverlay     — 工作块编辑器（标题/内容/日期/时间/标签/优先级/状态/附件）
-  ├─ #dialogOverlay   — 通用确认弹窗
-  ├─ #workspaceOverlay— 工作区设置（名称/起始日/周起始/粒度/字体）
-  ├─ #searchOverlay   — 高级搜索（跨工作区 · 日期范围筛选）
-  └─ #commandOverlay  — 命令面板（⌘ 键触发，所有操作入口）
-
-  三、CSS 分层（<style> 内）
-  ─────────────────────────
-  1. CSS 变量（:root / [data-theme="dark"]）—— 颜色、阴影、圆角、字体
-  2. 统一导航图标语言（.nav-chevron / .cal-chevron / .inline-chevron）
-  3. 全局重置 + 布局基础（*{box-sizing} / .app / .header）
-  4. 组件样式（stats / searchbar / table-shell / cell / modal / toast）
-  5. 周选择器小日历（.week-popover / .cal-*）
-  6. v5.3 紧凑顶栏折叠动画（.header.collapsed / .header-toggle）
-  7. v5.6 响应式 + 时间字段编辑器（@media max-width:700px / 1050px）
-  8. v5.7 前端精修（网格对齐、移动端 header grid 布局）
-  9. v5.8 周视图 CSS Grid 看板（.schedule-board / .schedule-event）
-  10. v5.6 搜索弹窗 + 高级搜索（.search-modal / .advanced-*）
-  11. 层级控制（overlay z-index 递增：workspace < search < command < edit < dialog）
-
-  字体缩放：所有 font-size 通过 var(--font-scale) 乘算，5 档预设
-  （small 0.94 / smallMedium 1.04 / medium 1.12 / largeMedium 1.20 / large 1.30）。
-
-  四、JavaScript 模块划分（<script> 内，约 670 行）
-  ──────────────────────────────────────────────────
-
-  A. 工具函数（~45 行）
-     escapeHTML / formatDate / parseDate / addDays / startOfDay / startOfWeek
-     isoWeek / dayName / keyFor / partsKey / blockDbKey / normalizeTags
-     recordHasContent / validateWs / timeSlots / formatBytes / timeToMinutes
-     minutesToTime / durationFromTimes / syncDurationFields / dataURLToBlob
-
-  B. IndexedDB 层（~45 行）
-     openDB()           — 打开/升级 worklog-v5 数据库（version=5）
-     all / put / remove / clear — 通用 CRUD
-     allFileMeta / getFile / fileMetaForWorkspace — 文件按工作区查询
-     replaceStores      — 全量替换（ZIP 导入时用）
-
-  C. 配置 / 初始化 / 迁移（~115 行）
-     loadAppSettings / saveAppSettings / applyTheme — 主题 + 字体持久化
-     ensureDefaultWorkspace — 保证「默认工作区」始终存在
-     importLegacyDB    — 从 worklog-blocks / worklog-v3 旧库迁移
-     migrateCurrentV3  — 给旧记录补 workspaceId
-     initData          — 启动入口：加载设置 → 打开 DB → 迁移 → 加载工作区
-
-  D. 工作区管理（~95 行）
-     renderWorkspaceSelect / switchWorkspace / renderWorkspaceForm
-     saveWorkspaceSettings — 保存工作区参数（含起始日/周起始变化后的重锚）
-     createWorkspace / deleteWorkspace / clearCurrentWorkspace
-
-  E. 搜索 + 渲染核心（~140 行）
-     buildSearchIndex / searchKeys — 倒排索引全文搜索
-     setViewMode — 切换周/日视图
-     loadUiPrefs / persistUiPrefs / loadHeaderPrefs / persistHeaderPrefs
-     setHeaderState / handleHeaderScroll — 顶栏折叠（手动/自动滚动）
-
-     getBlockInterval(b,w)        — 根据 block 的 startTime/endTime 计算分钟区间
-     blocksCoveringSlot()         — 某时间槽被哪些 block 覆盖
-     visibleSlotIndexesForRecords — 隐藏空白行时计算可见行索引
-     visualOffset()               — 将真实分钟映射到可视网格位置
-     eventLanes(records,w,date)   — 事件分列算法（重叠事件并排显示）
-     renderDayView(w)             — 日视图：单日时间轴看板
-     renderWeekGrid(w)            — 周视图：7 天 CSS Grid 看板
-     render()                     — 总渲染入口（更新统计 → 按视图分发）
-     renderMobileSummary()        — 移动端卡片列表
-
-  F. 编辑器（~35 行）
-     openEditor / closeEditor / readEditor / saveEditor / deleteEditor
-     支持：标题+内容+日期+开始/结束时间+持续时长联动+标签+地点+优先级+状态+附件
-     保存时校验：日期不早于工作区起始日、时间不超出工作区时段、slot 不冲突
-
-  G. 通用弹窗（~2 行）
-     showDialog(title, text, buttons[]) — 确认/警告/输入弹窗
-
-  H. ZIP 导出/导入（~90 行）
-     纯 JS 实现 ZIP 格式（CRC32 + 本地文件头 + 中央目录 + EOCD）
-     exportZip             — 普通备份（<512MB，内存一次性打包）
-     exportLargeBackupZip64 — 大数据流式 ZIP64（File System Access API，>512MB）
-     parseZipDirectory / getZipEntryBlob / importZip — 导入（支持 ZIP64）
-
-  I. ICS 日历导入（~15 行）
-     parseICS / importICS — 解析 iCalendar 格式，去重导入
-
-  J. 周选择器小日历（~35 行）
-     三级钻取：年份列表 → 月份网格 → 日期网格
-     renderMiniCalendar / openWeekPicker / closeWeekPicker
-
-  K. 高级搜索（~25 行）
-     openAdvancedSearch / renderAdvancedSearch — 跨工作区 + 日期范围筛选
-
-  L. 导航 / 事件绑定 / 键盘快捷键（~40 行）
-     键盘：←/→ 翻周 · T 今天 · N 新建 · / 搜索 · W 工作区 · G 跳日期 · ? 帮助
-     命令面板：⌘ 按钮 → #commandOverlay，所有操作统一入口
-
-  M. 启动（~5 行）
-     loadHeaderPrefs → applyHeaderState → initData → render
-
-  五、数据模型
-  ────────────
-  工作区（workspaces store）：
-    { id, name, isDefault, gran, sh, eh, weekStart, startDate, createdAt, updatedAt }
-
-  工作块（blocks store）：
-    { key, slotKey, workspaceId, title, body, tags[], prio, status, loc,
-      fileIds[], startTime, endTime, allDay, source, externalId, updatedAt, version }
-    key 格式："{workspaceId}::{YYYY-MM-DD}_{HH:MM}"
-
-  附件（files store）：
-    { id, workspaceId, name, type, size, blob, createdAt, updatedAt }
-
-  六、快捷键
-  ──────────
-  ←/→  翻周（日视图翻天）
-  T     回到今天
-  N     新建记录
-  /     聚焦搜索框
-  W     工作区设置
-  G     跳转到指定日期
-  ?     显示/隐藏帮助
-  Esc   关闭当前弹窗
-
-  七、导出格式
-  ────────────
-  ZIP 备份（manifest.json + attachments/ 目录）：
-  - manifest.json: { app, schema, exportedAt, appSettings, workspaces[], blocks[], files[] }
-  - 附件: attachments/{id}.{ext}
-  - >512MB 自动切换 ZIP64 流式导出（File System Access API）
--->
 <!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.8.24</title>
+<title>工作日志 · v5.9.32</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -205,8 +50,8 @@ button:disabled{cursor:not-allowed;opacity:.45}
 td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1s;background:var(--surface);position:relative}.cell:hover{background:var(--hover);box-shadow:inset 0 0 0 2px var(--accent);z-index:2}.cell.has{background:color-mix(in srgb,var(--accent-soft) 18%,var(--surface))}.cell.continued{background:color-mix(in srgb,var(--accent-soft) 9%,var(--surface));border-left-color:color-mix(in srgb,var(--accent) 18%,var(--border))}.continuation{font-size:calc(10px * var(--font-scale));color:var(--muted);padding:4px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell.today{background:color-mix(in srgb,var(--accent-soft) 35%,var(--surface))}.cell.selected{outline:2px solid var(--accent);outline-offset:-2px}.cell.search-hit{box-shadow:inset 0 0 0 2px #f59e0b;background:#fff7d6}.empty{display:grid;place-items:center;height:100%;color:var(--border);font-size:calc(17px * var(--font-scale));opacity:.6}.cell:hover .empty{opacity:1;color:var(--accent)}.title{font-size:calc(11px * var(--font-scale));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}.title.done{text-decoration:line-through;opacity:.6}.body{font-size:calc(10px * var(--font-scale));color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}.line{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:calc(9px * var(--font-scale));color:var(--faint)}.cell.multi{padding:5px 6px}.cell-event{display:block;width:100%;min-height:54px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:6px 7px;margin:3px 0;text-align:left;overflow:hidden}.cell-event:hover{background:var(--hover);border-color:var(--accent)}.cell-event-title{display:block;font-size:calc(10.5px * var(--font-scale));font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell-event-body{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:calc(9.5px * var(--font-scale));color:var(--muted);line-height:1.35;margin-top:2px}.cell-event-meta{display:block;font-size:calc(8.5px * var(--font-scale));color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell-more{display:block;font-size:calc(8px * var(--font-scale));color:var(--accent);padding:1px 3px}.day-event{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 8px;margin:3px 0;text-align:left}.day-event:hover{background:var(--hover);border-color:var(--accent)}.day-event-title{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:calc(11px * var(--font-scale));font-weight:700}.day-event-body{display:block;font-size:calc(9px * var(--font-scale));color:var(--muted);font-weight:400;line-height:1.35;margin-top:2px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.day-event-time{flex:0 0 auto;font-size:calc(9px * var(--font-scale));color:var(--muted)}.chip{display:inline-block;padding:1px 5px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:calc(8px * var(--font-scale));margin-right:2px}.day-sep td{border-bottom-color:var(--border)}
 .mobile-summary{display:none}
 .statusbar{display:flex;align-items:center;gap:7px;color:var(--faint);font-size:calc(10px * var(--font-scale));padding:8px 4px}.dot{width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block}.help{margin-top:6px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:calc(11px * var(--font-scale));color:var(--muted)}kbd{border:1px solid var(--border);background:var(--surface-2);border-radius:5px;padding:1px 5px;font-size:calc(10px * var(--font-scale));color:var(--text)}
-.toast-root{position:fixed;right:14px;bottom:14px;z-index:1000;display:flex;flex-direction:column;gap:7px;pointer-events:none}.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:9px;padding:9px 12px;font-size:calc(12px * var(--font-scale));max-width:340px;animation:toastIn .2s ease}.toast.err{border-left:3px solid var(--danger)}.toast.warn{border-left:3px solid var(--warning)}.toast.ok{border-left:3px solid var(--success)}@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.overlay{position:fixed;inset:0;background:rgba(2,6,23,.42);backdrop-filter:blur(4px);z-index:900;display:none;align-items:center;justify-content:center;padding:16px}.overlay.open{display:flex}.modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(2,6,23,.25);overflow:hidden}.modal.small{width:min(470px,100%)}.modal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface-2);border-bottom:1px solid var(--border)}.modal-title{font-size:calc(14px * var(--font-scale));font-weight:750}.modal-meta{margin-left:8px;color:var(--muted);font-size:calc(11px * var(--font-scale))}.modal-body{overflow:auto;padding:15px 16px}.modal-foot{display:flex;gap:8px;align-items:center;padding:11px 16px;background:var(--surface-2);border-top:1px solid var(--border)}.spacer{flex:1}.field{margin-bottom:12px}.field:last-child{margin-bottom:0}.field-label{display:block;color:var(--muted);font-size:calc(10px * var(--font-scale));margin-bottom:5px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none}.field textarea{min-height:120px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:8px 12px;font-size:calc(12px * var(--font-scale))}.btn:hover{background:var(--hover)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.file-zone{border:1px dashed var(--border);padding:10px;border-radius:10px}.hidden-file{display:none}.file-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid var(--border);background:var(--surface-2);border-radius:999px;font-size:calc(10px * var(--font-scale))}.file-pill button{border:0;background:transparent;color:var(--faint);padding:0}.dialog-text{font-size:calc(12px * var(--font-scale));color:var(--muted);line-height:1.65}.command-list{padding:4px}.command{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:10px;color:var(--text)}.command:hover{background:var(--hover)}.command-main{font-size:calc(12px * var(--font-scale));font-weight:650}.command-desc{font-size:calc(10px * var(--font-scale));color:var(--muted)}.workspace-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.workspace-settings{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}
+.toast-root{position:fixed;right:14px;bottom:14px;z-index:2200;display:flex;flex-direction:column;gap:7px;pointer-events:none}.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:10px;padding:9px 12px;font-size:calc(12px * var(--font-scale));max-width:340px;animation:toastIn .2s ease}.toast.err{border-left:3px solid var(--danger)}.toast.warn{border-left:3px solid var(--warning)}.toast.ok{border-left:3px solid var(--success)}.toast.progress-toast{width:min(360px,calc(100vw - 28px));padding:10px 12px 8px}.progress-toast-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.progress-toast-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-weight:700}.progress-toast-value{flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:calc(11px * var(--font-scale))}.progress-toast-track{height:3px;margin-top:8px;border-radius:999px;background:var(--border);overflow:hidden}.progress-toast-bar{height:100%;width:0;border-radius:999px;background:var(--accent);transform-origin:left center;will-change:width}.progress-toast-sub{margin-top:5px;color:var(--faint);font-size:calc(9px * var(--font-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.progress-toast.success .progress-toast-bar{background:var(--success)}.progress-toast.error .progress-toast-bar{background:var(--danger)}@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.overlay{position:fixed;inset:0;background:rgba(2,6,23,.42);backdrop-filter:blur(4px);z-index:900;display:none;align-items:center;justify-content:center;padding:16px}.overlay.open{display:flex}.modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(2,6,23,.25);overflow:hidden}.modal.small{width:min(470px,100%)}.modal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface-2);border-bottom:1px solid var(--border)}.modal-title{font-size:calc(14px * var(--font-scale));font-weight:750}.modal-meta{margin-left:8px;color:var(--muted);font-size:calc(11px * var(--font-scale))}.modal-body{overflow:auto;padding:15px 16px}.modal-foot{display:flex;gap:8px;align-items:center;padding:11px 16px;background:var(--surface-2);border-top:1px solid var(--border)}.save-progress{min-width:0;max-width:46%;font-size:calc(10px * var(--font-scale));color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.btn.busy{position:relative;pointer-events:none;opacity:.75}.btn.busy::before{content:"";display:inline-block;width:10px;height:10px;margin-right:6px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:btnSpin .7s linear infinite}@keyframes btnSpin{to{transform:rotate(360deg)}}.spacer{flex:1}.field{margin-bottom:12px}.field:last-child{margin-bottom:0}.field-label{display:block;color:var(--muted);font-size:calc(10px * var(--font-scale));margin-bottom:5px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none}.field textarea{min-height:120px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:8px 12px;font-size:calc(12px * var(--font-scale))}.btn:hover{background:var(--hover)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.file-zone{border:1px dashed var(--border);padding:10px;border-radius:10px}.hidden-file{display:none}.file-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid var(--border);background:var(--surface-2);border-radius:999px;font-size:calc(10px * var(--font-scale))}.file-pill button{border:0;background:transparent;color:var(--faint);padding:0}.dialog-text{font-size:calc(12px * var(--font-scale));color:var(--muted);line-height:1.65}.command-list{padding:4px}.command{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:10px;color:var(--text)}.command:hover{background:var(--hover)}.command-main{font-size:calc(12px * var(--font-scale));font-weight:650}.command-desc{font-size:calc(10px * var(--font-scale));color:var(--muted)}.workspace-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.workspace-settings{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}
 .week-picker{position:relative;border:1px solid transparent;background:transparent;color:var(--text);font:inherit;cursor:pointer;padding:2px 28px 2px 10px;border-radius:10px;min-width:175px}.week-picker:hover{background:var(--hover);border-color:var(--border)}.week-picker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.week-caret{position:absolute;right:10px;top:50%;color:var(--muted)}
 .week-popover{position:fixed;z-index:850;width:304px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 50px rgba(2,6,23,.18);padding:12px;display:none}.week-popover.open{display:block;animation:calIn .14s ease}.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.cal-month{font-size:calc(13px * var(--font-scale));font-weight:750}.cal-nav{display:flex;gap:3px}.cal-nav button{width:30px;height:30px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px}.cal-nav button:hover{background:var(--hover)}.cal-weekdays,.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal-weekdays div{text-align:center;color:var(--faint);font-size:calc(9px * var(--font-scale));padding:3px 0}.cal-day{height:34px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:8px;font-size:calc(11px * var(--font-scale))}.cal-day:hover{background:var(--hover);border-color:var(--border)}.cal-day.muted{color:var(--faint)}.cal-day.today{color:var(--accent);font-weight:800}.cal-day.in-week{background:var(--accent-soft);color:var(--accent);font-weight:700}.cal-day.selected{box-shadow:inset 0 0 0 2px var(--accent)}.cal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font-size:calc(10px * var(--font-scale));color:var(--muted)}.cal-today{border:0;background:transparent;color:var(--accent);font-size:calc(10px * var(--font-scale));font-weight:700}.mobile-summary{display:none}.mobile-day{padding:10px 11px;border-bottom:1px solid var(--border);background:var(--surface)}.mobile-day:last-child{border-bottom:0}.mobile-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.mobile-day-name{font-size:calc(12px * var(--font-scale));font-weight:750}.mobile-day-date{font-size:calc(10px * var(--font-scale));color:var(--muted)}.mobile-record{display:flex;align-items:flex-start;gap:9px;padding:9px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:6px;cursor:pointer}.mobile-record:active{transform:scale(.995)}.mobile-time{font-size:calc(10px * var(--font-scale));font-variant-numeric:tabular-nums;color:var(--faint);width:42px;flex:0 0 42px;padding-top:1px}.mobile-record-main{min-width:0;flex:1}.mobile-record-title{font-size:calc(12px * var(--font-scale));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mobile-record-body{font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.4;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.mobile-empty{display:block;width:100%;padding:20px 8px;text-align:center;color:var(--faint);font-size:calc(11px * var(--font-scale));background:transparent;border:0;cursor:pointer}.mobile-empty span{color:var(--accent);font-weight:700}.mobile-empty:active{opacity:.7}.mobile-day.today{background:color-mix(in srgb,var(--accent-soft) 24%,var(--surface))}
 @keyframes calIn{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:none}}
@@ -346,12 +191,94 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   .header .nav{grid-area:nav;width:100%;min-width:0;position:relative;padding-bottom:34px}.header .nav .pill-btn{padding:6px 9px}.header .week-info{padding:2px 22px 2px 6px}.header .nav .view-switch{margin-left:2px}
   .header .nav .view-switch{display:flex!important;align-items:center}.header .nav .view-btn{padding:5px 8px;min-width:30px}.header .nav .view-compact-option{position:absolute;right:0;bottom:0;height:28px;padding:0 6px;font-size:calc(9px * var(--font-scale));gap:4px;margin:0}
 }
+
+/* v5.9.27 reading mode */
+.reading-view{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.reading-view.open{display:block}
+.reading-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--surface-2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:18}
+.reading-head-main{min-width:0}.reading-kicker{font-size:calc(10px * var(--font-scale));color:var(--faint);line-height:1.3}.reading-title{font-size:calc(18px * var(--font-scale));font-weight:850;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.reading-sub{font-size:calc(10px * var(--font-scale));color:var(--muted);margin-top:3px}
+.reading-head-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}.reading-segment{display:flex;gap:2px;padding:2px;background:var(--surface);border:1px solid var(--border);border-radius:9px}.reading-segment button{border:0;background:transparent;color:var(--muted);padding:6px 10px;border-radius:7px;font-size:calc(10px * var(--font-scale));font-weight:800}.reading-segment button.active{background:var(--accent-soft);color:var(--accent)}
+.reading-body{max-width:860px;margin:0 auto;padding:18px 22px 54px}.reading-empty{text-align:center;color:var(--faint);padding:74px 20px}.reading-empty strong{display:block;color:var(--text);font-size:calc(16px * var(--font-scale));margin-bottom:7px}.reading-empty span{display:block;font-size:calc(11px * var(--font-scale));margin-bottom:16px}
+.reading-day{padding:8px 0}.reading-day+.reading-day{border-top:1px solid var(--border);margin-top:8px;padding-top:26px}.reading-day-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 12px}.reading-day-name{font-size:calc(16px * var(--font-scale));font-weight:850}.reading-day-meta{font-size:calc(10px * var(--font-scale));color:var(--faint)}
+.reading-entry{position:relative;padding:8px 0 28px 68px}.reading-entry+.reading-entry{border-top:1px solid color-mix(in srgb,var(--border) 70%,transparent);padding-top:24px}.reading-time{position:absolute;left:0;top:9px;width:52px;font-size:calc(10px * var(--font-scale));color:var(--faint);font-variant-numeric:tabular-nums}.reading-entry-main{min-width:0}.reading-entry-head{display:flex;align-items:flex-start;gap:8px}.reading-entry-title{font-size:calc(19px * var(--font-scale));font-weight:820;line-height:1.35;flex:1;cursor:pointer}.reading-entry-title:hover{color:var(--accent)}.reading-entry-menu{border:0;background:transparent;color:var(--faint);width:28px;height:28px;border-radius:7px;flex:0 0 auto;font-size:16px}.reading-entry-menu:hover{background:var(--hover);color:var(--text)}
+.reading-entry-body{margin-top:9px;font-size:calc(14px * var(--font-scale));line-height:1.9;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;cursor:pointer}.reading-entry-body.empty{color:var(--faint);font-size:calc(11px * var(--font-scale));line-height:1.55}.reading-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px;font-size:calc(9.5px * var(--font-scale));color:var(--faint)}.reading-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 6px;border:1px solid var(--border);border-radius:999px;background:var(--surface-2)}
+.reading-files{margin-top:12px;display:flex;flex-wrap:wrap;gap:7px}.reading-file{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface-2);border-radius:9px;padding:7px 9px;font-size:calc(10px * var(--font-scale));color:var(--text);max-width:100%}.reading-file-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}.reading-add{border:1px dashed var(--border);background:transparent;color:var(--accent);border-radius:9px;padding:7px 10px;font-size:calc(10px * var(--font-scale));font-weight:750}.reading-add:hover{background:var(--hover)}
+.reading-day-tools{display:flex;align-items:center;gap:6px}.reading-day-tools button{border:0;background:transparent;color:var(--faint);font-size:calc(9px * var(--font-scale));padding:3px 5px;border-radius:6px}.reading-day-tools button:hover{background:var(--hover);color:var(--text)}
+@media(max-width:700px){.reading-head{align-items:flex-start;flex-direction:column;padding:12px}.reading-head-actions{width:100%;justify-content:space-between}.reading-body{padding:12px 14px 38px}.reading-entry{padding-left:52px}.reading-time{width:42px;font-size:calc(9px * var(--font-scale))}.reading-entry-title{font-size:calc(17px * var(--font-scale))}.reading-entry-body{font-size:calc(14px * var(--font-scale));line-height:1.85}.reading-day-name{font-size:calc(15px * var(--font-scale))}.reading-file-name{max-width:180px}}
+/* v5.9.27 visual polish */
+.reading-view{background:linear-gradient(to bottom,var(--surface),color-mix(in srgb,var(--surface) 96%,var(--accent-soft)));border-color:color-mix(in srgb,var(--border) 84%,var(--accent));box-shadow:0 12px 34px color-mix(in srgb,var(--text) 5%,transparent)}
+.reading-head{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(16px);border-bottom-color:color-mix(in srgb,var(--border) 85%,transparent)}
+.reading-head-main{padding:1px 0}.reading-kicker{text-transform:uppercase;letter-spacing:.12em}.reading-title{letter-spacing:-.025em}.reading-sub{color:var(--faint)}
+.reading-head-actions{gap:8px}.reading-nav{width:32px;height:32px;padding:0;display:grid;place-items:center}.reading-segment{box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 35%,transparent)}.reading-segment button{min-width:46px;transition:background .16s ease,color .16s ease,transform .16s ease}.reading-segment button:active{transform:translateY(1px)}.reading-segment button.active{box-shadow:0 1px 2px color-mix(in srgb,var(--text) 8%,transparent)}
+.reading-body{padding-top:26px}.reading-day{padding:4px 0 18px}.reading-day+.reading-day{margin-top:4px;padding-top:30px}.reading-day-head{margin-bottom:16px}.reading-day-name{letter-spacing:-.015em}.reading-day-meta{white-space:nowrap}
+.reading-entry{padding-top:10px;padding-bottom:34px}.reading-entry+.reading-entry{padding-top:28px}.reading-entry-main{border-radius:12px;transition:background .15s ease}.reading-entry-main:hover{background:color-mix(in srgb,var(--hover) 62%,transparent)}
+.reading-entry-head{position:relative;padding-right:2px}.reading-entry-title{letter-spacing:-.018em}.reading-entry-body{max-width:78ch}.reading-entry-body.empty{font-style:italic}.reading-meta{margin-top:12px}.reading-chip{background:color-mix(in srgb,var(--surface-2) 82%,transparent);border-color:color-mix(in srgb,var(--border) 88%,transparent)}
+.reading-files{margin-top:14px}.reading-file{box-shadow:0 1px 2px color-mix(in srgb,var(--text) 4%,transparent);transition:border-color .14s ease,background .14s ease,transform .14s ease}.reading-file:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));background:var(--hover);transform:translateY(-1px)}
+.reading-add{transition:background .14s ease,border-color .14s ease,transform .14s ease}.reading-add:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));transform:translateY(-1px)}
+.reading-day-tools button{font-weight:650}.reading-day-tools button:hover{color:var(--accent)}
+@media(max-width:700px){.reading-view{border-radius:10px}.reading-head{position:sticky;top:0}.reading-body{padding:18px 12px 34px}.reading-entry{padding-left:48px;padding-bottom:28px}.reading-entry+.reading-entry{padding-top:24px}.reading-entry-main:hover{background:transparent}.reading-time{left:0;width:40px}.reading-entry-body{max-width:none}.reading-day+.reading-day{padding-top:24px}.reading-day-meta{font-size:calc(9px * var(--font-scale))}}
+
+/* v5.9.32 release polish */
+@media(max-width:700px){
+  .header:not(.collapsed) .nav{
+    display:grid;
+    grid-template-columns:34px minmax(0,1fr) 34px auto;
+    grid-template-rows:auto auto;
+    align-items:center;
+    gap:6px 5px;
+    padding:0 0 2px;
+  }
+  .header:not(.collapsed) .nav .nav-prev{grid-column:1;grid-row:1}
+  .header:not(.collapsed) .nav .week-info{grid-column:2;grid-row:1;width:100%;min-width:0}
+  .header:not(.collapsed) .nav .nav-next{grid-column:3;grid-row:1}
+  .header:not(.collapsed) .nav .today{grid-column:4;grid-row:1;justify-self:end;white-space:nowrap}
+  .header:not(.collapsed) .nav .view-switch{grid-column:1;grid-row:2;margin:0;justify-self:start}
+  .header:not(.collapsed) .nav .view-compact-option{position:static;right:auto;bottom:auto;height:32px;margin:0;box-sizing:border-box;padding:0 8px;justify-content:center;background:var(--surface-2);font-size:calc(10px * var(--font-scale));gap:5px;min-width:0}
+  .header:not(.collapsed) .nav #hideEmptyRows{grid-column:2 / span 2;grid-row:2;width:100%;}
+  .header:not(.collapsed) .nav #readingModeBtn{grid-column:4;grid-row:2;width:100%;}
+  .header:not(.collapsed) .nav label.view-compact-option:has(#hideEmptyRows),
+  .header:not(.collapsed) .nav label.view-compact-option:has(#readingModeBtn){min-width:0}
+  .header:not(.collapsed) .nav .view-switch{height:32px;box-sizing:border-box}
+  .header:not(.collapsed) .nav .view-btn{height:28px;padding:4px 9px}
+  .header:not(.collapsed) .nav .week-picker{padding-left:6px;padding-right:22px}
+}
+@media(max-width:360px){
+  .header:not(.collapsed) .nav{grid-template-columns:31px minmax(0,1fr) 31px auto;gap:5px 4px}
+  .header:not(.collapsed) .nav .today{padding-left:7px;padding-right:7px}
+  .header:not(.collapsed) .nav .view-compact-option{padding:0 6px;font-size:calc(9px * var(--font-scale))}
+  .header:not(.collapsed) .nav .view-btn{padding-left:7px;padding-right:7px;min-width:28px}
+}
+@media(any-pointer:coarse){
+  .view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}
+}
+
+/* v5.9.32 release polish */
+@media(max-width:700px){
+  .header:not(.collapsed) .nav{display:grid;grid-template-columns:34px minmax(0,1fr) 34px auto;grid-template-rows:auto auto;align-items:center;gap:6px 5px;padding:0 0 2px}
+  .header:not(.collapsed) .nav .nav-prev{grid-column:1;grid-row:1}
+  .header:not(.collapsed) .nav .week-info{grid-column:2;grid-row:1;width:100%;min-width:0}
+  .header:not(.collapsed) .nav .nav-next{grid-column:3;grid-row:1}
+  .header:not(.collapsed) .nav .today{grid-column:4;grid-row:1;justify-self:end;white-space:nowrap}
+  .header:not(.collapsed) .nav .view-switch{grid-column:1;grid-row:2;margin:0;justify-self:start;height:32px;box-sizing:border-box}
+  .header:not(.collapsed) .nav .view-compact-option{position:static;right:auto;bottom:auto;height:32px;margin:0;box-sizing:border-box;padding:0 8px;justify-content:center;background:var(--surface-2);font-size:calc(10px * var(--font-scale));gap:5px;min-width:0}
+  .header:not(.collapsed) .nav label.view-compact-option:has(#hideEmptyRows){grid-column:2 / span 2;grid-row:2;width:100%}
+  .header:not(.collapsed) .nav label.view-compact-option:has(#readingModeBtn){grid-column:4;grid-row:2;width:100%}
+  .header:not(.collapsed) .nav .view-btn{height:28px;padding:4px 9px}
+  .header:not(.collapsed) .nav .week-picker{padding-left:6px;padding-right:22px}
+}
+@media(max-width:360px){
+  .header:not(.collapsed) .nav{grid-template-columns:31px minmax(0,1fr) 31px auto;gap:5px 4px}
+  .header:not(.collapsed) .nav .today{padding-left:7px;padding-right:7px}
+  .header:not(.collapsed) .nav .view-compact-option{padding:0 6px;font-size:calc(9px * var(--font-scale))}
+  .header:not(.collapsed) .nav .view-btn{padding-left:7px;padding-right:7px;min-width:28px}
+}
+@media(any-pointer:coarse){.view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.8.24</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.32</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -366,7 +293,8 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
         <button class="view-btn active" id="weekViewBtn" data-view="week" type="button">周</button>
         <button class="view-btn" id="dayViewBtn" data-view="day" type="button">日</button>
       </div>
-      <label class="view-compact-option" title="隐藏没有任何工作块覆盖的时间行"><input id="hideEmptyRows" type="checkbox"><span>隐藏空白行</span></label>
+      <label class="view-compact-option" title="隐藏没有任何工作块覆盖的时间行"><input id="hideEmptyRows" type="checkbox" aria-label="隐藏空白行"><span>隐藏空白行</span></label>
+      <label class="view-compact-option reading-toggle" title="切换阅读模式"><input id="readingModeBtn" type="checkbox" aria-label="阅读模式"><span>阅读模式</span></label>
     </div>
     <div class="toolbar">
       <button class="toolbar-btn" id="commandBtn" title="命令">⌘</button>
@@ -393,6 +321,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
     <section class="table-shell" id="tableShell"></section>
     <div class="mobile-summary" id="mobileSummary"></div>
     <section class="day-view" id="dayView"></section>
+    <section class="reading-view" id="readingView"></section>
   </main>
   <div class="statusbar"><span class="dot"></span><span id="saveStatus">本地保存 · IndexedDB</span><span>·</span><span id="statusWorkspace">当前工作区</span></div>
   <div class="help" id="help" hidden><kbd>←</kbd><kbd>→</kbd> 翻周　<kbd>T</kbd> 今天　<kbd>G</kbd> 跳日期　<kbd>N</kbd> 新建　<kbd>/</kbd> 搜索　<kbd>W</kbd> 工作区　<kbd>?</kbd> 帮助　<kbd>Esc</kbd> 关闭</div>
@@ -430,7 +359,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
       </div>
       <div class="field"><label class="field-label">附件</label><div class="file-zone"><button class="btn" id="pickFile">＋ 添加附件</button><input class="hidden-file" type="file" id="fileInput" multiple><div class="file-list" id="fileList"></div></div></div>
     </div>
-    <div class="modal-foot"><button class="btn danger" id="deleteBtn">删除</button><div class="spacer"></div><button class="btn" id="cancelBtn">取消</button><button class="btn primary" id="saveBtn">保存</button></div>
+    <div class="modal-foot"><span class="save-progress" id="saveProgress" aria-live="polite"></span><button class="btn danger" id="deleteBtn">删除</button><div class="spacer"></div><button class="btn" id="cancelBtn">取消</button><button class="btn primary" id="saveBtn">保存</button></div>
   </section>
 </div>
 
@@ -447,7 +376,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
       </div>
       <div class="workspace-settings"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">工作区显示参数</div><div style="font-size:calc(10px * var(--font-scale));color:var(--muted);margin:-2px 0 10px">仅决定时间轴的显示刻度，不限制工作块的实际开始/结束时间。</div><div class="meta-grid"><div class="field"><label class="field-label">显示粒度</label><select id="wsGran"><option value="60">60 分钟</option><option value="30">30 分钟</option><option value="15">15 分钟</option></select></div><div class="field"><label class="field-label">开始小时</label><input id="wsSh" type="number" min="0" max="23"></div><div class="field"><label class="field-label">结束小时</label><input id="wsEh" type="number" min="1" max="24"></div></div></div>
       <div class="workspace-settings" style="margin-top:12px"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">界面显示</div><div class="field"><label class="field-label">字体大小</label><select id="appFontSize"><option value="small">小</option><option value="smallMedium">中小</option><option value="medium">标准</option><option value="largeMedium">中大</option><option value="large">大</option></select><div style="font-size:calc(10px * var(--font-scale));color:var(--faint);margin-top:6px">全局生效，刷新后保留。</div></div></div>
-      <div class="workspace-actions"><button class="btn" id="wsNew">＋ 新工作区</button><button class="btn danger" id="wsClear">清空当前数据</button><button class="btn danger" id="wsDelete">删除当前工作区</button></div>
+      <div class="workspace-settings"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">数据存储</div><div id="storageInfo" style="font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.55">检测中…</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="migrateOpfsBtn">升级附件存储</button><button class="btn" id="cleanupIdbCopiesBtn">清理旧副本</button><button class="btn danger" id="cleanupOrphansBtn">清理孤立存储</button></div></div><div class="workspace-actions"><button class="btn" id="wsNew">＋ 新工作区</button><button class="btn danger" id="wsClear">清空当前数据</button><button class="btn danger" id="wsDelete">删除当前工作区</button></div>
     </div>
     <div class="modal-foot"><div class="spacer"></div><button class="btn" id="wsCancel">取消</button><button class="btn primary" id="wsSave">保存设置</button></div>
   </section>
@@ -499,11 +428,13 @@ const DB_NAME='worklog-v5';
 const DB_VER=5;
 const OLD_DB_NAME='worklog-v3';
 const LEGACY_DB_NAME='worklog-blocks';
-const DEFAULT_WS={gran:60,sh:8,eh:20,weekStart:1,startDate:formatDate(new Date())};
-const state={week:new Date(),workspaceId:null,search:'',selected:new Set(),editingKey:null,editFiles:[],editNewFiles:[],modalDirty:false,viewMode:VIEW_MODES.WEEK,dayDate:new Date(),hideEmptyRows:false,headerCollapsed:false,headerManual:'none',lastScrollY:window.scrollY||0,lastScrollDirection:0,headerAutoTimer:0,headerScrollLockUntil:0};
+const DEFAULT_WS={gran:60,sh:8,eh:20,weekStart:1,startDate:formatDate(new Date(new Date().getFullYear(),0,1))};
+const state={week:new Date(),workspaceId:null,search:'',selected:new Set(),editingKey:null,editFiles:[],editNewFiles:[],modalDirty:false,viewMode:VIEW_MODES.WEEK,dayDate:new Date(),hideEmptyRows:false,readingMode:false,readingViewMode:VIEW_MODES.DAY,headerCollapsed:false,headerManual:'none',lastScrollY:window.scrollY||0,lastScrollDirection:0,headerAutoTimer:0,headerScrollLockUntil:0};
+// View-state invariants: timeline viewMode, hideEmptyRows, and readingMode/readingViewMode are independent preferences.
 let db=null,workspaces=[],currentBlocks=[],fileCache=new Map(),searchIndex=[],slots=[],weekDays=[],hitKeys=new Set();
-let appSettings={theme:'light',fontSize:'medium'};
+let appSettings={theme:'light',fontSize:'medium',dataVersion:1};
 const FONT_SIZE_PRESETS={small:0.94,smallMedium:1.04,medium:1.12,largeMedium:1.20,large:1.30};
+const MAX_ATTACHMENT_BYTES=5*1024*1024*1024;
 const LEGACY_FONT_MAP={small:'small',large:'medium',xlarge:'large'};
 
 function escapeHTML(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -578,12 +509,164 @@ function openDB(){
 }
 function reqP(req){return new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)})}
 async function all(store){const d=await openDB();return reqP(d.transaction(store,'readonly').objectStore(store).getAll())}
-async function allFileMeta(){const d=await openDB();return new Promise((resolve,reject)=>{const out=[];const r=d.transaction('files','readonly').objectStore('files').openCursor();r.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(out);const v=c.value;out.push({id:v.id,workspaceId:v.workspaceId,name:v.name,type:v.type,size:Number(v.size)||v.blob?.size||0,createdAt:v.createdAt,updatedAt:v.updatedAt});c.continue()};r.onerror=()=>reject(r.error)})}
-async function getFile(id){const d=await openDB();return reqP(d.transaction('files','readonly').objectStore('files').get(id))}
-async function fileMetaForWorkspace(wsId){const d=await openDB();return new Promise((resolve,reject)=>{const out=[];const store=d.transaction('files','readonly').objectStore('files');const req=store.indexNames.contains('workspaceId')?store.index('workspaceId').openCursor(IDBKeyRange.only(wsId)):store.openCursor();req.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(out);const v=c.value;if(v.workspaceId===wsId)out.push({id:v.id,workspaceId:v.workspaceId,name:v.name,type:v.type,size:Number(v.size)||v.blob?.size||0,createdAt:v.createdAt,updatedAt:v.updatedAt});c.continue()};req.onerror=()=>reject(req.error)})}
+async function allFileMeta(){const d=await openDB();return new Promise((resolve,reject)=>{const out=[];const r=d.transaction('files','readonly').objectStore('files').openCursor();r.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(out);const v=c.value;out.push({id:v.id,workspaceId:v.workspaceId,name:v.name,type:v.type,size:Number(v.size)||v.blob?.size||0,createdAt:v.createdAt,updatedAt:v.updatedAt,storage:v.storage|| (v.blob?'idb':'opfs'),hasIdbBlob:v.blob instanceof Blob});c.continue()};r.onerror=()=>reject(r.error)})}
+async function fileMetaForWorkspace(wsId){const d=await openDB();return new Promise((resolve,reject)=>{const out=[];const store=d.transaction('files','readonly').objectStore('files');const req=store.indexNames.contains('workspaceId')?store.index('workspaceId').openCursor(IDBKeyRange.only(wsId)):store.openCursor();req.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(out);const v=c.value;if(v.workspaceId===wsId)out.push({id:v.id,workspaceId:v.workspaceId,name:v.name,type:v.type,size:Number(v.size)||v.blob?.size||0,createdAt:v.createdAt,updatedAt:v.updatedAt,storage:v.storage|| (v.blob?'idb':'opfs'),hasIdbBlob:v.blob instanceof Blob});c.continue()};req.onerror=()=>reject(req.error)})}
+async function deleteWorkspaceFiles(wsId){const metas=await fileMetaForWorkspace(wsId);let failed=0;for(const f of metas){try{await fileStorage.remove(f)}catch{failed++}}if(failed)throw new Error(`有 ${failed} 个附件物理文件未能删除，数据库记录未清除`);for(const f of metas)await remove('files',f.id);return metas.length}
 async function put(store,val){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).put(val))}
 async function remove(store,key){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).delete(key))}
 async function clear(store){const d=await openDB();return reqP(d.transaction(store,'readwrite').objectStore(store).clear())}
+
+/* ---------- 附件存储：OPFS 主存储 + IndexedDB Blob 兼容后端 ---------- */
+const fileStorage=(()=>{
+  let opfsRootPromise=null,opfsAvailable=null;
+  const handleCache=new Map();
+  async function isOPFSAvailable(){
+    if(opfsAvailable!==null)return opfsAvailable;
+    if(!window.isSecureContext||location.protocol==='file:'||!navigator.storage||typeof navigator.storage.getDirectory!=='function'){opfsAvailable=false;return false}
+    try{
+      const r=await navigator.storage.getDirectory();
+      const wd=await r.getDirectoryHandle('.worklog-capability-test',{create:true});
+      opfsAvailable=typeof wd.getFileHandle==='function' && typeof (await wd.getFileHandle('.test',{create:true})).createWritable==='function';
+      try{await wd.removeEntry('.test')}catch{}
+      try{await r.removeEntry('.worklog-capability-test')}catch{}
+    }catch{opfsAvailable=false}
+    return opfsAvailable
+  }
+  async function root(){if(!opfsRootPromise)opfsRootPromise=navigator.storage.getDirectory();return opfsRootPromise}
+  async function getHandle(workspaceId,fileId,create=false){
+    const key=`${workspaceId}/${fileId}`;if(handleCache.has(key))return handleCache.get(key);
+    const r=await root();const wd=await r.getDirectoryHandle(String(workspaceId),{create});const h=await wd.getFileHandle(String(fileId),{create});handleCache.set(key,h);return h
+  }
+  async function write(workspaceId,fileId,blob){
+    if(await isOPFSAvailable()){
+      const h=await getHandle(workspaceId,fileId,true),w=await h.createWritable();try{await blob.stream().pipeTo(w)}catch(e){try{await w.abort()}catch{};throw e}
+      return {storage:'opfs',size:blob.size}
+    }
+    await put('files',{id:fileId,workspaceId,name:'',type:blob.type||'application/octet-stream',size:blob.size,blob,createdAt:Date.now(),updatedAt:Date.now()});return {storage:'idb',size:blob.size}
+  }
+  async function read(record){
+    if(record?.storage==='opfs'){
+      try{return await (await getHandle(record.workspaceId,record.id,false)).getFile()}catch(e){if(record.blob)return record.blob;throw e}
+    }
+    return record?.blob||null
+  }
+  async function removeFile(record){
+    if(!record)return;
+    if(record.storage==='opfs'){
+      const r=await root(),wd=await r.getDirectoryHandle(String(record.workspaceId));
+      await wd.removeEntry(String(record.id));
+      handleCache.delete(`${record.workspaceId}/${record.id}`)
+    }
+  }
+  async function removeWorkspaceDir(workspaceId){
+    const r=await root(),id=String(workspaceId);
+    try{await r.removeEntry(id,{recursive:true})}
+    catch(e){
+      try{
+        const wd=await r.getDirectoryHandle(id);
+        for await(const [name,handle] of wd.entries())await wd.removeEntry(name,{recursive:handle.kind==='directory'});
+        await r.removeEntry(id)
+      }catch(inner){throw inner||e}
+    }
+    for(const k of [...handleCache.keys()])if(k.startsWith(id+'/'))handleCache.delete(k)
+  }
+  async function inspectOPFS(validRecords=[]){
+    if(!(await isOPFSAvailable()))return {available:false,orphanFiles:0,orphanBytes:0,missingFiles:0,dirs:0,cleanableDirs:0,unknownDirs:0};
+    const valid=new Set(validRecords.filter(x=>x?.storage==='opfs'&&!x.cleanupPending).map(x=>`${x.workspaceId}/${x.id}`));
+    const workspaceIds=new Set(validRecords.map(x=>String(x.workspaceId)));
+    const r=await root();let orphanFiles=0,orphanBytes=0,missingFiles=0,dirs=0,cleanableDirs=0,unknownDirs=0;
+    for await(const [dirName,dirHandle] of r.entries()){
+      if(dirHandle.kind!=='directory'||dirName==='.worklog-capability-test')continue;
+      dirs++;let recognized=workspaceIds.has(String(dirName))||/^import_[A-Za-z0-9_-]+$/.test(dirName)||/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(dirName)||/^[a-z0-9]+-[a-z0-9]+$/i.test(dirName);
+      let childCount=0,hasUnrecognizedChild=false;
+      for await(const [name,h] of dirHandle.entries()){
+        childCount++;const key=`${dirName}/${name}`;
+        if(h.kind==='file'){
+          if(!valid.has(key)){
+            orphanFiles++;try{orphanBytes+=Number((await h.getFile()).size)||0}catch{}
+          }
+        }else if(h.kind==='directory'){hasUnrecognizedChild=true}
+      }
+      if(recognized&&childCount===0)cleanableDirs++;else if(!recognized&&childCount>0)unknownDirs++;
+    }
+    for(const rec of validRecords.filter(x=>x?.storage==='opfs')){
+      try{await getHandle(rec.workspaceId,rec.id,false)}catch{missingFiles++}
+    }
+    return {available:true,orphanFiles,orphanBytes,missingFiles,dirs,cleanableDirs,unknownDirs};
+  }
+  async function cleanupOrphans(validRecords=[]){
+    if(!(await isOPFSAvailable()))return {removedFiles:0,removedBytes:0,removedDirs:0,unknownDirs:0,removedRecordIds:[]};
+    const valid=new Set(validRecords.filter(x=>x?.storage==='opfs'&&!x.cleanupPending).map(x=>`${x.workspaceId}/${x.id}`));
+    const pendingByKey=new Map(validRecords.filter(x=>x?.storage==='opfs'&&x.cleanupPending).map(x=>[`${x.workspaceId}/${x.id}`,String(x.id)]));
+    const workspaceIds=new Set(validRecords.map(x=>String(x.workspaceId)));
+    const r=await root();let removedFiles=0,removedBytes=0,removedDirs=0,unknownDirs=0;const removedRecordIds=[];
+    const dirs=[];
+    for await(const [dirName,dirHandle] of r.entries()){
+      if(dirHandle.kind!=='directory'||dirName==='.worklog-capability-test')continue;
+      const recognized=workspaceIds.has(String(dirName))||/^import_[A-Za-z0-9_-]+$/.test(dirName)||/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(dirName)||/^[a-z0-9]+-[a-z0-9]+$/i.test(dirName);
+      dirs.push({dirName,dirHandle,recognized});
+    }
+    for(const {dirName,dirHandle,recognized} of dirs){
+      const children=[];for await(const [name,h] of dirHandle.entries())children.push([name,h]);
+      if(!recognized){if(children.length)unknownDirs++;continue}
+      for(const [name,h] of children){
+        const key=`${dirName}/${name}`;
+        if(h.kind==='file'&&!valid.has(key)){
+          let size=0;try{size=Number((await h.getFile()).size)||0}catch{}
+          await dirHandle.removeEntry(name);removedFiles++;removedBytes+=size;
+          const pendingId=pendingByKey.get(key);if(pendingId)removedRecordIds.push(pendingId);
+        }else if(h.kind==='directory'&&!valid.has(key)){
+          await dirHandle.removeEntry(name,{recursive:true});removedDirs++;
+        }
+      }
+      let empty=true;for await(const _ of dirHandle.entries()){empty=false;break}
+      if(empty){await r.removeEntry(dirName);removedDirs++}
+    }
+    for(const id of removedRecordIds){try{await remove('files',id)}catch{}}
+    return {removedFiles,removedBytes,removedDirs,unknownDirs,removedRecordIds};
+  }
+  async function importBlob(workspaceId,meta,blob,onChunk){return importStream(workspaceId,meta,blob.stream(),onChunk)}
+  async function importStream(workspaceId,meta,stream,onChunk){
+    stream=await stream;
+    if(!stream||typeof stream.getReader!=='function')throw new TypeError('附件导入源不是有效的 ReadableStream');
+    const expected=Number(meta?.size);
+    if(!Number.isFinite(expected)||expected<0||expected>MAX_ATTACHMENT_BYTES)throw new Error(`附件「${meta?.name||meta?.id||'未知'}」大小声明无效`);
+    const available=await isOPFSAvailable();
+    let total=0;
+    const acceptChunk=q=>{
+      const bytes=q?.byteLength||0;
+      if(total+bytes>expected)throw new Error(`附件「${meta?.name||meta?.id||'未知'}」实际数据超过声明大小`);
+      total+=bytes;onChunk?.(bytes);return bytes;
+    };
+    if(available){
+      const h=await getHandle(workspaceId,meta.id,true),w=await h.createWritable(),reader=stream.getReader();
+      try{while(true){const q=await reader.read();if(q.done)break;acceptChunk(q.value);await w.write(q.value)}if(total!==expected)throw new Error(`附件「${meta?.name||meta?.id||'未知'}」实际大小 ${total} 字节，与声明的 ${expected} 字节不一致`);await w.close()}catch(e){try{await reader.cancel(e)}catch{};try{await w.abort()}catch{};throw e}finally{reader.releaseLock()}
+      return {...meta,workspaceId,storage:'opfs',blob:undefined,size:total};
+    }
+    const reader=stream.getReader(),chunks=[];
+    try{while(true){const q=await reader.read();if(q.done)break;acceptChunk(q.value);chunks.push(q.value)}}catch(e){try{await reader.cancel(e)}catch{};throw e}finally{reader.releaseLock()}
+    if(total!==expected)throw new Error(`附件「${meta?.name||meta?.id||'未知'}」实际大小 ${total} 字节，与声明的 ${expected} 字节不一致`);
+    const blob=new Blob(chunks,{type:meta.type||'application/octet-stream'});
+    return {...meta,workspaceId,storage:'idb',blob,size:total};
+  }
+  async function stream(workspaceId,fileId,record){return read(record)}
+  async function migrateRecord(record,onChunk){
+    if(record?.storage==='opfs')return false;
+    if(!(await isOPFSAvailable()))return false;
+    const source=record?.storage?await getFile(record.id):record;
+    if(!source?.blob)return false;
+    const meta={id:source.id,workspaceId:source.workspaceId,name:source.name||'附件',type:source.type||source.blob.type||'application/octet-stream',size:Number(source.size)||source.blob.size,createdAt:source.createdAt||Date.now(),updatedAt:Date.now()};
+    const stored=await importStream(source.workspaceId,meta,source.blob.stream(),onChunk);stored.blob=source.blob;await put('files',stored);return true
+  }
+  return {isOPFSAvailable,write,read,remove:removeFile,removeWorkspaceDir,inspectOPFS,cleanupOrphans,importBlob,importStream,migrateRecord,stream}
+})();
+
+async function getFileMeta(id){const d=await openDB();return reqP(d.transaction('files','readonly').objectStore('files').get(id))}
+async function getFile(id){
+  const d=await openDB();const rec=await reqP(d.transaction('files','readonly').objectStore('files').get(id));
+  if(!rec)return null;
+  const blob=await fileStorage.read(rec);return blob?{...rec,blob}:rec;
+}
 async function replaceStores(data){
   const d=await openDB();
   await new Promise((resolve,reject)=>{
@@ -597,7 +680,7 @@ async function replaceStores(data){
 }
 
 /* ---------- 配置 / 初始化 / 迁移 ---------- */
-function normalizeAppSettings(obj){const raw=obj||{};const next={...appSettings,...raw};if(raw.version!==2&&LEGACY_FONT_MAP[next.fontSize])next.fontSize=LEGACY_FONT_MAP[next.fontSize];if(!FONT_SIZE_PRESETS[next.fontSize])next.fontSize='medium';if(next.theme!=='dark'&&next.theme!=='light')next.theme='light';return next}
+function normalizeAppSettings(obj){const raw=obj||{};const next={...appSettings,...raw};if(next.dataVersion!==2)next.dataVersion=Number(next.dataVersion)||1;if(raw.version!==2&&LEGACY_FONT_MAP[next.fontSize])next.fontSize=LEGACY_FONT_MAP[next.fontSize];if(!FONT_SIZE_PRESETS[next.fontSize])next.fontSize='medium';if(next.theme!=='dark'&&next.theme!=='light')next.theme='light';return next}
 function loadAppSettings(){try{const v=JSON.parse(localStorage.getItem('worklog:v4:app')||'null');if(v)appSettings=normalizeAppSettings(v);else{const t=localStorage.getItem('worklog_theme');if(t==='dark'||t==='light')appSettings.theme=t;appSettings=normalizeAppSettings(appSettings)}}catch{appSettings=normalizeAppSettings(appSettings)}saveAppSettings();applyTheme()}
 function saveAppSettings(){localStorage.setItem('worklog:v4:app',JSON.stringify({...appSettings,version:2}))}
 function applyTheme(){document.documentElement.dataset.theme=appSettings.theme;document.documentElement.dataset.fontSize=appSettings.fontSize||'medium';document.documentElement.style.setProperty('--font-scale',String(FONT_SIZE_PRESETS[appSettings.fontSize]||1));$('#themeBtn').textContent=appSettings.theme==='dark'?'☀':'☾';const sel=$('#appFontSize');if(sel)sel.value=appSettings.fontSize||'medium'}
@@ -606,7 +689,7 @@ async function ensureDefaultWorkspace(){
   // 不能只在“完全没有任何工作区”时创建，否则升级旧版本后会丢失入口。
   const existingDefault=workspaces.find(w=>w.isDefault===true||w.name==='默认工作区');
   if(existingDefault){
-    let changed=false;if(!existingDefault.isDefault){existingDefault.isDefault=true;changed=true}if(!existingDefault.startDate){existingDefault.startDate=formatDate(existingDefault.createdAt?new Date(existingDefault.createdAt):new Date());changed=true}if(changed){existingDefault.updatedAt=Date.now();await put('workspaces',existingDefault)}
+    let changed=false;if(!existingDefault.isDefault){existingDefault.isDefault=true;changed=true}if(!existingDefault.startDate){existingDefault.startDate=DEFAULT_WS.startDate;changed=true}if(changed){existingDefault.updatedAt=Date.now();await put('workspaces',existingDefault)}
     return existingDefault;
   }
   let legacyCfg={};try{legacyCfg=JSON.parse(localStorage.getItem('worklog:v3:cfg')||localStorage.getItem('worklog_cfg')||'{}')||{}}catch{}
@@ -620,7 +703,7 @@ async function ensureDefaultWorkspace(){
     sh:Number(legacyCfg.sh??8),
     eh:Number(legacyCfg.eh??20),
     weekStart:Number(legacyCfg.weekStart??legacyCfg.ws??1),
-    startDate:String(legacyCfg.startDate||formatDate(new Date()))
+    startDate:String(legacyCfg.startDate||DEFAULT_WS.startDate)
   };
   if(!validateWs(ws))Object.assign(ws,DEFAULT_WS);
   await put('workspaces',ws);
@@ -640,7 +723,7 @@ async function importLegacyDB(name){
   legacy.close();if(!items.length)return 0;
   if(!workspaces.length){
     let legacyCfg={};try{legacyCfg=JSON.parse(localStorage.getItem('worklog:v3:cfg')||localStorage.getItem('worklog_cfg')||'{}')||{}}catch{}
-    const ws={id:uid(),name:'默认工作区',createdAt:Date.now(),updatedAt:Date.now(),gran:Number(legacyCfg.gran)||60,sh:Number(legacyCfg.sh??8),eh:Number(legacyCfg.eh??20),weekStart:Number(legacyCfg.weekStart??legacyCfg.ws??1),startDate:String(legacyCfg.startDate||formatDate(new Date()))};
+    const ws={id:uid(),name:'默认工作区',createdAt:Date.now(),updatedAt:Date.now(),gran:Number(legacyCfg.gran)||60,sh:Number(legacyCfg.sh??8),eh:Number(legacyCfg.eh??20),weekStart:Number(legacyCfg.weekStart??legacyCfg.ws??1),startDate:String(legacyCfg.startDate||DEFAULT_WS.startDate)};
     if(!validateWs(ws))Object.assign(ws,DEFAULT_WS);
     await put('workspaces',ws);workspaces=[ws];
   }
@@ -653,7 +736,7 @@ async function importLegacyDB(name){
       if(!(blob instanceof Blob)&&f.data)blob=dataURLToBlob(f.data);
       if(!blob)continue;
       const id=f.id;
-      const rec={id,workspaceId:ws.id,name:f.name||'附件',type:f.type||blob.type||'application/octet-stream',size:Number(f.size)||blob.size,blob,createdAt:f.createdAt||Date.now(),updatedAt:f.updatedAt||Date.now()};
+      const rec={id,workspaceId:ws.id,name:f.name||'附件',type:f.type||blob.type||'application/octet-stream',size:Number(f.size)||blob.size,blob,storage:'idb',createdAt:f.createdAt||Date.now(),updatedAt:f.updatedAt||Date.now()};
       await put('files',rec);copiedFileIds.set(String(f.id),id);
     }catch{}
   }
@@ -702,14 +785,32 @@ async function initData(){
   const defaultWs=await ensureDefaultWorkspace();
   await migrateCurrentV3();
   workspaces=await all('workspaces');
-  for(const w of workspaces){if(!w.startDate){w.startDate=formatDate(w.createdAt?new Date(w.createdAt):new Date());await put('workspaces',w)}}
+  for(const w of workspaces){if(!w.startDate){w.startDate=w.isDefault?DEFAULT_WS.startDate:formatDate(w.createdAt?new Date(w.createdAt):new Date());await put('workspaces',w)}}
   workspaces=await all('workspaces');
   state.workspaceId=defaultWs?.id || workspaces.find(w=>w.isDefault)?.id || workspaces[0]?.id || null;
   loadUiPrefs();
   const restoredWs=currentWs();
-  if(restoredWs){state.week=clampToWorkspaceStart(state.week);state.dayDate=clampToWorkspaceStart(state.dayDate)}
+  const today=todayKey();
+  let firstOpenToday=false;
+  try{
+    const lastOpenDate=localStorage.getItem('worklog:v5:lastOpenDate');
+    firstOpenToday=lastOpenDate!==today;
+  }catch{}
+  if(restoredWs){
+    if(firstOpenToday){
+      const todayDate=clampToWorkspaceStart(new Date());
+      state.week=todayDate;
+      state.dayDate=todayDate;
+      state.selected.clear();
+      state.search='';
+    }else{
+      state.week=clampToWorkspaceStart(state.week);
+      state.dayDate=clampToWorkspaceStart(state.dayDate);
+    }
+  }
   await loadCurrentWorkspace();
   persistUiPrefs();
+  if(firstOpenToday){try{localStorage.setItem('worklog:v5:lastOpenDate',today)}catch{}}
 }
 
 /* ---------- 工作区 ---------- */
@@ -720,6 +821,9 @@ function renderWorkspaceSelect(){
   s.value=state.workspaceId;
   $('#statusWorkspace').textContent=`工作区：${currentWs()?.name||''}`;
 }
+let activeProgressToast=null;
+let progressAnimationFrame=0;
+const progressState={active:false,done:0,total:0,target:0,lastPaint:0,label:'',sub:'',rate:0,lastSampleAt:0,lastSampleDone:0};
 function notify(message,type='ok',duration=2600){
   const root=$('#toastRoot');
   if(!root)return;
@@ -727,6 +831,71 @@ function notify(message,type='ok',duration=2600){
   el.className='toast'+(type&&type!=='ok'?' '+type:'');
   el.textContent=String(message??'');
   root.appendChild(el);
+  window.setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(4px)';el.style.transition='opacity .18s,transform .18s';window.setTimeout(()=>el.remove(),180)},Math.max(800,duration));
+}
+function stopProgressToast(){
+  progressState.active=false;
+  if(progressAnimationFrame)cancelAnimationFrame(progressAnimationFrame);
+  progressAnimationFrame=0;
+  const el=activeProgressToast;
+  activeProgressToast=null;
+  if(el){el.style.opacity='0';el.style.transform='translateY(4px)';el.style.transition='opacity .12s,transform .12s';window.setTimeout(()=>el.remove(),130)}
+}
+function paintProgressToast(now){
+  if(!progressState.active||!activeProgressToast)return;
+  const elapsed=Math.max(0,now-(progressState.lastPaint||now));
+  progressState.lastPaint=now;
+  const remaining=Math.max(0,progressState.target-progressState.done);
+  if(remaining>0){
+    const fallbackRate=progressState.rate||Math.max(1024*1024,progressState.total/180);
+    const projected=Math.min(progressState.target,progressState.done+fallbackRate*(elapsed/1000));
+    progressState.done=Math.max(progressState.done,projected);
+  }else if(progressState.done<progressState.target){
+    progressState.done=progressState.target;
+  }
+  const rawPct=progressState.total?Math.max(0,Math.min(1,progressState.done/progressState.total)):0;
+  // 数据写入完成后仍需写数据描述符、中央目录、ZIP64 EOCD 并 close()。
+  // 因此真正完成前最多显示 99%，避免“100% 但还在卡住”的假完成状态。
+  const pct=progressState.finalizing?0.99:Math.min(0.99,rawPct*0.99);
+  const bar=activeProgressToast.querySelector('.progress-toast-bar');
+  const value=activeProgressToast.querySelector('.progress-toast-value');
+  const sub=activeProgressToast.querySelector('.progress-toast-sub');
+  if(bar)bar.style.width=(pct*100).toFixed(3)+'%';
+  if(value)value.textContent=`${formatBytes(progressState.done)} / ${formatBytes(progressState.total)}`;
+  if(sub)sub.textContent=progressState.sub||`${Math.round(pct*100)}%`;
+  progressAnimationFrame=requestAnimationFrame(paintProgressToast);
+}
+function startProgressToast(label,total,sub=''){
+  stopProgressToast();
+  const root=$('#toastRoot');if(!root)return;
+  const el=document.createElement('div');el.className='toast progress-toast';
+  el.innerHTML='<div class="progress-toast-head"><span class="progress-toast-label"></span><span class="progress-toast-value"></span></div><div class="progress-toast-track"><div class="progress-toast-bar"></div></div><div class="progress-toast-sub"></div>';
+  el.querySelector('.progress-toast-label').textContent=label;
+  root.appendChild(el);activeProgressToast=el;
+  progressState.active=true;progressState.finalizing=false;progressState.done=0;progressState.total=Math.max(0,Number(total)||0);progressState.target=0;progressState.rate=0;progressState.lastSampleAt=performance.now();progressState.lastSampleDone=0;progressState.lastPaint=0;progressState.label=label;progressState.sub=sub;
+  progressAnimationFrame=requestAnimationFrame(paintProgressToast);
+}
+function updateProgressToast(done,total,label=progressState.label,sub=''){
+  if(!activeProgressToast)startProgressToast(label,total,sub);
+  const now=performance.now();
+  const nextDone=Math.max(0,Math.min(Number(done)||0,Number(total)||progressState.total));
+  const deltaT=now-progressState.lastSampleAt;
+  const deltaB=nextDone-progressState.lastSampleDone;
+  if(deltaT>120&&deltaB>=0){progressState.rate=deltaB/(deltaT/1000);progressState.lastSampleAt=now;progressState.lastSampleDone=nextDone}
+  progressState.total=Math.max(progressState.total,Number(total)||0);progressState.target=Math.max(progressState.target,nextDone);progressState.label=label;progressState.sub=sub;
+  const title=activeProgressToast.querySelector('.progress-toast-label');if(title)title.textContent=label;
+}
+function finishProgressToast(message,type='ok',duration=2600){
+  if(!activeProgressToast){notify(message,type,duration);return}
+  const el=activeProgressToast;
+  progressState.done=progressState.total;progressState.target=progressState.total;progressState.sub=message;progressState.active=false;
+  if(progressAnimationFrame)cancelAnimationFrame(progressAnimationFrame);
+  progressAnimationFrame=0;
+  el.classList.add(type==='err'?'error':'success');
+  const title=el.querySelector('.progress-toast-label');if(title)title.textContent=message;
+  const sub=el.querySelector('.progress-toast-sub');if(sub)sub.textContent=message;
+  const bar=el.querySelector('.progress-toast-bar');if(bar)bar.style.width='100%';
+  activeProgressToast=null;
   window.setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(4px)';el.style.transition='opacity .18s,transform .18s';window.setTimeout(()=>el.remove(),180)},Math.max(800,duration));
 }
 async function switchWorkspace(id){if(!workspaces.some(w=>w.id===id))return;state.workspaceId=id;state.week=workspaceStartDate();state.dayDate=workspaceStartDate();state.selected.clear();state.search='';$('#searchInput').value='';await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();persistUiPrefs();render();notify(`已切换到「${currentWs().name}」`)}
@@ -765,28 +934,32 @@ async function clearCurrentWorkspace(){
   const count=currentBlocks.filter(recordHasContent).length, fileCount=fileCache.size;
   showDialog('清空当前工作区',`将删除「${w.name}」的 ${count} 条记录和 ${fileCount} 个附件。此操作不可撤销，请先导出 ZIP 备份。`,[
     {text:'取消'},
-    {text:'清空全部数据',danger:true,action:async()=>{
+    {text:'清空全部数据',danger:true,busyText:'清空中…',action:async()=>{
       try{
+        // 先完成 OPFS 删除，再提交 IndexedDB 元数据删除，避免“记录已清空但附件仍残留”的异步竞态。
+        const fileList=await fileMetaForWorkspace(w.id);
+        let failed=0;for(const f of fileList){try{await fileStorage.remove(f)}catch{failed++}}
+        if(failed)throw new Error(`有 ${failed} 个附件物理文件未能删除，已停止清理数据库记录`);
         const d=await openDB();
         await new Promise((resolve,reject)=>{
           const t=d.transaction(['blocks','files'],'readwrite');
           const bs=t.objectStore('blocks'),fs=t.objectStore('files');
           for(const b of currentBlocks)bs.delete(b.key);
-          for(const f of fileCache.values())fs.delete(f.id);
+          for(const f of fileList)fs.delete(f.id);
           t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);
         });
         currentBlocks=[];fileCache=new Map();searchIndex=[];state.selected.clear();state.search='';$('#searchInput').value='';$('#clearSearch').style.visibility='hidden';
         await loadCurrentWorkspace();render();notify('当前工作区数据已清空');
-      }catch(e){console.error(e);notify('清空失败：'+(e.message||'未知错误'),'err')}
+      }catch(e){console.error(e);notify('清空失败：'+(e.message||'未知错误'),'err');throw e}
     }}
   ]);
 }
 async function createWorkspace(){
   showDialog('新建工作区','输入新的工作区名称',[
     {text:'取消'},
-    {text:'创建',primary:true,action:async()=>{const input=$('#dialogInput');const name=(input?.value||'').trim();if(!name){notify('名称不能为空','err');return}const ws={id:uid(),name,createdAt:Date.now(),updatedAt:Date.now(),...DEFAULT_WS,startDate:todayKey()};await put('workspaces',ws);workspaces=await all('workspaces');state.workspaceId=ws.id;state.week=parseDate(ws.startDate);state.dayDate=parseDate(ws.startDate);await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();persistUiPrefs();render();notify(`已创建「${name}」`)}}
+    {text:'创建',primary:true,action:async()=>{const input=$('#workspaceNameInput');const name=(input?.value||'').trim();if(!name){notify('名称不能为空','err');return}const ws={id:uid(),name,createdAt:Date.now(),updatedAt:Date.now(),...DEFAULT_WS,startDate:todayKey()};await put('workspaces',ws);workspaces=await all('workspaces');state.workspaceId=ws.id;state.week=parseDate(ws.startDate);state.dayDate=parseDate(ws.startDate);await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();persistUiPrefs();render();notify(`已创建「${name}」`)}}
   ]);
-  const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">工作区数据与其他工作区完全隔离。</div><input id="dialogInput" style="width:100%;margin-top:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none" placeholder="工作区名称">';setTimeout(()=>$('#dialogInput')?.focus(),20);
+  const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">工作区数据与其他工作区完全隔离。</div><input id="workspaceNameInput" style="width:100%;margin-top:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none" placeholder="工作区名称">';setTimeout(()=>$('#workspaceNameInput')?.focus(),20);
 }
 async function deleteWorkspace(){
   if(workspaces.length<=1){notify('至少保留一个工作区','warn');return}
@@ -794,16 +967,30 @@ async function deleteWorkspace(){
   showDialog('删除工作区',`将删除「${w.name}」及其 ${blocks} 条记录、${files} 个附件，且无法恢复。`,[
     {text:'取消'},
     {text:'彻底删除',danger:true,action:async()=>{try{
-      const ds=await all('blocks');for(const b of ds)if(b.workspaceId===w.id)await remove('blocks',b.key);const fs=await all('files');for(const f of fs)if(f.workspaceId===w.id)await remove('files',f.id);await remove('workspaces',w.id);workspaces=await all('workspaces');state.workspaceId=workspaces[0].id;state.week=clampToWorkspaceStart(new Date());state.dayDate=state.week;await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();persistUiPrefs();render();notify('工作区已删除');
+      const ds=await all('blocks');for(const b of ds)if(b.workspaceId===w.id)await remove('blocks',b.key);await deleteWorkspaceFiles(w.id);await fileStorage.removeWorkspaceDir(w.id).catch(e=>{throw new Error(`工作区附件目录删除失败：${e.message||e}`)});await remove('workspaces',w.id);workspaces=await all('workspaces');state.workspaceId=workspaces[0].id;state.week=clampToWorkspaceStart(new Date());state.dayDate=state.week;await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();persistUiPrefs();render();notify('工作区已删除');
     }catch(e){console.error(e);notify('删除失败','err')}}}
   ]);
 }
 $('#workspaceSelect').onchange=e=>switchWorkspace(e.target.value);
-$('#workspaceManage').onclick=()=>{renderWorkspaceForm();$('#workspaceOverlay').classList.add('open')};
+$('#workspaceManage').onclick=()=>{renderWorkspaceForm();renderStorageInfo();$('#workspaceOverlay').classList.add('open')};
 $('#workspaceClose').onclick=()=>$('#workspaceOverlay').classList.remove('open');
 $('#wsCancel').onclick=()=>$('#workspaceOverlay').classList.remove('open');
 $('#wsNew').onclick=async()=>{await createWorkspace();};
 $('#appFontSize').onchange=e=>{if(FONT_SIZE_PRESETS[e.target.value]){appSettings.fontSize=e.target.value;saveAppSettings();applyTheme()}};
+async function renderStorageInfo(){const el=$('#storageInfo');if(!el)return;try{const est=await navigator.storage?.estimate?.();const files=await allFileMeta();const total=files.reduce((n,f)=>n+(Number(f.size)||0),0);const opfs=files.filter(f=>f.storage==='opfs').length;const hybrid=files.filter(f=>f.storage==='opfs'&&f.hasIdbBlob).length;let orphan='';if(await fileStorage.isOPFSAvailable()){const scan=await fileStorage.inspectOPFS(files);orphan=` · 孤立物理文件 ${scan.orphanFiles} 个${scan.orphanBytes?`（${formatBytes(scan.orphanBytes)}）`:''}${scan.missingFiles?` · 缺失 ${scan.missingFiles} 个`:''}`;$('#cleanupOrphansBtn').disabled=!(scan.orphanFiles||scan.cleanableDirs);if(scan.unknownDirs)orphan+=` · 未识别目录 ${scan.unknownDirs} 个`}else $('#cleanupOrphansBtn').disabled=true;el.textContent=`附件 ${files.length} 个 · ${formatBytes(total)} · OPFS ${opfs} 个 · 兼容副本 ${hybrid} 个${est?.quota?` · 浏览器配额约 ${formatBytes(est.quota)}，已用 ${formatBytes(est.usage||0)}`:''}${orphan}`}catch{el.textContent='暂时无法读取存储信息';$('#cleanupIdbCopiesBtn').disabled=true;$('#cleanupOrphansBtn').disabled=true}}
+async function cleanupOrphanStorage(){
+  if(!(await fileStorage.isOPFSAvailable())){notify('当前环境不可用 OPFS','warn');return}
+  const files=await allFileMeta();const scan=await fileStorage.inspectOPFS(files);
+  if(!scan.orphanFiles&&!scan.cleanableDirs){notify('没有发现可清理的孤立存储','ok');renderStorageInfo();return}
+  showDialog('清理孤立存储',`发现 ${scan.orphanFiles} 个不再被 IndexedDB 元数据引用的 OPFS 文件${scan.orphanBytes?`，约 ${formatBytes(scan.orphanBytes)}`:''}${scan.cleanableDirs?`，以及 ${scan.cleanableDirs} 个空目录`:''}。清理只删除无法从当前附件元数据追溯到的 Worklog 存储，不触碰仍被引用的附件。`,[{text:'取消'},{text:'清理',danger:true,busyText:'清理中…',action:async()=>{try{const r=await fileStorage.cleanupOrphans(files);renderStorageInfo();notify(`孤立存储已清理：${r.removedFiles} 个文件，释放约 ${formatBytes(r.removedBytes)}`,'ok')}catch(e){console.error(e);notify(`孤立存储清理失败：${e.message||'未知错误'}`,'err');throw e}}}]);
+}
+async function cleanupIdbCopies(){
+  if(!(await fileStorage.isOPFSAvailable())){notify('当前环境不可用 OPFS，不建议清理兼容副本','warn');return}
+  const targets=await getIdbBlobFileMetaList();const migrated=[];for(const m of targets){const full=await getFileMeta(m.id);if(full?.storage==='opfs'&&full.blob instanceof Blob)migrated.push(m)}
+  if(!migrated.length){notify('没有可清理的兼容副本','ok');return}
+  const total=migrated.reduce((n,f)=>n+(Number(f.size)||0),0);showDialog('清理旧副本',`将删除 ${migrated.length} 个附件的 IndexedDB 兼容副本，约释放 ${formatBytes(total)}。OPFS 原文件会保留；清理后切换到不支持 OPFS 的浏览器将无法读取这些附件。`,[{text:'取消'},{text:'确认清理',danger:true,action:async()=>{let done=0;try{for(const m of migrated){const f=await getFileMeta(m.id);if(!f||f.storage!=='opfs'||!(f.blob instanceof Blob))continue;const next={...f};delete next.blob;await put('files',next);done++;if(done%5===0||done===migrated.length)notify(`清理中：${done} / ${migrated.length}`,'ok')}notify(`已清理 ${done} 个兼容副本`,'ok');await loadCurrentWorkspace();render();renderStorageInfo()}catch(e){console.error(e);notify(`清理中断：${done} 个，原文件仍保留在 OPFS`,'err')}}}])
+}
+$('#migrateOpfsBtn').onclick=migrateLegacyFilesToOPFS;$('#cleanupIdbCopiesBtn').onclick=cleanupIdbCopies;$('#cleanupOrphansBtn').onclick=cleanupOrphanStorage;renderStorageInfo();
 $('#wsDelete').onclick=deleteWorkspace;$('#wsClear').onclick=clearCurrentWorkspace;
 $('#wsSave').onclick=async()=>{const fontSel=$('#appFontSize');if(fontSel&&FONT_SIZE_PRESETS[fontSel.value]){appSettings.fontSize=fontSel.value;saveAppSettings();applyTheme()}if(await saveWorkspaceSettings()){$('#workspaceOverlay').classList.remove('open');notify('设置已保存');render()}};
 
@@ -818,8 +1005,8 @@ function setViewMode(mode){
   render();
 }
 const UI_PREF='worklog:v5:ui';
-function loadUiPrefs(){try{const p=JSON.parse(localStorage.getItem(UI_PREF)||'null');if(!p||typeof p!=='object')return;if(p.workspaceId&&workspaces.some(w=>w.id===p.workspaceId))state.workspaceId=p.workspaceId;const d=p.dayDate&&/^\d{4}-\d{2}-\d{2}$/.test(p.dayDate)?parseDate(p.dayDate):null;const wk=p.week&&/^\d{4}-\d{2}-\d{2}$/.test(p.week)?parseDate(p.week):null;if(d)state.dayDate=d;if(wk)state.week=wk;if(p.viewMode===VIEW_MODES.DAY||p.viewMode===VIEW_MODES.WEEK)state.viewMode=p.viewMode;state.hideEmptyRows=!!p.hideEmptyRows;}catch{}}
-function persistUiPrefs(){try{const w=currentWs();localStorage.setItem(UI_PREF,JSON.stringify({workspaceId:w?.id||state.workspaceId||null,week:formatDate(state.week||new Date()),dayDate:formatDate(state.dayDate||new Date()),viewMode:state.viewMode||VIEW_MODES.WEEK,hideEmptyRows:!!state.hideEmptyRows}))}catch{}}
+function loadUiPrefs(){try{const p=JSON.parse(localStorage.getItem(UI_PREF)||'null');if(!p||typeof p!=='object')return;if(p.workspaceId&&workspaces.some(w=>w.id===p.workspaceId))state.workspaceId=p.workspaceId;const d=p.dayDate&&/^\d{4}-\d{2}-\d{2}$/.test(p.dayDate)?parseDate(p.dayDate):null;const wk=p.week&&/^\d{4}-\d{2}-\d{2}$/.test(p.week)?parseDate(p.week):null;if(d)state.dayDate=d;if(wk)state.week=wk;if(p.viewMode===VIEW_MODES.DAY||p.viewMode===VIEW_MODES.WEEK)state.viewMode=p.viewMode;state.hideEmptyRows=!!p.hideEmptyRows;state.readingMode=!!p.readingMode;state.readingViewMode=(p.readingViewMode===VIEW_MODES.WEEK||p.readingViewMode===VIEW_MODES.DAY)?p.readingViewMode:state.viewMode;}catch{}}
+function persistUiPrefs(){try{const w=currentWs();localStorage.setItem(UI_PREF,JSON.stringify({workspaceId:w?.id||state.workspaceId||null,week:formatDate(state.week||new Date()),dayDate:formatDate(state.dayDate||new Date()),viewMode:state.viewMode||VIEW_MODES.WEEK,hideEmptyRows:!!state.hideEmptyRows,readingMode:!!state.readingMode,readingViewMode:state.readingViewMode||VIEW_MODES.DAY}))}catch{}}
 const HEADER_PREF='worklog:v5:header';
 function loadHeaderPrefs(){try{const p=JSON.parse(localStorage.getItem(HEADER_PREF)||'null');if(p&&typeof p==='object'){state.headerCollapsed=!!p.collapsed;state.headerManualUntil=Number(p.manualUntil)||0;state.headerMode=Number(p.manualUntil)>Date.now()?'manual':'auto';}}catch{}}
 function persistHeaderPrefs(){try{localStorage.setItem(HEADER_PREF,JSON.stringify({collapsed:state.headerCollapsed,manualUntil:state.headerManualUntil||0,mode:state.headerMode||'auto'}))}catch{}}
@@ -916,13 +1103,89 @@ function renderWeekGrid(w){
   });
   board.innerHTML=html;$('#tableShell').innerHTML='';$('#tableShell').appendChild(board);board.querySelectorAll('.schedule-event').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.key)});board.querySelectorAll('.schedule-slot-hit').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.slotKey)});return weekCount;
 }
+
+function readingRecordsForDate(w,date){
+  return currentBlocks.filter(b=>recordHasContent(b)&&getBlockInterval(b,w).date===formatDate(date)).sort((a,b)=>{
+    const ta=timeToMinutes(a.startTime)||timeToMinutes(partsKey(a.key)[1])||0;
+    const tb=timeToMinutes(b.startTime)||timeToMinutes(partsKey(b.key)[1])||0;
+    return ta-tb||String(a.key).localeCompare(String(b.key));
+  });
+}
+function readingFileChips(ids=[]){
+  return (ids||[]).map(id=>{const f=fileRecord(id);return `<span class="reading-file" title="${escapeHTML(f?.name||'附件')}"><span>📎</span><span class="reading-file-name">${escapeHTML(f?.name||'附件')}</span><span style="color:var(--faint)">${escapeHTML(formatBytes(Number(f?.size)||0))}</span></span>`}).join('');
+}
+function renderReadingEntry(b,w){
+  const start=b.startTime||partsKey(b.key)[1]||'';
+  const meta=[];
+  if(b.endTime)meta.push(`${start}–${b.endTime}`);
+  if(b.status)meta.push(b.status);
+  if(b.loc)meta.push(b.loc);
+  (b.tags||[]).slice(0,8).forEach(t=>meta.push(`#${t}`));
+  const files=b.fileIds?.length||0;
+  return `<article class="reading-entry" data-reading-key="${escapeHTML(b.key)}">
+    <time class="reading-time">${escapeHTML(start||'—')}</time>
+    <div class="reading-entry-main">
+      <div class="reading-entry-head"><div class="reading-entry-title" data-reading-edit="${escapeHTML(b.key)}">${escapeHTML(b.title||'未命名')}</div><button class="reading-entry-menu" type="button" title="编辑记录" aria-label="编辑记录" data-reading-edit="${escapeHTML(b.key)}">···</button></div>
+      ${b.body?`<div class="reading-entry-body" data-reading-edit="${escapeHTML(b.key)}">${escapeHTML(b.body)}</div>`:`<div class="reading-entry-body empty" data-reading-edit="${escapeHTML(b.key)}">暂无正文</div>`}
+      ${meta.length?`<div class="reading-meta">${meta.map(x=>`<span class="reading-chip">${escapeHTML(x)}</span>`).join('')}</div>`:''}
+      ${files?`<div class="reading-files" aria-label="附件"><span class="reading-chip">附件 · ${files}</span>${readingFileChips(b.fileIds)}</div>`:''}
+    </div>
+  </article>`;
+}
+function renderReadingDay(w,d,bodyOnly=false){
+  const records=readingRecordsForDate(w,d);
+  const dateKey=formatDate(d);
+  const total=records.length;
+  const head=`<div class="reading-day-head"><div><div class="reading-day-name">${escapeHTML(dateKey)} · ${escapeHTML(dayName(d.getDay()))}${isToday(d)?' · 今天':''}</div><div class="reading-sub">${total?`${total} 条记录`:'今天还没有记录'}</div></div><div class="reading-day-tools"><button type="button" data-reading-new-date="${dateKey}">＋ 添加记录</button></div></div>`;
+  const content=records.length?records.map(b=>renderReadingEntry(b,w)).join(''):`<div class="reading-empty" style="padding:42px 10px 54px"><strong>这一天还没有记录</strong><span>把发生的事情、结论或下一步写下来。</span><button class="reading-add" type="button" data-reading-new-date="${dateKey}">＋ 开始记录</button></div>`;
+  return `<section class="reading-day" data-reading-date="${dateKey}">${head}${content}</section>`;
+}
+function renderReading(w){
+  const root=$('#readingView');if(!root)return;
+  const mode=state.readingViewMode===VIEW_MODES.WEEK?VIEW_MODES.WEEK:VIEW_MODES.DAY;
+  if(mode===VIEW_MODES.DAY){
+    const d=clampToWorkspaceStart(state.dayDate||state.week);
+    const records=readingRecordsForDate(w,d);
+    const content=records.length
+      ? records.map(b=>renderReadingEntry(b,w)).join('')
+      : `<div class="reading-empty"><strong>这一天还没有记录</strong><span>把发生的事情、结论或下一步写下来。</span><button class="reading-add" type="button" data-reading-new-date="${formatDate(d)}">＋ 开始记录</button></div>`;
+    root.innerHTML=`<div class="reading-body reading-body-day">${content}</div>`;
+  }else{
+    const start=currentWeekStart();
+    const days=Array.from({length:7},(_,i)=>addDays(start,i));
+    const content=days.map(x=>renderReadingDay(w,x)).join('');
+    root.innerHTML=`<div class="reading-body reading-body-week">${content}</div>`;
+  }
+  root.querySelectorAll('[data-reading-edit]').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.readingEdit)});
+  root.querySelectorAll('[data-reading-new-date]').forEach(el=>el.onclick=e=>{e.stopPropagation();const date=parseDate(el.dataset.readingNewDate);const t=slots[0]||`${pad(w.sh)}:00`;openEditor(blockDbKey(w.id,keyFor(date,t)))});
+}
+
 function render(){
   const w=currentWs();if(!w)return;
-  $('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);
+  $('#weekViewBtn').classList.toggle('active',state.readingMode?state.readingViewMode===VIEW_MODES.WEEK:state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.readingMode?state.readingViewMode===VIEW_MODES.DAY:state.viewMode===VIEW_MODES.DAY);$('#readingModeBtn').checked=!!state.readingMode;$('#readingModeBtn').setAttribute('aria-pressed',String(!!state.readingMode));
   weekDays=Array.from({length:7},(_,i)=>addDays(currentWeekStart(),i));slots=timeSlots(w.gran,w.sh,w.eh);hitKeys=searchKeys(state.search);
-  $('#weekTitle').textContent=state.viewMode===VIEW_MODES.DAY?`${formatDate(startOfDay(state.dayDate||new Date()))} · 日视图`:weekLabel(weekDays[0]);$('#weekSub').textContent=state.viewMode===VIEW_MODES.DAY?'点击周标题选择日期':weekSpan(weekDays[0]);$('#statusWorkspace').textContent=`工作区：${w.name}`;
+  const activeView=state.readingMode?state.readingViewMode:state.viewMode;
+  const activeDay=clampToWorkspaceStart(state.dayDate||state.week||new Date());
+  const activeWeek=state.readingMode&&state.readingViewMode===VIEW_MODES.WEEK?currentWeekStart():currentWeekStart();
+  const headerPrev=activeView===VIEW_MODES.DAY?'前一天':'上一周',headerNext=activeView===VIEW_MODES.DAY?'后一天':'下一周';
+  $('#prevBtn').title=headerPrev;$('#prevBtn').setAttribute('aria-label',headerPrev);$('#nextBtn').title=headerNext;$('#nextBtn').setAttribute('aria-label',headerNext);
+  if(activeView===VIEW_MODES.DAY){
+    $('#weekTitle').textContent=`${formatDate(activeDay)} · 日视图`;
+    $('#weekSub').textContent=`${dayName(activeDay.getDay())} · ${state.readingMode?'阅读':'时间轴'}`;
+  }else{
+    const ws=activeWeek;
+    $('#weekTitle').textContent=weekLabel(ws);
+    $('#weekSub').textContent=weekSpan(ws);
+  }
+  $('#statusWorkspace').textContent=`工作区：${w.name}`;
   const total=currentBlocks.filter(recordHasContent).length,tags=new Set(currentBlocks.flatMap(b=>b.tags||[])),files=currentBlocks.reduce((n,b)=>n+(b.fileIds?.length||0),0),done=currentBlocks.filter(b=>b.status==='已完成').length;
   $('#sAll').textContent=total;$('#sTags').textContent=tags.size;$('#sFiles').textContent=files;$('#sDone').textContent=done;
+  if(state.readingMode){
+    $('#tableShell').style.display='none';$('#mobileSummary').style.display='none';$('#dayView').classList.remove('open');$('#readingView').classList.add('open');$('#readingModeBtn').classList.add('active');
+    $('#sWeek').textContent=state.readingViewMode===VIEW_MODES.DAY?readingRecordsForDate(w,clampToWorkspaceStart(state.dayDate||state.week)).length:weekDays.reduce((n,d)=>n+readingRecordsForDate(w,d).length,0);
+    renderReading(w);return;
+  }
+  $('#readingView').classList.remove('open');
   if(state.viewMode===VIEW_MODES.DAY){
     $('#sWeek').textContent=currentBlocks.filter(b=>recordHasContent(b)&&getBlockInterval(b,w).date===formatDate(state.dayDate||new Date())).length;
     $('#tableShell').style.display='none';
@@ -947,7 +1210,7 @@ function renderMobileSummary(w,days,slots,blockMap){const root=$('#mobileSummary
 /* ---------- 编辑器 ---------- */
 function fileRecord(id){return fileCache.get(id)||null}
 function updateEditMeta(dbKey){const raw=slotKeyFromBlock({key:dbKey});const [date,time]=partsKey(raw);const d=parseDate(date);$('#editMeta').textContent=`${date} · ${dayName(d.getDay())} · ${time} · ${currentWs().name}`}
-function renderFileList(){const list=$('#fileList');list.innerHTML=state.editFiles.length?state.editFiles.map((f,i)=>`<span class="file-pill"><span>📎</span><span title="${escapeHTML(f.name)}">${escapeHTML(f.name.length>24?f.name.slice(0,21)+'…':f.name)}</span><span style="color:var(--faint)">${formatBytes(f.size)}</span><button data-file-index="${i}" title="移除">×</button></span>`).join(''):'<span style="font-size:calc(10px * var(--font-scale));color:var(--faint)">暂无附件</span>';list.querySelectorAll('[data-file-index]').forEach(b=>b.onclick=e=>{e.stopPropagation();state.editFiles.splice(Number(b.dataset.fileIndex),1);renderFileList();state.modalDirty=true})}
+function renderFileList(){const list=$('#fileList');list.innerHTML=state.editFiles.length?state.editFiles.map((f,i)=>`<span class="file-pill"><span>📎</span><span title="${escapeHTML(f.name)}">${escapeHTML(f.name.length>24?f.name.slice(0,21)+'…':f.name)}</span><span style="color:var(--faint)">${formatBytes(f.size)}</span><button data-file-index="${i}" title="移除">×</button></span>`).join(''):'<span style="font-size:calc(10px * var(--font-scale));color:var(--faint)">暂无附件</span>';list.querySelectorAll('[data-file-index]').forEach(b=>b.onclick=e=>{e.stopPropagation();const idx=Number(b.dataset.fileIndex);const removed=state.editFiles[idx];state.editFiles.splice(idx,1);if(removed?.id)state.editNewFiles=state.editNewFiles.filter(f=>f.id!==removed.id);renderFileList();state.modalDirty=true})}
 async function openEditor(dbKey){
   state.editingKey=dbKey;const b=currentBlocks.find(x=>x.key===dbKey)||{};const raw=slotKeyFromBlock({key:dbKey});const [date,time]=partsKey(raw);
   const w=currentWs();const start=b.startTime||time||slots[0]||'08:00';const end=b.endTime||minutesToTime(Math.min((timeToMinutes(start)||480)+60,(w?.eh||20)*60));
@@ -958,33 +1221,125 @@ async function openEditor(dbKey){
 function closeEditor(force=false){if(!force&&state.modalDirty){showDialog('未保存的修改','当前工作块有未保存的修改，确定关闭吗？',[{text:'继续编辑'},{text:'放弃修改',primary:true,action:()=>{hideOverlay('#editOverlay');state.editingKey=null}}]);return}hideOverlay('#editOverlay');state.editingKey=null}
 function hideOverlay(id){const el=$(id);if(el)el.classList.remove('open')}
 function readEditor(){return{date:$('#fDate').value,title:$('#fTitle').value.trim(),body:$('#fBody').value.trim(),tags:normalizeTags($('#fTags').value),loc:$('#fLoc').value.trim(),prio:$('#fPrio').value,status:$('#fStatus').value,fileIds:state.editFiles.map(f=>f.id),startTime:$('#fStart').value,endTime:$('#fEnd').value}}
+function setSaveBusy(busy,label='正在保存…'){
+  const save=$('#saveBtn'),cancel=$('#cancelBtn'),del=$('#deleteBtn'),progress=$('#saveProgress');
+  [save,cancel,del].forEach(x=>{if(x){x.disabled=busy;x.classList.toggle('busy',busy)}});
+  if(save)save.textContent=busy?'保存中…':'保存';
+  if(progress){progress.textContent=busy?label:'';progress.title=busy?label:''}
+}
+
 async function saveEditor(){
   const dbKey=state.editingKey;if(!dbKey)return;const old=currentBlocks.find(b=>b.key===dbKey);const v=readEditor();const w=currentWs();if(!w)return;
   if(!v.date){notify('请选择日期','err');return}const date=parseDate(v.date);if(isBeforeWorkspaceStart(date)){notify(`日期不能早于工作区起始日 ${w.startDate}`,'err');return}
   const startMin=timeToMinutes(v.startTime),endMin=timeToMinutes(v.endTime);if(startMin===null||endMin===null||endMin<=startMin){notify('时间范围无效：结束时间必须晚于开始时间','err');return}
   if(startMin<w.sh*60||startMin>=w.eh*60||endMin>w.eh*60){notify(`时间必须位于工作区时段 ${pad(w.sh)}:00–${pad(w.eh)}:00 内`,'err');return}
-  if(!v.title&&!v.body&&!v.tags.length&&!v.loc&&!v.prio&&!v.status&&!v.fileIds.length){await deleteBlock(dbKey);closeEditor(true);render();return}
+  const newSlot=keyFor(date,v.startTime),targetKey=blockDbKey(w.id,newSlot);
+  if(targetKey!==dbKey&&currentBlocks.some(b=>b.key===targetKey)){notify('新的日期/开始时间已有工作块，请换一个时间','warn');return}
+  if(!v.title&&!v.body&&!v.tags.length&&!v.loc&&!v.prio&&!v.status&&!v.fileIds.length){
+    setSaveBusy(true,'正在删除空工作块…');
+    try{await deleteBlock(dbKey);state.modalDirty=false;closeEditor(true);render();notify('已删除')}catch(e){console.error(e);notify('删除失败：'+(e.message||'未知错误'),'err')}finally{setSaveBusy(false)}
+    return;
+  }
+  const keep=new Set(v.fileIds),removedOldIds=(old?.fileIds||[]).filter(id=>!keep.has(id)),staged=[];
+  const saveTotalBytes=state.editNewFiles.reduce((n,f)=>n+(Number(f.size)||0),0);
+  setSaveBusy(true,state.editNewFiles.length?`准备保存附件 0 / ${state.editNewFiles.length}`:'正在保存工作块…');
+  if(saveTotalBytes>0)startProgressToast('正在保存附件',saveTotalBytes,'准备写入附件…');
   try{
-    for(const f of state.editNewFiles){await put('files',f);fileCache.set(f.id,f)}
-    const keep=new Set(v.fileIds);for(const oldId of (old?.fileIds||[]))if(!keep.has(oldId)){await remove('files',oldId);fileCache.delete(oldId)}
-    const newSlot=keyFor(date,v.startTime),targetKey=blockDbKey(w.id,newSlot);if(targetKey!==dbKey&&currentBlocks.some(b=>b.key===targetKey)){notify('新的日期/开始时间已有工作块，请换一个时间','warn');return}
+    const useOpfs=await fileStorage.isOPFSAvailable();
+    let savedNew=0,savedBytes=0;
+    for(const f of state.editNewFiles){
+      savedNew++;setSaveBusy(true,`保存附件 ${savedNew} / ${state.editNewFiles.length} · ${formatBytes(f.size)}`);
+      if(Number(f.size)>MAX_ATTACHMENT_BYTES)throw new Error(`附件「${f.name}」超过 5GB 上限`);
+      const meta={id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type,size:f.size,createdAt:f.createdAt,updatedAt:Date.now()};
+      const stored=await fileStorage.importBlob(f.workspaceId,meta,f.blob,bytes=>{savedBytes=Math.min(saveTotalBytes,savedBytes+(Number(bytes)||0));updateProgressToast(savedBytes,saveTotalBytes,`正在保存：${f.name}`,`${formatBytes(savedBytes)} / ${formatBytes(saveTotalBytes)}`)});
+      await put('files',stored);staged.push(stored);fileCache.set(f.id,{...meta,storage:stored.storage});
+      if(stored.storage==='opfs')appSettings.dataVersion=2;
+    }
+    saveAppSettings();setSaveBusy(true,'正在保存工作块记录…');
     const next={key:targetKey,slotKey:newSlot,workspaceId:w.id,title:v.title,body:v.body,tags:v.tags,loc:v.loc,prio:v.prio,status:v.status,fileIds:v.fileIds,startTime:v.startTime,endTime:v.endTime,allDay:!!old?.allDay,source:old?.source||'manual',externalId:old?.externalId||'',updatedAt:Date.now(),version:6};
-    await put('blocks',next);if(targetKey!==dbKey)await remove('blocks',dbKey);currentBlocks=currentBlocks.filter(b=>b.key!==dbKey).concat(next);searchIndex=buildSearchIndex();state.modalDirty=false;closeEditor(true);render();$('#saveStatus').textContent=`已保存 · ${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}`;notify('已保存')
-  }catch(e){console.error(e);notify('保存失败：'+(e.message||'未知错误'),'err')}
+    await put('blocks',next);
+    if(targetKey!==dbKey)await remove('blocks',dbKey);
+    let cleanupFailed=0;for(const id of removedOldIds){const rec=await getFileMeta(id);if(!rec)continue;try{await fileStorage.remove(rec);await remove('files',id);fileCache.delete(id)}catch(e){cleanupFailed++;try{await put('files',{...rec,cleanupPending:true,updatedAt:Date.now()})}catch{}}}
+    currentBlocks=currentBlocks.filter(b=>b.key!==dbKey).concat(next);searchIndex=buildSearchIndex();state.modalDirty=false;closeEditor(true);render();$('#saveStatus').textContent=`已保存 · ${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}`;if(saveTotalBytes>0)finishProgressToast('附件保存完成','ok');notify(cleanupFailed?`已保存，但 ${cleanupFailed} 个旧附件未能立即清理，可在存储设置中再次清理`:'已保存',cleanupFailed?'warn':'ok')
+  }catch(e){
+    console.error(e);
+    for(const f of staged){try{await fileStorage.remove(f);await remove('files',f.id);fileCache.delete(f.id)}catch(e){try{await put('files',{...f,cleanupPending:true,updatedAt:Date.now()})}catch{}fileCache.delete(f.id)}}
+    if(saveTotalBytes>0)finishProgressToast(`附件保存失败：${e.message||'未知错误'}`,'err');notify('保存失败：'+(e.message||'未知错误'),'err');
+  }finally{setSaveBusy(false)}
 }
-async function deleteBlock(dbKey){const b=currentBlocks.find(x=>x.key===dbKey);if(!b)return;for(const id of b.fileIds||[]){await remove('files',id);fileCache.delete(id)}await remove('blocks',dbKey);currentBlocks=currentBlocks.filter(x=>x.key!==dbKey);searchIndex=buildSearchIndex()}
+
+async function deleteBlock(dbKey){const b=currentBlocks.find(x=>x.key===dbKey);if(!b)return;for(const id of b.fileIds||[]){const rec=await getFileMeta(id);await fileStorage.remove(rec);await remove('files',id);fileCache.delete(id)}await remove('blocks',dbKey);currentBlocks=currentBlocks.filter(x=>x.key!==dbKey);searchIndex=buildSearchIndex()}
 function deleteEditor(){const dbKey=state.editingKey;if(!dbKey)return;showDialog('删除记录','删除后无法从当前备份外恢复，确定继续吗？',[{text:'取消'},{text:'删除',danger:true,action:async()=>{try{await deleteBlock(dbKey);closeEditor(true);render();notify('已删除')}catch{notify('删除失败','err')}}}])}
 $('#pickFile').onclick=()=>$('#fileInput').click();
-$('#fileInput').onchange=async e=>{for(const f of [...e.target.files]){if(f.size>1024*1024*1024){notify(`${f.name} 超过 1GB`,'warn');continue}const rec={id:uid(),workspaceId:state.workspaceId,name:f.name,type:f.type||'application/octet-stream',size:f.size,blob:f,createdAt:Date.now(),updatedAt:Date.now()};state.editFiles.push(rec);state.editNewFiles.push(rec)}e.target.value='';renderFileList();state.modalDirty=true};
+$('#fileInput').onchange=async e=>{for(const f of [...e.target.files]){if(f.size>MAX_ATTACHMENT_BYTES){notify(`${f.name} 超过 5GB`,'warn');continue}const rec={id:uid(),workspaceId:state.workspaceId,name:f.name,type:f.type||'application/octet-stream',size:f.size,blob:f,createdAt:Date.now(),updatedAt:Date.now()};state.editFiles.push({...rec});state.editNewFiles.push(rec)}e.target.value='';renderFileList();state.modalDirty=true};
 ['fDate','fTitle','fBody','fTags','fLoc','fStart','fEnd','fDuration'].forEach(id=>$('#'+id).addEventListener('input',()=>{state.modalDirty=true;if(['fStart','fEnd','fDuration'].includes(id))syncDurationFields(id==='fEnd'?'end':'start')}));['fPrio','fStatus','fDuration'].forEach(id=>$('#'+id).addEventListener('change',()=>{state.modalDirty=true;if(id==='fDuration')syncDurationFields('start')}));$('#saveBtn').onclick=saveEditor;$('#deleteBtn').onclick=deleteEditor;$('#cancelBtn').onclick=()=>closeEditor();$('#editClose').onclick=()=>closeEditor();$('#editOverlay').onclick=e=>{if(e.target.id==='editOverlay')closeEditor()};
 
 /* ---------- 通用弹窗 ---------- */
-function showDialog(title,text,buttons=[{text:'确定',primary:true}]){const box=$('#dialogBox');box.innerHTML=`<div class="modal-head"><span class="modal-title">${escapeHTML(title)}</span><button class="icon-btn" data-close>×</button></div><div class="modal-body"><div class="dialog-text">${escapeHTML(text)}</div></div><div class="modal-foot"><div class="spacer"></div>${buttons.map((b,i)=>`<button class="btn ${b.primary?'primary':''} ${b.danger?'danger':''}" data-dialog="${i}">${escapeHTML(b.text)}</button>`).join('')}</div>`;box.querySelector('[data-close]').onclick=()=>hideOverlay('#dialogOverlay');buttons.forEach((b,i)=>box.querySelector(`[data-dialog="${i}"]`).onclick=()=>{hideOverlay('#dialogOverlay');b.action?.()});$('#dialogOverlay').classList.add('open')}
+function showDialog(title,text,buttons=[{text:'确定',primary:true}]){
+  const box=$('#dialogBox');
+  box.innerHTML=`<div class="modal-head"><span class="modal-title">${escapeHTML(title)}</span><button class="icon-btn" data-close>×</button></div><div class="modal-body"><div class="dialog-text">${escapeHTML(text)}</div></div><div class="modal-foot"><div class="spacer"></div>${buttons.map((b,i)=>`<button class="btn ${b.primary?'primary':''} ${b.danger?'danger':''}" data-dialog="${i}">${escapeHTML(b.text)}</button>`).join('')}</div>`;
+  const close=()=>hideOverlay('#dialogOverlay');
+  box.querySelector('[data-close]').onclick=close;
+  let pending=false;
+  buttons.forEach((b,i)=>box.querySelector(`[data-dialog="${i}"]`).onclick=async()=>{
+    if(pending)return;
+    if(!b.action){close();return}
+    pending=true;
+    const clicked=box.querySelector(`[data-dialog="${i}"]`),allBtns=[...box.querySelectorAll('[data-dialog]')];
+    allBtns.forEach(x=>x.disabled=true);
+    if(clicked){clicked.classList.add('busy');clicked.textContent=b.busyText||'处理中…'}
+    try{await b.action();close()}
+    catch(e){console.error(e);notify(`${title}失败：${e?.message||'未知错误'}`,'err');allBtns.forEach(x=>x.disabled=false);if(clicked){clicked.classList.remove('busy');clicked.textContent=b.text}pending=false}
+  });
+  $('#dialogOverlay').classList.add('open')
+}
 
+/* ---------- 附件/备份完整性约束 ---------- */
+const MAX_MANIFEST_BYTES=16*1024*1024;
+const MAX_WORKSPACES=10000;
+const MAX_BLOCKS=2000000;
+const MAX_FILES=100000;
+const MAX_ZIP_ENTRIES=MAX_FILES+1;
+function assertCount(n,max,label){const v=Number(n)||0;if(v>max)throw new Error(`${label}数量过大：最多 ${max}，实际 ${v}`);return v}
+function assertUniqueIds(items,label){const seen=new Set();for(const item of items){const id=String(item?.id||'');if(!id)throw new Error(`${label}缺少唯一 ID`);if(seen.has(id))throw new Error(`${label}存在重复 ID：${id}`);seen.add(id)}return seen}
+function validateManifestStructure(m){
+  if(m.app!==APP||m.schema<4||!Array.isArray(m.workspaces)||!Array.isArray(m.blocks)||!Array.isArray(m.files))throw new Error('不是有效的 Worklog ZIP 备份');
+  assertCount(m.workspaces.length,MAX_WORKSPACES,'工作区');
+  assertCount(m.blocks.length,MAX_BLOCKS,'工作块');
+  assertCount(m.files.length,MAX_FILES,'附件');
+  assertUniqueIds(m.workspaces,'工作区');
+  assertUniqueIds(m.files,'附件');
+  if(Number(m.schema)>=6&&m.attachmentIdentity&&m.attachmentIdentity!=='uuid-v1')throw new Error('不支持的附件身份方案');
+  const wsIds=new Set(m.workspaces.map(w=>String(w.id)));
+  const fileIds=new Set(m.files.map(f=>String(f.id)));
+  const strictCurrent=Number(m.schema)>=6;
+  for(const meta of m.files){
+    if(strictCurrent&&!String(meta.workspaceId||''))throw new Error(`附件「${meta.name||meta.id}」缺少工作区引用`);
+    if(meta.workspaceId&&!wsIds.has(String(meta.workspaceId)))throw new Error(`附件「${meta.name||meta.id}」引用了不存在的工作区`);
+    validateBackupFileSize(meta.size,meta.name);
+    const path=String(meta.path||'');
+    if(!path)throw new Error(`附件「${meta.name||meta.id}」缺少 ZIP 路径`);
+    if(Number(m.schema)>=6&&path!==attachmentZipPath(meta.id))throw new Error(`附件路径与 ID 不一致：${meta.name||meta.id}`);
+  }
+  const blockKeys=new Set();
+  for(const b of m.blocks){const key=String(b?.key||'');if(!key)throw new Error('工作块缺少唯一 key');if(blockKeys.has(key))throw new Error(`工作块存在重复 key：${key}`);blockKeys.add(key);if(strictCurrent&&!String(b.workspaceId||''))throw new Error(`工作块缺少工作区引用：${key}`);if(b.workspaceId&&!wsIds.has(String(b.workspaceId)))throw new Error(`工作块引用了不存在的工作区：${key}`);if(!Array.isArray(b.fileIds))throw new Error(`工作块附件引用格式无效：${key}`);for(const id of b.fileIds){if(!fileIds.has(String(id)))throw new Error(`工作块引用了不存在的附件：${id}`)}}
+  return {wsIds,fileIds,blockKeys};
+}
+function validateZipEntries(entries){
+  assertCount(entries.length,MAX_ZIP_ENTRIES,'ZIP 条目');
+  const seen=new Set();
+  for(const e of entries){const name=String(e.name||'');if(!name||name.length>1024||/[\x00-\x1f]/.test(name))throw new Error('ZIP 条目名称无效');if(seen.has(name))throw new Error(`ZIP 存在重复条目：${name}`);seen.add(name)}
+  return seen;
+}
 /* ---------- ZIP：无第三方依赖，导出标准 ZIP ---------- */
 const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0}return t})();
-function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return(c^0xffffffff)>>>0}
-function crc32Update(crc,bytes){let c=crc>>>0;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return c>>>0}
+function crc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&255]^(c>>>8);return(c^0xffffffff)>>>0}
+function crc32Update(crc,bytes){let c=crc>>>0;for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&255]^(c>>>8);return c>>>0}
+function createCrcWorker(){
+  if(typeof Worker!=='function'||typeof Blob!=='function')return null;
+  const src=`const T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0}return t})();onmessage=e=>{let c=e.data.crc>>>0,b=new Uint8Array(e.data.buffer);for(let i=0;i<b.length;i++)c=T[(c^b[i])&255]^(c>>>8);postMessage({id:e.data.id,crc:c>>>0})};`;
+  try{const url=URL.createObjectURL(new Blob([src],{type:'text/javascript'})),worker=new Worker(url);URL.revokeObjectURL(url);let seq=0;const pending=new Map();worker.onmessage=e=>{const p=pending.get(e.data.id);if(!p)return;pending.delete(e.data.id);p.resolve(e.data.crc>>>0)};worker.onerror=e=>{for(const p of pending.values())p.reject(e.error||new Error('CRC Worker error'));pending.clear()};return{update:(crc,bytes)=>new Promise((resolve,reject)=>{const id=++seq;pending.set(id,{resolve,reject});const copy=bytes.slice();worker.postMessage({id,crc,buffer:copy.buffer},[copy.buffer])}),terminate:()=>worker.terminate()};}catch{return null}
+}
 function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}
 function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
 function u64(n){n=BigInt(n);const o=new Uint8Array(8);for(let i=0;i<8;i++){o[i]=Number(n&255n);n>>=8n}return o}
@@ -998,50 +1353,150 @@ function dosTimeDate(d=new Date()){
 function zip64LocalExtra(){return concatBytes([u16(1),u16(16),u64(0n),u64(0n)])}
 function zip64CentralExtra(size,offset){return concatBytes([u16(1),u16(24),u64(size),u64(size),u64(offset)])}
 function extForFile(f){const m=(f.name||'').match(/\.([A-Za-z0-9]{1,10})$/);return m?m[1]:'bin'}
+function attachmentZipPath(id){return `attachments/${String(id)}`}
+function attachmentChunkZipPath(id,index){return `attachments/${String(id)}/chunk-${String(index+1).padStart(6,'0')}`}
+async function buildExportSnapshot(){
+  const [allWs,allB,allF]=await Promise.all([all('workspaces'),all('blocks'),allFileMeta()]);
+  assertCount(allWs.length,MAX_WORKSPACES,'工作区');
+  assertCount(allB.length,MAX_BLOCKS,'工作块');
+  assertCount(allF.length,MAX_FILES,'附件');
+  assertUniqueIds(allWs,'工作区');
+  assertUniqueIds(allF,'附件');
+  const wsIds=new Set(allWs.map(w=>String(w.id)));
+  const files=[];let totalBytes=0;
+  for(const meta of allF){
+    if(meta.workspaceId&&!wsIds.has(String(meta.workspaceId)))throw new Error(`附件「${meta.name||meta.id}」引用了不存在的工作区`);
+    const source=await getFile(meta.id);
+    if(!source?.blob)throw new Error(`附件不存在：${meta.name||meta.id}`);
+    const blob=source.blob;
+    const size=Number(blob.size);
+    if(!Number.isFinite(size)||size<0||size>MAX_ATTACHMENT_BYTES)throw new Error(`附件「${meta.name||meta.id}」实际大小无效`);
+    files.push({id:String(meta.id),workspaceId:meta.workspaceId,name:meta.name||'附件',type:meta.type||blob.type||'application/octet-stream',size,createdAt:meta.createdAt,updatedAt:meta.updatedAt,blob});
+    totalBytes+=size;
+  }
+  const fileIds=new Set(files.map(f=>f.id));
+  const blocks=allB.map(({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds:startFileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})=>{
+    if(workspaceId&&!wsIds.has(String(workspaceId)))throw new Error(`工作块「${key}」引用了不存在的工作区`);
+    for(const id of (startFileIds||[]))if(!fileIds.has(String(id)))throw new Error(`工作块「${key}」引用了不存在的附件：${id}`);
+    return {key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds:startFileIds,startTime,endTime,allDay,source,externalId,updatedAt,version};
+  });
+  const manifest={
+    app:APP,schema:6,dataVersion:2,exportedAt:new Date().toISOString(),exportId:uid(),appSettings,
+    workspaces:allWs,blocks,attachmentIdentity:'uuid-v1',files:files.map(f=>({id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type,size:f.size,createdAt:f.createdAt,updatedAt:f.updatedAt,path:attachmentZipPath(f.id)}))
+  };
+  validateManifestStructure(manifest);
+  return {manifest,files,totalBytes};
+}
 async function exportZip(){
   try{
-    const allWs=await all('workspaces'),allB=await all('blocks'),allF=await allFileMeta();
-    const manifest={app:APP,schema:5,exportedAt:new Date().toISOString(),appSettings,workspaces:allWs,blocks:allB.map(({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})=>({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})),files:allF.map(f=>({id:f.id,workspaceId:f.workspaceId,name:f.name,type:f.type,size:f.size,createdAt:f.createdAt,updatedAt:f.updatedAt,path:`attachments/${f.id}.${extForFile(f)}`}))};
-    const totalBytes=allF.reduce((n,f)=>n+(Number(f.size)||0),0);
-    if(totalBytes>=512*1024*1024) return await exportLargeBackupZip64(manifest,allF,totalBytes);
+    const {manifest,files,totalBytes}=await buildExportSnapshot();
+    if(totalBytes>=512*1024*1024) return await exportLargeBackupZip64(manifest,files,totalBytes);
     const entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(manifest,null,2))}];
-    for(const meta of allF){const f=await getFile(meta.id);if(!f?.blob)throw new Error(`附件不存在：${meta.name}`);const bytes=new Uint8Array(await f.blob.arrayBuffer());entries.push({name:`attachments/${meta.id}.${extForFile(meta)}`,data:bytes})}
-    const zip=zipStore(entries);downloadBlob(new Blob([zip],{type:'application/zip'}),`worklog-backup-${todayKey()}.zip`);notify(`已导出 ${allWs.length} 个工作区、${allB.length} 条记录、${allF.length} 个附件`)
+    for(const file of files){
+      const bytes=new Uint8Array(await file.blob.arrayBuffer());
+      if(bytes.byteLength!==file.size)throw new Error(`附件读取大小不一致：${file.name}`);
+      entries.push({name:attachmentZipPath(file.id),data:bytes});
+    }
+    const zip=zipStore(entries);
+    const blob=new Blob([zip],{type:'application/zip'});
+    const verifiedEntries=await parseZipDirectory(blob);validateZipEntries(verifiedEntries);const expectedNames=new Set(['manifest.json',...files.map(file=>attachmentZipPath(file.id))]);if(verifiedEntries.length!==expectedNames.size)throw new Error(`导出 ZIP 目录数量异常：应有 ${expectedNames.size} 项，实际 ${verifiedEntries.length} 项`);for(const name of expectedNames)if(!verifiedEntries.find(e=>e.name===name))throw new Error(`导出 ZIP 缺少条目：${name}`);for(const file of files){const e=verifiedEntries.find(x=>x.name===attachmentZipPath(file.id));if(!e||Number(e.size)!==file.size)throw new Error(`导出 ZIP 附件大小校验失败：${file.name}`)}
+    downloadBlob(blob,`worklog-backup-${todayKey()}.zip`);
+    notify(`已导出 ${manifest.workspaces.length} 个工作区、${manifest.blocks.length} 条记录、${files.length} 个附件（含 ${files.filter(f=>f.size===0).length} 个 0 字节附件）`)
   }catch(e){console.error(e);notify('导出失败：'+(e.message||'未知错误'),'err')}
 }
 async function exportLargeBackupZip64(manifest,files,totalBytes){
   if(typeof window.showSaveFilePicker==='function' && window.isSecureContext && (location.protocol==='https:' || location.protocol==='http:')){
-    let handle,writable;
+    let handle,writable,crcWorker=null;
     try{
       handle=await window.showSaveFilePicker({suggestedName:`worklog-backup-${todayKey()}.zip`,types:[{description:'Worklog ZIP 备份',accept:{'application/zip':['.zip']}}]});
       writable=await handle.createWritable();
       const enc=new TextEncoder(),{time,date}=dosTimeDate(),central=[];let offset=0n;
+      crcWorker=createCrcWorker();
       const write=async bytes=>{await writable.write(bytes);offset+=BigInt(bytes.byteLength)};
-      const writeEntry=async(name,blob)=>{
-        const nameBytes=enc.encode(name),extra=zip64LocalExtra(),localOffset=offset;
-        await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0xffffffff),u32(0xffffffff),u16(nameBytes.length),u16(extra.length),nameBytes,extra]));
+      const writeEntry=async(name,blob,onChunk)=>{
+        const nameBytes=enc.encode(name),localOffset=offset;
+        await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0),u32(0),u16(nameBytes.length),u16(0),nameBytes]));
         let crc=0xffffffff,size=0n,reader=blob.stream().getReader();
-        try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;crc=crc32Update(crc,value);size+=BigInt(value.byteLength);await writable.write(value);offset+=BigInt(value.byteLength)}}finally{reader.releaseLock()}
+        try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;const crcTask=crcWorker?crcWorker.update(crc,value):Promise.resolve(crc32Update(crc,value));size+=BigInt(value.byteLength);await writable.write(value);offset+=BigInt(value.byteLength);if(onChunk)onChunk(value.byteLength);crc=await crcTask}}finally{reader.releaseLock()}
         crc=(crc^0xffffffff)>>>0;
         await write(concatBytes([u32(0x08074b50),u32(crc),u64(size),u64(size)]));
         central.push({nameBytes,extra:zip64CentralExtra(size,localOffset),crc,size,offset:localOffset});
+        return size;
       };
       const manifestBlob=new Blob([JSON.stringify({...manifest,backupMode:'zip64-stream',totalAttachmentBytes:totalBytes},null,2)],{type:'application/json'});
       await writeEntry('manifest.json',manifestBlob);
       let done=0;
-      for(const meta of files){const f=await getFile(meta.id);if(!f?.blob)throw new Error(`附件不存在：${meta.name}`);await writeEntry(`attachments/${meta.id}.${extForFile(meta)}`,f.blob);done+=Number(meta.size)||0;if(done%((128*1024*1024))<(Number(meta.size)||0))notify(`导出中：${formatBytes(done)} / ${formatBytes(totalBytes)}`,'ok')}
+      startProgressToast('正在导出 ZIP64 备份',totalBytes,'准备写入附件…');
+      for(const file of files){
+        const writtenSize=await writeEntry(attachmentZipPath(file.id),file.blob,bytes=>{done=Math.min(totalBytes,done+Number(bytes)||0);updateProgressToast(done,totalBytes,`正在导出：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`)});if(Number(writtenSize)!==Number(file.size))throw new Error(`附件读取大小不一致：${file.name}`);
+        updateProgressToast(done,totalBytes,`正在导出：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`)
+      }
+      updateProgressToast(totalBytes,totalBytes,'正在封装 ZIP…','附件已全部写入，正在写入目录并完成文件封口');
+      progressState.finalizing=true;
       const centralOffset=offset;let centralSize=0n;
       for(const c of central){const methodFlags=0x808;const head=concatBytes([u32(0x02014b50),u16(45),u16(45),u16(methodFlags),u16(0),u16(0),u16(0),u32(c.crc),u32(0xffffffff),u32(0xffffffff),u16(c.nameBytes.length),u16(c.extra.length),u16(0),u16(0),u16(0),u32(0),u32(0xffffffff),c.nameBytes,c.extra]);await write(head);centralSize+=BigInt(head.byteLength)}
       const eocd64Offset=offset;
       await write(concatBytes([u32(0x06064b50),u64(44n),u16(45),u16(45),u32(0),u32(0),u64(BigInt(central.length)),u64(BigInt(central.length)),u64(centralSize),u64(centralOffset)]));
       await write(concatBytes([u32(0x07064b50),u32(0),u64(eocd64Offset),u32(1)]));
       await write(concatBytes([u32(0x06054b50),u16(0xffff),u16(0xffff),u16(0xffff),u16(0xffff),u32(0xffffffff),u32(0xffffffff),u16(0)]));
-      await writable.close();notify(`ZIP64 大数据备份完成：${formatBytes(totalBytes)}`,'ok');return;
-    }catch(e){if(e?.name==='AbortError')return;console.error(e);try{await writable?.abort?.()}catch{};notify(`ZIP64 导出失败：${e.message||'未知错误'}`,'err');return}
+      const expectedOffset=offset;
+      await writable.close();
+      const saved=await handle.getFile();
+      const savedSize=Number(saved.size)||0;
+      if(savedSize!==Number(expectedOffset))throw new Error(`导出文件大小异常：写入 ${formatBytes(Number(expectedOffset))}，实际 ${formatBytes(savedSize)}`);
+      const verifiedEntries=await parseZipDirectory(saved);
+      const expectedNames=new Set(['manifest.json',...files.map(file=>attachmentZipPath(file.id))]);
+      if(verifiedEntries.length!==expectedNames.size)throw new Error(`导出 ZIP 目录数量异常：应有 ${expectedNames.size} 项，实际 ${verifiedEntries.length} 项`);
+      for(const entry of verifiedEntries)if(!expectedNames.has(entry.name))throw new Error(`导出 ZIP 出现未知目录项：${entry.name}`);
+      const byName=new Map(verifiedEntries.map(entry=>[entry.name,entry]));
+      for(const file of files){const entry=byName.get(attachmentZipPath(file.id));if(!entry)throw new Error(`导出 ZIP 缺少附件：${file.name}`);if(Number(entry.size)!==file.size)throw new Error(`导出 ZIP 附件大小校验失败：${file.name}`)}
+      try{crcWorker?.terminate?.()}catch{};
+      finishProgressToast(`ZIP64 大数据备份完成：${formatBytes(savedSize)}`,'ok');return;
+    }catch(e){if(e?.name==='AbortError'){stopProgressToast();return;}console.error(e);try{await writable?.abort?.()}catch{};try{crcWorker?.terminate?.()}catch{};finishProgressToast(`ZIP64 导出失败：${e.message||'未知错误'}`,'err');return}
   }
-  showDialog('无法导出 5GB 级 ZIP',`当前页面是 file:// 本地文件，或浏览器不提供可用的文件流式保存 API。5GB 级 ZIP64 备份不能安全地走普通下载，否则会把巨型 ZIP 放进内存。请用 localhost 或 HTTPS 打开 Worklog（例如本机静态服务器），再进行大数据备份。`,[{text:'知道了',primary:true}]);
+  try{
+    // 无 FSA 时不能因为“单个附件太大”而忽略它；改为按附件内容分块，跨多个 ZIP 分卷保存。
+    const partLimitMB=Number(navigator.deviceMemory||4)<=4?192:256;
+    const partLimit=partLimitMB*1024*1024;
+    const reservedManifest=16*1024*1024;
+    const payloadLimit=Math.max(32*1024*1024,partLimit-reservedManifest);
+    const chunkSize=Math.min(128*1024*1024,payloadLimit);
+    const chunks=[];
+    for(const file of files){
+      const count=Math.max(1,Math.ceil(file.size/chunkSize));
+      for(let i=0;i<count;i++){
+        const startByte=i*chunkSize,endByte=Math.min(file.size,startByte+chunkSize);
+        chunks.push({file,index:i,count,start:startByte,end:endByte,size:Math.max(0,endByte-startByte),path:attachmentChunkZipPath(file.id,i)});
+      }
+    }
+    const buckets=[];let bucket=[],bucketBytes=0;
+    for(const chunk of chunks){
+      if(bucket.length&&bucketBytes+chunk.size>payloadLimit){buckets.push(bucket);bucket=[];bucketBytes=0}
+      bucket.push(chunk);bucketBytes+=chunk.size;
+    }
+    if(bucket.length||!chunks.length)buckets.push(bucket);
+    const partCount=buckets.length;
+    startProgressToast('正在生成大数据分卷备份',totalBytes,'按附件身份分块写入…');
+    let done=0;
+    for(let i=0;i<buckets.length;i++){
+      const payloads=buckets[i].map(c=>({id:String(c.file.id),path:c.path,index:c.index,count:c.count,size:c.size}));
+      const partManifest={...manifest,backupMode:'split-zip-v2',partIndex:i+1,partCount,payloads,totalAttachmentBytes:totalBytes,attachmentIdentity:'uuid-v1',chunkSize};
+      const entries=[{name:'manifest.json',data:new TextEncoder().encode(JSON.stringify(partManifest,null,2))}];
+      for(const chunk of buckets[i]){
+        const bytes=new Uint8Array(await chunk.file.blob.slice(chunk.start,chunk.end).arrayBuffer());
+        if(bytes.byteLength!==chunk.size)throw new Error(`附件分块读取大小不一致：${chunk.file.name} / ${chunk.index+1}`);
+        entries.push({name:chunk.path,data:bytes});
+        done+=bytes.byteLength;
+        updateProgressToast(done,totalBytes,`正在导出：${chunk.file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`);
+      }
+      const zip=zipStore(entries);
+      downloadBlob(new Blob([zip],{type:'application/zip'}),`worklog-backup.part${String(i+1).padStart(3,'0')}-of-${String(partCount).padStart(3,'0')}.zip`);
+      await new Promise(r=>setTimeout(r,160));
+      updateProgressToast(done,totalBytes,`正在生成分卷 ${i+1} / ${partCount}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`);
+    }
+    finishProgressToast(`大数据备份完成：${partCount} 个 ZIP 分卷，${files.length} 个附件全部包含`,'ok');
+  }catch(e){console.error(e);finishProgressToast('分卷备份失败：'+(e.message||'未知错误'),'err');notify('分卷备份失败：'+(e.message||'未知错误'),'err')}
 }
-
 async function parseZipDirectory(file){
   const endSize=Math.min(Number(file.size),131072);const tail=new Uint8Array(await file.slice(file.size-endSize).arrayBuffer());const dv=new DataView(tail.buffer);let eocd=-1;
   for(let i=tail.length-22;i>=0;i--)if(dv.getUint32(i,true)===0x06054b50){eocd=i;break}
@@ -1054,31 +1509,161 @@ async function parseZipDirectory(file){
     out.push({name,method,flags,crc,compressedSize:comp,size:raw,localOffset:localOff});p+=46+nameLen+extraLen+commentLen}
   return out;
 }
-async function getZipEntryBlob(file,entry){
-  if(entry.method!==0)throw new Error('当前版本只支持 ZIP store/ZIP64 store 备份');const head=new DataView(await file.slice(Number(entry.localOffset),Number(entry.localOffset)+30).arrayBuffer());if(head.getUint32(0,true)!==0x04034b50)throw new Error('ZIP 文件头无效');const ln=head.getUint16(26,true),le=head.getUint16(28,true);const start=Number(entry.localOffset)+30+ln+le;return file.slice(start,start+Number(entry.size));
+async function getZipEntryStream(file,entry){
+  const head=new DataView(await file.slice(Number(entry.localOffset),Number(entry.localOffset)+30).arrayBuffer());
+  if(head.getUint32(0,true)!==0x04034b50)throw new Error('ZIP 文件头无效');
+  const ln=head.getUint16(26,true),le=head.getUint16(28,true),start=Number(entry.localOffset)+30+ln+le;
+  const raw=file.slice(start,start+Number(entry.compressedSize||entry.size));
+  if(entry.method===0)return raw.stream();
+  if(entry.method===8){if(typeof DecompressionStream!=='function')throw new Error('当前浏览器不支持 ZIP Deflate 解压流');return raw.stream().pipeThrough(new DecompressionStream('deflate-raw'));}
+  throw new Error(`不支持 ZIP 压缩方式：${entry.method}`);
 }
+async function getZipEntryBlob(file,entry){return await new Response(await getZipEntryStream(file,entry)).blob()}
+function validateBackupFileSize(size,name='附件'){const n=Number(size);if(Number.isFinite(n)&&n>MAX_ATTACHMENT_BYTES)throw new Error(`备份中的附件「${name}」超过 5GB 上限`);return n;}
+function storageCompatibilityNote(manifest){return Number(manifest?.dataVersion||1)<2?'此备份来自旧版；导入后会按当前设备能力选择附件存储方式。':'';}
+
 async function importZip(file){
-  try{const entries=await parseZipDirectory(file),map=new Map(entries.map(e=>[e.name,e]));const raw=map.get('manifest.json');if(!raw)throw new Error('找不到 manifest.json');const m=JSON.parse(await (await getZipEntryBlob(file,raw)).text());if(m.app!==APP||m.schema<4||!Array.isArray(m.workspaces)||!Array.isArray(m.blocks)||!Array.isArray(m.files))throw new Error('不是有效的 Worklog ZIP 备份');showDialog('导入完整备份',`发现 ${m.workspaces.length} 个工作区、${m.blocks.length} 条记录、${m.files.length} 个附件。将逐个附件从 ZIP 写入本地，不会一次性加载 5GB。`,[{text:'取消'},{text:'替换全部数据',primary:true,action:async()=>{try{
-      const d=await openDB();await new Promise((resolve,reject)=>{const t=d.transaction(['workspaces','blocks','files'],'readwrite');t.objectStore('workspaces').clear();t.objectStore('blocks').clear();t.objectStore('files').clear();for(const w of m.workspaces)t.objectStore('workspaces').put(w);for(const b of m.blocks)t.objectStore('blocks').put(b);t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error)});
-      let done=0,total=0;for(const x of m.files)total+=Number(x.size)||0;for(const meta of m.files){const e=map.get(meta.path);if(!e)throw new Error(`缺少附件：${meta.name}`);const blob=await getZipEntryBlob(file,e);if(Number(meta.size)&&blob.size!==Number(meta.size))throw new Error(`附件大小不一致：${meta.name}`);await put('files',{id:meta.id,workspaceId:meta.workspaceId,name:meta.name,type:meta.type||'application/octet-stream',size:Number(meta.size)||blob.size,blob,createdAt:meta.createdAt||Date.now(),updatedAt:meta.updatedAt||Date.now()});done+=blob.size;if(done%((64*1024*1024))<blob.size)notify(`导入中：${formatBytes(done)} / ${formatBytes(total)}`,'ok')}
-      if(m.appSettings)appSettings=normalizeAppSettings(m.appSettings);saveAppSettings();workspaces=await all('workspaces');state.workspaceId=workspaces[0]?.id||null;const today=clampToWorkspaceStart(new Date());state.week=today;state.dayDate=today;persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();applyTheme();render();notify('完整 ZIP 备份导入完成','ok');
-    }catch(e){console.error(e);notify('导入失败：'+(e.message||'未知错误'),'err')}}}]);
-  }catch(e){console.error(e);notify('ZIP 导入失败：'+(e.message||'文件无效'),'err')}}
+  try{
+    const entries=await parseZipDirectory(file);validateZipEntries(entries);const map=new Map(entries.map(e=>[e.name,e]));
+    const raw=map.get('manifest.json');if(!raw)throw new Error('找不到 manifest.json');
+    if(Number(raw.size)>MAX_MANIFEST_BYTES)throw new Error(`manifest.json 过大：超过 ${formatBytes(MAX_MANIFEST_BYTES)}`);
+    const m=JSON.parse(await (await getZipEntryBlob(file,raw)).text());
+    validateManifestStructure(m);if(m.backupMode==='split-zip')throw new Error('这是分卷备份，请一次选择全部分卷。');
+    for(const meta of m.files){const e=map.get(meta.path);if(!e)throw new Error(`备份不完整：缺少附件 ${meta.name}`);if(Number(e.size)!==Number(meta.size))throw new Error(`备份不完整：附件大小不一致 ${meta.name}`)}
+    const est=await navigator.storage?.estimate?.();
+    const totalAttachmentBytes=m.files.reduce((n,x)=>n+(Number(x.size)||0),0);
+    const largeImport=totalAttachmentBytes>=512*1024*1024;
+    const opfsReady=await fileStorage.isOPFSAvailable();
+    if(largeImport&&!opfsReady)throw new Error('当前浏览器不可用 OPFS，无法安全导入 512MB 以上备份。请使用 HTTPS/localhost 的 Chromium/Android Chrome 等支持 OPFS 的环境。');
+    if(est?.quota && Number(est.quota)-Number(est.usage||0)<totalAttachmentBytes*1.1)throw new Error(`浏览器剩余存储空间不足：需要约 ${formatBytes(totalAttachmentBytes)}，可用约 ${formatBytes(Number(est.quota)-Number(est.usage||0))}`);
+    showDialog('导入完整备份',`发现 ${m.workspaces.length} 个工作区、${m.blocks.length} 条记录、${m.files.length} 个附件。${storageCompatibilityNote(m)}已完成备份完整性预检；会先暂存附件，全部成功后才替换当前数据。`,[
+      {text:'取消'},
+      {text:'开始导入',primary:true,action:async()=>{
+        const staged=[];let committed=false;const oldFiles=await allFileMeta();
+        try{
+          let done=0;startProgressToast('正在导入备份',totalAttachmentBytes,'准备暂存附件…');
+          for(const meta of m.files){
+            const e=map.get(meta.path);
+            const stageId=`import_${uid()}`;
+            const expectedSize=Number(meta.size);
+            const stageMeta={id:stageId,workspaceId:meta.workspaceId,name:meta.name,type:meta.type||'application/octet-stream',size:expectedSize,createdAt:meta.createdAt||Date.now(),updatedAt:Date.now()};
+            const rec=await fileStorage.importStream(meta.workspaceId,stageMeta,await getZipEntryStream(file,e),bytes=>{done=Math.min(totalAttachmentBytes,done+(Number(bytes)||0));updateProgressToast(done,totalAttachmentBytes,`正在导入：${meta.name}`,`${formatBytes(done)} / ${formatBytes(totalAttachmentBytes)}`)});
+            await put('files',rec);staged.push({rec,sourceId:meta.id});
+          }
+          const idMap=new Map(staged.map(x=>[String(x.sourceId),String(x.rec.id)]));
+          const importedFiles=staged.map(x=>x.rec);
+          const importedBlocks=m.blocks.map(b=>{const fileIds=b.fileIds.map(id=>idMap.get(String(id)));if(fileIds.some(x=>!x))throw new Error(`工作块「${b.key}」存在未解析的附件引用`);return {...b,fileIds}});
+          const d=await openDB();
+          await new Promise((resolve,reject)=>{
+            const t=d.transaction(['workspaces','blocks','files'],'readwrite');
+            const ws=t.objectStore('workspaces'),bs=t.objectStore('blocks'),fs=t.objectStore('files');
+            ws.clear();bs.clear();
+            for(const w of m.workspaces)ws.put(w);
+            for(const b of importedBlocks)bs.put(b);
+            const importedIds=new Set(importedFiles.map(f=>f.id));
+            const cursorReq=fs.openCursor();
+            cursorReq.onsuccess=e=>{const c=e.target.result;if(!c){for(const f of importedFiles)fs.put(f);return}if(!importedIds.has(c.value.id))c.delete();c.continue()};
+            t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);
+          });
+          committed=true;
+          if(m.appSettings)appSettings=normalizeAppSettings(m.appSettings);
+          if(await fileStorage.isOPFSAvailable()&&m.files.length)appSettings.dataVersion=2;
+          saveAppSettings();
+          const importedIds=new Set(importedFiles.map(f=>String(f.id)));let cleanupFailed=0;
+          for(const oldFile of oldFiles){if(importedIds.has(String(oldFile.id)))continue;try{await fileStorage.remove(oldFile)}catch{cleanupFailed++}}
+          workspaces=await all('workspaces');state.workspaceId=workspaces[0]?.id||null;const today=clampToWorkspaceStart(new Date());state.week=today;state.dayDate=today;persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();applyTheme();render();
+          finishProgressToast(cleanupFailed?`备份已导入，但有 ${cleanupFailed} 个旧附件未能清理`:'完整 ZIP 备份导入完成',cleanupFailed?'err':'ok');notify(cleanupFailed?`备份已导入，但 ${cleanupFailed} 个旧附件仍占用存储，请稍后重试清理`:'完整 ZIP 备份导入完成',cleanupFailed?'warn':'ok');
+        }catch(e){
+          console.error(e);
+          if(!committed){for(const x of staged){try{await fileStorage.remove(x.rec);await remove('files',x.rec.id)}catch(e){try{await put('files',{...x.rec,cleanupPending:true,updatedAt:Date.now()})}catch{}}}}
+          finishProgressToast(`导入失败：${e.message||'未知错误'}`,'err');notify('导入失败：'+(e.message||'未知错误'),'err');
+        }
+      }}
+    ]);
+  }catch(e){console.error(e);notify('ZIP 导入失败：'+(e.message||'文件无效'),'err')}
+}
 async function importLegacyJson(file){try{const obj=JSON.parse(await file.text());if(!Array.isArray(obj.blocks))throw new Error('不是旧版 JSON 备份');const ws=currentWs();let n=0;for(const b of obj.blocks){if(!b?.key)continue;const slot=b.key.includes('::')?b.key.split('::').pop():b.key;await put('blocks',{key:blockDbKey(ws.id,slot),slotKey:slot,workspaceId:ws.id,title:String(b.title||''),body:String(b.body||''),tags:normalizeTags(b.tags),prio:b.prio||'',status:b.status||'',loc:String(b.loc||''),fileIds:[],updatedAt:Number(b.updatedAt)||Date.now(),version:4});n++}await loadCurrentWorkspace();render();notify(`已兼容导入旧 JSON：${n} 条记录`)}catch(e){notify('JSON 导入失败：'+(e.message||'格式错误'),'err')}}
 
 
+async function importZipParts(files){
+  try{
+    const ordered=[...files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+    const manifests=[];const fileMetaById=new Map();const payloads=new Map();let exportId=null;let mode=null;
+    for(const file of ordered){
+      const entries=await parseZipDirectory(file);validateZipEntries(entries);const map=new Map(entries.map(e=>[e.name,e]));
+      const raw=map.get('manifest.json');if(!raw)throw new Error(`分卷缺少 manifest.json：${file.name}`);
+      if(Number(raw.size)>MAX_MANIFEST_BYTES)throw new Error(`分卷 manifest.json 过大：${file.name}`);
+      const m=JSON.parse(await (await getZipEntryBlob(file,raw)).text());validateManifestStructure(m);
+      if(m.backupMode!=='split-zip'&&m.backupMode!=='split-zip-v2')throw new Error(`无效的 Worklog 分卷：${file.name}`);
+      mode=mode||m.backupMode;if(mode!==m.backupMode)throw new Error('不能混合不同格式的分卷备份');
+      exportId=exportId||String(m.exportId||'');if(exportId!==String(m.exportId||''))throw new Error('分卷不属于同一次备份导出');
+      manifests.push({file,m,map});
+      for(const meta of m.files){
+        const id=String(meta.id);const normalized={...meta,id};
+        const prev=fileMetaById.get(id);if(prev&&JSON.stringify(prev)!==JSON.stringify(normalized))throw new Error(`附件清单冲突：${meta.name||id}`);
+        fileMetaById.set(id,normalized);
+      }
+      if(m.backupMode==='split-zip'){
+        for(const meta of m.files){const e=map.get(meta.path);if(!e)throw new Error(`分卷缺少附件：${meta.name}`);if(Number(e.size)!==Number(meta.size))throw new Error(`附件大小不一致：${meta.name}`);if(payloads.has(String(meta.id)))throw new Error(`附件重复：${meta.name}`);payloads.set(String(meta.id),[{part:file,entry:e,size:Number(e.size)||0,index:0,count:1}]);}
+      }else{
+        if(!Array.isArray(m.payloads))throw new Error(`分卷缺少 payloads：${file.name}`);
+        const payloadNames=new Set();
+        for(const p of m.payloads){
+          const id=String(p?.id||'');const path=String(p?.path||'');const index=Number(p?.index);const count=Number(p?.count);const size=Number(p?.size);
+          if(!fileMetaById.has(id))throw new Error(`分卷引用不存在的附件：${id}`);
+          if(!path||!Number.isInteger(index)||!Number.isInteger(count)||index<0||count<1||index>=count||!Number.isFinite(size)||size<0)throw new Error(`分卷 payload 无效：${path}`);
+          if(path!==attachmentChunkZipPath(id,index))throw new Error(`分卷 payload 路径与附件 ID 不一致：${id}`);
+          if(payloadNames.has(path))throw new Error(`分卷存在重复 payload：${path}`);payloadNames.add(path);
+          const e=map.get(path);if(!e)throw new Error(`分卷缺少附件分块：${path}`);if(Number(e.size)!==size)throw new Error(`附件分块大小不一致：${path}`);
+          const key=`${id}:${index}`;if(payloads.has(key))throw new Error(`附件分块重复：${path}`);
+          payloads.set(key,{part:file,entry:e,size,index,count,id});
+        }
+      }
+    }
+    const first=manifests[0].m;const partCount=Number(first.partCount);if(!partCount||manifests.length!==partCount)throw new Error(`分卷不完整：需要 ${partCount||'?'} 个分卷，当前选择 ${manifests.length} 个`);
+    const indices=new Set(manifests.map(x=>Number(x.m.partIndex)));for(let i=1;i<=partCount;i++)if(!indices.has(i))throw new Error(`缺少第 ${i} 个分卷`);
+    const wsKey=JSON.stringify(first.workspaces),blockKey=JSON.stringify(first.blocks),filesKey=JSON.stringify(first.files);if(!manifests.every(x=>JSON.stringify(x.m.workspaces)===wsKey&&JSON.stringify(x.m.blocks)===blockKey&&JSON.stringify(x.m.files)===filesKey))throw new Error('分卷之间的工作区、工作块或附件清单不一致');
+    const allFiles=[...fileMetaById.values()];assertCount(allFiles.length,MAX_FILES,'附件');
+    const orderedAttachments=[];
+    for(const meta of allFiles){
+      const id=String(meta.id);
+      if(mode==='split-zip'){
+        const p=payloads.get(id);if(!p)throw new Error(`备份缺少附件：${meta.name||id}`);orderedAttachments.push({meta,chunks:[p]});continue;
+      }
+      const count=Math.max(1,Number(meta.size)===0?1:Math.ceil(Number(meta.size)/Number(first.chunkSize||128*1024*1024)));
+      const chunks=[];for(let i=0;i<count;i++){const p=payloads.get(`${id}:${i}`);if(!p)throw new Error(`备份缺少附件分块：${meta.name||id} / ${i+1}`);if(p.count!==count)throw new Error(`附件分块数量不一致：${meta.name||id}`);chunks.push(p)}
+      const actualTotal=chunks.reduce((n,p)=>n+p.size,0);if(actualTotal!==Number(meta.size))throw new Error(`附件分块总大小不一致：${meta.name||id}`);orderedAttachments.push({meta,chunks});
+    }
+    const total=allFiles.reduce((n,f)=>n+(Number(f.size)||0),0);const opfsReady=await fileStorage.isOPFSAvailable();if(total>=512*1024*1024&&!opfsReady)throw new Error('当前浏览器不可用 OPFS，无法安全导入 512MB 以上分卷备份。');
+    const est=await navigator.storage?.estimate?.();if(est?.quota&&Number(est.quota)-Number(est.usage||0)<total*1.1)throw new Error(`浏览器剩余存储空间不足：需要约 ${formatBytes(total)}`);
+    showDialog('导入分卷备份',`发现 ${ordered.length} 个分卷、${first.workspaces.length} 个工作区、${first.blocks.length} 条记录、${allFiles.length} 个附件。导入会先逐个暂存，全部成功后再替换当前数据。`,[{text:'取消'},{text:'开始导入',primary:true,action:async()=>{
+      const staged=[];let committed=false;const oldFiles=await allFileMeta();try{let done=0;startProgressToast('正在导入分卷备份',total,'准备暂存附件…');
+        for(const item of orderedAttachments){
+          const readers=item.chunks.map(c=>({file:c.part,entry:c.entry}));
+          const combined=new ReadableStream({async start(controller){try{for(const r of readers){const stream=await getZipEntryStream(r.file,r.entry);const reader=stream.getReader();try{while(true){const q=await reader.read();if(q.done)break;controller.enqueue(q.value)}}finally{reader.releaseLock()}}controller.close()}catch(e){controller.error(e)}}});
+          const stageId=`import_${uid()}`;const meta=item.meta;const expectedSize=Number(meta.size);const stageMeta={id:stageId,workspaceId:meta.workspaceId,name:meta.name,type:meta.type||'application/octet-stream',size:expectedSize,createdAt:meta.createdAt||Date.now(),updatedAt:Date.now()};
+          const rec=await fileStorage.importStream(meta.workspaceId,stageMeta,combined,bytes=>{done=Math.min(total,done+(Number(bytes)||0));updateProgressToast(done,total,`正在导入：${meta.name}`,`${formatBytes(done)} / ${formatBytes(total)}`)});await put('files',rec);staged.push({rec,sourceId:meta.id});
+        }
+        const idMap=new Map(staged.map(x=>[String(x.sourceId),String(x.rec.id)])),importedFiles=staged.map(x=>x.rec),importedBlocks=first.blocks.map(b=>{const fileIds=(b.fileIds||[]).map(id=>idMap.get(String(id)));if(fileIds.some(x=>!x))throw new Error(`工作块「${b.key}」存在未解析的附件引用`);return {...b,fileIds}}),d=await openDB();
+        await new Promise((resolve,reject)=>{const t=d.transaction(['workspaces','blocks','files'],'readwrite');const ws=t.objectStore('workspaces'),bs=t.objectStore('blocks'),fs=t.objectStore('files');ws.clear();bs.clear();for(const w of first.workspaces)ws.put(w);for(const b of importedBlocks)bs.put(b);const importedIds=new Set(importedFiles.map(f=>f.id));const r=fs.openCursor();r.onsuccess=e=>{const c=e.target.result;if(!c){for(const f of importedFiles)fs.put(f);return}if(!importedIds.has(c.value.id))c.delete();c.continue()};t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error)});
+        committed=true;if(first.appSettings)appSettings=normalizeAppSettings(first.appSettings);if(opfsReady&&allFiles.length)appSettings.dataVersion=2;saveAppSettings();const importedIds=new Set(importedFiles.map(f=>String(f.id)));let cleanupFailed=0;for(const oldFile of oldFiles){if(importedIds.has(String(oldFile.id)))continue;try{await fileStorage.remove(oldFile)}catch{cleanupFailed++}}try{const sweep=await fileStorage.cleanupOrphans(await allFileMeta());cleanupFailed+=sweep.unknownDirs||0}catch(e){console.warn('导入后孤立存储扫描失败',e)}workspaces=await all('workspaces');state.workspaceId=workspaces[0]?.id||null;const today=clampToWorkspaceStart(new Date());state.week=today;state.dayDate=today;persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();applyTheme();render();finishProgressToast(cleanupFailed?`分卷已导入，但有 ${cleanupFailed} 个旧附件未能清理`:'分卷备份导入完成',cleanupFailed?'err':'ok');notify(cleanupFailed?`分卷已导入，但 ${cleanupFailed} 个旧附件仍占用存储，请稍后重试清理`:'分卷备份导入完成',cleanupFailed?'warn':'ok');
+      }catch(e){console.error(e);if(!committed){for(const x of staged){try{await fileStorage.remove(x.rec);await remove('files',x.rec.id)}catch(e){try{await put('files',{...x.rec,cleanupPending:true,updatedAt:Date.now()})}catch{}}}}finishProgressToast(`分卷导入失败：${e.message||'未知错误'}`,'err');notify('分卷导入失败：'+(e.message||'未知错误'),'err')}}}]);
+  }catch(e){console.error(e);notify('分卷备份解析失败：'+(e.message||'文件无效'),'err')}
+}
+
 function triggerBackupImport(){
-  const i=document.createElement('input');
-  i.type='file';
-  i.accept='.zip,application/zip,.json,application/json';
-  i.onchange=e=>{
-    const f=e.target.files?.[0];
-    if(!f)return;
-    if(/\.json$/i.test(f.name))importLegacyJson(f);
-    else if(/\.zip$/i.test(f.name)||f.type==='application/zip'||!f.type)importZip(f);
-    else notify('请选择 ZIP 备份文件','warn');
-  };
-  i.click();
+  const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.zip,application/zip,.json,application/json';
+  i.onchange=e=>{const files=[...(e.target.files||[])];if(!files.length)return;const json=files.find(f=>/\.json$/i.test(f.name));if(json){if(files.length>1){notify('JSON 只能单文件导入，请只选择一个 JSON 备份','warn');return}return importLegacyJson(json)}if(files.length===1)return importZip(files[0]);return importZipParts(files)};i.click();
+}
+
+/* ---------- OPFS 迁移 ---------- */
+async function countIdbBlobFiles(){const d=await openDB();return new Promise((resolve,reject)=>{let n=0;const r=d.transaction('files','readonly').objectStore('files').openCursor();r.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(n);if(c.value?.blob instanceof Blob&&c.value.storage!=='opfs')n++;c.continue()};r.onerror=()=>reject(r.error)})}
+async function getIdbBlobFileMetaList(){const d=await openDB();return new Promise((resolve,reject)=>{const out=[];const r=d.transaction('files','readonly').objectStore('files').openCursor();r.onsuccess=e=>{const c=e.target.result;if(!c)return resolve(out);const v=c.value;if(v?.blob instanceof Blob&&v.storage!=='opfs')out.push({id:v.id,workspaceId:v.workspaceId,name:v.name,type:v.type,size:Number(v.size)||v.blob.size,createdAt:v.createdAt,updatedAt:v.updatedAt});c.continue()};r.onerror=()=>reject(r.error)})}
+async function migrateLegacyFilesToOPFS(){
+  if(!(await fileStorage.isOPFSAvailable())){notify('当前浏览器不可用 OPFS，请使用 HTTPS/localhost 打开','warn');return}
+  const targets=await getIdbBlobFileMetaList();if(!targets.length){appSettings.dataVersion=2;saveAppSettings();notify('附件已经使用高性能存储','ok');return}
+  const totalBytes=targets.reduce((n,f)=>n+(Number(f.size)||0),0);
+  showDialog('升级附件存储',`检测到 ${targets.length} 个旧附件（${formatBytes(totalBytes)}）仍保存在 IndexedDB。升级后附件改存到 OPFS，适合大数据和大文件场景。原数据在全部迁移成功前不会删除。`,[{text:'稍后再说',action:()=>localStorage.setItem('worklog:v5:opfsPromptDismissed',String(Date.now()+7*86400000))},{text:'开始升级',primary:true,action:async()=>{let done=0,doneBytes=0;startProgressToast('正在升级附件存储',totalBytes,'准备迁移到 OPFS…');try{for(const f of targets){const ok=await fileStorage.migrateRecord(f,bytes=>{doneBytes=Math.min(totalBytes,doneBytes+(Number(bytes)||0));updateProgressToast(doneBytes,totalBytes,`正在迁移：${f.name||f.id}`,`${formatBytes(doneBytes)} / ${formatBytes(totalBytes)}`)});if(!ok)throw new Error(`无法迁移附件：${f.name||f.id}`);done++}appSettings.dataVersion=2;saveAppSettings();await loadCurrentWorkspace();render();renderStorageInfo();finishProgressToast(`附件存储升级完成：${done} 个`,'ok');notify(`附件存储升级完成：${done} 个`,'ok')}catch(e){console.error(e);finishProgressToast(`附件升级中断：${done} / ${targets.length}`,'err');notify(`附件升级中断：${done} / ${targets.length}，可再次重试`,'err')}}}])
 }
 
 /* ---------- ICS ---------- */
@@ -1122,12 +1707,12 @@ function renderMiniCalendar(){
   let html='<div class="cal-weekdays">';for(let i=0;i<7;i++)html+=`<div>${escapeHTML(dayName(addDays(gridStart,i).getDay()).replace('周','')||'日')}</div>`;html+='</div><div class="cal-days">';
   for(let i=0;i<42;i++){const d=addDays(gridStart,i),disabled=isBeforeWorkspaceStart(d),inMonth=d.getMonth()===month,inWeek=startOfWeek(d,w.weekStart).getTime()===selectedStart.getTime(),cls=['cal-day',inMonth?'':'muted',isToday(d)?'today':'',inWeek?'in-week':'',isSameDate(d,selectedStart)?'selected':'',disabled?'disabled':''].filter(Boolean).join(' ');html+=`<button class="${cls}" data-cal-date="${formatDate(d)}" ${disabled?'disabled':''}>${d.getDate()}</button>`}
   root.innerHTML=html+'</div>';
-  root.querySelectorAll('[data-cal-date]').forEach(b=>b.onclick=e=>{e.stopPropagation();const d=parseDate(b.dataset.calDate);if(isBeforeWorkspaceStart(d))return;state.week=d;state.dayDate=d;state.viewMode=VIEW_MODES.WEEK;state.selected.clear();persistUiPrefs();render();closeWeekPicker()});
+  root.querySelectorAll('[data-cal-date]').forEach(b=>b.onclick=e=>{e.stopPropagation();const d=parseDate(b.dataset.calDate);if(isBeforeWorkspaceStart(d))return;state.selected.clear();if(state.readingMode){if(state.readingViewMode===VIEW_MODES.DAY){state.dayDate=d;state.week=d}else{state.week=d;state.dayDate=d}}else if(state.viewMode===VIEW_MODES.DAY){state.dayDate=d;state.week=d}else{state.week=d;state.dayDate=d}persistUiPrefs();render();closeWeekPicker()});
   $('#calHint').textContent='点击年份看小年历 · 点击月份看小月历';
 }
 function openWeekPicker(){const pop=$('#weekPopover');if(pop.parentElement!==document.body)document.body.appendChild(pop);const d=currentWeekStart();calCursor=new Date(d.getFullYear(),d.getMonth(),1);calMode='month';renderMiniCalendar();pop.classList.add('open');$('#weekPicker').setAttribute('aria-expanded','true');requestAnimationFrame(positionWeekPopover)}
 function closeWeekPicker(){$('#weekPopover').classList.remove('open');$('#weekPicker').setAttribute('aria-expanded','false')}
-$('#weekPicker').onclick=e=>{e.preventDefault();e.stopPropagation();$('#weekPopover').classList.contains('open')?closeWeekPicker():openWeekPicker()};$('#weekPopover').onclick=e=>e.stopPropagation();$('#calYearBtn').onclick=e=>{e.stopPropagation();calMode='year';renderMiniCalendar();positionWeekPopover()};$('#calMonthBtn').onclick=e=>{e.stopPropagation();calMode='months';renderMiniCalendar();positionWeekPopover()};$('#calPrev').onclick=e=>{e.stopPropagation();if(calMode==='year')calCursor=new Date(calCursor.getFullYear()-12,calCursor.getMonth(),1);else if(calMode==='months')calCursor=new Date(calCursor.getFullYear()-1,calCursor.getMonth(),1);else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderMiniCalendar();positionWeekPopover()};$('#calNext').onclick=e=>{e.stopPropagation();if(calMode==='year')calCursor=new Date(calCursor.getFullYear()+12,calCursor.getMonth(),1);else if(calMode==='months')calCursor=new Date(calCursor.getFullYear()+1,calCursor.getMonth(),1);else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderMiniCalendar();positionWeekPopover()};$('#calToday').onclick=e=>{e.stopPropagation();const d=clampToWorkspaceStart(new Date());state.week=d;state.dayDate=d;state.viewMode=VIEW_MODES.WEEK;persistUiPrefs();render();closeWeekPicker()};document.addEventListener('click',e=>{const pop=$('#weekPopover'),btn=$('#weekPicker');if(pop.classList.contains('open')&&!pop.contains(e.target)&&!btn.contains(e.target))closeWeekPicker()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#weekPopover').classList.contains('open'))closeWeekPicker()});window.addEventListener('resize',()=>{if($('#weekPopover').classList.contains('open'))positionWeekPopover();positionSearchPreview()});
+$('#weekPicker').onclick=e=>{e.preventDefault();e.stopPropagation();$('#weekPopover').classList.contains('open')?closeWeekPicker():openWeekPicker()};$('#weekPopover').onclick=e=>e.stopPropagation();$('#calYearBtn').onclick=e=>{e.stopPropagation();calMode='year';renderMiniCalendar();positionWeekPopover()};$('#calMonthBtn').onclick=e=>{e.stopPropagation();calMode='months';renderMiniCalendar();positionWeekPopover()};$('#calPrev').onclick=e=>{e.stopPropagation();if(calMode==='year')calCursor=new Date(calCursor.getFullYear()-12,calCursor.getMonth(),1);else if(calMode==='months')calCursor=new Date(calCursor.getFullYear()-1,calCursor.getMonth(),1);else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderMiniCalendar();positionWeekPopover()};$('#calNext').onclick=e=>{e.stopPropagation();if(calMode==='year')calCursor=new Date(calCursor.getFullYear()+12,calCursor.getMonth(),1);else if(calMode==='months')calCursor=new Date(calCursor.getFullYear()+1,calCursor.getMonth(),1);else calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderMiniCalendar();positionWeekPopover()};$('#calToday').onclick=e=>{e.stopPropagation();const d=clampToWorkspaceStart(new Date());state.selected.clear();if(state.readingMode){state.dayDate=d;state.week=d;}else{state.week=d;state.dayDate=d;state.viewMode=VIEW_MODES.WEEK;}persistUiPrefs();render();closeWeekPicker()};document.addEventListener('click',e=>{const pop=$('#weekPopover'),btn=$('#weekPicker');if(pop.classList.contains('open')&&!pop.contains(e.target)&&!btn.contains(e.target))closeWeekPicker()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#weekPopover').classList.contains('open'))closeWeekPicker()});window.addEventListener('resize',()=>{if($('#weekPopover').classList.contains('open'))positionWeekPopover();positionSearchPreview()});
 
 /* ---------- 新建 / 导航 / 搜索 / 设置 ---------- */
 function searchableText(b,fmap=fileCache){return [b.title,b.body,b.loc,b.prio,b.status,b.startTime,b.endTime,...(b.tags||[]),...(b.fileIds||[]).map(id=>fmap.get(id)?.name||'')].join(' ').toLocaleLowerCase()}
@@ -1143,8 +1728,8 @@ async function renderAdvancedSearch(){const q=$('#advancedSearchInput').value.tr
   root.querySelectorAll('[data-advanced-key]').forEach(el=>el.onclick=async()=>{const key=el.dataset.advancedKey;$('#searchOverlay').classList.remove('open');const found=currentBlocks.find(b=>b.key===key);if(found){openEditor(found.key);return}const [date]=partsKey(key),wid=key.split('::')[0];if(workspaces.some(w=>w.id===wid)){state.workspaceId=wid;state.week=parseDate(date);state.dayDate=parseDate(date);persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();render();notify(`已切换到「${currentWs().name}」`)}else notify('找不到该工作区','warn')})}
 
 function newRecord(){const d=currentWeekStart();openEditor(blockDbKey(state.workspaceId,keyFor(d,slots[0]||'08:00')))}
-$('#weekViewBtn').onclick=()=>setViewMode(VIEW_MODES.WEEK);$('#dayViewBtn').onclick=()=>setViewMode(VIEW_MODES.DAY);$('#hideEmptyRows').onchange=e=>{state.hideEmptyRows=!!e.target.checked;persistUiPrefs();render()};$('#headerToggle').onclick=()=>setHeaderState(!state.headerCollapsed,'manual');window.addEventListener('scroll',handleHeaderScroll,{passive:true});
-$('#prevBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.dayDate=clampToWorkspaceStart(addDays(state.dayDate||new Date(),-1));state.week=state.dayDate;persistUiPrefs();render()}else{state.week=clampToWorkspaceStart(addDays(currentWeekStart(),-7));state.selected.clear();persistUiPrefs();render()}};$('#nextBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.dayDate=addDays(state.dayDate||new Date(),1);state.week=state.dayDate;persistUiPrefs();render()}else{state.week=addDays(currentWeekStart(),7);state.selected.clear();persistUiPrefs();render()}};$('#todayBtn').onclick=()=>{const today=clampToWorkspaceStart(new Date());state.week=today;state.dayDate=today;state.selected.clear();persistUiPrefs();render()};
+$('#weekViewBtn').onclick=()=>{if(state.readingMode){state.readingViewMode=VIEW_MODES.WEEK;persistUiPrefs();render()}else setViewMode(VIEW_MODES.WEEK)};$('#dayViewBtn').onclick=()=>{if(state.readingMode){state.readingViewMode=VIEW_MODES.DAY;persistUiPrefs();render()}else setViewMode(VIEW_MODES.DAY)};$('#readingModeBtn').onchange=e=>{state.readingMode=!!e.target.checked;persistUiPrefs();render()};$('#hideEmptyRows').onchange=e=>{state.hideEmptyRows=!!e.target.checked;persistUiPrefs();render()};$('#headerToggle').onclick=()=>setHeaderState(!state.headerCollapsed,'manual');window.addEventListener('scroll',handleHeaderScroll,{passive:true});
+$('#prevBtn').onclick=()=>{if(state.readingMode){if(state.readingViewMode===VIEW_MODES.DAY){const n=addDays(state.dayDate||new Date(),-1);if(!isBeforeWorkspaceStart(n))state.dayDate=n;state.week=state.dayDate}else{state.week=clampToWorkspaceStart(addDays(currentWeekStart(),-7));state.dayDate=state.week}persistUiPrefs();render();return}if(state.viewMode===VIEW_MODES.DAY){state.dayDate=clampToWorkspaceStart(addDays(state.dayDate||new Date(),-1));state.week=state.dayDate;persistUiPrefs();render()}else{state.week=clampToWorkspaceStart(addDays(currentWeekStart(),-7));state.selected.clear();persistUiPrefs();render()}};$('#nextBtn').onclick=()=>{if(state.readingMode){if(state.readingViewMode===VIEW_MODES.DAY){state.dayDate=addDays(state.dayDate||new Date(),1);state.week=state.dayDate}else{state.week=addDays(currentWeekStart(),7);state.dayDate=state.week}persistUiPrefs();render();return}if(state.viewMode===VIEW_MODES.DAY){state.dayDate=addDays(state.dayDate||new Date(),1);state.week=state.dayDate;persistUiPrefs();render()}else{state.week=addDays(currentWeekStart(),7);state.selected.clear();persistUiPrefs();render()}};$('#todayBtn').onclick=()=>{const today=clampToWorkspaceStart(new Date());state.selected.clear();if(state.readingMode){if(state.readingViewMode===VIEW_MODES.DAY){state.dayDate=today;state.week=today}else{state.week=today;state.dayDate=today}}else if(state.viewMode===VIEW_MODES.DAY){state.dayDate=today;state.week=today}else{state.week=today;state.dayDate=today}persistUiPrefs();render()};
 $('#searchInput').oninput=e=>{state.search=e.target.value.trim();$('#clearSearch').style.visibility=state.search?'visible':'hidden';render();renderSearchPreview()};$('#clearSearch').onclick=()=>{$('#searchInput').value='';state.search='';$('#clearSearch').style.visibility='hidden';render();renderSearchPreview();$('#searchInput').focus()};$('#clearSearch').style.visibility='hidden';
 
 $('#themeBtn').onclick=()=>{appSettings.theme=appSettings.theme==='dark'?'light':'dark';applyTheme();saveAppSettings()};$('#searchClose').onclick=()=>$('#searchOverlay').classList.remove('open');$('#searchOverlay').onclick=e=>{if(e.target.id==='searchOverlay')$('#searchOverlay').classList.remove('open')};$('#advancedSearchInput').oninput=renderAdvancedSearch;$('#searchWorkspace').onchange=renderAdvancedSearch;$('#searchDateScope').onchange=renderAdvancedSearch;$('#advancedSearchClear').onclick=()=>{$('#advancedSearchInput').value='';renderAdvancedSearch();$('#advancedSearchInput').focus()};document.addEventListener('click',e=>{if(!e.target.closest('.searchbox')&&!e.target.closest('#searchPreview')){const r=$('#searchPreview');r.hidden=true;r.classList.remove('open')}});
@@ -1152,11 +1737,11 @@ $('#commandBtn').onclick=()=>$('#commandOverlay').classList.add('open');$('#comm
 $$('[data-command]').forEach(b=>b.onclick=()=>{const c=b.dataset.command;hideOverlay('#commandOverlay');if(c==='new')newRecord();if(c==='workspace')$('#workspaceManage').click();if(c==='today'){$('#todayBtn').click()}if(c==='search')$('#searchInput').focus();if(c==='ics')triggerICSImport();if(c==='backupImport')triggerBackupImport();if(c==='export')exportZip();if(c==='clear')clearCurrentWorkspace();if(c==='help')$('#help').hidden=false});
 $('#dialogOverlay').onclick=e=>{if(e.target.id==='dialogOverlay')hideOverlay('#dialogOverlay')};$('#workspaceOverlay').onclick=e=>{if(e.target.id==='workspaceOverlay')hideOverlay('#workspaceOverlay')};
 
-document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){hideOverlay('#commandOverlay');return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;else if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#dialogInput')?.value;if(v){state.week=clampToWorkspaceStart(parseDate(v));state.dayDate=state.week;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="dialogInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#dialogInput')?.focus(),20)}});
+document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){hideOverlay('#commandOverlay');return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}if(state.readingMode){state.readingMode=false;persistUiPrefs();render();return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#gotoDateInput')?.value;if(v){state.week=clampToWorkspaceStart(parseDate(v));state.dayDate=state.week;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="gotoDateInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#gotoDateInput')?.focus(),20)}});
 
 
 loadHeaderPrefs();applyHeaderState();
-(async()=>{try{await initData();renderWorkspaceSelect();renderWorkspaceForm();$('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);$('#hideEmptyRows').checked=!!state.hideEmptyRows;render();notify(`工作日志就绪 · ${currentWs().name}`)}catch(e){console.error(e);notify('初始化失败：'+(e.message||'未知错误'),'err')}})();
+(async()=>{try{await initData();renderWorkspaceSelect();renderWorkspaceForm();$('#weekViewBtn').classList.toggle('active',state.readingMode?state.readingViewMode===VIEW_MODES.WEEK:state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.readingMode?state.readingViewMode===VIEW_MODES.DAY:state.viewMode===VIEW_MODES.DAY);$('#hideEmptyRows').checked=!!state.hideEmptyRows;render();notify(`工作日志就绪 · ${currentWs().name}`);const dismissedUntil=Number(localStorage.getItem('worklog:v5:opfsPromptDismissed')||0);if(await fileStorage.isOPFSAvailable()&&await countIdbBlobFiles()&&dismissedUntil<Date.now())setTimeout(()=>{migrateLegacyFilesToOPFS()},600)}catch(e){console.error(e);notify('初始化失败：'+(e.message||'未知错误'),'err')}})();
 })();
 </script>
 </body>
