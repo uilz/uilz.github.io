@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.53</title>
+<title>工作日志 · v5.9.55</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -50,7 +50,7 @@ button:disabled{cursor:not-allowed;opacity:.45}
 td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1s;background:var(--surface);position:relative}.cell:hover{background:var(--hover);box-shadow:inset 0 0 0 2px var(--accent);z-index:2}.cell.has{background:color-mix(in srgb,var(--accent-soft) 18%,var(--surface))}.cell.continued{background:color-mix(in srgb,var(--accent-soft) 9%,var(--surface));border-left-color:color-mix(in srgb,var(--accent) 18%,var(--border))}.continuation{font-size:calc(10px * var(--font-scale));color:var(--muted);padding:4px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell.today{background:color-mix(in srgb,var(--accent-soft) 35%,var(--surface))}.cell.selected{outline:2px solid var(--accent);outline-offset:-2px}.cell.search-hit{box-shadow:inset 0 0 0 2px #f59e0b;background:#fff7d6}.empty{display:grid;place-items:center;height:100%;color:var(--border);font-size:calc(17px * var(--font-scale));opacity:.6}.cell:hover .empty{opacity:1;color:var(--accent)}.title{font-size:calc(11px * var(--font-scale));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}.title.done{text-decoration:line-through;opacity:.6}.body{font-size:calc(10px * var(--font-scale));color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}.line{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:calc(9px * var(--font-scale));color:var(--faint)}.cell.multi{padding:5px 6px}.cell-event{display:block;width:100%;min-height:54px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:6px 7px;margin:3px 0;text-align:left;overflow:hidden}.cell-event:hover{background:var(--hover);border-color:var(--accent)}.cell-event-title{display:block;font-size:calc(10.5px * var(--font-scale));font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell-event-body{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:calc(9.5px * var(--font-scale));color:var(--muted);line-height:1.35;margin-top:2px}.cell-event-meta{display:block;font-size:calc(8.5px * var(--font-scale));color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cell-more{display:block;font-size:calc(8px * var(--font-scale));color:var(--accent);padding:1px 3px}.day-event{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 8px;margin:3px 0;text-align:left}.day-event:hover{background:var(--hover);border-color:var(--accent)}.day-event-title{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:calc(11px * var(--font-scale));font-weight:700}.day-event-body{display:block;font-size:calc(9px * var(--font-scale));color:var(--muted);font-weight:400;line-height:1.35;margin-top:2px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.day-event-time{flex:0 0 auto;font-size:calc(9px * var(--font-scale));color:var(--muted)}.chip{display:inline-block;padding:1px 5px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:calc(8px * var(--font-scale));margin-right:2px}.day-sep td{border-bottom-color:var(--border)}
 .mobile-summary{display:none}
 .statusbar{display:flex;align-items:center;gap:7px;color:var(--faint);font-size:calc(10px * var(--font-scale));padding:8px 4px}.dot{width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block}.help{margin-top:6px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:calc(11px * var(--font-scale));color:var(--muted)}kbd{border:1px solid var(--border);background:var(--surface-2);border-radius:5px;padding:1px 5px;font-size:calc(10px * var(--font-scale));color:var(--text)}
-.toast-root{position:fixed;right:14px;bottom:14px;z-index:2200;display:flex;flex-direction:column;gap:7px;pointer-events:none}.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:10px;padding:9px 12px;font-size:calc(12px * var(--font-scale));max-width:340px;animation:toastIn .2s ease}.toast.err{border-left:3px solid var(--danger)}.toast.warn{border-left:3px solid var(--warning)}.toast.ok{border-left:3px solid var(--success)}.toast.progress-toast{width:min(360px,calc(100vw - 28px));padding:10px 12px 8px}.progress-toast-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.progress-toast-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-weight:700}.progress-toast-value{flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:calc(11px * var(--font-scale))}.progress-toast-track{height:3px;margin-top:8px;border-radius:999px;background:var(--border);overflow:hidden}.progress-toast-bar{height:100%;width:0;border-radius:999px;background:var(--accent);transform-origin:left center;will-change:width}.progress-toast-sub{margin-top:5px;color:var(--faint);font-size:calc(9px * var(--font-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.progress-toast.success .progress-toast-bar{background:var(--success)}.progress-toast.error .progress-toast-bar{background:var(--danger)}@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.toast-root{position:fixed;right:14px;bottom:14px;z-index:2200;display:flex;flex-direction:column;gap:7px;pointer-events:none}.toast,.toast *{pointer-events:auto}.toast{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:10px;padding:9px 12px;font-size:calc(12px * var(--font-scale));max-width:340px;animation:toastIn .2s ease}.toast.err{border-left:3px solid var(--danger)}.toast.warn{border-left:3px solid var(--warning)}.toast.ok{border-left:3px solid var(--success)}.toast.progress-toast{width:min(360px,calc(100vw - 28px));padding:10px 12px 8px}.progress-toast-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.progress-toast-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-weight:700}.progress-toast-value{flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:calc(11px * var(--font-scale))}.progress-toast-track{height:3px;margin-top:8px;border-radius:999px;background:var(--border);overflow:hidden}.progress-toast-bar{height:100%;width:0;border-radius:999px;background:var(--accent);transform-origin:left center;will-change:width}.progress-toast-sub{margin-top:5px;color:var(--faint);font-size:calc(9px * var(--font-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.progress-toast.success .progress-toast-bar{background:var(--success)}.progress-toast.error .progress-toast-bar{background:var(--danger)}@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .overlay{position:fixed;inset:0;background:rgba(2,6,23,.42);backdrop-filter:blur(4px);z-index:900;display:none;align-items:center;justify-content:center;padding:16px}.overlay.open{display:flex}.modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(2,6,23,.25);overflow:hidden}.modal.small{width:min(470px,100%)}.modal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface-2);border-bottom:1px solid var(--border)}.modal-title{font-size:calc(14px * var(--font-scale));font-weight:750}.modal-meta{margin-left:8px;color:var(--muted);font-size:calc(11px * var(--font-scale))}.modal-body{overflow:auto;padding:15px 16px}.modal-foot{display:flex;gap:8px;align-items:center;padding:11px 16px;background:var(--surface-2);border-top:1px solid var(--border)}.save-progress{min-width:0;max-width:46%;font-size:calc(10px * var(--font-scale));color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.btn.busy{position:relative;pointer-events:none;opacity:.75}.btn.busy::before{content:"";display:inline-block;width:10px;height:10px;margin-right:6px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-1px;animation:btnSpin .7s linear infinite}@keyframes btnSpin{to{transform:rotate(360deg)}}.spacer{flex:1}.field{margin-bottom:12px}.field:last-child{margin-bottom:0}.field-label{display:block;color:var(--muted);font-size:calc(10px * var(--font-scale));margin-bottom:5px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px;outline:none}.field textarea{min-height:120px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:8px 12px;font-size:calc(12px * var(--font-scale))}.btn:hover{background:var(--hover)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}.file-zone{border:1px dashed var(--border);padding:10px;border-radius:10px}.hidden-file{display:none}.file-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid var(--border);background:var(--surface-2);border-radius:999px;font-size:calc(10px * var(--font-scale))}.file-pill button{border:0;background:transparent;color:var(--faint);padding:0}.dialog-text{font-size:calc(12px * var(--font-scale));color:var(--muted);line-height:1.65}.command-list{padding:4px}.command{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:0;background:transparent;padding:11px 12px;border-radius:10px;color:var(--text)}.command:hover{background:var(--hover)}.command-main{font-size:calc(12px * var(--font-scale));font-weight:650}.command-desc{font-size:calc(10px * var(--font-scale));color:var(--muted)}.workspace-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.workspace-settings{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}.diag-panel{margin:8px 4px 4px;border-top:1px solid var(--border);padding-top:10px}.diag-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}.diag-log{max-height:180px;overflow:auto;margin:0;padding:9px;border:1px solid var(--border);background:var(--surface-2);border-radius:9px;font:10px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;color:var(--muted)}.diag-actions{display:flex;gap:7px;margin-top:7px}.diag-actions .btn{flex:0 0 auto}.diag-panel{margin:8px 4px 4px;border-top:1px solid var(--border);padding-top:10px}.diag-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}.diag-log{max-height:180px;overflow:auto;margin:0;padding:9px;border:1px solid var(--border);background:var(--surface-2);border-radius:9px;font:10px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;color:var(--muted)}.diag-actions{display:flex;gap:7px;margin-top:7px}.diag-actions .btn{flex:0 0 auto}
 .week-picker{position:relative;border:1px solid transparent;background:transparent;color:var(--text);font:inherit;cursor:pointer;padding:2px 28px 2px 10px;border-radius:10px;min-width:175px}.week-picker:hover{background:var(--hover);border-color:var(--border)}.week-picker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.week-caret{position:absolute;right:10px;top:50%;color:var(--muted)}
 .week-popover{position:fixed;z-index:850;width:304px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 50px rgba(2,6,23,.18);padding:12px;display:none}.week-popover.open{display:block;animation:calIn .14s ease}.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.cal-month{font-size:calc(13px * var(--font-scale));font-weight:750}.cal-nav{display:flex;gap:3px}.cal-nav button{width:30px;height:30px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px}.cal-nav button:hover{background:var(--hover)}.cal-weekdays,.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal-weekdays div{text-align:center;color:var(--faint);font-size:calc(9px * var(--font-scale));padding:3px 0}.cal-day{height:34px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:8px;font-size:calc(11px * var(--font-scale))}.cal-day:hover{background:var(--hover);border-color:var(--border)}.cal-day.muted{color:var(--faint)}.cal-day.today{color:var(--accent);font-weight:800}.cal-day.in-week{background:var(--accent-soft);color:var(--accent);font-weight:700}.cal-day.selected{box-shadow:inset 0 0 0 2px var(--accent)}.cal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font-size:calc(10px * var(--font-scale));color:var(--muted)}.cal-today{border:0;background:transparent;color:var(--accent);font-size:calc(10px * var(--font-scale));font-weight:700}.mobile-summary{display:none}.mobile-day{padding:10px 11px;border-bottom:1px solid var(--border);background:var(--surface)}.mobile-day:last-child{border-bottom:0}.mobile-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.mobile-day-name{font-size:calc(12px * var(--font-scale));font-weight:750}.mobile-day-date{font-size:calc(10px * var(--font-scale));color:var(--muted)}.mobile-record{display:flex;align-items:flex-start;gap:9px;padding:9px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:6px;cursor:pointer}.mobile-record:active{transform:scale(.995)}.mobile-time{font-size:calc(10px * var(--font-scale));font-variant-numeric:tabular-nums;color:var(--faint);width:42px;flex:0 0 42px;padding-top:1px}.mobile-record-main{min-width:0;flex:1}.mobile-record-title{font-size:calc(12px * var(--font-scale));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mobile-record-body{font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.4;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.mobile-empty{display:block;width:100%;padding:20px 8px;text-align:center;color:var(--faint);font-size:calc(11px * var(--font-scale));background:transparent;border:0;cursor:pointer}.mobile-empty span{color:var(--accent);font-weight:700}.mobile-empty:active{opacity:.7}.mobile-day.today{background:color-mix(in srgb,var(--accent-soft) 24%,var(--surface))}
@@ -218,7 +218,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .reading-day-tools button{font-weight:650}.reading-day-tools button:hover{color:var(--accent)}
 @media(max-width:700px){.reading-view{border-radius:10px}.reading-head{position:sticky;top:0}.reading-body{padding:18px 12px 34px}.reading-entry{padding-left:48px;padding-bottom:28px}.reading-entry+.reading-entry{padding-top:24px}.reading-entry-main:hover{background:transparent}.reading-time{left:0;width:40px}.reading-entry-body{max-width:none}.reading-day+.reading-day{padding-top:24px}.reading-day-meta{font-size:calc(9px * var(--font-scale))}}
 
-/* v5.9.53 release polish */
+/* v5.9.55 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{
     display:grid;
@@ -252,7 +252,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   .view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}
 }
 
-/* v5.9.53 release polish */
+/* v5.9.55 release polish */
 @media(max-width:700px){
   .header:not(.collapsed) .nav{display:grid;grid-template-columns:34px minmax(0,1fr) 34px auto;grid-template-rows:auto auto;align-items:center;gap:6px 5px;padding:0 0 2px}
   .header:not(.collapsed) .nav .nav-prev{grid-column:1;grid-row:1}
@@ -278,7 +278,7 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.53</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.55</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -432,7 +432,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.53',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.55',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -1540,15 +1540,15 @@ function estimateZip64ArchiveBytes(manifest,files,totalBytes){
   return total;
 }
 async function createServiceWorkerDownloadSink(name,contentLength=null){
-  diagLog('SW:sink:start',{name,mode:'explicit-user-gesture'});
-  const activeWorker=navigator.serviceWorker?.controller||null;
-  let worker=activeWorker;
+  diagLog('SW:sink:start',{name,mode:'explicit-user-gesture-confirm'});
+  let worker=navigator.serviceWorker?.controller||null;
   if(!worker){
     const reg=await registerDownloadServiceWorker();
-    worker=reg?.active||navigator.serviceWorker?.controller||null;
+    worker=navigator.serviceWorker?.controller||reg?.active||null;
   }
   if(!worker){diagLog('SW:sink:no-controller');return null}
-  const token=uid(),channel=new MessageChannel();
+  const token=uid();
+  const channel=new MessageChannel();
   let startedResolve,startedReject,closeResolve,closeReject,failed=null,closed=false,started=false;
   const startedPromise=new Promise((r,j)=>{startedResolve=r;startedReject=j});
   const closePromise=new Promise((r,j)=>{closeResolve=r;closeReject=j});
@@ -1560,7 +1560,7 @@ async function createServiceWorkerDownloadSink(name,contentLength=null){
       diagLog('SW:sink:started-message');
       startedResolve(true);
     }else if(m.type==='ack'){
-      const fn=acks.shift(); if(fn)fn();
+      const fn=acks.shift();if(fn)fn();
     }else if(m.type==='closed'){
       closed=true;closeResolve(Number(m.bytes)||0);
       diagLog('SW:sink:closed',{bytes:Number(m.bytes)||0});
@@ -1573,52 +1573,49 @@ async function createServiceWorkerDownloadSink(name,contentLength=null){
   };
   channel.port1.start?.();
   const landingUrl=`${new URL('./__worklog_download_landing__',location.href).href}?token=${encodeURIComponent(token)}`;
-  diagLog('SW:sink:init-post',{token,name});
-  worker.postMessage({type:'worklog-download-init',token,name:sanitizeDownloadName(name),contentLength:Number.isFinite(Number(contentLength))?Number(contentLength):null},[channel.port2]);
 
-  // A download opened from a real user gesture is much more reliable on mobile browsers.
-  const openDownloadPage=()=>new Promise((resolve,reject)=>{
-    const toast=activeProgressToast;
-    const action=toast?.querySelector?.('.progress-toast-action');
-    const ensure=()=>{
-      if(!activeProgressToast)return null;
-      let row=activeProgressToast.querySelector('.progress-toast-action');
-      if(!row){
-        row=document.createElement('div');
-        row.className='progress-toast-action';
-        row.style.cssText='margin-top:10px;display:flex;justify-content:flex-end';
-        const btn=document.createElement('button');
-        btn.className='btn primary';
-        btn.type='button';
-        btn.textContent='打开下载页';
-        btn.style.cssText='min-height:34px;padding:7px 12px;font-size:13px';
-        row.appendChild(btn);activeProgressToast.appendChild(row);
-        btn.onclick=()=>{
-          try{
-            const popup=window.open('about:blank','_blank');
-            if(!popup){diagLog('SW:sink:popup-blocked');notify('浏览器阻止了新窗口，请允许弹出窗口后重试','warn',5200);return}
-            try{popup.opener=null}catch{}
-            btn.disabled=true;btn.textContent='已打开下载页';
-            popup.location.href=landingUrl;
-            diagLog('SW:sink:landing-open',{method:'user-gesture-popup'});
-            row.remove();resolve(popup);
-          }catch(e){diagLog('SW:sink:landing-open-error',{name:e?.name,message:e?.message});reject(e)}
-        };
-      }
-      return row;
-    };
-    if(action)action.querySelector('button')?.focus?.();
-    else ensure();
+  const showDownloadConfirm=()=>new Promise((resolve,reject)=>{
+    const root=$('#toastRoot');
+    if(!root){reject(new Error('下载确认界面不可用'));return}
+    const overlay=document.createElement('div');
+    overlay.className='overlay download-confirm-overlay open';
+    overlay.style.cssText='z-index:2600;display:grid;place-items:center;padding:20px';
+    overlay.innerHTML='<div class="dialog download-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="downloadConfirmTitle" style="width:min(440px,calc(100vw - 32px));max-width:440px"><div class="dialog-head"><div><div id="downloadConfirmTitle" class="dialog-title">准备下载备份</div><div class="dialog-sub">浏览器将打开一个下载页面，你需要在那里点击一次“开始下载”。</div></div><button type="button" class="icon-btn" data-close="1" aria-label="取消">×</button></div><div class="dialog-body"><div style="font-weight:700;overflow-wrap:anywhere">${escapeHtml(sanitizeDownloadName(name))}</div><div style="margin-top:8px;color:var(--muted);font-size:13px">大小：${formatBytes(Number(contentLength)||0)}</div><div style="margin-top:14px;color:var(--muted);font-size:13px;line-height:1.65">点击“继续下载”后才会真正建立浏览器下载请求。页面会持续显示导出进度。</div></div><div class="dialog-foot"><button type="button" class="btn" data-cancel="1">取消</button><button type="button" class="btn primary" data-confirm="1">继续下载</button></div></div>';
+    document.body.appendChild(overlay);
+    const close=()=>{overlay.remove();};
+    const cancel=()=>{close();reject(Object.assign(new Error('用户取消下载'),{code:'SW_DOWNLOAD_USER_CANCEL'}))};
+    overlay.querySelector('[data-close]')?.addEventListener('click',cancel);
+    overlay.querySelector('[data-cancel]')?.addEventListener('click',cancel);
+    overlay.addEventListener('click',e=>{if(e.target===overlay)cancel()});
+    overlay.querySelector('[data-confirm]')?.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      try{
+        const popup=window.open('about:blank','_blank');
+        if(!popup){diagLog('SW:sink:popup-blocked');notify('浏览器阻止了下载窗口，请允许新窗口后重试','warn',5200);return}
+        try{popup.opener=null}catch{}
+        overlay.querySelector('[data-confirm]').disabled=true;
+        overlay.querySelector('[data-confirm]').textContent='正在启动…';
+        worker.postMessage({type:'worklog-download-init',token,name:sanitizeDownloadName(name),contentLength:Number.isFinite(Number(contentLength))?Number(contentLength):null},[channel.port2]);
+        popup.location.href=landingUrl;
+        diagLog('SW:sink:landing-open',{method:'user-gesture-popup'});
+        close();resolve(popup);
+      }catch(err){diagLog('SW:sink:landing-open-error',{name:err?.name,message:err?.message});reject(err)}
+    });
+    overlay.querySelector('[data-confirm]')?.focus?.();
   });
-  updateProgressToast(progressState.done,progressState.total,'等待开始下载…','请点击“打开下载页”，然后在浏览器页面中点击“开始下载”');
+
+  diagLog('SW:sink:await-user-confirm');
+  updateProgressToast(progressState.done,progressState.total,'等待开始下载…','请点击“继续下载”，然后在浏览器下载页点击“开始下载”');
   let popup=null;
-  try{popup=await Promise.race([openDownloadPage(),new Promise((_,j)=>setTimeout(()=>j(Object.assign(new Error('等待用户开始下载超时'),{code:'SW_DOWNLOAD_USER_CONFIRM_TIMEOUT'})),5*60*1000))]);}
-  catch(e){try{channel.port1.postMessage({type:'abort',message:e.message})}catch{};try{popup?.close?.()}catch{};try{channel.port1.close()}catch{};throw e}
+  try{popup=await showDownloadConfirm();}
+  catch(e){try{channel.port1.postMessage({type:'abort',message:e.message})}catch{};try{channel.port1.close()}catch{};throw e}
+
   const startedAt=Date.now();
   try{
     await Promise.race([startedPromise,new Promise((_,j)=>setTimeout(()=>j(Object.assign(new Error('浏览器下载通道启动超时'),{code:'SW_DOWNLOAD_START_TIMEOUT'})),5*60*1000))]);
   }catch(e){try{channel.port1.postMessage({type:'abort',message:e.message})}catch{};try{popup?.close?.()}catch{};try{channel.port1.close()}catch{};throw e}
   diagLog('SW:sink:started',{waitMs:Date.now()-startedAt});
+
   const write=async bytes=>{
     if(failed)throw failed;
     const copy=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
@@ -1635,9 +1632,10 @@ async function createServiceWorkerDownloadSink(name,contentLength=null){
     channel.port1.postMessage({type:'close'});
     const n=await Promise.race([closePromise,new Promise((_,j)=>setTimeout(()=>j(new Error('浏览器下载通道关闭超时')),5*60*1000))]);
     closed=true;try{popup?.close?.()}catch{};try{channel.port1.close()}catch{};
-    diagLog('SW:sink:close:success',{bytes:n});return n;
+    diagLog('SW:sink:close:success',{bytes:n});
+    return n;
   };
-  const abort=async(reason)=>{try{channel.port1.postMessage({type:'abort',message:String(reason||'导出已中止')})}catch{};try{popup?.close?.()}catch{};try{channel.port1.close()}catch{}};
+  const abort=async reason=>{try{channel.port1.postMessage({type:'abort',message:String(reason||'导出已中止')})}catch{};try{popup?.close?.()}catch{};try{channel.port1.close()}catch{};};
   return{write,close,abort,get started(){return started}};
 }
 async function writeZip64PackageToWritable(manifest,files,totalBytes,writable,label='正在导出 ZIP64 备份'){let crcWorker=null;const enc=new TextEncoder(),{time,date}=dosTimeDate(),central=[];let offset=0n;try{crcWorker=createCrcWorker();const write=async bytes=>{await writable.write(bytes);offset+=BigInt(bytes.byteLength)},writeEntry=async(name,blob,onChunk)=>{const nameBytes=enc.encode(name),localOffset=offset;await write(concatBytes([u32(0x04034b50),u16(45),u16(0x808),u16(0),u16(time),u16(date),u32(0),u32(0),u32(0),u16(nameBytes.length),u16(0),nameBytes]));let crc=0xffffffff,size=0n,reader=(blob&&typeof blob.getReader==='function'?blob:blob?.stream?.()).getReader();try{while(true){const q=await reader.read();if(q.done)break;const value=q.value;const crcTask=crcWorker?crcWorker.update(crc,value):Promise.resolve(crc32Update(crc,value));size+=BigInt(value.byteLength);await crcTask;await writable.write(value);offset+=BigInt(value.byteLength);onChunk?.(value.byteLength);crc=await crcTask}}finally{reader.releaseLock()}crc=(crc^0xffffffff)>>>0;await write(concatBytes([u32(0x08074b50),u32(crc),u64(size),u64(size)]));central.push({nameBytes,extra:zip64CentralExtra(size,localOffset),crc,size,offset:localOffset});return size};await writeEntry('manifest.json',new Blob([zip64ManifestBytes(manifest,totalBytes)],{type:'application/json'}));let done=0;if(!activeProgressToast)startProgressToast(label,totalBytes,'准备写入附件…');else updateProgressToast(progressState.done,totalBytes,label,'准备写入附件…');for(const file of files){const source=file.stream||file.blob?.stream?.();if(!source)throw new Error(`附件读取流不可用：${file.name}`);const n=await writeEntry(attachmentZipPath(file.id),source,b=>{done=Math.min(totalBytes,done+(Number(b)||0));updateProgressToast(done,totalBytes,`正在导出：${file.name}`,`${formatBytes(done)} / ${formatBytes(totalBytes)}`)});if(Number(n)!==Number(file.size))throw new Error(`附件读取大小不一致：${file.name}`)}updateProgressToast(totalBytes,totalBytes,'正在封装 ZIP…','附件已全部写入，正在写入目录并完成文件封口');progressState.finalizing=true;const centralOffset=offset;let centralSize=0n;for(const c of central){const h=concatBytes([u32(0x02014b50),u16(45),u16(45),u16(0x808),u16(0),u16(0),u16(0),u32(c.crc),u32(0xffffffff),u32(0xffffffff),u16(c.nameBytes.length),u16(c.extra.length),u16(0),u16(0),u16(0),u32(0),u32(0xffffffff),c.nameBytes,c.extra]);await write(h);centralSize+=BigInt(h.byteLength)}const e64=offset;await write(concatBytes([u32(0x06064b50),u64(44n),u16(45),u16(45),u32(0),u32(0),u64(BigInt(central.length)),u64(BigInt(central.length)),u64(centralSize),u64(centralOffset)]));await write(concatBytes([u32(0x07064b50),u32(0),u64(e64),u32(1)]));await write(concatBytes([u32(0x06054b50),u16(0xffff),u16(0xffff),u16(0xffff),u16(0xffff),u32(0xffffffff),u32(0xffffffff),u16(0)]));return{bytes:Number(offset),entries:central.length}}finally{try{crcWorker?.terminate?.()}catch{}}}
