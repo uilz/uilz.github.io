@@ -1,6 +1,6 @@
 // V2 Iter2 首页的纯账（H5：CalendarView 拆出的逻辑）——墨点分档、摘录截断、
 // 今日面三态、时间账文句、「翻到」年轮。全纯函数，DOM 组件只消费这里的判定。
-import type { DayMark, HomeDigest, JournalStats } from '../application'
+import type { DayMark, HomeDigest } from '../application'
 import { shortDateLabel } from './labels'
 
 export interface Ym {
@@ -76,16 +76,11 @@ export function bandView(home: HomeDigest, today: string): BandView {
 // —— H2 时间账（跨月连续是数字，不是装饰）——
 export const FRESH_WHISPER = '翻开即今日，落笔即永远。'
 
-export function journalFoot(
-  stats: JournalStats,
-  days: readonly DayMark[],
-  viewingYm: string,
-  todayYm: string,
-): string {
-  if (stats.lastDate === null) return FRESH_WHISPER
-  const base = `此册已记 ${String(stats.totalDays)} 日 · 最近 ${shortDateLabel(stats.lastDate)}`
+export function journalFoot(home: HomeDigest, viewingYm: string, todayYm: string): string {
+  if (home.stats.lastDate === null) return FRESH_WHISPER
+  const base = `此册已记 ${String(home.stats.totalDays)} 日 · 最近 ${shortDateLabel(home.stats.lastDate)}`
   if (viewingYm === todayYm) return base
-  const monthDays = days.reduce((n, d) => (ymOfDate(d.date) === viewingYm ? n + 1 : n), 0)
+  const monthDays = home.days.reduce((n, d) => (ymOfDate(d.date) === viewingYm ? n + 1 : n), 0)
   return `${base} · 该月 ${String(monthDays)} 日`
 }
 

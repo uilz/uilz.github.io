@@ -79,16 +79,16 @@ describe('calendarModel: 时间账文句（H2）', () => {
   const days = [mark('2026-08-01'), mark('2026-08-03'), mark('2026-09-12')]
 
   it('新册 → 耳语原句（首页唯一的呼唤）', () => {
-    expect(journalFoot({ totalDays: 0, lastDate: null }, [], '2026-09', '2026-09')).toBe(FRESH_WHISPER)
+    expect(journalFoot(home({}), '2026-09', '2026-09')).toBe(FRESH_WHISPER)
   })
 
   it('看本月 → 「此册已记 N 日 · 最近 M月D日」', () => {
-    expect(journalFoot(stats, days, '2026-09', '2026-09')).toBe('此册已记 24 日 · 最近 9月12日')
+    expect(journalFoot(home({ stats, days }), '2026-09', '2026-09')).toBe('此册已记 24 日 · 最近 9月12日')
   })
 
   it('看别月 → 追加该月有纸日数（跨月连续是数字）；无纸月也如实记 0', () => {
-    expect(journalFoot(stats, days, '2026-08', '2026-09')).toBe('此册已记 24 日 · 最近 9月12日 · 该月 2 日')
-    expect(journalFoot(stats, days, '2026-07', '2026-09')).toBe('此册已记 24 日 · 最近 9月12日 · 该月 0 日')
+    expect(journalFoot(home({ stats, days }), '2026-08', '2026-09')).toBe('此册已记 24 日 · 最近 9月12日 · 该月 2 日')
+    expect(journalFoot(home({ stats, days }), '2026-07', '2026-09')).toBe('此册已记 24 日 · 最近 9月12日 · 该月 0 日')
   })
 })
 

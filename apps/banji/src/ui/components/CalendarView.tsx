@@ -104,7 +104,7 @@ export function CalendarView({ app, today, reloadKey, onOpenSettings, onOpenSear
       </nav>
       <MonthGrid weeks={monthMatrix(ym.y, ym.m)} marks={marks} folds={folds} thisMonth={ymKey(ym)} today={today} />
       <p className="bj-cal-foot" data-journal-foot>
-        {home === null ? FRESH_WHISPER : journalFoot(home.stats, home.days, ymKey(ym), ymOfDate(today))}
+        {home === null ? FRESH_WHISPER : journalFoot(home, ymKey(ym), ymOfDate(today))}
       </p>
       {jumpOpen ? (
         <JumpSheet
