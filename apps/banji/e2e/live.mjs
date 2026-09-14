@@ -2349,6 +2349,161 @@ const leafBoxes = (m) => [m.back, m.prev, m.date, m.depth, m.next, m.seg, m.gear
   await vctx.close()
 }
 
+// ═════════════════ V2-Iter2 首页重设计（#3 今日面/时间账 · #6 墨点信息量 · #14 翻到）═════════════════
+// 固定种子 2025-03-01..24（24 天）+ 今天三笔：档样/折角/时间账全在定局日期上断言，运行日无敏感。
+const marchCounts = { '01': 1, '02': 2, '03': 3, '04': 1, '05': 6, '06': 1, '07': 1, '08': 4, '09': 2, '10': 1, '11': 7, '12': 1, '13': 2, '14': 1, '15': 5, '16': 2, '17': 2, '18': 1, '19': 3, '20': 5, '21': 1, '22': 2, '23': 6, '24': 1 }
+const marchPlan = Object.entries(marchCounts).map(([d, n]) => ({
+  date: `2025-03-${d}`,
+  cards: Array.from({ length: n }, (_, i) =>
+    d === '17' && i === n - 1 ? { kind: 'image', props: { hash: 'f'.repeat(64) } } : { kind: 'text', props: { text: `三月${Number(d)}日第${i + 1}笔` } }),
+}))
+const todayPlan = [{ date: today, cards: [{ kind: 'text', props: { text: '旧一笔' } }, { kind: 'text', props: { text: '又一笔' } }, { kind: 'text', props: { text: '雨后。楼下槐花开了。\n第二行不上首页' } }] }]
+const seedDocs = async (p, docs) => p.evaluate(async (list) => {
+  const iso = '2026-01-01T00:00:00.000Z'
+  await new Promise((res, rej) => {
+    const r = indexedDB.open('banji-journal')
+    r.onsuccess = () => {
+      const db = r.result
+      const tx = db.transaction('journals', 'readwrite')
+      for (const d of list) tx.objectStore('journals').put({ date: d.date, updatedAt: iso, cards: d.cards.map((c, i) => ({ id: `i2-${d.date}-${i}`, kind: c.kind, pos: { x: 20, y: 20 }, size: { w: 160, h: 80 }, props: c.props, createdAt: iso, updatedAt: iso })) })
+      tx.oncomplete = () => { db.close(); res() }
+      tx.onerror = () => { db.close(); rej(tx.error) }
+    }
+    r.onerror = () => rej(r.error)
+  })
+}, docs)
+const wipeDb = async (p) => p.evaluate(() => new Promise((res) => {
+  const r = indexedDB.deleteDatabase('banji-journal')
+  r.onsuccess = r.onerror = r.onblocked = () => res()
+}))
+const todayMD = `${Number(today.slice(5, 7))}月${Number(today.slice(8, 10))}日`
+{
+  const ic = await browser.newContext({ viewport: { width: 1100, height: 760 } })
+  const ip = await ic.newPage()
+  ip.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2i2] ' + m.text()) })
+  ip.on('pageerror', (e) => errors.push('[pageerror v2i2] ' + e.message))
+  await ip.goto(BASE)
+  await ip.waitForSelector('.bj-cell')
+  const freshBand = ((await ip.locator('[data-today-band]').textContent()) || '').trim()
+  check('V2-Iter2 新册第一眼：「今天·空着」+ 耳语仍是唯一的呼唤（无数据面板）', freshBand.includes('空着') && ((await ip.locator('[data-journal-foot]').textContent()) || '').trim() === '翻开即今日，落笔即永远。')
+  await ip.screenshot({ path: `${SHOTS}/50-v2i2-fresh-1100.png`, fullPage: true })
+  await wipeDb(ip)
+  await ip.goto(BASE)
+  await ip.waitForSelector('.bj-cell')
+  await seedDocs(ip, [...marchPlan, ...todayPlan])
+  await ip.reload()
+  await ip.waitForSelector('[data-today-band]')
+  const bandTxt = ((await ip.locator('[data-today-band]').textContent()) || '').trim()
+  check('V2-Iter2 今日面：今天有纸→「今天·3 张纸」+ 最新一笔首行上纸（第二行不上首页）', bandTxt.includes('今天·3 张纸') && bandTxt.includes('雨后。楼下槐花开了。') && !bandTxt.includes('第二行'))
+  check('V2-Iter2 今日面整脊可点→今天', (await ip.locator('[data-band="paper"]').count()) === 1)
+  const footHome = ((await ip.locator('[data-journal-foot]').textContent()) || '').trim()
+  check(`V2-Iter2 时间账：25 个日子+最近一笔今天点名（看本月不加「该月」）`, footHome === `此册已记 25 日 · 最近 ${todayMD}`)
+  await ip.screenshot({ path: `${SHOTS}/51-v2i2-paper-1100.png`, fullPage: true })
+  // —— H4 翻到之门：月题→纸片升起→跨年→点 2025年3月（门也是这次导航的走法）——
+  await ip.click('[data-month-jump]')
+  await ip.waitForSelector('[data-jump-sheet]')
+  const sheetCells = await ip.locator('[data-jump-sheet] [data-jump-month]').count()
+  check('V2-Iter2 翻到：月题一按纸片升起、当年 12 格齐', sheetCells === 12 && await ip.locator('[data-jump-sheet]').isVisible())
+  await ip.click('[data-jump-prev-year]')
+  check('V2-Iter2 翻到：年份 ‹ 走到 2025、有纸月份挂墨点、无纸月不挂', ((await ip.locator('.bj-jump-year').textContent()) || '').includes('2025') && (await ip.locator('[data-jump-month="2025-03"] .bj-jump-dot').count()) === 1 && (await ip.locator('[data-jump-month="2025-05"] .bj-jump-dot').count()) === 0)
+  await ip.click('[data-jump-month="2025-03"]')
+  await ip.waitForSelector('[data-jump-sheet]', { state: 'detached' })
+  await ip.waitForSelector(`.bj-cell[data-date="2025-03-01"]`)
+  check('V2-Iter2 翻到：点 3 月→日历落到 2025年3月、纸片合上', ((await ip.locator('.bj-month-label').textContent()) || '') === '2025年3月')
+  const footMarch = ((await ip.locator('[data-journal-foot]').textContent()) || '').trim()
+  check('V2-Iter2 时间账跨月连续：看 2025年3月 追加「· 该月 24 日」', footMarch === `此册已记 25 日 · 最近 ${todayMD} · 该月 24 日`)
+  await ip.waitForFunction(() => document.querySelectorAll('.bj-cell i.bj-dot').length >= 20, null, { timeout: 4000 })
+  const w = async (d) => (await ip.locator(`.bj-cell[data-date="${d}"] i.bj-dot`).boundingBox())?.width ?? 0
+  const [ws, wm, wl] = [await w('2025-03-01'), await w('2025-03-03'), await w('2025-03-05')]
+  check(`V2-Iter2 墨点三档实测可辨：s=${ws} m=${wm} l=${wl}（3/4.5/6 递增、极差 ≥2）`, Math.abs(ws - 3) <= 0.6 && Math.abs(wm - 4.5) <= 0.6 && Math.abs(wl - 6) <= 0.6 && wl - ws >= 2)
+  const foldN = await ip.locator('.bj-cell .bj-fold').count()
+  check('V2-Iter2 折角：整月恰一枚，钉在贴过照片的那天（3月17日）', foldN === 1 && (await ip.locator('.bj-cell[data-date="2025-03-17"] .bj-fold').count()) === 1)
+  await ip.screenshot({ path: `${SHOTS}/52-v2i2-march-1100.png`, fullPage: true })
+  // —— 夜读机判（还在 3 月视图：点与折角都在屏上）——
+  await ip.click('button[aria-label="设置"]')
+  await ip.waitForTimeout(250)
+  await ip.getByRole('button', { name: /夜读/ }).first().click()
+  await ip.waitForFunction(() => document.documentElement.getAttribute('data-bj-theme') === 'night')
+  await ip.waitForTimeout(250)
+  await ip.keyboard.press('Escape')
+  await ip.waitForTimeout(250)
+  const nightStyles = await ip.evaluate(() => {
+    const cs = (s, prop) => { const el = document.querySelector(s); return el ? getComputedStyle(el)[prop] : null }
+    return { head: cs('.bj-band-head', 'color'), line: cs('.bj-band-line', 'color'), foot: cs('[data-journal-foot]', 'color'), dotBg: cs('.bj-dot', 'backgroundColor'), fold: cs('.bj-fold', 'color'), faint: 'rgb(125, 112, 90)' }
+  })
+  check('V2-Iter2 夜读：今日面/时间账/折角全落浅墨令牌、零 ink-faint-on-dark（点色=夜 --bj-dot）',
+    nightStyles.head === 'rgb(233, 221, 195)' && nightStyles.line === 'rgb(181, 166, 136)' && nightStyles.foot === 'rgb(181, 166, 136)' && nightStyles.fold === 'rgb(181, 166, 136)' && nightStyles.dotBg === 'rgba(240, 230, 208, 0.88)' && ![nightStyles.head, nightStyles.line, nightStyles.foot, nightStyles.fold].includes(nightStyles.faint))
+  await ip.screenshot({ path: `${SHOTS}/53-v2i2-night-march-1100.png`, fullPage: true })
+  await ic.close()
+}
+// —— 今天未落笔有史 → quiet 态：回到过去的门在那行字里，不是按钮 ——
+{
+  const qc = await browser.newContext({ viewport: { width: 1100, height: 760 } })
+  const qp = await qc.newPage()
+  qp.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2i2q] ' + m.text()) })
+  qp.on('pageerror', (e) => errors.push('[pageerror v2i2q] ' + e.message))
+  await qp.goto(BASE)
+  await qp.waitForSelector('.bj-cell')
+  await wipeDb(qp)
+  await qp.goto(BASE)
+  await qp.waitForSelector('.bj-cell')
+  await seedDocs(qp, [{ date: '2025-03-10', cards: [{ kind: 'text', props: { text: '十号闲笔' } }] }, { date: '2025-03-17', cards: [{ kind: 'text', props: { text: '贴了照片的那天' } }] }])
+  await qp.reload()
+  await qp.waitForSelector('[data-today-band]')
+  const qBand = ((await qp.locator('[data-today-band]').textContent()) || '').trim()
+  check('V2-Iter2 未落笔有史：「今天·未落笔」+「上次落笔 · 3月17日「…」」点名最晚有纸日', qBand.includes('未落笔') && qBand.includes('3月17日「贴了照片的那天」'))
+  await qp.screenshot({ path: `${SHOTS}/54-v2i2-quiet-1100.png`, fullPage: true })
+  await qp.click('[data-band-jump]')
+  await qp.waitForFunction(() => location.hash === '#/d/2025-03-17')
+  check('V2-Iter2 上次落笔一行点进那一天（回到过去自然成行）', true)
+  await qc.close()
+}
+// —— 手机 390：书脊 ≤2 行、格不挤、门照开 ——
+{
+  const mc = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
+  const mp = await mc.newPage()
+  mp.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2i2m] ' + m.text()) })
+  mp.on('pageerror', (e) => errors.push('[pageerror v2i2m] ' + e.message))
+  await mp.goto(BASE)
+  await mp.waitForSelector('.bj-cell')
+  await wipeDb(mp)
+  await mp.goto(BASE)
+  await mp.waitForSelector('.bj-cell')
+  await seedDocs(mp, [...marchPlan.slice(0, 6), ...todayPlan])
+  await mp.reload()
+  await mp.waitForSelector('[data-today-band]')
+  const mGeo = await mp.evaluate(() => {
+    const band = document.querySelector('.bj-band')?.getBoundingClientRect()
+    return { bandH: band ? band.height : 999, docW: document.documentElement.scrollWidth, cells: document.querySelectorAll('.bj-cell').length }
+  })
+  check(`V2-Iter2 手机 390：今日面 ≤2 行（${Math.round(mGeo.bandH)}px ≤ 92）、月历不横滚（docW=${mGeo.docW}）`, mGeo.bandH <= 92 && mGeo.docW <= 391 && mGeo.cells === 42)
+  await mp.screenshot({ path: `${SHOTS}/55-v2i2-paper-390.png`, fullPage: true })
+  await mp.tap('[data-month-jump]')
+  await mp.waitForSelector('[data-jump-sheet]')
+  await mp.tap('[data-jump-prev-year]')
+  await mp.tap('[data-jump-month="2025-03"]')
+  await mp.waitForFunction(() => ((document.querySelector('.bj-month-label')?.textContent) || '') === '2025年3月')
+  await mp.waitForSelector('[data-jump-sheet]', { state: 'detached' })
+  check('V2-Iter2 手机真触摸走门：上一年→3月→日历翻页、纸片合上', true)
+  await mc.close()
+}
+// —— 768 平板档存照（同一书脊在宽屏的呼吸）——
+{
+  const tc = await browser.newContext({ viewport: { width: 768, height: 1024 } })
+  const tp = await tc.newPage()
+  tp.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2i2t] ' + m.text()) })
+  tp.on('pageerror', (e) => errors.push('[pageerror v2i2t] ' + e.message))
+  await tp.goto(BASE)
+  await tp.waitForSelector('.bj-cell')
+  await seedDocs(tp, marchPlan)
+  await tp.reload()
+  await tp.waitForSelector('[data-today-band]')
+  const quiet768 = ((await tp.locator('[data-today-band]').textContent()) || '').includes('未落笔')
+  await tp.screenshot({ path: `${SHOTS}/56-v2i2-quiet-768.png`, fullPage: true })
+  check('V2-Iter2 768 无今日有史态照常成脊（quiet 上屏）', quiet768)
+  await tc.close()
+}
+
 await browser.close()
 console.log('\nCONSOLE ERRORS:', errors.length)
 errors.slice(0, 10).forEach((e) => console.log('  !', e))
