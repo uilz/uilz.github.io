@@ -298,17 +298,18 @@
   letter-spacing: 0.08em;
 }
 
-/* —— 页眉「卡片/线」双段低语（graph 模式是 R8,不留占位） —— */
+/* —— 页眉「卡片/线/图」三段（V2-Iter3·#15 消化）：去框去垫——
+   它是题字旁的三声低语不是仪表盘拨段开关。亮者自墨、坠一道 2px 朱丝；
+   暗者淡墨无饰。整段无框（audit：方框描边是全页最 dashboard 的一笔）。 */
 .bj-mode-seg {
   display: inline-flex;
-  border: 1px solid var(--bj-hairline);
-  border-radius: 2px;
-  overflow: hidden;
+  gap: 2px;
 }
 
 .bj-mode-seg-btn {
+  position: relative;
   min-height: 28px;
-  padding: 2px 12px;
+  padding: 2px 8px;
   border: none;
   background: none;
   color: var(--bj-ink-faint);
@@ -316,16 +317,21 @@
   font-size: 13.5px;
   letter-spacing: 0.14em;
   cursor: pointer;
-  transition: background var(--bj-move) ease-out;
-}
-
-.bj-mode-seg-btn + .bj-mode-seg-btn {
-  border-left: 1px solid var(--bj-hairline);
+  transition: color var(--bj-move) ease-out;
 }
 
 .bj-mode-seg-btn.is-on {
-  background: var(--bj-wash);
   color: var(--bj-ink);
+}
+
+.bj-mode-seg-btn.is-on::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 0;
+  height: 2px;
+  background: var(--bj-zhu);
 }
 
 /* 页眉三段开关的窄屏换装（V2-F1）：与上方基式同文件——媒体查询不加权重，
