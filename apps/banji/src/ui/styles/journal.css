@@ -169,15 +169,21 @@
   position: relative;
   /* 自成叠层：纸片再多也压不住浮在桌面上的功能便签（添卡条）。 */
   z-index: 0;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(100% 60% at 50% -14%, var(--bj-page-a), transparent 62%),
     radial-gradient(70% 45% at 88% 108%, var(--bj-page-b), transparent 60%),
     var(--bj-paper);
 }
 
+/* 纸要铺到页底（V2-Iter3·D4）：画布是当日这页纸的本体，短日子也须长到viewport底——
+   flex-grow 让它吃满桌面上的余量（内联 height 成了下限而非顶），底部不再横出一条灰带接缝。
+   左右衬距保留：桌面日纸不铺满整桌是构图（桌面 vs 纸），要修的只是那条横向接缝。 */
 .bj-canvas {
   position: relative;
-  margin: 16px 24px 120px;
+  flex: 1 0 auto;
+  margin: 16px 24px 0;
   min-width: calc(100% - 48px);
   border-radius: 2px;
   background-color: var(--bj-surface);
@@ -267,6 +273,23 @@
   justify-content: center;
   align-items: center;
   gap: 14px;
+  pointer-events: none;
+  /* 自成一叠（z:1）：光晕 ::before 负 z 只退到把手身后，不钻到画布底下（画布层 z:0 会盖死它）。 */
+  z-index: 1;
+}
+
+/* 底栏浮在纸上（V2-Iter3·D4）：不切色带——一枚自页底升起的光晕把纸面轻轻垫亮，
+   把手像搁在纸上被台灯照着，不是搁在灰带上。纯装饰层，不吃事件。 */
+.bj-add-wrap::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  width: min(640px, 96vw);
+  height: 150px;
+  background: radial-gradient(50% 88% at 50% 100%, color-mix(in srgb, var(--bj-surface) 92%, transparent), transparent);
   pointer-events: none;
 }
 
