@@ -143,6 +143,7 @@ describe('规模预算测（2000 卡 / 600 边 / 200 天 · 真缝宇宙）', ()
       createdAt: row.card.createdAt,
       snippet: `第${row.card.id.slice(5)}笔`,
       icon: 'text',
+      kind: row.card.kind,
       children: row.card.children ?? [],
     }))
     timed('graphLayout(2000 chips, 600 边)', BUDGET_LAYOUT_MS, () => {

@@ -8,7 +8,7 @@ import { isoAt } from './helpers'
 const cid = (v: string): CardId => v as CardId
 
 function entry(id: string, date: string, born = 0, children: string[] = []): GraphEntry {
-  return { cardId: cid(id), date, createdAt: isoAt(born), snippet: id, icon: 'text', children: children.map(cid) }
+  return { cardId: cid(id), date, createdAt: isoAt(born), snippet: id, icon: 'text', kind: 'text', children: children.map(cid) }
 }
 
 const edge = (source: string, target: string): EdgeRecord => ({

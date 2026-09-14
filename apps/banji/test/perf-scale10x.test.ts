@@ -135,6 +135,7 @@ describe('10× 规模证据（19800 卡 / 5000 边 / 1800 天 · 真缝宇宙 ·
       createdAt: row.card.createdAt,
       snippet: `第${row.card.id.slice(5)}笔`,
       icon: 'text',
+      kind: row.card.kind,
       children: row.card.children ?? [],
     }))
     timed('graphLayout(19800 chips, 5000 边)', BUDGET_LAYOUT_MS, () => {
