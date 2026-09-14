@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BanjiApp } from '../application'
 import type { CardId } from '../domain/types'
-import { formatDate } from '../domain/date'
+import { formatDate, addDays } from '../domain/date'
 import { useHashRoute } from './router'
 import { dayHref } from './router'
 import { useDayStore } from './store'
@@ -92,6 +92,15 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
         setSearchOpen(true)
         return
       }
+      // 翻页 ←/→（V2-F2，桌面）：R11 守门矩阵同款——写字持焦、抽屉、搜索、牵线在岗一律让路；Esc 原样。
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        if (route.name !== 'day' || drawerOpen || searchOpen || store.state.linkFromId !== null) return
+        const t = e.target
+        if (t instanceof HTMLElement && (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)) return
+        e.preventDefault()
+        window.location.hash = dayHref(addDays(route.date, e.key === 'ArrowLeft' ? -1 : 1))
+        return
+      }
       if (!mod) return
       const t = e.target
       if (t instanceof HTMLElement && (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)) return
@@ -117,7 +126,7 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
     return () => {
       window.removeEventListener('keydown', onKey)
     }
-  }, [route.name, storeActions])
+  }, [route, drawerOpen, searchOpen, store.state.linkFromId, storeActions])
 
   useEffect(() => {
     if (toast === null) return
@@ -130,6 +139,14 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
     const t = window.setTimeout(() => store.actions.dismissNote(), 3200)
     return () => window.clearTimeout(t)
   }, [note, store.actions])
+
+  // 落纸耳语（V2-F3）：与便签/回执同住的兴灭账——1.4s 请它回纸里，入场出场都归 CSS 管。
+  const stampSeq = store.state.stampSeq
+  useEffect(() => {
+    if (stampSeq === 0) return
+    const t = window.setTimeout(() => store.actions.dismissStamp(), 1400)
+    return () => window.clearTimeout(t)
+  }, [stampSeq, store.actions])
 
   const notify = useCallback((msg: string): void => setToast({ id: Date.now(), msg }), [])
 
@@ -189,6 +206,7 @@ export function App({ app, initialTheme, now = () => new Date(), storeOptions }:
           key={route.date}
           app={app}
           date={route.date}
+          today={today}
           store={store}
           onOpenSettings={() => setDrawerOpen(true)}
           hop={hop}

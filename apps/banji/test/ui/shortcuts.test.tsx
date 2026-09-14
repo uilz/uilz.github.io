@@ -108,12 +108,12 @@ describe('⌘ 键补全（守门矩阵：写字第上不开火，Esc 与 ⌘F �
 })
 
 describe('Esc 退场矩阵（R11·D5：每扇自持出口，一处一纪律）', () => {
-  it('抽屉：Esc 合上；设置里能看见五行键术单', async () => {
+  it('抽屉：Esc 合上；设置里能看见六行键术单（V2-F2 添「翻页 ←/→」后一行为六）', async () => {
     openCalendar()
     await settle(200)
     fireEvent.click(view.getByLabelText('设置'))
     expect(document.querySelector('[data-keylist]')).not.toBeNull()
-    expect(document.querySelectorAll('[data-keylist] li')).toHaveLength(5)
+    expect(document.querySelectorAll('[data-keylist] li')).toHaveLength(6)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(document.querySelector('.bj-drawer')).toBeNull()
   })

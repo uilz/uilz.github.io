@@ -190,6 +190,7 @@ export function SettingsDrawer({ app, theme, onTheme, onImported, notify, onClos
           <ul className="bj-keylist" data-keylist>
             <li><span>添一张卡</span><kbd>⌘/Ctrl N</kbd></li>
             <li><span>造一叠</span><kbd>⌘/Ctrl ⇧K</kbd></li>
+            <li><span>翻页（日子）</span><kbd>←/→</kbd></li>
             <li><span>搜遍全册</span><kbd>⌘/Ctrl F</kbd></li>
             <li><span>带走整册</span><kbd>⌘/Ctrl E</kbd></li>
             <li><span>退场 · 取消</span><kbd>Esc</kbd></li>

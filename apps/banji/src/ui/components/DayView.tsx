@@ -29,6 +29,7 @@ export { WIDE_HINT_KEY }
 interface DayViewProps {
   readonly app: BanjiApp
   readonly date: string
+  readonly today: string
   readonly store: DayStore
   readonly onOpenSettings: () => void
   /** 搜索行/图 chip 共用的落点瞬态（R8·D4）：跳到某天某纸，暖脉冲 ≤200ms，App 计时熄灭。 */
@@ -38,7 +39,7 @@ interface DayViewProps {
   readonly onHopExpire: () => void
 }
 
-export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard, onHopExpire }: DayViewProps): ReactElement {
+export function DayView({ app, date, today, store, onOpenSettings, hop, onOpenCard, onHopExpire }: DayViewProps): ReactElement {
   const { state, actions } = store
   const fileRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -112,6 +113,8 @@ export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard, onH
   return (
     <div className="bj-day" data-day-view data-gaze={state.gaze} data-linking={linking || undefined}>
       <DayHead
+        date={date}
+        today={today}
         title={dateTitle(date)}
         gaze={state.gaze}
         onGaze={(g) => actions.setGaze(g, g === 'thread' ? state.selectedId : null)}
@@ -233,6 +236,9 @@ export function DayView({ app, date, store, onOpenSettings, hop, onOpenCard, onH
         </>
       )}
       <input ref={fileRef} type="file" accept="*/*" multiple className="bj-attach-file" aria-label="夹带" onChange={onPicked} />
+      {state.stampSeq === 0 || state.gaze !== 'cards' ? null : (
+        <p key={state.stampSeq} className="bj-stamp" data-stamp role="status">已落纸</p>
+      )}
       {whisper === 'off' || state.gaze !== 'cards' ? null : (
         <p className={`bj-wide-hint${whisper === 'fading' ? ' is-fading' : ''}`} aria-hidden>
           纸比屏宽 · 左右推移可看

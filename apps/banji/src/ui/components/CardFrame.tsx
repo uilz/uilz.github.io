@@ -11,6 +11,7 @@ import { isAttachKind } from '../attachRoute'
 import { hitTestContainer, parentIdOf } from '../stackGeometry'
 import { clampCardPos } from '../placement'
 import { CardMenu, DeleteConfirmPanel, RenamePanel } from './CardMenus'
+import { useResizeGesture } from './useResizeGesture'
 import { CardTypeIcon, IconDots, IconPencil } from './icons'
 
 interface Offset {
@@ -58,11 +59,10 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
   const editable = rendererFor(card.kind)?.editable ?? false
   const isMat = card.kind === 'container'
   const [drag, setDrag] = useState<Offset | null>(null)
-  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  const { live: size, handlers: sizeHandlers } = useResizeGesture(card.size, (s) => actions.resize(card.id, s))
   const [menu, setMenu] = useState<'closed' | 'open' | 'confirm' | 'rename'>('closed')
   const dragRef = useRef<DragBase | null>(null)
   const linkTapRef = useRef<{ pid: number; sx: number; sy: number } | null>(null)
-  const sizeRef = useRef<{ pid: number; sx: number; sy: number; w: number; h: number } | null>(null)
   const lastTapRef = useRef(0)
 
   const ctx: RenderCtx = {
@@ -75,6 +75,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
     exitEdit: () => actions.exitEdit(),
     setProps: (patch) => actions.patchProps(card.id, patch),
     whisper: (msg) => actions.whisper(msg),
+    hug: (h) => actions.resize(card.id, { w: card.size.w, h }),
   }
 
   const onBackgroundDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
@@ -159,22 +160,7 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
   const onSizeDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
     e.stopPropagation()
     setMenu('closed')
-    e.currentTarget.setPointerCapture?.(e.pointerId)
-    sizeRef.current = { pid: e.pointerId, sx: e.clientX, sy: e.clientY, w: card.size.w, h: card.size.h }
-    setSize(null)
-  }
-  const onSizeMove = (e: ReactPointerEvent<HTMLDivElement>): void => {
-    const r = sizeRef.current
-    if (r === null || r.pid !== e.pointerId) return
-    setSize({ w: Math.max(72, Math.round(r.w + e.clientX - r.sx)), h: Math.max(44, Math.round(r.h + e.clientY - r.sy)) })
-  }
-  const onSizeUp = (e: ReactPointerEvent<HTMLDivElement>): void => {
-    const r = sizeRef.current
-    if (r === null || r.pid !== e.pointerId) return
-    sizeRef.current = null
-    const next = { w: Math.max(72, Math.round(r.w + e.clientX - r.sx)), h: Math.max(44, Math.round(r.h + e.clientY - r.sy)) }
-    setSize(null)
-    actions.resize(card.id, next)
+    sizeHandlers.onPointerDown(e)
   }
 
   const childCount = card.children?.length ?? 0
@@ -258,8 +244,8 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
           data-nodrag
           aria-hidden
           onPointerDown={onSizeDown}
-          onPointerMove={onSizeMove}
-          onPointerUp={onSizeUp}
+          onPointerMove={sizeHandlers.onPointerMove}
+          onPointerUp={sizeHandlers.onPointerUp}
         />
       ) : null}
     </div>

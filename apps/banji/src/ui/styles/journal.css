@@ -29,15 +29,132 @@
   color: var(--bj-accent);
 }
 
-.bj-day-title {
+/* 翻页细钩 + 题字一组（V2-F2）：‹ › 是月历同款手形的铅笔小号，隔日夹着日期。 */
+.bj-day-nav {
   grid-column: 2;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bj-day-arrow {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--bj-ink-faint);
+  transition:
+    color var(--bj-move) ease-out,
+    transform var(--bj-move) ease-out;
+}
+
+.bj-day-arrow:hover {
+  color: var(--bj-accent);
+}
+
+.bj-day-arrow:active {
+  transform: scale(0.88);
+}
+
+.bj-day-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
   font-family: var(--bj-display);
   font-size: 17px;
   font-weight: 400;
   letter-spacing: 0.12em;
   color: var(--bj-ink-soft);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 纵深耳语（V2-F2）：像日期旁一记铅笔小注，不是徽章。 */
+.bj-day-depth {
+  font-family: var(--bj-body);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--bj-ink-faint);
+}
+
+/* 窄屏换装（V2-F1）：全字隐身、紧凑日期出列；单行不破版是死线。 */
+.bj-date-narrow {
+  display: none;
+}
+
+@media (max-width: 719px) {
+  .bj-day-head {
+    grid-template-columns: auto 1fr auto auto;
+    padding: 1px 2px;
+    min-height: 0;
+  }
+
+  .bj-date-full {
+    display: none;
+  }
+
+  .bj-date-narrow {
+    display: inline;
+  }
+
+  .bj-day-title {
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    gap: 5px;
+    overflow: hidden; /* 死线保险：极窄下宁剪字边，不骑邻格 */
+  }
+
+  .bj-back {
+    min-height: 34px;
+    padding-left: 4px;
+  }
+
+  .bj-day-arrow {
+    width: 26px;
+    height: 26px;
+  }
+
+  .bj-day-head .bj-quiet-btn {
+    min-height: 34px;
+    min-width: 38px;
+  }
+
+  /* 纵深耳语在手机档再轻一点（宽度账见 399 档注）。 */
+  .bj-day-depth {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 479px) {
+  .bj-back-label {
+    display: none; /* 回程只剩一枚 bare ‹ */
+  }
+
+  .bj-date-year {
+    font-size: 0.82em;
+  }
+
+  /* 纵深上纸、星期让位——日期旁的铅笔小注比尾巴上的周记更贴近「这是哪一天」。 */
+  .bj-day-title:has(.bj-day-depth) .bj-date-weekday {
+    display: none;
+  }
+
+  /* 年一现身，它就是距离本身——纵深签收声，两行账不并排挤。 */
+  .bj-date-narrow.is-xyear ~ .bj-day-depth {
+    display: none;
+  }
+}
+
+/* 399 以下（主力手机档）：齿轮再收一档，单行死线在此宽域让无可让（三段开关的收字在 lines.css 同款档）。 */
+@media (max-width: 399px) {
+  .bj-day-head .bj-quiet-btn {
+    min-width: 34px;
+  }
 }
 
 .bj-day-head .bj-quiet-btn:last-child {
@@ -80,6 +197,42 @@
   text-align: center;
   color: var(--bj-ink-faint);
   pointer-events: none;
+}
+
+/* 落纸耳语（V2-F3）：画布右上角一枚竖排两字的小印——钤印是竖的，横排会读成标签。
+   入 120ms / 留 ~980ms / 出 300ms，≤1.4s 全灭；只动 opacity/transform（合成层纪律）。 */
+.bj-stamp {
+  position: absolute;
+  top: 64px;
+  right: 22px;
+  z-index: 6;
+  writing-mode: vertical-rl;
+  font-family: var(--bj-display);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--bj-ink-faint);
+  pointer-events: none;
+  animation: bj-stamp-whisper 1400ms ease-out forwards;
+}
+
+@keyframes bj-stamp-whisper {
+  0% {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  8.6% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  78.6% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 .bj-empty-main {

@@ -15,6 +15,8 @@ export interface RenderCtx {
   exitEdit(): void
   setProps(patch: Record<string, unknown>): void
   whisper(msg: string): void
+  /** 贴高（V2-F4）：把纸高换到量出来的内容尺寸（宽不变），走的仍是唯一链的 resize 通道。 */
+  hug(h: number): void
 }
 
 export interface CardRenderer {

@@ -119,6 +119,8 @@ export function createWriteChain(deps: WriteChainDeps): WriteChain {
     pending.clear()
     // 出排水位的意图盖上当时的宇宙代数：ack 若发生在「已出队、未开火」的缝隙里，链头见代数不匹配即弃权。
     const gen = worldGen
+    const batchDate = deps.getState().date
+    let landed = 0
     for (const [id, entry] of drained) {
       // 屏障排入后才出队的意图（代数=屏障刻）注定在新宇宙开火或弃权，记账防 commit 失败时复活盖过它。
       if (barraged && gen === barrierGen) arm(id, entry)
@@ -138,8 +140,16 @@ export function createWriteChain(deps: WriteChainDeps): WriteChain {
           failed.set(id, entry)
           deps.dispatch({ type: 'save/failed', count: failed.size, cause: classifySaveError(err) })
         }
+        landed += 1
+        if (landed === drained.length) settleStamp(batchDate)
       })
     }
+  }
+
+  /** 落纸回执（V2-F3）：整批落定、两箱皆空才递一声；认日守卫住 reducer（链上微任务读到的 state 可能未及换日 commit）。批次里有任何失败则失败回执独亮，两不相见。 */
+  const settleStamp = (batchDate: string | null): void => {
+    if (batchDate === null || failed.size > 0 || pending.size > 0) return
+    deps.dispatch({ type: 'save/landed', date: batchDate })
   }
 
   const schedule = (id: CardId, mutate: (entry: Pending) => void): void => {

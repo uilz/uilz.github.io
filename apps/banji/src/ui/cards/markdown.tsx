@@ -4,6 +4,7 @@ import { isPlainObject } from '../../domain/validation'
 import { parseMd } from './md'
 import { MdView } from './MdView'
 import { revealInViewport } from '../focus'
+import { useContentHug } from './hug'
 
 // 手记纸（R9·D2）：text 渲染器的 md 别名槽——parseMd/MdView 两支笔早已存在，
 // 这一格只是把 v1 契约里的 'markdown' 挂上。正文卡的手记/正文 chip 原样只在 text 路走，两路并存。
@@ -14,6 +15,7 @@ function readText(raw: unknown): string {
 
 function MarkdownView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx }): ReactElement {
   const text = readText(raw)
+  const readRef = useContentHug<HTMLDivElement>(ctx, text)
   if (ctx.editing) {
     return (
       <div className="bj-text-edit">
@@ -35,7 +37,7 @@ function MarkdownView({ raw, ctx }: { readonly raw: unknown; readonly ctx: Rende
     )
   }
   return (
-    <div className="bj-text-read" data-md-view onDoubleClick={() => ctx.enterEdit()}>
+    <div className="bj-text-read" ref={readRef} data-md-view onDoubleClick={() => ctx.enterEdit()}>
       <MdView blocks={parseMd(text)} />
     </div>
   )
@@ -45,7 +47,7 @@ export const markdownRenderer: CardRenderer = {
   displayName: '手记纸',
   iconKind: 'md',
   editable: true,
-  defaultSize: { w: 300, h: 170 },
+  defaultSize: { w: 300, h: 96 },
   emptyDraft: () => ({ text: '', format: 'md' }),
   render: (props, ctx) => <MarkdownView raw={props} ctx={ctx} />,
 }

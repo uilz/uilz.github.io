@@ -49,6 +49,8 @@ export interface DayActions {
   /** 撕线签住哪根线（D3）：点线请出、Esc/点空退场；瞬态。 */
   setLineChip(id: string | null): void
   dismissNote(): void
+  /** 落纸耳语放完 1.4s 请它回纸里（V2-F3）：瞬态归零，永不过缝。 */
+  dismissStamp(): void
 }
 
 export interface DayStoreOptions {

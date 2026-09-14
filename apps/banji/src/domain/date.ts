@@ -65,6 +65,15 @@ export function addDays(date: string, n: number): string {
   return formatDate(next.y, next.m, next.d)
 }
 
+/** 两日期相差的天数（b − a，a 在前为正）。纯日序整数运算，跨月/跨年安全；非法串抛错（调用方保证）。 */
+export function diffDays(a: string, b: string): number {
+  const pa = parseDateString(a)
+  const pb = parseDateString(b)
+  if (pa === null) throw new Error(`diffDays: 非法日期字符串: ${JSON.stringify(a)}`)
+  if (pb === null) throw new Error(`diffDays: 非法日期字符串: ${JSON.stringify(b)}`)
+  return toEpochDays(pb.y, pb.m, pb.d) - toEpochDays(pa.y, pa.m, pa.d)
+}
+
 /** 星期几：0=周一 … 6=周日（ISO 周，周一为一周之始）。 */
 export function weekdayMondayIndex(date: string): number {
   const ymd = parseDateString(date)

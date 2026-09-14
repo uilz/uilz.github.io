@@ -5,6 +5,7 @@ import { isPlainObject } from '../../domain/validation'
 import { revealInViewport } from '../focus'
 import { parseMd } from './md'
 import { MdView } from './MdView'
+import { useContentHug } from './hug'
 
 interface NormalizedText extends TextProps {
   readonly text: string
@@ -34,6 +35,7 @@ function formatSwitch(ctx: RenderCtx, current: 'plain' | 'md'): ReactElement {
 
 function TextView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx }): ReactElement {
   const p = normalizeText(raw)
+  const readRef = useContentHug<HTMLDivElement>(ctx, `${p.format ?? 'plain'}\u0000${p.text}`)
   if (ctx.editing) {
     return (
       <div className="bj-text-edit">
@@ -55,7 +57,7 @@ function TextView({ raw, ctx }: { readonly raw: unknown; readonly ctx: RenderCtx
     )
   }
   return (
-    <div className="bj-text-read" onDoubleClick={() => ctx.enterEdit()}>
+    <div className="bj-text-read" ref={readRef} onDoubleClick={() => ctx.enterEdit()}>
       {p.format === 'md' ? <MdView blocks={parseMd(p.text)} /> : p.text}
     </div>
   )
@@ -65,7 +67,7 @@ export const textRenderer: CardRenderer = {
   displayName: '文字',
   iconKind: 'text',
   editable: true,
-  defaultSize: { w: 300, h: 170 },
+  defaultSize: { w: 300, h: 96 },
   emptyDraft: () => ({ text: '', format: 'plain' }),
   render: (props, ctx) => <TextView raw={props} ctx={ctx} />,
 }

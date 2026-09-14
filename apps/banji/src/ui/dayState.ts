@@ -67,6 +67,8 @@ export interface DayState {
   readonly threadAnchor: CardId | null
   /** 撕线签住着的边 id（D3）：点线请出、Esc/点空退场。瞬态。 */
   readonly lineChipId: string | null
+  /** 落纸回执（V2-F3）：链上一批意图全部落定后 +1；0=无。瞬态耳语，与 note 同车道不同灯。 */
+  readonly stampSeq: number
 }
 
 export const initialDayState: DayState = {
@@ -89,6 +91,7 @@ export const initialDayState: DayState = {
   gaze: 'cards',
   threadAnchor: null,
   lineChipId: null,
+  stampSeq: 0,
 }
 
 export type Action =
@@ -114,6 +117,8 @@ export type Action =
   | { readonly type: 'ghost/remove'; readonly token: number }
   | { readonly type: 'save/failed'; readonly count: number; readonly cause: SaveRootCause }
   | { readonly type: 'save/clear' }
+  | { readonly type: 'save/landed'; readonly date: string }
+  | { readonly type: 'stamp/dismiss' }
   | { readonly type: 'note/set'; readonly id: number; readonly msg: string }
   | { readonly type: 'note/clear' }
   | { readonly type: 'undo/push'; readonly tray: UndoTray }
@@ -216,6 +221,13 @@ export function dayReducer(state: DayState, action: Action): DayState {
       return { ...state, saveFailed: action.count, saveFailedCause: action.cause }
     case 'save/clear':
       return { ...state, saveFailed: 0, saveFailedCause: 'unknown' }
+    case 'save/landed':
+      // 合流：耳语挂着的第二笔不重排灯（一次 dirty→clean 恰一声）。
+      // 认日：批次结算是链上微任务，换日 commit 或未至——以 reducer 的历法事实拒掉旧日耳语（V2-F3）。
+      if (state.date !== action.date || state.stampSeq !== 0) return state
+      return { ...state, stampSeq: 1 }
+    case 'stamp/dismiss':
+      return state.stampSeq === 0 ? state : { ...state, stampSeq: 0 }
     case 'note/set':
       return { ...state, note: { id: action.id, msg: action.msg } }
     case 'note/clear':

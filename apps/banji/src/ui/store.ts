@@ -217,6 +217,7 @@ export function useDayStore(app: BanjiApp, date: string | null, reloadKey = 0, o
       },
       onUniverseReplaced: universeSwap,
       dismissNote: () => dispatch({ type: 'note/clear' }),
+      dismissStamp: () => dispatch({ type: 'stamp/dismiss' }),
     }),
     [app, attaching, bringToFront, chain, commitStack, flushNow, linking, runPlan, schedule, tray, universeSwap, core],
   )
