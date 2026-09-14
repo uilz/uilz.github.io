@@ -1293,7 +1293,7 @@ await page.waitForSelector('.bj-cell')
   const dlR11 = await page.waitForEvent('download', { timeout: 15000 }).catch(() => null)
   const drawerUp = await page.evaluate(() => document.querySelector('.bj-drawer') !== null)
   const keyRows = await page.evaluate(() => document.querySelectorAll('[data-keylist] li').length)
-  check('R11·D5 ⌘E：抽屉开门直发导出（只读零确认）+ 键术五行在场', dlR11 !== null && drawerUp === true && keyRows === 5)
+  check('R11·D5 ⌘E：抽屉开门直发导出（只读零确认）+ 键术在场（V2-F2 翻页行加入后为六行）', dlR11 !== null && drawerUp === true && keyRows === 6)
   await page.keyboard.press('Escape')
   check('R11·D5 Esc 合上抽屉（巡检补的门：纸片/纸单/牵线早有出口，抽屉是漏下的最后一扇）', (await page.locator('.bj-drawer').count()) === 0)
 
@@ -2094,6 +2094,259 @@ await mctx.close()
     audioFolded && audioAttrs.blob && audioAttrs.blank && audioAttrs.noopener && audioAttrs.label === '跨向的声音.m4a' && audioAlive)
   await apage.screenshot({ path: `${SHOTS}/39-r16-audio-fold.png`, fullPage: true })
   await actx.close()
+}
+
+// ═════════════════ V2-Iter1 日常循环舒适轮（F1 页眉单行 · F2 翻页纵深 · F3 落纸耳语 · F4 纸贴内容）═════════════════
+const addIso = (iso, n) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  const t = new Date(Date.UTC(y, m - 1, d) + n * 86_400_000)
+  return [t.getUTCFullYear(), String(t.getUTCMonth() + 1).padStart(2, '0'), String(t.getUTCDate()).padStart(2, '0')].join('-')
+}
+const boxesOverlap = (a, b) =>
+  a.x < b.x + b.width - 1 && b.x < a.x + a.width - 1 && a.y < b.y + b.height - 1 && b.y < a.y + a.height - 1
+
+// —— F2 桌面：‹ › 隔日、纵深耳语、←/→ 键盘与守门矩阵 ——
+const yester = addIso(today, -1)
+const fiveAgo = addIso(today, -5)
+const twoAhead = addIso(today, 2)
+const v2ctx = await browser.newContext({ viewport: { width: 1100, height: 760 } })
+const v2page = await v2ctx.newPage()
+v2page.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2] ' + m.text()) })
+v2page.on('pageerror', (e) => errors.push('[pageerror v2] ' + e.message))
+await v2page.goto(`${BASE}#/d/${yester}`)
+await v2page.waitForSelector('.bj-day-nav')
+{
+  const depthTxt = (await v2page.locator('[data-day-depth]').textContent()) || ''
+  check('V2-F2 昨天页：纵深耳语「昨天」在日期旁', depthTxt === '昨天')
+  const arrows = await v2page.evaluate(() => ({ prev: !!document.querySelector('[data-day-nav="prev"]'), next: !!document.querySelector('[data-day-nav="next"]') }))
+  check('V2-F2 隔日细钩 ‹ › 俱在', arrows.prev && arrows.next)
+  await v2page.click('[data-day-nav="next"]')
+  await v2page.waitForFunction((t) => location.hash === `#/d/${t}`, today)
+  await v2page.waitForSelector('.bj-date-full')
+  check('V2-F2 点 › 落到明天（今日）', true)
+  await v2page.waitForTimeout(150)
+  await v2page.click('[data-day-nav="prev"]')
+  await v2page.waitForFunction((y) => location.hash === `#/d/${y}`, yester)
+  await v2page.waitForFunction(() => document.querySelector('[data-day-depth]') !== null)
+  check('V2-F2 点 ‹ 回到昨天（空日也是页：耳语在）', (await v2page.locator('.bj-empty').count()) > 0)
+  await v2page.goto(`${BASE}#/d/${fiveAgo}`)
+  await v2page.waitForSelector('[data-day-depth]')
+  check('V2-F2 五日前 → 「5 天前」', ((await v2page.locator('[data-day-depth]').textContent()) || '').trim() === '5 天前')
+  await v2page.goto(`${BASE}#/d/${twoAhead}`)
+  await v2page.waitForSelector('[data-day-depth]')
+  check('V2-F2 两天后 → 「2 天后」', ((await v2page.locator('[data-day-depth]').textContent()) || '').trim() === '2 天后')
+  await v2page.goto(`${BASE}#/d/${today}`)
+  await v2page.waitForSelector('.bj-day-nav')
+  check('V2-F2 今天不自述：纵深耳语缺席', (await v2page.locator('[data-day-depth]').count()) === 0)
+}
+{
+  // ←/→ 翻页 + R11 同款守门矩阵：写字持焦 / 抽屉 / 搜索在岗一律让路
+  await v2page.click('.bj-day-title')
+  await v2page.keyboard.press('ArrowLeft')
+  await v2page.waitForFunction((y) => location.hash === `#/d/${y}`, yester)
+  await v2page.waitForFunction(() => document.querySelector('[data-day-depth]') !== null) // 等新页眉 commit 再按下一键
+  check('V2-F2 ← 翻页到昨天', true)
+  await v2page.keyboard.press('ArrowRight')
+  await v2page.waitForFunction((t) => location.hash === `#/d/${t}`, today)
+  await v2page.waitForFunction(() => document.querySelector('[data-day-depth]') === null) // 今天无纵深签=已 commit
+  check('V2-F2 → 翻页回今天', true)
+  await v2page.click('.bj-add')
+  await v2page.waitForSelector('textarea')
+  await v2page.keyboard.press('ArrowLeft')
+  await v2page.waitForTimeout(300)
+  check('V2-F2 编辑框持焦时 ← 让路（不抢字的箭头）', (await v2page.evaluate(() => location.hash)) === `#/d/${today}`)
+  await v2page.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  await v2page.waitForTimeout(300)
+  await v2page.click('header .bj-quiet-btn')
+  await v2page.waitForSelector('.bj-drawer')
+  await v2page.keyboard.press('ArrowLeft')
+  await v2page.waitForTimeout(300)
+  check('V2-F2 抽屉在岗 ← 不翻页', (await v2page.evaluate(() => location.hash)) === `#/d/${today}`)
+  await v2page.keyboard.press('Escape')
+  await v2page.waitForSelector('.bj-drawer', { state: 'detached', timeout: 2000 })
+  await v2page.keyboard.press('Control+f')
+  await v2page.waitForSelector('[data-search-sheet]')
+  await v2page.keyboard.press('ArrowLeft')
+  await v2page.waitForTimeout(300)
+  check('V2-F2 搜索在岗 ← 不翻页', (await v2page.evaluate(() => location.hash)) === `#/d/${today}`)
+  await v2page.keyboard.press('Escape')
+  await v2page.waitForSelector('[data-search-sheet]', { state: 'detached', timeout: 2000 })
+  await v2page.keyboard.press('ArrowLeft')
+  await v2page.waitForFunction((y) => location.hash === `#/d/${y}`, yester)
+  await v2page.waitForFunction(() => document.querySelector('[data-day-depth]') !== null)
+  await v2page.keyboard.press('ArrowRight')
+  await v2page.waitForFunction((t) => location.hash === `#/d/${t}`, today)
+  await v2page.waitForFunction(() => document.querySelector('[data-day-depth]') === null)
+  check('V2-F2 退场后 ←/→ 照常开火（矩阵不误杀）', true)
+}
+
+// —— F3 落纸耳语：批次落定一现、≤1.4s 自灭、合流一枚、失败独亮、库内永不过缝 ——
+{
+  const sctx = await browser.newContext({ viewport: { width: 1100, height: 760 } })
+  const sp = await sctx.newPage()
+  sp.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2-f3] ' + m.text()) })
+  sp.on('pageerror', (e) => errors.push('[pageerror v2-f3] ' + e.message))
+  await sp.goto(`${BASE}#/d/${today}`)
+  await sp.waitForSelector('.bj-add')
+  await sp.click('.bj-add')
+  await sp.waitForSelector('textarea')
+  const marker = `落纸实验${Date.now() % 100000}`
+  await sp.locator('textarea').first().fill(marker + ' 第一句')
+  await sp.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  await sp.waitForFunction(() => document.querySelector('[data-stamp]') !== null, null, { timeout: 3000 })
+  const t0 = Date.now()
+  const txt = (await sp.locator('[data-stamp]').textContent()) || ''
+  await sp.waitForFunction(() => document.querySelector('[data-stamp]') === null, null, { timeout: 2500 })
+  const dur = Date.now() - t0
+  check('V2-F3 「已落纸」现身即自灭（≤1.5s 实测窗口）', txt === '已落纸' && dur <= 1500)
+  await sp.waitForTimeout(500)
+  const cardEl = sp.locator('.bj-card', { hasText: marker }).first()
+  await cardEl.dblclick({ position: { x: 30, y: 8 } })
+  await sp.locator('textarea').first().fill(marker + ' 第二句')
+  await sp.waitForTimeout(100)
+  await sp.locator('textarea').first().fill(marker + ' 第二句再敲')
+  await sp.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  await sp.waitForFunction(() => {
+    const s = document.querySelector('[data-stamp]')
+    return s !== null && s.textContent === '已落纸'
+  }, null, { timeout: 3000 })
+  check('V2-F3 两波急敲、屏上恒一枚（合流不叠灯）', (await sp.evaluate(() => document.querySelectorAll('[data-stamp]').length)) === 1)
+  await sp.waitForTimeout(1700)
+  const dumpS = JSON.stringify(await dump(sp))
+  check('V2-F3 耳语永不过缝：IDB 序列化里无 stamp/落纸字样', !dumpS.includes('stamp') && !dumpS.includes('已落纸'))
+  await sctx.close()
+}
+
+// —— F4 纸贴内容：新纸 96 起笔、六行长高 >40、删行收纸、reload 存照、邻纸毫发不动 ——
+{
+  const hctx = await browser.newContext({ viewport: { width: 1100, height: 760 } })
+  const hp = await hctx.newPage()
+  hp.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2-f4] ' + m.text()) })
+  hp.on('pageerror', (e) => errors.push('[pageerror v2-f4] ' + e.message))
+  await hp.goto(`${BASE}#/d/${today}`)
+  await hp.waitForSelector('.bj-add')
+  const growMark = `贴高试验${Date.now() % 100000}`
+  const neighbour = `邻纸${Date.now() % 100000}`
+  const still = (hint) => hp.locator('.bj-card', { hasText: hint }).first()
+  await hp.click('.bj-add')
+  await hp.waitForSelector('textarea')
+  await hp.locator('textarea').first().fill(neighbour + '：只站一行的邻纸')
+  await hp.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  await hp.waitForTimeout(700)
+  const nbH0 = await still(neighbour).evaluate((el) => el.getBoundingClientRect().height)
+  await hp.click('.bj-add')
+  await hp.waitForSelector('textarea')
+  const born = await hp.locator('textarea').first().evaluate((ta) => ta.closest('.bj-card').getBoundingClientRect().height)
+  check('V2-F4 新纸以贴高尺寸出生（96 起笔）', born <= 100)
+  const lines = [1, 2, 3, 4, 5, 6].map((i) => `${growMark} 第${'一二三四五六'[i - 1]}行 汉字若干填满这一行的宽度以便换行测试`).join('\n')
+  await hp.locator('textarea').first().fill(lines)
+  await hp.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  await hp.waitForTimeout(900)
+  const grown = await still(growMark).evaluate((el) => el.getBoundingClientRect().height)
+  const grownW = await still(growMark).evaluate((el) => Math.round(el.getBoundingClientRect().width))
+  check('V2-F4 六行把纸顶高（>+40px 且宽 300 不变）', grown - born > 40 && grownW === 300)
+  const nbH1 = await still(neighbour).evaluate((el) => el.getBoundingClientRect().height)
+  check('V2-F4 邻纸毫发不动（未被写的那张永不跟跳）', nbH1 === nbH0)
+  await hp.reload()
+  await hp.waitForSelector('.bj-card')
+  await hp.waitForTimeout(500)
+  const d4 = await dump(hp)
+  const grownCard = d4.journals.flatMap((j) => j.cards).find((c) => (c.text || '').includes(growMark))
+  const grownDom = await still(growMark).evaluate((el) => el.getBoundingClientRect().height)
+  check('V2-F4 贴高落库且 reload 存照（DOM=IDB size.h 且真长过）', grownCard !== undefined && Math.abs(grownCard.size.h - grownDom) <= 2 && grownCard.size.h > 136)
+  await still(growMark).dblclick({ position: { x: 30, y: 8 } })
+  await hp.locator('textarea').first().fill(growMark + ' 只剩一行')
+  await hp.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  await hp.waitForTimeout(900)
+  const shrunk = await still(growMark).evaluate((el) => el.getBoundingClientRect().height)
+  check('V2-F4 删行收纸（回落到贴一行的地板）', shrunk < grown - 40 && shrunk >= 90)
+  await hp.waitForTimeout(600)
+  const d4b = await dump(hp)
+  const shrunkCard = d4b.journals.flatMap((j) => j.cards).find((c) => (c.text || '').includes(growMark))
+  check('V2-F4 收拢也过缝落库', shrunkCard !== undefined && Math.abs(shrunkCard.size.h - shrunk) <= 2)
+  await hp.screenshot({ path: `${SHOTS}/40-v2-desktop-day.png`, fullPage: true })
+  await hctx.close()
+}
+await v2page.screenshot({ path: `${SHOTS}/44-v2-keyboard-day.png`, fullPage: true })
+await v2ctx.close()
+
+// —— F1 页眉三档：320 / 390 / 768 单行、<44px、无碰撞、紧凑日期形态 ——
+async function headerProbe(p) {
+  return p.evaluate(() => {
+    const vis = (s) => {
+      const el = document.querySelector(s)
+      if (el === null) return null
+      const st = getComputedStyle(el)
+      if (st.display === 'none' || st.visibility === 'hidden') return null
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0) return null
+      return { x: r.x, y: r.y, width: r.width, height: r.height, tx: (el.textContent || '').trim() }
+    }
+    return {
+      head: vis('.bj-day-head'),
+      back: vis('.bj-back'),
+      prev: vis('.bj-day-arrow[data-day-nav="prev"]'),
+      date: vis('.bj-date-narrow') ?? vis('.bj-date-full'),
+      depth: vis('[data-day-depth]'),
+      next: vis('.bj-day-arrow[data-day-nav="next"]'),
+      seg: vis('.bj-mode-seg'),
+      gear: vis('header .bj-quiet-btn'),
+      docW: document.documentElement.scrollWidth,
+      narrowVisible: vis('.bj-date-narrow') !== null,
+    }
+  })
+}
+const leafBoxes = (m) => [m.back, m.prev, m.date, m.depth, m.next, m.seg, m.gear].filter(Boolean)
+
+{
+  const widths = [320, 390, 768]
+  for (const w of widths) {
+    const hc = await browser.newContext({ viewport: { width: w, height: 700 }, isMobile: w < 720, hasTouch: w < 720, deviceScaleFactor: 2 })
+    const hp = await hc.newPage()
+    hp.on('console', (m) => { if (m.type() === 'error') errors.push(`[console ${w}px] ` + m.text()) })
+    hp.on('pageerror', (e) => errors.push(`[pageerror ${w}px] ` + e.message))
+    await hp.goto(`${BASE}#/d/${today}`)
+    await hp.waitForSelector('.bj-day-nav')
+    await hp.waitForTimeout(350)
+    const probe = await headerProbe(hp)
+    const leaves = leafBoxes(probe)
+    const noOverlap = leaves.length >= 6 &&
+      leaves.every((a, i) => leaves.slice(i + 1).every((b) => !boxesOverlap(a, b)))
+    check(`V2-F1 ${w}px：单行不破版（横向不溢出 + 页眉各叶片两两不碰撞）`, probe.docW <= w + 0.5 && noOverlap)
+    if (w < 720) {
+      check(`V2-F1 ${w}px：页眉高度 <44px`, probe.head !== null && probe.head.height < 44)
+      check(`V2-F1 ${w}px：紧凑日期形态（无年份、有「X月Y日」）`, probe.narrowVisible && /\d+月\d+日/.test(probe.date?.tx ?? '') && !probe.date.tx.includes('年'))
+    } else {
+      check('V2-F1 768px：桌面全字题字照旧（含年份）', !probe.narrowVisible && probe.date !== null && probe.date.tx.includes('年'))
+    }
+    await hp.locator('.bj-day-head').screenshot({ path: `${SHOTS}/41-f1-header-${w}.png` })
+    await hp.goto(`${BASE}#/d/2025-12-28`)
+    await hp.waitForSelector('.bj-day-nav')
+    await hp.waitForTimeout(250)
+    const xp = await headerProbe(hp)
+    const xleaves = leafBoxes(xp)
+    const xOverlap = xleaves.length >= 6 && xleaves.every((a, i) => xleaves.slice(i + 1).every((b) => !boxesOverlap(a, b)))
+    check(`V2-F1 ${w}px 跨年日（年上纸、纵深让位）仍单行不碰撞`, xp.docW <= w + 0.5 && xOverlap)
+    await hp.locator('.bj-day-head').screenshot({ path: `${SHOTS}/42-f1-header-${w}-xyear.png` })
+    await hc.close()
+  }
+}
+// —— 手机 390 上翻页真触摸：‹ › 一按一日 ——
+{
+  const vctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
+  const vpage = await vctx.newPage()
+  vpage.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2-phone] ' + m.text()) })
+  vpage.on('pageerror', (e) => errors.push('[pageerror v2-phone] ' + e.message))
+  await vpage.goto(`${BASE}#/d/${today}`)
+  await vpage.waitForSelector('.bj-day-nav')
+  await vpage.tap('[data-day-nav="prev"]')
+  await vpage.waitForFunction((y) => location.hash === `#/d/${y}`, yester)
+  check('V2-F2 手机真触摸 ‹：落到昨天、「昨天」上屏', ((await vpage.locator('[data-day-depth]').textContent()) || '').trim() === '昨天')
+  await vpage.screenshot({ path: `${SHOTS}/43-f1-mobile-yesterday.png` })
+  await vpage.tap('[data-day-nav="next"]')
+  await vpage.waitForFunction((t) => location.hash === `#/d/${t}`, today)
+  check('V2-F2 手机真触摸 ›：回到今天', true)
+  await vctx.close()
 }
 
 await browser.close()
