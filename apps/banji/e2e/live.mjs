@@ -2504,6 +2504,322 @@ const todayMD = `${Number(today.slice(5, 7))}月${Number(today.slice(8, 10))}日
   await tc.close()
 }
 
+// ═════════════════ V2-Iter3 纸的方言（D1 材质 · D2 选中 · D3 抬升 · D4 接缝 · D5 chip 身份 · D6 段开关消化）═════════════════
+// 每型一张真纸：text/markdown/image/video/audio/file/pdf/code/link/container 十型齐上屏，
+// 两班（日/夜）× 两档（1100/390）截图存证 + 材质令牌机判。接缝与抬升是真几何真指针。
+{
+  const ic3 = await browser.newContext({ viewport: { width: 1100, height: 760 } })
+  const i3 = await ic3.newPage()
+  i3.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2i3] ' + m.text()) })
+  i3.on('pageerror', (e) => errors.push('[pageerror v2i3] ' + e.message))
+  await i3.goto(BASE)
+  await i3.waitForSelector('.bj-cell') // 全新上下文空库，app 载入即建好 stores（无需 wipe：避开与在途连接的版本竞争）
+
+  // 资产真字节（图/声/影/文/档各一）：页内生成或 node 构造后 b64 过桥，hash 由页内实算。
+  const b64 = {
+    png: await i3.evaluate(async () => {
+      const cv = document.createElement('canvas')
+      cv.width = 160
+      cv.height = 120
+      const g = cv.getContext('2d')
+      g.fillStyle = '#b7c9a8'
+      g.fillRect(0, 0, 160, 120)
+      g.fillStyle = '#5a6b4f'
+      g.beginPath()
+      g.arc(80, 60, 34, 0, Math.PI * 2)
+      g.fill()
+      const blob = await new Promise((res) => cv.toBlob(res, 'image/png'))
+      const buf = new Uint8Array(await blob.arrayBuffer())
+      return { b64: btoa(String.fromCharCode(...buf)), mime: 'image/png', name: '山色.png' }
+    }),
+    webm: { mime: 'video/webm', name: '庭院短片.webm', b64: '' },
+    wav: (() => {
+      const rate = 8000
+      const n = 2000
+      const data = Buffer.alloc(n)
+      for (let i = 0; i < n; i++) data[i] = 128 + Math.round(40 * Math.sin((2 * Math.PI * 220 * i) / rate))
+      const head = Buffer.alloc(44)
+      head.write('RIFF', 0); head.writeUInt32LE(36 + n, 4); head.write('WAVE', 8)
+      head.write('fmt ', 12); head.writeUInt32LE(16, 16); head.writeUInt16LE(1, 20); head.writeUInt16LE(1, 22)
+      head.writeUInt32LE(rate, 24); head.writeUInt32LE(rate, 28); head.writeUInt16LE(1, 32); head.writeUInt16LE(8, 34)
+      head.write('data', 36); head.writeUInt32LE(n, 40)
+      return { b64: Buffer.concat([head, data]).toString('base64'), mime: 'audio/wav', name: '晨曲.wav' }
+    })(),
+    pdf: (() => {
+      const stream = 'BT /F1 16 Tf 18 60 Td (BanJi V2I3) Tj ET'
+      const objs = [
+        '<</Type/Catalog/Pages 2 0 R>>',
+        '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+        '<</Type/Page/Parent 2 0 R/MediaBox[0 0 210 120]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>',
+        `<</Length ${String(stream.length)}>>\nstream\n${stream}\nendstream`,
+        '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',
+      ]
+      let out = '%PDF-1.4\n'
+      const offs = []
+      objs.forEach((o, i) => {
+        offs.push(out.length)
+        out += `${String(i + 1)} 0 obj\n${o}\nendobj\n`
+      })
+      const xref = out.length
+      out += `xref\n0 ${String(objs.length + 1)}\n0000000000 65535 f \n`
+      for (const off of offs) out += `${String(off).padStart(10, '0')} 00000 n \n`
+      out += `trailer\n<</Size ${String(objs.length + 1)}/Root 1 0 R>>\nstartxref\n${String(xref)}\n%%EOF\n`
+      return { b64: Buffer.from(out, 'latin1').toString('base64'), mime: 'application/pdf', name: '契约.pdf' }
+    })(),
+    txt: { b64: Buffer.from('资料纸——抽屉里的旧清单\n', 'utf8').toString('base64'), mime: 'text/plain', name: '旧清单.txt' },
+  }
+  b64.webm.b64 = await i3.evaluate(async () => {
+    const cv = document.createElement('canvas')
+    cv.width = 320
+    cv.height = 200
+    const g = cv.getContext('2d')
+    const stream = cv.captureStream(25)
+    const rec = new MediaRecorder(stream, { mimeType: 'video/webm' })
+    const chunks = []
+    rec.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
+    const done = new Promise((res) => { rec.onstop = () => res() })
+    rec.start()
+    g.fillStyle = '#8fa3b8'
+    g.fillRect(0, 0, 320, 200)
+    await new Promise((r) => setTimeout(r, 120))
+    rec.stop()
+    await done
+    const buf = await new Blob(chunks, { type: 'video/webm' }).arrayBuffer()
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+  })
+  for (const part of Object.values(b64)) part.hash = createHash('sha256').update(Buffer.from(part.b64, 'base64')).digest('hex')
+  const seedI3 = async (p) => p.evaluate(async ({ parts, date }) => {
+    const iso = '2026-01-01T00:00:00.000Z'
+    const assets = []
+    const H = {}
+    for (const [k, part] of Object.entries(parts)) {
+      H[k] = part.hash
+      const bytes = Uint8Array.from(atob(part.b64), (c) => c.charCodeAt(0))
+      assets.push({ rec: { hash: part.hash, mime: part.mime, name: part.name, size: bytes.length, addedAt: iso, blob: new Blob([bytes], { type: part.mime }) } })
+    }
+    const at = (i) => ({ x: 24, y: 24 + i * 240 })
+    const cards = [
+      { id: 'i3-text', kind: 'text', pos: at(0), size: { w: 300, h: 88 }, props: { text: '宣纸基线，正文纸。' } },
+      { id: 'i3-md', kind: 'markdown', pos: at(1), size: { w: 300, h: 96 }, props: { text: '### 朱丝栏\n- 手记有版心' } },
+      { id: 'i3-image', kind: 'image', pos: at(2), size: { w: 186, h: 152 }, props: { hash: H.png, w: 160, h: 120 } },
+      { id: 'i3-video', kind: 'video', pos: at(3), size: { w: 320, h: 236 }, props: { hash: H.webm, w: 320, h: 200 } },
+      { id: 'i3-audio', kind: 'audio', pos: at(4), size: { w: 320, h: 96 }, props: { hash: H.wav } },
+      { id: 'i3-file', kind: 'file', pos: at(5), size: { w: 300, h: 64 }, props: { hash: H.txt } },
+      { id: 'i3-pdf', kind: 'pdf', pos: at(6), size: { w: 300, h: 56 }, props: { hash: H.pdf } },
+      { id: 'i3-code', kind: 'code', pos: at(7), size: { w: 320, h: 88 }, props: { text: 'const paper = dialect(kind)' } },
+      { id: 'i3-link', kind: 'link', pos: at(8), size: { w: 300, h: 56 }, props: { url: 'https://banji.example/note' } },
+      { id: 'i3-mat', kind: 'container', pos: at(9), size: { w: 320, h: 160 }, props: {} },
+    ].map((c) => ({ ...c, createdAt: iso, updatedAt: iso }))
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('banji-journal')
+      r.onsuccess = () => {
+        const db = r.result
+        try {
+          const tx = db.transaction(['journals', 'assets'], 'readwrite')
+          for (const a of assets) tx.objectStore('assets').put(a.rec)
+          tx.objectStore('journals').put({ date, updatedAt: iso, cards })
+          tx.oncomplete = () => { db.close(); res() }
+          tx.onerror = () => { db.close(); rej(tx.error) }
+        } catch (e) { db.close(); rej(e) }
+      }
+      r.onerror = () => rej(r.error)
+      r.onblocked = () => rej(new Error('idb-blocked'))
+    })
+  }, { parts: b64, date: today })
+  await seedI3(i3)
+  await i3.goto(`${BASE}#/d/${today}`)
+  await i3.waitForSelector('.bj-card[data-paper="text"]')
+  await i3.waitForTimeout(700) // settle 动画与资产 blob 出画面
+
+  // —— D4 纸面接缝：短纸也须长到页底（画布底缘即滚动窗底缘），底栏浮在纸上（点得的都是纸）。
+  //    滚动窗底缘按「滚动条上沿」计（headless 经典横滚条 15px 是窗框不是灰带）。——
+  const seamProbe = (p) => p.evaluate(() => {
+    const s = document.querySelector('.bj-scroll')
+    const c = document.querySelector('.bj-canvas')
+    s.scrollTop = s.scrollHeight
+    return new Promise((res) => requestAnimationFrame(() => {
+      const r = c.getBoundingClientRect()
+      const sr = s.getBoundingClientRect()
+      const sb = s.offsetHeight - s.clientHeight
+      const under = document.elementFromPoint(Math.round(innerWidth / 2), Math.round(sr.bottom - sb - 8))
+      res({ bottom: r.bottom, reach: sr.bottom - sb, onPaper: under !== null && under.closest('.bj-canvas') !== null, surf: getComputedStyle(c).backgroundColor, band: getComputedStyle(document.querySelector('.bj-add-wrap'), '::before').backgroundImage.includes('radial-gradient'), docW: document.documentElement.scrollWidth })
+    }))
+  })
+  const seam = await seamProbe(i3)
+  check(`V2-Iter3 D4 接缝 1100：画布长到滚动窗底缘（${String(Math.round(seam.bottom))} ≥ ${String(Math.round(seam.reach))}−2）、底栏之下皆纸、光晕在`, seam.bottom >= seam.reach - 2 && seam.onPaper && seam.surf === 'rgb(250, 245, 233)' && seam.band)
+
+  // —— D2 选中语言：发丝沉到 ink-soft、影留基线（选中不是抬起，抬是拖拽的事）——
+  await i3.evaluate(() => document.querySelector('.bj-card[data-paper="code"]')?.scrollIntoView({ block: 'center' }))
+  await i3.waitForTimeout(200)
+  const selBox = await i3.evaluate(() => {
+    const e = document.querySelector('.bj-card[data-paper="code"]')?.getBoundingClientRect()
+    return e ? { x: e.x, y: e.y } : null
+  })
+  await i3.mouse.click(selBox.x + 6, selBox.y + 6)
+  await i3.waitForTimeout(220)
+  const sel = await i3.evaluate(() => {
+    const card = document.querySelector('.bj-card[data-paper="code"]')
+    const plain = document.querySelector('.bj-card[data-paper="text"]')
+    const s = getComputedStyle(card)
+    return { on: card.classList.contains('is-sel'), border: s.borderColor, shadow: s.boxShadow, base: getComputedStyle(plain).boxShadow }
+  })
+  check('V2-Iter3 D2 选中：is-sel 上、边沉至 ink-soft、影即基线（选中≠抬起，无蓝无光晕）', sel.on === true && sel.border === 'rgb(111, 98, 80)' && sel.shadow === sel.base)
+  await i3.click('.bj-scroll', { position: { x: 6, y: 6 } })
+
+  // —— D1 材质机判（白班）+ 全家福与逐纸存照 ——
+  const DAY_MATS = { photo: 'rgb(255, 255, 255)', doc: 'rgb(241, 236, 221)', card: 'rgb(255, 253, 244)', mat: 'rgba(246, 239, 222, 0.72)', zhu: 'rgba(154, 79, 63, 0.5)' }
+  const NIGHT_MATS = { photo: 'rgb(58, 50, 35)', doc: 'rgb(29, 24, 17)', card: 'rgb(42, 35, 24)', mat: 'rgba(33, 27, 20, 0.72)', zhu: 'rgba(194, 121, 95, 0.55)' }
+  const probeMats = (p) => p.evaluate(() => {
+    const g = (sel, prop, pseudo) => { const e = document.querySelector(sel); return e === null ? null : getComputedStyle(e, pseudo ?? null)[prop] }
+    const dp = (k) => `[data-paper="${k}"]`
+    return {
+      papers: [...document.querySelectorAll('.bj-card[data-paper]')].map((e) => e.getAttribute('data-paper')).sort().join(','),
+      photoBg: g(dp('image'), 'backgroundColor'), photoPad: g(dp('image'), 'paddingTop'),
+      videoPad: g(dp('video'), 'paddingTop'), videoBg: g(dp('video'), 'backgroundColor'),
+      docBg: g(dp('file'), 'backgroundColor'), pdfBg: g(dp('pdf'), 'backgroundColor'),
+      fold: g(dp('file'), 'backgroundImage', '::after') ?? '', foldPdf: g(dp('pdf'), 'backgroundImage', '::after') ?? '',
+      zhu: g(dp('markdown'), 'backgroundColor', '::before'), zhuW: g(dp('markdown'), 'width', '::before'),
+      ruled: g(dp('audio'), 'backgroundImage') ?? '', grid: g(dp('code'), 'backgroundImage') ?? '',
+      textBg: g(dp('text'), 'backgroundColor'), textPad: g(dp('text'), 'paddingTop'),
+      linkPad: g(dp('link'), 'paddingTop'), matBg: g(dp('container'), 'backgroundColor'),
+      docText: g(dp('file'), 'color'),
+    }
+  })
+  const mDay = await probeMats(i3)
+  check(`V2-Iter3 D1 十型齐上屏（data-paper=${mDay.papers.split(',').length} 张）`, mDay.papers === 'audio,code,container,file,image,link,markdown,pdf,text,video')
+  check('V2-Iter3 D1 照片纸：图/影更白、衬距收紧 8px（题签落在宽下摆）', mDay.photoBg === DAY_MATS.photo && mDay.videoBg === DAY_MATS.photo && mDay.photoPad === '8px' && mDay.videoPad === '8px')
+  check('V2-Iter3 D1 资料纸：文件/文书同灰、右上狗耳折痕俱在（pdf 火漆签不受累）', mDay.docBg === DAY_MATS.doc && mDay.pdfBg === DAY_MATS.doc && mDay.fold.includes('linear-gradient(225deg') && mDay.foldPdf.includes('linear-gradient(225deg'))
+  check('V2-Iter3 D1 朱丝/横线/方格：手记版心 2px 朱丝、录音纸条横线纹、代码纸坐标格（皆面非框）', mDay.zhu === DAY_MATS.zhu && mDay.zhuW === '2px' && mDay.ruled.includes('repeating-linear-gradient') && (mDay.grid.match(/repeating-linear-gradient/g) ?? []).length === 2)
+  check('V2-Iter3 D1 基线不塌：宣纸纸色衬距如旧、题签收成短条、垫纸仍是那层半透底纸', mDay.textBg === DAY_MATS.card && mDay.textPad === '12px' && mDay.linkPad === '8px' && mDay.matBg === DAY_MATS.mat)
+  // 全家福：拉高视口让十纸同屏（一屏看尽「一本手札里的不同纸」），再回常规视口逐纸存照。
+  await i3.setViewportSize({ width: 1100, height: 2600 })
+  await i3.waitForTimeout(250)
+  await i3.screenshot({ path: `${SHOTS}/60-v2i3-materials-day-1100.png` })
+  await i3.setViewportSize({ width: 1100, height: 760 })
+  for (const k of ['text', 'markdown', 'image', 'video', 'audio', 'file', 'pdf', 'code', 'link', 'container']) {
+    await i3.evaluate((kk) => document.querySelector(`[data-paper="${kk}"]`)?.scrollIntoView({ block: 'center' }), k)
+    await i3.waitForTimeout(160)
+    await i3.screenshot({ path: `${SHOTS}/61-v2i3-k-${k}-day-1100.png` })
+  }
+
+  // —— D3 拖拽抬升：真指针过阈值即离桌（lift 影 + scale 1.012 + is-lift 类），落手沉回基线 ——
+  await i3.evaluate(() => document.querySelector('.bj-card[data-paper="link"]')?.scrollIntoView({ block: 'center' }))
+  await i3.waitForTimeout(200)
+  const preLift = await i3.evaluate(() => getComputedStyle(document.querySelector('.bj-card[data-paper="link"]')).boxShadow)
+  const dragBox = await i3.evaluate(() => {
+    const e = document.querySelector('.bj-card[data-paper="link"]')?.getBoundingClientRect()
+    return e ? { x: e.x, y: e.y } : null
+  })
+  await i3.mouse.move(dragBox.x + 6, dragBox.y + 6)
+  await i3.mouse.down()
+  await i3.mouse.move(dragBox.x + 70, dragBox.y - 40, { steps: 6 })
+  await i3.waitForTimeout(220) // 120ms 抬升过渡走完再取样
+  const mid = await i3.evaluate(() => {
+    const e = document.querySelector('.bj-card[data-paper="link"]')
+    const s = getComputedStyle(e)
+    return { cls: e.classList.contains('is-lift'), shadow: s.boxShadow, tf: s.transform }
+  })
+  await i3.mouse.up()
+  await i3.waitForTimeout(420) // 180ms 落桌过渡走完
+  const after = await i3.evaluate(() => {
+    const e = document.querySelector('.bj-card[data-paper="link"]')
+    return { cls: e.classList.contains('is-lift'), shadow: getComputedStyle(e).boxShadow, tf: getComputedStyle(e).transform }
+  })
+  check(`V2-Iter3 D3 抬升在途：影离基线、is-lift 在、transform 起 scale(1.012)（${mid.tf.slice(0, 20)}…）`, mid.cls === true && mid.shadow !== preLift && mid.shadow !== after.shadow && mid.tf.startsWith('matrix(1.012'))
+  check('V2-Iter3 D3 落手沉回：类熄、影回基线、transform 让位内联定位', after.cls === false && after.tf === 'none' && after.shadow === preLift)
+
+  // —— D6 段开关与格式小注：方框退了、朱丝 underline 上了（选择器与行为一字不动）——
+  const seg = await i3.evaluate(() => {
+    const g = document.querySelector('.bj-mode-seg')
+    const on = document.querySelector('.bj-mode-seg-btn.is-on')
+    const off = [...document.querySelectorAll('.bj-mode-seg-btn')].find((b) => !b.classList.contains('is-on'))
+    const u = getComputedStyle(on, '::after')
+    return { border: getComputedStyle(g).borderTopWidth, inner: getComputedStyle(off).borderLeftWidth, onFg: getComputedStyle(on).color, offFg: getComputedStyle(off).color, uH: u.height, uBg: u.backgroundColor, wash: getComputedStyle(on).backgroundColor }
+  })
+  check('V2-Iter3 D6·#15 段开关无框化：段无外框钮无内隔、亮者自墨坠 2px 朱丝、暗者淡墨（无垫色）', seg.border === '0px' && seg.inner === '0px' && seg.onFg === 'rgb(64, 54, 42)' && seg.offFg === 'rgb(162, 147, 125)' && seg.uH === '2px' && seg.uBg === DAY_MATS.zhu && seg.wash === 'rgba(0, 0, 0, 0)')
+  await i3.dblclick('.bj-card[data-paper="text"] .bj-text-read')
+  await i3.waitForSelector('.bj-card[data-paper="text"] textarea', { timeout: 4000 })
+  const fmt = await i3.evaluate(() => {
+    const on = document.querySelector('.bj-fmt.bj-fmt-on')
+    const off = [...document.querySelectorAll('.bj-fmt')].find((b) => !b.classList.contains('bj-fmt-on'))
+    const s = getComputedStyle(on)
+    return { w: s.borderTopWidth, fs: s.fontSize, bg: s.backgroundColor, onFg: s.color, dec: s.textDecorationLine, offFg: getComputedStyle(off).color }
+  })
+  await i3.click('.bj-fmt:not(.bj-fmt-on)')
+  await i3.waitForTimeout(650)
+  await i3.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  const mdNow = await i3.evaluate(() => document.querySelector('.bj-card[data-paper="text"] .bj-md') !== null)
+  await i3.dblclick('.bj-card[data-paper="text"] .bj-md')
+  await i3.waitForSelector('.bj-card[data-paper="text"] textarea', { timeout: 4000 })
+  await i3.click('.bj-fmt:first-child')
+  await i3.waitForTimeout(650)
+  await i3.click('.bj-scroll', { position: { x: 6, y: 6 } })
+  check('V2-Iter3 D6·#16 格式小注：饼边退役（border 0/透明底）、≤13px、亮者自墨下划线', fmt.w === '0px' && fmt.bg === 'rgba(0, 0, 0, 0)' && Number.parseFloat(fmt.fs) <= 13 && fmt.onFg === 'rgb(64, 54, 42)' && fmt.dec === 'underline' && fmt.offFg === 'rgb(162, 147, 125)')
+  check('V2-Iter3 D6 行为未回退：正文→手记切 md 排印照常落笔（只改了脸）', mdNow === true)
+
+  // —— D5 图模式身份：非文字 chip 各佩 12px 角印 + 材质血统色 ——
+  await i3.click('.bj-mode-seg-btn:has-text("图")')
+  await i3.waitForSelector('[data-graph-field]', { timeout: 6000 })
+  await i3.waitForTimeout(300)
+  const chips = await i3.evaluate(() => {
+    const all = [...document.querySelectorAll('[data-graph-chip]')]
+    const bg = (m) => { const e = document.querySelector(`[data-graph-chip][data-material="${m}"]`); return e === null ? null : getComputedStyle(e).backgroundColor }
+    const bgi = (m) => { const e = document.querySelector(`[data-graph-chip][data-material="${m}"]`); return e === null ? '' : getComputedStyle(e).backgroundImage }
+    const glyphed = all.filter((c) => c.querySelector('.bj-kind-ico svg') !== null).length
+    const nonPlain = all.filter((c) => c.getAttribute('data-material') !== 'plain').length
+    return { n: all.length, glyphed, nonPlain, photo: bg('photo'), doc: bg('doc'), plain: bg('plain'), grid: bgi('grid'), mat: bg('mat') }
+  })
+  check(`V2-Iter3 D5 图模式十 chip 各认其纸：${String(chips.glyphed)} 枚角印恰=非宣纸 chip 数、照片 chip 一眼白、资料 chip 略灰、代码 chip 带格、垫纸半透`,
+    chips.n === 10 && chips.glyphed === chips.nonPlain && chips.nonPlain === 9 && chips.photo === DAY_MATS.photo && chips.doc === DAY_MATS.doc && chips.plain === DAY_MATS.card && chips.grid.includes('repeating-linear-gradient') && chips.mat === DAY_MATS.mat)
+  await i3.screenshot({ path: `${SHOTS}/62-v2i3-graph-day-1100.png` })
+  await i3.click('.bj-mode-seg-btn:has-text("卡片")')
+  await i3.waitForSelector('[data-paper="text"]', { timeout: 4000 })
+
+  // —— 夜读同秤：材质两班都必须成色（夜照片/资料纸各落夜班令牌，纹理朱丝不熄）——
+  await i3.click('button[aria-label="设置"]')
+  await i3.waitForTimeout(250)
+  await i3.getByRole('button', { name: /夜读/ }).first().click()
+  await i3.waitForFunction(() => document.documentElement.getAttribute('data-bj-theme') === 'night')
+  await i3.waitForTimeout(350)
+  await i3.keyboard.press('Escape')
+  await i3.waitForTimeout(250)
+  const mNight = await probeMats(i3)
+  check('V2-Iter3 D1 夜读成色：照片更亮、资料更深、宣纸/垫纸/朱丝/网格全落夜班令牌', mNight.photoBg === NIGHT_MATS.photo && mNight.docBg === NIGHT_MATS.doc && mNight.textBg === NIGHT_MATS.card && mNight.matBg === NIGHT_MATS.mat && mNight.zhu === NIGHT_MATS.zhu && mNight.ruled.includes('repeating-linear-gradient') && mNight.grid.includes('repeating-linear-gradient'))
+  await i3.setViewportSize({ width: 1100, height: 2600 })
+  await i3.waitForTimeout(250)
+  await i3.screenshot({ path: `${SHOTS}/63-v2i3-materials-night-1100.png` })
+  await i3.setViewportSize({ width: 1100, height: 760 })
+  for (const k of ['markdown', 'image', 'audio', 'file', 'code', 'link', 'container']) {
+    await i3.evaluate((kk) => document.querySelector(`[data-paper="${kk}"]`)?.scrollIntoView({ block: 'center' }), k)
+    await i3.waitForTimeout(160)
+    await i3.screenshot({ path: `${SHOTS}/64-v2i3-k-${k}-night-1100.png` })
+  }
+  await ic3.close()
+
+  // —— 手机 390：接缝两档同判 + 全家福两班存照 ——
+  const mc3 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
+  const mp3 = await mc3.newPage()
+  mp3.on('console', (m) => { if (m.type() === 'error') errors.push('[console v2i3m] ' + m.text()) })
+  mp3.on('pageerror', (e) => errors.push('[pageerror v2i3m] ' + e.message))
+  await mp3.goto(BASE)
+  await mp3.waitForSelector('.bj-cell') // 同 i3：全新上下文空库，app 自会建 store
+  await seedI3(mp3)
+  await mp3.goto(`${BASE}#/d/${today}`)
+  await mp3.waitForSelector('.bj-card[data-paper="text"]')
+  await mp3.waitForTimeout(600)
+  const seam390 = await seamProbe(mp3)
+  check(`V2-Iter3 D4 接缝 390：画布长到滚动窗底缘（${String(Math.round(seam390.bottom))} ≥ ${String(Math.round(seam390.reach))}−2）、底栏之下皆纸（docW=${String(seam390.docW)}）`, seam390.bottom >= seam390.reach - 2 && seam390.onPaper && seam390.docW <= 391)
+  await mp3.screenshot({ path: `${SHOTS}/65-v2i3-materials-day-390.png` })
+  await mp3.click('button[aria-label="设置"]')
+  await mp3.waitForTimeout(250)
+  await mp3.getByRole('button', { name: /夜读/ }).first().click()
+  await mp3.waitForFunction(() => document.documentElement.getAttribute('data-bj-theme') === 'night')
+  await mp3.keyboard.press('Escape')
+  await mp3.waitForTimeout(400)
+  await mp3.screenshot({ path: `${SHOTS}/66-v2i3-materials-night-390.png` })
+  await mc3.close()
+}
+
 await browser.close()
 console.log('\nCONSOLE ERRORS:', errors.length)
 errors.slice(0, 10).forEach((e) => console.log('  !', e))
