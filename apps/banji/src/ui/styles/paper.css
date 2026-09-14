@@ -1,0 +1,165 @@
+/* V2-Iter3·D1 纸的方言 —— 一本手札里的不同纸。材质住在框里（CardFrame 落 data-paper=kind），
+   渲染器只管内容；新增一型纸 = 这里加一个选择器。材质是「面」（纸色/纹理/衬距），
+   永不是「戏服」：各型不加边框、不加影子（抬升影子是拖拽的语言，见文末）。
+   色板纪律：本文件零色相字面量——一切颜色指认 base.css 令牌（单测 paper-material 钉死）。 */
+
+/* 宣纸：正文与手记的本相——基线即材质，什么都不加。显式一笔是为设计系统的「有账可查」。 */
+.bj-card[data-paper="text"] {
+  background-color: var(--bj-card);
+}
+
+/* 手记册页（markdown 型）：基线纸 + 版心一道 2px 朱丝左边线（裱边朱丝栏的记账）。 */
+.bj-card[data-paper="markdown"] {
+  background-color: var(--bj-card);
+}
+
+.bj-card[data-paper="markdown"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  background: var(--bj-zhu);
+  pointer-events: none;
+}
+
+/* 照片纸（图纸/影纸同纸——动的影像是照片的手足）：更白的卡纸、衬距收紧，
+   画面朝纸边漫出去；题签落在比侧缘宽的纸下边上（宝丽来的血脉，正式记为材质）。 */
+.bj-card[data-paper="image"],
+.bj-card[data-paper="video"] {
+  --bj-pad-t: 8px;
+  --bj-pad-x: 8px;
+  --bj-pad-b: 18px;
+  background-color: var(--bj-paper-photo);
+}
+
+/* 录音纸条：基线纸 + 28px 一格的横线淡墨（便签本翻过一截的那种纸），字与控件都写在格上。 */
+.bj-card[data-paper="audio"] {
+  background-color: var(--bj-card);
+  background-image: repeating-linear-gradient(0deg, var(--bj-rule) 0 1px, transparent 1px 28px);
+}
+
+/* 资料纸（文件/文书同纸）：略灰的办公纸 + 右上角 10px 发丝狗耳。
+   折角对账（V2-Iter2 折角判例）：日历折角=「那天贴过照片」（6px 墨痕、长在格子上、说日子的事），
+   卡片狗耳=「这一张是资料」（10px 纸翻、长在纸上、说纸型的事）——两物两层、语义互斥，
+   且图纸在画布上永不挂折角，「折角=图」的联想在纸面上开不了火。裁决：不碰撞，留右上（纸的自然角）。 */
+.bj-card[data-paper="file"],
+.bj-card[data-paper="pdf"] {
+  background-color: var(--bj-paper-doc);
+}
+
+.bj-card[data-paper="file"]::after,
+.bj-card[data-paper="pdf"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  /* 翻折的纸背（比正面深一档的自家纸）+ 一道折痕发丝；渐变轴自右上角起笔，越过后就是没折的纸面。 */
+  background: linear-gradient(
+    225deg,
+    color-mix(in srgb, var(--bj-paper-doc) 72%, var(--bj-ink) 28%) 0 49%,
+    var(--bj-card-edge) 49% 53%,
+    transparent 53%
+  );
+  pointer-events: none;
+}
+
+/* 代码格：基线纸 + 16px 一格的坐标纸淡网格——格子是草稿数学的纸，不是终端的夜。 */
+.bj-card[data-paper="code"] {
+  background-color: var(--bj-card);
+  background-image:
+    repeating-linear-gradient(0deg, var(--bj-grid) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(90deg, var(--bj-grid) 0 1px, transparent 1px 16px);
+}
+
+/* 题签：裁短的纸签——衬距收窄成一条签，网址本就是那道发丝下划线（渲染层旧笔，此处入册）。 */
+.bj-card[data-paper="link"] {
+  --bj-pad-t: 8px;
+  --bj-pad-b: 8px;
+  background-color: var(--bj-card);
+}
+
+/* 垫纸（容器）：比卡片更深一档的半透底纸——垫在别的纸下面。落点态（is-dropon）是这纸自己的脸色，随材质同家。 */
+.bj-card[data-paper="container"] {
+  background-color: var(--bj-mat);
+}
+
+.bj-card[data-paper="container"].is-dropon {
+  background-color: var(--bj-mat-on);
+}
+
+/* —— D3 拖拽抬升：纸离桌一档。影子只换令牌、身位只缩 1.2%——transform/opacity 合成层纪律，
+   落定回基线走 .bj-card 的 180ms。跟随垫纸的子纸不抬（抬的是手里那张，不是被带着走的）。 */
+.bj-card.is-lift {
+  box-shadow: var(--bj-lift);
+  transition: box-shadow 120ms ease-out;
+}
+
+/* —— D5 图模式纸片的身份（材质方言的缩微版）：chipMaterial(kind) 指认材质，
+   这里给每一味材质上纸色。照片 chips 一眼白，代码 chips 带格，资料 chips 略灰带折角。
+   plain（正文/未知）不着一笔——基线即身份。 */
+.bj-graph-chip[data-material="photo"] {
+  background-color: var(--bj-paper-photo);
+}
+
+.bj-graph-chip[data-material="doc"] {
+  background-color: var(--bj-paper-doc);
+}
+
+.bj-graph-chip[data-material="doc"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(225deg, color-mix(in srgb, var(--bj-paper-doc) 72%, var(--bj-ink) 28%) 0 49%, var(--bj-card-edge) 49% 53%, transparent 53%);
+  pointer-events: none;
+}
+
+/* 声纹 chip：横线按缩比收到 8px 节奏（34px 小纸上 28px 一格里只剩素面，缩微要缩的是格距不是血统）。 */
+.bj-graph-chip[data-material="ruled"] {
+  background-image: repeating-linear-gradient(0deg, var(--bj-rule) 0 1px, transparent 1px 8px);
+}
+
+/* 资料 chip 的折角与角印同居右上——小纸 8px 折角占角，角印让位到折痕之左（两印记不叠字）。 */
+.bj-graph-chip[data-material="doc"] .bj-kind-ico {
+  right: 12px;
+}
+
+.bj-graph-chip[data-material="grid"] {
+  background-image:
+    repeating-linear-gradient(0deg, var(--bj-grid) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(90deg, var(--bj-grid) 0 1px, transparent 1px 16px);
+}
+
+/* 手记 chip：版心朱丝的一道竖影（材质血统的缩微）。面不是框——用色带不用 border。 */
+.bj-graph-chip[data-material="zhu"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--bj-zhu);
+  pointer-events: none;
+}
+
+/* 题签 chip：收笔的横发丝，贴纸底一道色带（同「面不是框」律）。 */
+.bj-graph-chip[data-material="strip"]::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  height: 1px;
+  background: var(--bj-card-edge);
+  pointer-events: none;
+}
+
+.bj-graph-chip[data-material="mat"] {
+  background-color: var(--bj-mat);
+}

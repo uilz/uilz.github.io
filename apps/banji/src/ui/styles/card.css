@@ -2,7 +2,12 @@
 
 .bj-card {
   position: absolute;
-  padding: 12px 14px 14px;
+  /* 纸框衬距是可覆写的令牌（V2-Iter3·D1）：材质在 paper.css 里按 data-paper 改衬距，
+     内容宽度不搬坐标——body 与框共用同一组令牌，垫多大边、开多大窗永远一笔。 */
+  --bj-pad-t: 12px;
+  --bj-pad-x: 14px;
+  --bj-pad-b: 14px;
+  padding: var(--bj-pad-t) var(--bj-pad-x) var(--bj-pad-b);
   border: 1px solid var(--bj-card-edge);
   border-radius: 3px;
   background: var(--bj-card);
@@ -12,16 +17,17 @@
   -webkit-user-select: none;
   font-size: 15.5px;
   outline: none;
+  transition: box-shadow 180ms ease-out; /* 抬手落桌：影用既有的 180ms 沉回基线（D3 落定侧）。 */
 }
 
 .bj-card.is-sel {
-  border-color: var(--bj-hairline-strong);
-  box-shadow: var(--bj-shadow-lift);
+  border-color: var(--bj-ink-soft);
+  box-shadow: var(--bj-shadow);
 }
 
 .bj-card:active {
-  border-color: var(--bj-hairline-strong);
-  box-shadow: var(--bj-shadow-lift);
+  border-color: var(--bj-ink-soft);
+  box-shadow: var(--bj-shadow);
 }
 
 /* 搜索/图落点的暖脉冲（R8·D1）：背景一暖即回，200ms 纸色呼吸，不是描边闪烁。 */
@@ -45,7 +51,7 @@
 
 .bj-card-body {
   position: absolute;
-  inset: 12px 14px 14px;
+  inset: var(--bj-pad-t) var(--bj-pad-x) var(--bj-pad-b);
   overflow: hidden;
   color: var(--bj-ink);
   word-break: break-word;
@@ -98,22 +104,26 @@
   flex: none;
 }
 
+/* 正文/手记是纸上的两行小注不是徽章（V2-Iter3·#16）：≤13px、无饼边，亮者自墨配发丝下划。 */
 .bj-fmt {
-  min-height: 32px;
-  padding: 4px 12px;
-  border: 1px solid var(--bj-hairline);
-  border-radius: 999px;
-  font-size: 15px;
+  min-height: 28px;
+  padding: 2px 3px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  letter-spacing: 0.06em;
   color: var(--bj-ink-faint);
-  background: var(--bj-surface);
   transition:
     color var(--bj-move) ease-out,
-    border-color var(--bj-move) ease-out;
+    text-decoration-color var(--bj-move) ease-out;
 }
 
 .bj-fmt-on {
-  color: var(--bj-accent);
-  border-color: var(--bj-accent);
+  color: var(--bj-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--bj-ink-soft);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 5px;
 }
 
 /* 手机是手札的主设备：格式切换热区抬到 44px（桌面视觉不动）。 */
@@ -324,11 +334,11 @@
 }
 
 /* —— 纸叠（容器）—— 垫在下面的半透纸，不是文件夹框：虚线发丝 40%、不投影（影是面上纸片的），
-   高亮只做纸色微抬（120ms ease-out），绝不发光。子纸永远压在垫纸上（渲染序在 DayView 派生）。 */
+   高亮只做纸色微抬（120ms ease-out），绝不发光。子纸永远压在垫纸上（渲染序在 DayView 派生）。
+   垫纸的底（--bj-mat）是材质，住 paper.css；这里只留框与态。 */
 .bj-card.be-container {
   border-style: dashed;
   border-color: var(--bj-mat-edge);
-  background: var(--bj-mat);
   box-shadow: none;
   transition:
     background 120ms ease-out,
@@ -336,15 +346,14 @@
 }
 
 .bj-card.be-container.is-sel {
-  border-color: var(--bj-hairline-strong);
+  border-color: var(--bj-ink-soft);
   box-shadow: var(--bj-shadow);
 }
 
-/* D3 拖入悬停：虚线收实 + 纸色微抬。 */
+/* D3 拖入悬停：虚线收实 + 纸色微抬（纸色本体在 paper.css——材质及其状态同家）。 */
 .bj-card.be-container.is-dropon {
   border-style: solid;
   border-color: var(--bj-hairline-strong);
-  background: var(--bj-mat-on);
 }
 
 .bj-stack-whisper {

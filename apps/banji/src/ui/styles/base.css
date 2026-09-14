@@ -13,6 +13,14 @@
   --bj-hairline-strong: rgba(126, 102, 68, 0.55);
   --bj-card: #fffdf4;
   --bj-card-edge: rgba(126, 102, 68, 0.45);
+  /* V2-Iter3 纸的方言（D1）：材质的底色都住在令牌里，paper.css 只指名字。
+     photo=照片纸（更白的卡纸）· doc=资料纸（略灰的办公纸）· zhu=朱丝线（装裱红线，暖朱）·
+     rule=录音横线墨 · grid=代码方格墨。夜读各配夜班值，材质两班都必须成色。 */
+  --bj-paper-photo: #ffffff;
+  --bj-paper-doc: #f1ecdd;
+  --bj-zhu: rgba(154, 79, 63, 0.5);
+  --bj-rule: rgba(72, 58, 40, 0.065);
+  --bj-grid: rgba(72, 58, 40, 0.05);
   --bj-mat: rgba(246, 239, 222, 0.72);
   --bj-mat-edge: rgba(126, 102, 68, 0.4);
   --bj-mat-on: rgba(233, 220, 192, 0.92);
@@ -31,6 +39,8 @@
   --bj-dot-a3: 0.9;
   --bj-shadow: 0 1px 2px rgba(84, 64, 38, 0.1), 0 6px 18px -6px rgba(84, 64, 38, 0.18);
   --bj-shadow-lift: 0 2px 4px rgba(84, 64, 38, 0.12), 0 14px 30px -10px rgba(84, 64, 38, 0.26);
+  /* V2-Iter3·D3 抬升：拖在途的纸离桌一档——两层暖影（近影定边、远影落桌），只此一枚新影令牌。 */
+  --bj-lift: 0 2px 6px rgba(84, 64, 38, 0.12), 0 6px 18px rgba(84, 64, 38, 0.2);
   --bj-veil: rgba(38, 30, 20, 0.34);
   --bj-danger: #9a4f3f;
   --bj-wash: rgba(126, 102, 68, 0.07);
@@ -53,6 +63,11 @@
   --bj-hairline-strong: rgba(206, 173, 120, 0.36);
   --bj-card: #2a2318;
   --bj-card-edge: rgba(206, 173, 120, 0.34);
+  --bj-paper-photo: #3a3223;
+  --bj-paper-doc: #1d1811;
+  --bj-zhu: rgba(194, 121, 95, 0.55);
+  --bj-rule: rgba(240, 230, 208, 0.07);
+  --bj-grid: rgba(240, 230, 208, 0.055);
   --bj-mat: rgba(33, 27, 20, 0.72);
   --bj-mat-edge: rgba(206, 173, 120, 0.4);
   --bj-mat-on: rgba(53, 44, 31, 0.92);
@@ -66,6 +81,7 @@
   --bj-dot-a3: 1;
   --bj-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px -6px rgba(0, 0, 0, 0.5);
   --bj-shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.4), 0 14px 30px -10px rgba(0, 0, 0, 0.6);
+  --bj-lift: 0 2px 6px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.6);
   --bj-veil: rgba(8, 6, 4, 0.55);
   --bj-danger: #c2795f;
   --bj-wash: rgba(206, 173, 120, 0.08);

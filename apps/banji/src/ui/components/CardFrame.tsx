@@ -166,6 +166,8 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
   const childCount = card.children?.length ?? 0
   const confirmCopy = isMat && childCount > 0 ? '连纸带叠，一起撕下？' : `删掉这一张${childCount > 0 ? `，连同卡内的 ${String(childCount)} 张卡片一起` : ''}？`
   const shift = drag ?? follow
+  // 抬升是手里这张纸的语言（D3）：跟移的子纸只挪身、不起身。
+  const lifted = drag !== null
   const shown = size ?? card.size
   // 纸黄昏（D1）：压暗 45% 是纸落暮色不是黑幕；起点抬纸候着，靶纸挂着穿针的指针。
   const linkCls =
@@ -175,15 +177,16 @@ export function CardFrame({ card, cards, app, date, actions, selected, editing, 
     <div
       data-card
       data-card-id={card.id}
+      data-paper={card.kind}
       data-link={linkMode === 'off' ? undefined : linkMode}
-      className={`bj-card be-${card.kind}${selected ? ' is-sel' : ''}${dropOn ? ' is-dropon' : ''}${justBorn ? ' bj-settle' : ''}${pulse ? ' is-pulse' : ''}${linkCls}`}
+      className={`bj-card be-${card.kind}${lifted ? ' is-lift' : ''}${selected ? ' is-sel' : ''}${dropOn ? ' is-dropon' : ''}${justBorn ? ' bj-settle' : ''}${pulse ? ' is-pulse' : ''}${linkCls}`}
       style={{
         left: card.pos.x,
         top: card.pos.y,
         width: shown.w,
         height: shown.h,
         zIndex: z,
-        transform: shift !== null ? `translate3d(${String(shift.dx)}px, ${String(shift.dy)}px, 0)` : undefined,
+        transform: shift !== null ? `translate3d(${String(shift.dx)}px, ${String(shift.dy)}px, 0)${lifted ? ' scale(1.012)' : ''}` : undefined,
       }}
       onPointerDown={onBackgroundDown}
       onPointerMove={onBackgroundMove}
