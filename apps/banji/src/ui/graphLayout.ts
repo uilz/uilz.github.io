@@ -12,6 +12,7 @@ export interface GraphEntry {
   readonly createdAt: string
   readonly snippet: string
   readonly icon: IconKind
+  readonly kind: string
   readonly children: readonly CardId[]
 }
 
@@ -64,6 +65,30 @@ export interface GraphLine {
 export function lineDayBadge(fromDate: string, toDate: string): string | null {
   if (fromDate === toDate) return null
   return fromDate > toDate ? fromDate : toDate
+}
+
+/**
+ * chip 的材质身份（V2-Iter3·D5）：卡型 → D1 纸方言的材质令牌名。纯映射、零色值——
+ * 颜色住在 paper.css 的 data-material 选择器里，这里只指认「这张小纸是哪味纸」。
+ * 未知型与正文同归宣纸（基线即身份，无饰）。
+ */
+export type PaperMaterial = 'plain' | 'photo' | 'doc' | 'ruled' | 'grid' | 'mat' | 'strip' | 'zhu'
+
+const MATERIAL_BY_KIND: Readonly<Record<string, PaperMaterial>> = {
+  text: 'plain',
+  markdown: 'zhu',
+  image: 'photo',
+  video: 'photo',
+  audio: 'ruled',
+  file: 'doc',
+  pdf: 'doc',
+  code: 'grid',
+  link: 'strip',
+  container: 'mat',
+}
+
+export function chipMaterial(kind: string): PaperMaterial {
+  return MATERIAL_BY_KIND[kind] ?? 'plain'
 }
 
 export interface GraphLayout {

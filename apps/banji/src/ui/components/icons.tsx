@@ -3,7 +3,7 @@ import type { ReactElement, SVGProps } from 'react'
 import type { IconKind } from '../cards/types'
 
 interface IconProps {
-  readonly size?: number
+  readonly size?: number | undefined
 }
 
 const stroke = (size: number): SVGProps<SVGSVGElement> => ({
@@ -189,25 +189,25 @@ export function IconStack({ size = 17 }: IconProps): ReactElement {
   )
 }
 
-const KIND_ICONS: Record<IconKind, () => ReactElement> = {
-  text: () => <IconText />,
-  image: () => <IconImage />,
-  file: () => <IconFile />,
-  mystery: () => <IconUnknownShape />,
-  stack: () => <IconStack size={13} />,
-  audio: () => <IconAudio />,
-  video: () => <IconVideo />,
-  pdf: () => <IconPdf />,
-  code: () => <IconCode />,
-  link: () => <IconLinkSign />,
-  md: () => <IconMd />,
+const KIND_ICONS: Record<IconKind, (size?: number) => ReactElement> = {
+  text: (s) => <IconText size={s} />,
+  image: (s) => <IconImage size={s} />,
+  file: (s) => <IconFile size={s} />,
+  mystery: (s) => <IconUnknownShape size={s} />,
+  stack: (s) => <IconStack size={s ?? 13} />,
+  audio: (s) => <IconAudio size={s} />,
+  video: (s) => <IconVideo size={s} />,
+  pdf: (s) => <IconPdf size={s} />,
+  code: (s) => <IconCode size={s} />,
+  link: (s) => <IconLinkSign size={s} />,
+  md: (s) => <IconMd size={s} />,
 }
 
-export function CardTypeIcon({ kind }: { readonly kind: IconKind }): ReactElement {
+export function CardTypeIcon({ kind, size }: { readonly kind: IconKind; readonly size?: number }): ReactElement {
   const icon = KIND_ICONS[kind]
   return (
     <span className="bj-kind-ico" aria-hidden>
-      {icon()}
+      {icon(size)}
     </span>
   )
 }

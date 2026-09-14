@@ -7,7 +7,7 @@ import type { BanjiApp, CardAt } from '../../application'
 import type { CardId, EdgeRecord } from '../../domain/types'
 import { isPlainObject } from '../../domain/validation'
 import { resolveRenderer } from '../cards/registry'
-import { graphLayout, type GraphEntry } from '../graphLayout'
+import { chipMaterial, graphLayout, type GraphEntry } from '../graphLayout'
 import { shortDateLabel } from '../labels'
 import { CardTypeIcon } from './icons'
 
@@ -25,6 +25,7 @@ function graphEntryOf({ date, card }: CardAt): GraphEntry {
     createdAt: card.createdAt,
     snippet,
     icon: resolveRenderer(card.kind).iconKind,
+    kind: card.kind,
     children: card.children ?? [],
   }
 }
@@ -83,12 +84,14 @@ export function GraphPanel({ app, onOpenCard }: GraphPanelProps): ReactElement {
               className="bj-graph-chip"
               data-graph-chip={String(chip.entry.cardId)}
               data-graph-date={chip.entry.date}
+              data-material={chipMaterial(chip.entry.kind)}
               style={{ left: chip.x, top: chip.y, width: chip.w, height: chip.h }}
               title={`${shortDateLabel(chip.entry.date)} · 翻开这一天`}
               onClick={() => { onOpenCard(chip.entry.date, chip.entry.cardId) }}
             >
-              {chip.entry.icon === 'text' ? null : <CardTypeIcon kind={chip.entry.icon} />}
-              {chip.entry.icon === 'text' || chip.entry.snippet !== '' ? <span className="bj-graph-snippet">{chip.entry.snippet}</span> : null}
+              {chip.entry.snippet !== '' ? <span className="bj-graph-snippet">{chip.entry.snippet}</span> : null}
+              {/* 宣纸不佩角印（基线即身份，与画布同款纪律）；有姓名的型才钉印。 */}
+              {chip.entry.icon === 'text' ? null : <CardTypeIcon kind={chip.entry.icon} size={12} />}
             </button>
           ))}
           {/* R12 跨日线角标：日子签钉在远端纸角——线牵出这一列时知道它去的是哪一天；同日线一字不加。 */}

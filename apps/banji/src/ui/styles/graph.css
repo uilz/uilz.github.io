@@ -50,13 +50,12 @@
   stroke-width: 1px;
 }
 
-/* chip = 缩小的纸片：同一张纸的令牌，只是更薄更静。 */
+/* chip = 缩小的纸片：同一张纸的令牌，只是更薄更静。材质色住 paper.css 的 data-material。 */
 .bj-graph-chip {
   position: absolute;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
   padding: 0 9px;
   border: 1px solid var(--bj-card-edge);
   border-radius: 2px;
@@ -82,19 +81,25 @@
 }
 
 .bj-graph-snippet {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: 14px; /* 给右上角那枚 12px 型角印让出身位（D5）。 */
 }
 
-/* QA（夜读机判）：.bj-kind-ico 本体 ink-faint×0.75 在夜读 chip 上近乎隐形——
-   chip 内换 ink-soft 实笔（仍是淡墨，不发光），尺寸收进 18px 贴合小纸片。 */
+/* 型角印（V2-Iter3·D5）：12px 发丝小印钉在纸角——图模式一眼知型。ink-soft 实笔（夜读不消失），
+   不吃点击（pointer-events 穿透，翻纸仍认整枚 chip）。 */
 .bj-graph-chip .bj-kind-ico {
-  width: 18px;
-  height: 18px;
-  margin-right: 0;
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  margin: 0;
   color: var(--bj-ink-soft);
   opacity: 1;
+  pointer-events: none;
 }
 
 /* R12 跨日线角标：钉在远端纸角的日子签——ink-soft 淡墨（R8 法：可读信息不用 faint 面），
