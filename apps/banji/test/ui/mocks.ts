@@ -14,6 +14,7 @@ import type {
   DeleteSnapshot,
   EdgeRecord,
   ExportFileResult,
+  HomeDigest,
   ImportResult,
   JournalDoc,
   MonthMark,
@@ -22,6 +23,7 @@ import type {
 } from '../../src/application'
 import { cardsByIdOf, collectCardHashRefs, collectSubtreeIds } from '../../src/domain/gc'
 import { edgesTouching } from '../../src/domain/edges'
+import { dayDigest, journalStatsOf, recentOf, dayMarksOf } from '../../src/domain/digest'
 import { addDays } from '../../src/domain/date'
 
 export interface MockSeam {
@@ -66,6 +68,15 @@ export function makeMockApp(): MockSeam {
         .filter((d) => d.date.startsWith(prefix) && d.cards.length > 0)
         .map((d) => ({ date: d.date, cardCount: d.cards.length }))
         .sort((a, b) => (a.date < b.date ? -1 : 1))
+    }),
+    getHomeDigest: vi.fn(async (today: string): Promise<HomeDigest> => {
+      const docs = [...journals.values()]
+      return {
+        today: dayDigest(docs.find((d) => d.date === today)),
+        recent: recentOf(docs),
+        stats: journalStatsOf(docs),
+        days: dayMarksOf(docs),
+      }
     }),
     getJournal: vi.fn(async (date: string) => journals.get(date)),
     addCard: vi.fn(async (date: string, draft: NewCardInput): Promise<Card> => {

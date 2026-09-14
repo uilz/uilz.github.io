@@ -4,6 +4,7 @@
 import type { AssetRecord, Card, CardId, JournalDoc } from '../domain/types'
 import type { AssetMeta } from '../domain/search'
 import { isValidDateString } from '../domain/date'
+import { dayDigest, journalStatsOf, recentOf, dayMarksOf } from '../domain/digest'
 import { newCardId } from '../domain/id'
 import { hashBlob } from '../archive/hash'
 import type { CommitGate, Repo } from '../repository/types'
@@ -25,6 +26,7 @@ import {
 export * from './types'
 export type { AssetRecord, Card, CardId, CardKind, EdgeRecord, JournalDoc } from '../domain/types'
 export type { AssetMeta } from '../domain/search'
+export type { DayDigest, DayExcerpt, DayMark, JournalStats, RecentDigest } from '../domain/digest'
 export { isValidDateString, monthMatrix, monthOf, todayLocal, addDays } from '../domain/date'
 export { newCardId, newEdgeId } from '../domain/id'
 export type { ExportResult } from '../archive/exportArchive'
@@ -92,6 +94,17 @@ export function createBanjiApp(repo: Repo, opts: AppOptions = {}): BanjiApp {
         .filter((d) => d.date.startsWith(prefix) && d.cards.length > 0)
         .map((d) => ({ date: d.date, cardCount: d.cards.length }))
         .sort((a, b) => (a.date < b.date ? -1 : 1))
+    },
+    // 恰一次 journals.list()：今日面/时间账/翻到门四账同源（loadAll 纪律，首页热路径）。
+    async getHomeDigest(today) {
+      requireDate(today)
+      const docs = await repo.journals.list()
+      return {
+        today: dayDigest(docs.find((d) => d.date === today)),
+        recent: recentOf(docs),
+        stats: journalStatsOf(docs),
+        days: dayMarksOf(docs),
+      }
     },
     async getJournal(date) {
       requireDate(date)

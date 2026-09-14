@@ -4,6 +4,7 @@
 import type { AssetRecord, Card, CardId, CardKind, CardPos, CardSize, EdgeRecord, JournalDoc } from '../domain/types'
 import { isValidDateString } from '../domain/date'
 import type { AssetMeta } from '../domain/search'
+import type { DayDigest, JournalStats, RecentDigest, DayMark } from '../domain/digest'
 import type { ValidationIssue } from '../domain/validate'
 import type { SchemaMigration } from '../archive/migration'
 import type { ImportArchiveOptions, ImportResult } from '../archive/importArchive'
@@ -74,6 +75,15 @@ export interface MonthMark {
   readonly cardCount: number
 }
 
+/** 首页账（V2 Iter2·#3）：一次 journals 扫描交出的全部首页底料。 */
+export interface HomeDigest {
+  readonly today: DayDigest
+  readonly recent: RecentDigest | null
+  readonly stats: JournalStats
+  /** 全册每日一角（升序）：月历折角、「该月 N 日」、「翻到」年轮的底料。 */
+  readonly days: readonly DayMark[]
+}
+
 /** File 即 Blob+名字；type 缺省时落 application/octet-stream。 */
 export type AssetInput = Blob & { readonly name?: string; readonly type?: string }
 
@@ -114,6 +124,11 @@ export interface BanjiApp {
   getMonth(year: number, month: number): Promise<string[]>
   /** 同 getMonth 的口径，但带上每日卡片数（月历墨点分层）。 */
   getMonthSummary(year: number, month: number): Promise<MonthMark[]>
+  /**
+   * 首页账（V2 Iter2·#3）：一次 journals 扫描交出今日面/时间账/翻到门的全部底料——
+   * loadAll 纪律：每次进月历恰一读，换月/重渲绝不复扫。
+   */
+  getHomeDigest(today: string): Promise<HomeDigest>
   getJournal(date: string): Promise<JournalDoc | undefined>
   /** 当天无文档则自动创建；返回写入后的卡片（id/时间戳已填充）。 */
   addCard(date: string, draft: NewCardInput): Promise<Card>
