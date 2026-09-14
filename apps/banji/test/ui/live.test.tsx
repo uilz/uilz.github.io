@@ -48,7 +48,7 @@ describe('e2e：空白日 → 落笔 → 月历见墨点', () => {
     await vi.waitFor(() => expect(document.querySelector('[data-tier]')).not.toBeNull(), { timeout: 2000 })
     const marked = document.querySelector<HTMLElement>('[data-tier]')
     if (marked === null) throw new Error('墨点未出现')
-    expect(marked.getAttribute('data-tier')).toBe('1')
+    expect(marked.getAttribute('data-tier')).toBe('s')
     expect(marked.closest<HTMLElement>('.bj-cell')?.dataset['date']).toBe(DAY)
 
     cleanup()

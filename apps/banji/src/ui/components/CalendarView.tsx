@@ -1,26 +1,23 @@
-import { useEffect, useState } from 'react'
+// V2 Iter2 首页总装 —— 字标行 → 今日面（书脊）→ 月题导航 → 月格 → 时间账。
+// 取数两笔各守各的账：月格墨点随 ym 走既有 getMonthSummary；今日面/账/门走 getHomeDigest
+// ——每次进月历恰一读（换月、重渲不复扫，loadAll 纪律）。逻辑全在 calendarModel 纯函数层。
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BanjiApp } from '../../application'
-import { monthMatrix, monthOf } from '../../domain/date'
-import { dayHref } from '../router'
-import { WEEKDAYS_MONDAY } from '../labels'
+import type { BanjiApp, HomeDigest } from '../../application'
+import { monthMatrix } from '../../domain/date'
+import {
+  FRESH_WHISPER,
+  bandView,
+  journalFoot,
+  shiftMonth,
+  ymKey,
+  ymOfDate,
+} from '../calendarModel'
+import type { Ym } from '../calendarModel'
 import { IconChevronLeft, IconChevronRight, IconGear, IconSearch } from './icons'
-
-export interface Ym {
-  readonly y: number
-  readonly m: number
-}
-
-function shiftMonth({ y, m }: Ym, delta: number): Ym {
-  const idx = y * 12 + (m - 1) + delta
-  return { y: Math.floor(idx / 12), m: (idx % 12) + 1 }
-}
-
-function tierOf(count: number): 1 | 2 | 3 {
-  if (count >= 5) return 3
-  if (count >= 2) return 2
-  return 1
-}
+import { TodayBand } from './TodayBand'
+import { MonthGrid } from './MonthGrid'
+import { JumpSheet } from './JumpSheet'
 
 interface CalendarViewProps {
   readonly app: BanjiApp
@@ -36,6 +33,8 @@ export function CalendarView({ app, today, reloadKey, onOpenSettings, onOpenSear
     return { y: Number(t[0]), m: Number(t[1]) }
   })
   const [marks, setMarks] = useState<ReadonlyMap<string, number>>(new Map())
+  const [home, setHome] = useState<HomeDigest | null>(null)
+  const [jumpOpen, setJumpOpen] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -48,9 +47,23 @@ export function CalendarView({ app, today, reloadKey, onOpenSettings, onOpenSear
     }
   }, [app, ym, reloadKey])
 
+  useEffect(() => {
+    let alive = true
+    void app.getHomeDigest(today).then((d) => {
+      if (!alive) return
+      setHome(d)
+    })
+    return () => {
+      alive = false
+    }
+  }, [app, today, reloadKey])
+
+  const folds = useMemo<ReadonlySet<string>>(
+    () => new Set((home?.days ?? []).filter((d) => d.hasImage).map((d) => d.date)),
+    [home],
+  )
   const monthLabel = `${String(ym.y)}年${String(ym.m)}月`
-  const thisMonth = `${String(ym.y).padStart(4, '0')}-${String(ym.m).padStart(2, '0')}`
-  const weeks = monthMatrix(ym.y, ym.m)
+  const isHereMonth = ymKey(ym) === ymOfDate(today)
 
   return (
     <div className="bj-cal">
@@ -65,15 +78,18 @@ export function CalendarView({ app, today, reloadKey, onOpenSettings, onOpenSear
           </button>
         </div>
       </header>
+      {home === null ? null : <TodayBand band={bandView(home, today)} today={today} />}
       <nav className="bj-month-nav" aria-label="月份切换">
         <button type="button" className="bj-quiet-btn" aria-label="上一月" onClick={() => setYm(shiftMonth(ym, -1))}>
           <IconChevronLeft />
         </button>
-        <span className="bj-month-label">{monthLabel}</span>
+        <button type="button" className="bj-month-label bj-month-jump" data-month-jump title="翻到任意一月" onClick={() => setJumpOpen(true)}>
+          {monthLabel}
+        </button>
         <div className="bj-month-right">
           <button
             type="button"
-            className={`bj-today-btn${ym.y === Number(today.slice(0, 4)) && ym.m === Number(today.slice(5, 7)) ? ' is-here' : ''}`}
+            className={`bj-today-btn${isHereMonth ? ' is-here' : ''}`}
             onClick={() => {
               const t = today.split('-')
               setYm({ y: Number(t[0]), m: Number(t[1]) })
@@ -86,34 +102,22 @@ export function CalendarView({ app, today, reloadKey, onOpenSettings, onOpenSear
           </button>
         </div>
       </nav>
-      <div className="bj-weekdays" aria-hidden>
-        {WEEKDAYS_MONDAY.map((w) => (
-          <span key={w}>{w}</span>
-        ))}
-      </div>
-      <div className="bj-grid">
-        {weeks.flat().map((date) => {
-          const foreign = monthOf(date) !== thisMonth
-          const count = marks.get(date)
-          const isToday = date === today
-          return (
-            <button
-              type="button"
-              key={date}
-              data-date={date}
-              data-today={isToday ? 'true' : undefined}
-              className={`bj-cell${foreign ? ' bj-dim' : ''}${isToday ? ' bj-today' : ''}`}
-              onClick={() => {
-                window.location.hash = dayHref(date)
-              }}
-            >
-              <span className="bj-cell-num">{String(Number(date.slice(8, 10)))}</span>
-              {count !== undefined ? <i className="bj-dot" data-tier={tierOf(count)} aria-hidden /> : null}
-            </button>
-          )
-        })}
-      </div>
-      <p className="bj-cal-foot">翻开即今日，落笔即永远。</p>
+      <MonthGrid weeks={monthMatrix(ym.y, ym.m)} marks={marks} folds={folds} thisMonth={ymKey(ym)} today={today} />
+      <p className="bj-cal-foot" data-journal-foot>
+        {home === null ? FRESH_WHISPER : journalFoot(home.stats, home.days, ymKey(ym), ymOfDate(today))}
+      </p>
+      {jumpOpen ? (
+        <JumpSheet
+          days={home?.days ?? []}
+          viewing={ym}
+          today={today}
+          onJump={(next) => {
+            setYm(next)
+            setJumpOpen(false)
+          }}
+          onClose={() => { setJumpOpen(false) }}
+        />
+      ) : null}
     </div>
   )
 }

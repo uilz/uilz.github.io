@@ -22,6 +22,13 @@
   --bj-dusk: 0.45;
   --bj-ring: #b98d52;
   --bj-dot: rgba(72, 58, 40, 0.68);
+  /* V2 Iter2·#6 墨点三档：直径 3/4.5/6px、alpha .5/.7/.9（夜读按 R8 法律抬亮一档）。 */
+  --bj-dot-s: 3px;
+  --bj-dot-m: 4.5px;
+  --bj-dot-l: 6px;
+  --bj-dot-a1: 0.5;
+  --bj-dot-a2: 0.7;
+  --bj-dot-a3: 0.9;
   --bj-shadow: 0 1px 2px rgba(84, 64, 38, 0.1), 0 6px 18px -6px rgba(84, 64, 38, 0.18);
   --bj-shadow-lift: 0 2px 4px rgba(84, 64, 38, 0.12), 0 14px 30px -10px rgba(84, 64, 38, 0.26);
   --bj-veil: rgba(38, 30, 20, 0.34);
@@ -54,6 +61,9 @@
   --bj-dusk: 0.45;
   --bj-ring: #c79a5e;
   --bj-dot: rgba(240, 230, 208, 0.88);
+  --bj-dot-a1: 0.68;
+  --bj-dot-a2: 0.84;
+  --bj-dot-a3: 1;
   --bj-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px -6px rgba(0, 0, 0, 0.5);
   --bj-shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.4), 0 14px 30px -10px rgba(0, 0, 0, 0.6);
   --bj-veil: rgba(8, 6, 4, 0.55);
