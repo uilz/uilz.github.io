@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.57</title>
+<title>工作日志 · v5.9.58</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -275,12 +275,57 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 @media(any-pointer:coarse){.view-compact-option,.view-btn,.pill-btn,.icon-btn,.toolbar-btn{touch-action:manipulation}}
 
 .export-choice-grid{display:grid;gap:10px}.export-choice{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--border);border-radius:11px;cursor:pointer;background:var(--surface-2)}.export-choice:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}.export-choice input{margin-top:3px}.export-choice-main{min-width:0}.export-choice-title{font-weight:650;font-size:calc(12px * var(--font-scale))}.export-choice-desc{margin-top:3px;color:var(--muted);font-size:calc(10px * var(--font-scale));line-height:1.55}.export-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.export-choice-row .field{margin-bottom:0}@media(max-width:700px){.export-choice-row{grid-template-columns:1fr}}
+
+/* v5.9.58 reading interactions: entry collapse, sticky head, floating dock, swipe hint */
+.reading-view{overflow:visible}
+.reading-head{top:56px;border-radius:13px 13px 0 0}
+@media(max-width:700px){.reading-head{top:48px}}
+.reading-entry-head{cursor:pointer;user-select:none;-webkit-user-select:none}
+.reading-entry-body{cursor:auto}
+.reading-entry.collapsed .reading-entry-body,.reading-entry.collapsed .reading-meta,.reading-entry.collapsed .reading-files{display:none}
+.reading-entry.collapsed{padding-bottom:14px}
+.reading-entry.collapsed+.reading-entry{padding-top:14px}
+.reading-entry.collapsed .reading-entry-title{opacity:.82}
+.reading-caret{position:relative;width:18px;height:18px;display:grid;place-items:center;flex:0 0 auto;color:var(--faint);margin-top:4px}
+.reading-caret::before{content:"";display:block;width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .18s ease}
+.reading-entry.collapsed .reading-caret::before{transform:rotate(-45deg) translate(-1px,-1px)}
+.reading-day{scroll-margin-top:110px}
+.reading-dock{position:fixed;z-index:800;display:none;flex-direction:column;width:138px;max-height:min(64vh,520px);background:color-mix(in srgb,var(--surface) 93%,transparent);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;transition:left .22s cubic-bezier(.22,.7,.25,1),right .22s cubic-bezier(.22,.7,.25,1),top .22s cubic-bezier(.22,.7,.25,1)}
+.reading-dock.open{display:flex}
+.reading-dock.dragging{transition:none;opacity:.94;box-shadow:0 16px 44px rgba(2,6,23,.28)}
+.reading-dock-bar{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:5px 7px;border-bottom:1px solid var(--border);background:var(--surface-2);cursor:grab;touch-action:none}
+.reading-dock-bar:active{cursor:grabbing}
+.reading-dock-grip{border:0;background:transparent;color:var(--faint);font-size:12px;padding:2px 3px;cursor:grab;letter-spacing:1px;line-height:1}
+.reading-dock-toggle{border:0;background:transparent;color:var(--muted);width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:0;padding:0}
+.reading-dock-toggle:hover{background:var(--hover);color:var(--text)}
+.reading-dock-toggle::before{content:"";display:block;width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor}
+.reading-dock[data-side="right"] .reading-dock-toggle::before{transform:rotate(-45deg)}
+.reading-dock[data-side="left"] .reading-dock-toggle::before{transform:rotate(135deg)}
+.reading-dock.collapsed[data-side="right"] .reading-dock-toggle::before{transform:rotate(135deg)}
+.reading-dock.collapsed[data-side="left"] .reading-dock-toggle::before{transform:rotate(-45deg)}
+.reading-dock-list{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:3px}
+.reading-dock.collapsed .reading-dock-list{display:none}
+.reading-dock.collapsed .reading-dock-bar{border-bottom:0}
+.reading-dock.collapsed{width:auto;max-height:none}
+.dock-day{display:flex;align-items:baseline;justify-content:space-between;gap:6px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:8px;padding:6px 8px;font-size:calc(11px * var(--font-scale));text-align:left;width:100%}
+.dock-day:hover{background:var(--hover);border-color:var(--border)}
+.dock-day.active{background:var(--accent-soft);color:var(--accent);font-weight:750;border-color:color-mix(in srgb,var(--accent) 25%,transparent)}
+.dock-count{font-size:calc(9px * var(--font-scale));color:var(--faint);flex:0 0 auto}
+.dock-day.active .dock-count{color:var(--accent)}
+.dock-action{border:0;background:transparent;color:var(--muted);border-radius:8px;padding:6px 8px;font-size:calc(10px * var(--font-scale));text-align:left;width:100%}
+.dock-action:hover{background:var(--hover);color:var(--text)}
+.dock-sep{height:1px;background:var(--border);margin:4px 2px;flex:0 0 auto}
+.dock-label{font-size:calc(9px * var(--font-scale));color:var(--faint);padding:4px 8px 1px;font-weight:700}
+.swipe-hint{position:fixed;top:50%;z-index:860;width:34px;height:54px;margin-top:-27px;border-radius:11px;background:color-mix(in srgb,var(--text) 74%,transparent);color:var(--bg);display:grid;place-items:center;font-size:22px;font-weight:800;opacity:0;pointer-events:none}
+.swipe-hint.left{left:8px}
+.swipe-hint.right{right:8px}
+@media(prefers-reduced-motion:reduce){.reading-dock{transition:none}}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.57</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.58</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -334,6 +379,14 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
   <div id="calContent"></div>
   <div class="cal-foot"><span id="calHint">点击日期切换到所在周</span><button class="cal-today" id="calToday">回到今天</button></div>
 </div>
+
+<nav class="reading-dock" id="readingDock" data-side="right" aria-label="阅读导航">
+  <div class="reading-dock-bar" id="readingDockBar">
+    <button class="reading-dock-grip" type="button" title="拖动移动" aria-label="拖动移动导航">⠿</button>
+    <button class="reading-dock-toggle" type="button" id="readingDockToggle" title="收起导航" aria-label="收起导航"></button>
+  </div>
+  <div class="reading-dock-list" id="readingDockList"></div>
+</nav>
 
 <div class="toast-root" id="toastRoot"></div>
 
@@ -434,7 +487,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.57',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.58',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -445,9 +498,12 @@ const DB_VER=6;
 const OLD_DB_NAME='worklog-v3';
 const LEGACY_DB_NAME='worklog-blocks';
 const DEFAULT_WS={gran:60,sh:8,eh:20,weekStart:1,startDate:formatDate(new Date(new Date().getFullYear(),0,1))};
-const state={timelineWeek:new Date(),timelineDayDate:new Date(),workspaceId:null,search:'',selected:new Set(),editingKey:null,editFiles:[],editNewFiles:[],modalDirty:false,viewMode:VIEW_MODES.WEEK,hideEmptyRows:false,readingMode:false,headerCollapsed:false,headerManual:'none',lastScrollY:window.scrollY||0,lastScrollDirection:0,headerAutoTimer:0,headerScrollLockUntil:0};
+const state={timelineWeek:new Date(),timelineDayDate:new Date(),workspaceId:null,search:'',selected:new Set(),editingKey:null,editFiles:[],editNewFiles:[],modalDirty:false,viewMode:VIEW_MODES.WEEK,hideEmptyRows:false,readingMode:false,readingExpandDefault:'expand',headerCollapsed:false,headerManual:'none',lastScrollY:window.scrollY||0,lastScrollDirection:0,headerAutoTimer:0,headerScrollLockUntil:0};
 // View-state invariants: viewMode is the single global Day/Week state; readingMode and hideEmptyRows are independent presentation preferences.
 let db=null,workspaces=[],currentBlocks=[],fileCache=new Map(),searchIndex=[],slots=[],weekDays=[],hitKeys=new Set();
+const readingCollapsedOverride=new Map();
+const DOCK_PREF='worklog:v5:readingDock';
+let readingDockPrefs={side:'right',yPct:26,collapsed:false};
 let appSettings={theme:'light',fontSize:'medium',dataVersion:1};
 const FONT_SIZE_PRESETS={small:0.94,smallMedium:1.04,medium:1.12,largeMedium:1.20,large:1.30};
 const MAX_ATTACHMENT_BYTES=5*1024*1024*1024;
@@ -1048,8 +1104,8 @@ function setViewMode(mode){
   render();
 }
 const UI_PREF='worklog:v5:ui';
-function loadUiPrefs(){try{const p=JSON.parse(localStorage.getItem(UI_PREF)||'null');if(!p||typeof p!=='object')return;if(p.workspaceId&&workspaces.some(w=>w.id===p.workspaceId))state.workspaceId=p.workspaceId;const d=p.dayDate&&/^\d{4}-\d{2}-\d{2}$/.test(p.dayDate)?parseDate(p.dayDate):null;const wk=p.week&&/^\d{4}-\d{2}-\d{2}$/.test(p.week)?parseDate(p.week):null;if(d)state.timelineDayDate=d;if(wk)state.timelineWeek=wk;if(p.viewMode===VIEW_MODES.DAY||p.viewMode===VIEW_MODES.WEEK)state.viewMode=p.viewMode;state.hideEmptyRows=!!p.hideEmptyRows;state.readingMode=!!p.readingMode;}catch{}}
-function persistUiPrefs(){try{const w=currentWs();localStorage.setItem(UI_PREF,JSON.stringify({workspaceId:w?.id||state.workspaceId||null,week:formatDate(state.timelineWeek||new Date()),dayDate:formatDate(state.timelineDayDate||new Date()),viewMode:state.viewMode||VIEW_MODES.WEEK,hideEmptyRows:!!state.hideEmptyRows,readingMode:!!state.readingMode}))}catch{}}
+function loadUiPrefs(){try{const p=JSON.parse(localStorage.getItem(UI_PREF)||'null');if(!p||typeof p!=='object')return;if(p.workspaceId&&workspaces.some(w=>w.id===p.workspaceId))state.workspaceId=p.workspaceId;const d=p.dayDate&&/^\d{4}-\d{2}-\d{2}$/.test(p.dayDate)?parseDate(p.dayDate):null;const wk=p.week&&/^\d{4}-\d{2}-\d{2}$/.test(p.week)?parseDate(p.week):null;if(d)state.timelineDayDate=d;if(wk)state.timelineWeek=wk;if(p.viewMode===VIEW_MODES.DAY||p.viewMode===VIEW_MODES.WEEK)state.viewMode=p.viewMode;state.hideEmptyRows=!!p.hideEmptyRows;state.readingMode=!!p.readingMode;if(p.readingExpandDefault==='collapse'||p.readingExpandDefault==='expand')state.readingExpandDefault=p.readingExpandDefault;}catch{}}
+function persistUiPrefs(){try{const w=currentWs();localStorage.setItem(UI_PREF,JSON.stringify({workspaceId:w?.id||state.workspaceId||null,week:formatDate(state.timelineWeek||new Date()),dayDate:formatDate(state.timelineDayDate||new Date()),viewMode:state.viewMode||VIEW_MODES.WEEK,hideEmptyRows:!!state.hideEmptyRows,readingMode:!!state.readingMode,readingExpandDefault:state.readingExpandDefault==='collapse'?'collapse':'expand'}))}catch{}}
 const HEADER_PREF='worklog:v5:header';
 function loadHeaderPrefs(){try{const p=JSON.parse(localStorage.getItem(HEADER_PREF)||'null');if(p&&typeof p==='object'){state.headerCollapsed=!!p.collapsed;state.headerManualUntil=Number(p.manualUntil)||0;state.headerMode=Number(p.manualUntil)>Date.now()?'manual':'auto';}}catch{}}
 function persistHeaderPrefs(){try{localStorage.setItem(HEADER_PREF,JSON.stringify({collapsed:state.headerCollapsed,manualUntil:state.headerManualUntil||0,mode:state.headerMode||'auto'}))}catch{}}
@@ -1157,6 +1213,7 @@ function readingRecordsForDate(w,date){
 function readingFileChips(ids=[]){
   return (ids||[]).map(id=>{const f=fileRecord(id);return `<span class="reading-file" title="${escapeHTML(f?.name||'附件')}"><span>📎</span><span class="reading-file-name">${escapeHTML(f?.name||'附件')}</span><span style="color:var(--faint)">${escapeHTML(formatBytes(Number(f?.size)||0))}</span></span>`}).join('');
 }
+function readingEntryCollapsed(key){const o=readingCollapsedOverride.get(key);return o===undefined?state.readingExpandDefault==='collapse':o}
 function renderReadingEntry(b,w){
   const start=b.startTime||partsKey(b.key)[1]||'';
   const meta=[];
@@ -1165,11 +1222,12 @@ function renderReadingEntry(b,w){
   if(b.loc)meta.push(b.loc);
   (b.tags||[]).slice(0,8).forEach(t=>meta.push(`#${t}`));
   const files=b.fileIds?.length||0;
-  return `<article class="reading-entry" data-reading-key="${escapeHTML(b.key)}">
+  const collapsed=readingEntryCollapsed(b.key);
+  return `<article class="reading-entry${collapsed?' collapsed':''}" data-reading-key="${escapeHTML(b.key)}">
     <time class="reading-time">${escapeHTML(start||'—')}</time>
     <div class="reading-entry-main">
-      <div class="reading-entry-head"><div class="reading-entry-title" data-reading-edit="${escapeHTML(b.key)}">${escapeHTML(b.title||'未命名')}</div><button class="reading-entry-menu" type="button" title="编辑记录" aria-label="编辑记录" data-reading-edit="${escapeHTML(b.key)}">···</button></div>
-      ${b.body?`<div class="reading-entry-body" data-reading-edit="${escapeHTML(b.key)}">${escapeHTML(b.body)}</div>`:`<div class="reading-entry-body empty" data-reading-edit="${escapeHTML(b.key)}">暂无正文</div>`}
+      <div class="reading-entry-head" data-reading-toggle="${escapeHTML(b.key)}" role="button" tabindex="0" aria-expanded="${collapsed?'false':'true'}" title="点击展开/收起"><span class="reading-caret" aria-hidden="true"></span><div class="reading-entry-title">${escapeHTML(b.title||'未命名')}</div><button class="reading-entry-menu" type="button" title="编辑记录" aria-label="编辑记录" data-reading-edit="${escapeHTML(b.key)}">···</button></div>
+      ${b.body?`<div class="reading-entry-body">${escapeHTML(b.body)}</div>`:`<div class="reading-entry-body empty">暂无正文</div>`}
       ${meta.length?`<div class="reading-meta">${meta.map(x=>`<span class="reading-chip">${escapeHTML(x)}</span>`).join('')}</div>`:''}
       ${files?`<div class="reading-files" aria-label="附件"><span class="reading-chip">附件 · ${files}</span>${readingFileChips(b.fileIds)}</div>`:''}
     </div>
@@ -1186,21 +1244,44 @@ function renderReadingDay(w,d,bodyOnly=false){
 function renderReading(w){
   const root=$('#readingView');if(!root)return;
   const mode=state.viewMode===VIEW_MODES.WEEK?VIEW_MODES.WEEK:VIEW_MODES.DAY;
+  const head=`<div class="reading-head"><div class="reading-head-main"><div class="reading-kicker">阅读模式 · ${escapeHTML(w.name)}</div><div class="reading-title" id="readingHeadTitle"></div><div class="reading-sub" id="readingHeadSub"></div></div><div class="reading-head-actions"><div class="reading-segment" role="group" aria-label="展开收起"><button type="button" data-reading-expand="all">全部展开</button><button type="button" data-reading-expand="none">全部收起</button></div></div></div>`;
   if(mode===VIEW_MODES.DAY){
     const d=currentDayDate();
     const records=readingRecordsForDate(w,d);
     const content=records.length
       ? records.map(b=>renderReadingEntry(b,w)).join('')
       : `<div class="reading-empty"><strong>这一天还没有记录</strong><span>把发生的事情、结论或下一步写下来。</span><button class="reading-add" type="button" data-reading-new-date="${formatDate(d)}">＋ 开始记录</button></div>`;
-    root.innerHTML=`<div class="reading-body reading-body-day">${content}</div>`;
+    root.innerHTML=`${head}<div class="reading-body reading-body-day">${content}</div>`;
+    $('#readingHeadTitle').textContent=`${formatDate(d)} · ${dayName(d.getDay())}`;
+    $('#readingHeadSub').textContent=`${records.length} 条记录 · 点击标题展开/收起`;
   }else{
     const start=currentWeekStart();
     const days=Array.from({length:7},(_,i)=>addDays(start,i));
     const content=days.map(x=>renderReadingDay(w,x)).join('');
-    root.innerHTML=`<div class="reading-body reading-body-week">${content}</div>`;
+    root.innerHTML=`${head}<div class="reading-body reading-body-week">${content}</div>`;
+    $('#readingHeadTitle').textContent=weekLabel(start);
+    $('#readingHeadSub').textContent=`${weekSpan(start)} · 点击标题展开/收起`;
   }
   root.querySelectorAll('[data-reading-edit]').forEach(el=>el.onclick=e=>{e.stopPropagation();openEditor(el.dataset.readingEdit)});
   root.querySelectorAll('[data-reading-new-date]').forEach(el=>el.onclick=e=>{e.stopPropagation();const date=parseDate(el.dataset.readingNewDate);const t=slots[0]||`${pad(w.sh)}:00`;openEditor(blockDbKey(w.id,keyFor(date,t)))});
+  root.querySelectorAll('[data-reading-toggle]').forEach(el=>{
+    const toggle=()=>{const key=el.dataset.readingToggle;const next=!readingEntryCollapsed(key);readingCollapsedOverride.set(key,next);const art=el.closest('.reading-entry');if(art)art.classList.toggle('collapsed',next);el.setAttribute('aria-expanded',String(!next));updateReadingSegmentState()};
+    el.onclick=e=>{if(e.target.closest('[data-reading-edit]'))return;toggle()};
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}};
+  });
+  root.querySelectorAll('[data-reading-expand]').forEach(el=>el.onclick=()=>setAllReadingExpand(el.dataset.readingExpand==='all'));
+  updateReadingSegmentState();
+  renderReadingDock(w);
+}
+function setAllReadingExpand(expand){state.readingExpandDefault=expand?'expand':'collapse';readingCollapsedOverride.clear();persistUiPrefs();render()}
+function updateReadingSegmentState(){
+  const root=$('#readingView');if(!root)return;
+  const entries=[...root.querySelectorAll('.reading-entry[data-reading-key]')];
+  const allBtn=root.querySelector('[data-reading-expand="all"]'),noneBtn=root.querySelector('[data-reading-expand="none"]');
+  if(!allBtn||!noneBtn)return;
+  const collapsedCount=entries.filter(el=>readingEntryCollapsed(el.dataset.readingKey)).length;
+  allBtn.classList.toggle('active',entries.length>0&&collapsedCount===0);
+  noneBtn.classList.toggle('active',entries.length>0&&collapsedCount===entries.length);
 }
 
 function render(){
@@ -1229,6 +1310,7 @@ function render(){
     renderReading(w);return;
   }
   $('#readingView').classList.remove('open');
+  const rdDock=$('#readingDock');if(rdDock)rdDock.classList.remove('open');
   if(state.viewMode===VIEW_MODES.DAY){
     $('#sWeek').textContent=currentBlocks.filter(b=>recordHasContent(b)&&getBlockInterval(b,w).date===formatDate(state.timelineDayDate||new Date())).length;
     $('#tableShell').style.display='none';
@@ -1249,6 +1331,117 @@ function render(){
 
 function renderMobileSummary(w,days,slots,blockMap){const root=$('#mobileSummary');if(!root)return;let html='';for(const d of days){const records=[];const seen=new Set();for(const b of currentBlocks){if(!recordHasContent(b))continue;const x=getBlockInterval(b,w);if(x.date!==formatDate(d))continue;if(seen.has(b.key))continue;seen.add(b.key);records.push(b)}records.sort((a,b)=>(timeToMinutes(a.startTime)||timeToMinutes(partsKey(a.key)[1])||0)-(timeToMinutes(b.startTime)||timeToMinutes(partsKey(b.key)[1])||0));html+=`<section class="mobile-day${isToday(d)?' today':''}"><div class="mobile-day-head"><span class="mobile-day-name">${escapeHTML(dayName(d.getDay()))}</span><span class="mobile-day-date">${escapeHTML(formatDate(d))}</span></div>${records.length?records.map(b=>{const key=b.key;const start=b.startTime||partsKey(b.key)[1];return `<div class="mobile-record" data-mobile-key="${escapeHTML(key)}"><span class="mobile-time">${escapeHTML(start)}</span><div class="mobile-record-main"><div class="mobile-record-title">${escapeHTML(b.title||'未命名')}</div>${b.endTime?`<div class="mobile-record-body">${escapeHTML(start)}–${escapeHTML(b.endTime)}</div>`:''}${b.body?`<div class="mobile-record-body">${escapeHTML(b.body)}</div>`:''}</div></div>`}).join(''):`<button type="button" class="mobile-empty" data-mobile-new-date="${formatDate(d)}">暂无记录 · <span>点击开始记录</span></button>`}</section>`}root.innerHTML=html;root.querySelectorAll('[data-mobile-key]').forEach(el=>el.onclick=()=>openEditor(el.dataset.mobileKey));root.querySelectorAll('[data-mobile-new-date]').forEach(el=>el.onclick=()=>{const d=el.dataset.mobileNewDate;const w=currentWs();const t=slots[0]||`${pad(w.sh)}:00`;openEditor(blockDbKey(w.id,keyFor(parseDate(d),t)))});}
 
+
+/* ---------- 阅读模式悬浮导航 dock ---------- */
+function loadReadingDockPrefs(){
+  let raw=null;try{raw=localStorage.getItem(DOCK_PREF)}catch{}
+  try{const p=raw?JSON.parse(raw):null;if(p&&typeof p==='object'){if(p.side==='left'||p.side==='right')readingDockPrefs.side=p.side;const y=Number(p.yPct);if(Number.isFinite(y))readingDockPrefs.yPct=Math.min(78,Math.max(2,y));readingDockPrefs.collapsed=!!p.collapsed}}catch{}
+  if(!raw&&window.innerWidth<=700)readingDockPrefs.collapsed=true;
+}
+function persistReadingDockPrefs(){try{localStorage.setItem(DOCK_PREF,JSON.stringify(readingDockPrefs))}catch{}}
+function applyReadingDockPosition(){
+  const dock=$('#readingDock');if(!dock)return;
+  const p=readingDockPrefs;
+  dock.dataset.side=p.side;
+  dock.style.left=p.side==='left'?'10px':'auto';
+  dock.style.right=p.side==='right'?'10px':'auto';
+  dock.style.top=`${p.yPct}vh`;
+  dock.classList.toggle('collapsed',!!p.collapsed);
+  const t=$('#readingDockToggle');if(t){t.title=p.collapsed?'展开导航':'收起导航';t.setAttribute('aria-label',t.title)}
+}
+function renderReadingDock(w){
+  const dock=$('#readingDock'),list=$('#readingDockList');if(!dock||!list)return;
+  dock.classList.toggle('open',!!state.readingMode);
+  if(!state.readingMode)return;
+  let html='';
+  if(state.viewMode===VIEW_MODES.WEEK){
+    const start=currentWeekStart();
+    html+='<div class="dock-label">本周</div>';
+    for(let i=0;i<7;i++){
+      const d=addDays(start,i),key=formatDate(d),n=readingRecordsForDate(w,d).length;
+      html+=`<button class="dock-day${isToday(d)?' active':''}" type="button" data-dock-date="${key}"><span>${dayName(d.getDay())} ${d.getDate()}</span><span class="dock-count">${n||'·'}</span></button>`;
+    }
+  }else{
+    const d=currentDayDate();
+    html+=`<div class="dock-label">${escapeHTML(formatDate(d))} · ${escapeHTML(dayName(d.getDay()))}</div>`;
+    html+=`<button class="dock-action" type="button" data-dock-nav="prev">← 前一天</button><button class="dock-action" type="button" data-dock-nav="next">后一天 →</button>`;
+  }
+  html+=`<div class="dock-sep"></div><button class="dock-action" type="button" data-dock-act="expand">全部展开</button><button class="dock-action" type="button" data-dock-act="collapse">全部收起</button><button class="dock-action" type="button" data-dock-act="top">回到顶部</button>`;
+  list.innerHTML=html;
+  list.querySelectorAll('[data-dock-date]').forEach(b=>b.onclick=()=>{const el=$('#readingView').querySelector(`.reading-day[data-reading-date="${b.dataset.dockDate}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})});
+  list.querySelectorAll('[data-dock-nav]').forEach(b=>b.onclick=()=>(b.dataset.dockNav==='prev'?$('#prevBtn'):$('#nextBtn')).click());
+  list.querySelectorAll('[data-dock-act]').forEach(b=>b.onclick=()=>{const a=b.dataset.dockAct;if(a==='expand')setAllReadingExpand(true);else if(a==='collapse')setAllReadingExpand(false);else window.scrollTo({top:0,behavior:'smooth'})});
+}
+function initReadingDock(){
+  const dock=$('#readingDock'),bar=$('#readingDockBar'),toggle=$('#readingDockToggle');
+  if(!dock||!bar||!toggle)return;
+  toggle.onclick=()=>{readingDockPrefs.collapsed=!readingDockPrefs.collapsed;persistReadingDockPrefs();applyReadingDockPosition()};
+  let drag=null;
+  bar.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.reading-dock-toggle'))return;
+    drag={id:e.pointerId,startX:e.clientX,startY:e.clientY,rect:dock.getBoundingClientRect(),moved:false};
+    try{bar.setPointerCapture(e.pointerId)}catch{}
+  });
+  bar.addEventListener('pointermove',e=>{
+    if(!drag||e.pointerId!==drag.id)return;
+    const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
+    if(!drag.moved){if(Math.hypot(dx,dy)<6)return;drag.moved=true;dock.classList.add('dragging')}
+    const w=dock.offsetWidth||drag.rect.width;
+    dock.style.left=`${Math.min(window.innerWidth-w-4,Math.max(4,drag.rect.left+dx))}px`;
+    dock.style.right='auto';
+    dock.style.top=`${Math.min(window.innerHeight-44,Math.max(4,drag.rect.top+dy))}px`;
+  });
+  const end=e=>{
+    if(!drag||(e&&e.pointerId!==drag.id))return;
+    const moved=drag.moved;drag=null;dock.classList.remove('dragging');
+    if(!moved)return;
+    const r=dock.getBoundingClientRect();
+    const side=(r.left+r.width/2)<window.innerWidth/2?'left':'right';
+    const yPct=Math.round(Math.min(78,Math.max(2,(r.top/window.innerHeight)*100))*10)/10;
+    readingDockPrefs={...readingDockPrefs,side,yPct};
+    persistReadingDockPrefs();applyReadingDockPosition();
+  };
+  bar.addEventListener('pointerup',end);
+  bar.addEventListener('pointercancel',end);
+  window.addEventListener('resize',()=>applyReadingDockPosition());
+}
+/* ---------- 移动端横向滑动切换周/日 ---------- */
+function initSwipeNav(){
+  const shell=document.querySelector('.content-shell');if(!shell)return;
+  const hint=document.createElement('div');hint.className='swipe-hint';hint.setAttribute('aria-hidden','true');document.body.appendChild(hint);
+  const coarse=window.matchMedia('(pointer:coarse)');
+  let start=null,active=false;
+  shell.addEventListener('touchstart',e=>{
+    if(!coarse.matches||e.touches.length!==1)return;
+    if(e.target.closest('input,textarea,select,.reading-dock,.week-popover,.modal'))return;
+    const scroller=e.target.closest('.table-shell');
+    if(scroller&&scroller.scrollWidth>scroller.clientWidth+8)return;
+    const t=e.touches[0];start={x:t.clientX,y:t.clientY,t:Date.now()};active=false;
+  },{passive:true});
+  shell.addEventListener('touchmove',e=>{
+    if(!start||e.touches.length!==1)return;
+    const t=e.touches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
+    if(!active){
+      if(Math.abs(dx)<20)return;
+      if(Math.abs(dy)>Math.abs(dx)){start=null;return}
+      active=true;
+    }
+    const p=Math.min(1,Math.abs(dx)/80);
+    hint.textContent=dx>0?'‹':'›';
+    hint.classList.toggle('left',dx>0);hint.classList.toggle('right',dx<0);
+    hint.style.opacity=String(.25+p*.75);
+  },{passive:true});
+  const finish=e=>{
+    if(start&&active&&e.changedTouches&&e.changedTouches[0]){
+      const dx=e.changedTouches[0].clientX-start.x;
+      if(Math.abs(dx)>=60&&Date.now()-start.t<900)(dx<0?$('#nextBtn'):$('#prevBtn')).click();
+    }
+    hint.classList.remove('left','right');hint.style.opacity='';
+    start=null;active=false;
+  };
+  shell.addEventListener('touchend',finish,{passive:true});
+  shell.addEventListener('touchcancel',()=>{hint.classList.remove('left','right');hint.style.opacity='';start=null;active=false},{passive:true});
+}
 
 /* ---------- 编辑器 ---------- */
 function fileRecord(id){return fileCache.get(id)||null}
@@ -2113,7 +2306,7 @@ $('#dialogOverlay').onclick=e=>{if(e.target.id==='dialogOverlay')hideOverlay('#d
 
 document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){hideOverlay('#commandOverlay');return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}if(state.readingMode){state.readingMode=false;persistUiPrefs();render();return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#gotoDateInput')?.value;if(v){const d=clampToWorkspaceStart(parseDate(v));if(state.viewMode===VIEW_MODES.DAY)state.timelineDayDate=d;else state.timelineWeek=d;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="gotoDateInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#gotoDateInput')?.focus(),20)}});
 
-loadHeaderPrefs();applyHeaderState();
+loadHeaderPrefs();applyHeaderState();loadReadingDockPrefs();applyReadingDockPosition();initReadingDock();initSwipeNav();
 registerDownloadServiceWorker();
 (async()=>{try{await initData();renderWorkspaceSelect();renderWorkspaceForm();$('#weekViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.WEEK);$('#dayViewBtn').classList.toggle('active',state.viewMode===VIEW_MODES.DAY);$('#hideEmptyRows').checked=!!state.hideEmptyRows;render();notify(`工作日志就绪 · ${currentWs().name}`);const dismissedUntil=Number(localStorage.getItem('worklog:v5:opfsPromptDismissed')||0);if(await fileStorage.isOPFSAvailable()&&await countIdbBlobFiles()&&dismissedUntil<Date.now())setTimeout(()=>{migrateLegacyFilesToOPFS()},600)}catch(e){console.error(e);notify('初始化失败：'+(e.message||'未知错误'),'err')}})();
 })();
