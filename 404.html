@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>页面已迁移</title>
+<script>
+(function () {
+  if (/^\/md\//.test(location.pathname)) {
+    location.replace("/report/");
+  }
+})();
+</script>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f7f7f8;color:#0f172a}
+  .card{max-width:520px;padding:36px;text-align:center}
+  a{color:#0969da}
+  @media(prefers-color-scheme:dark){body{background:#05060a;color:#e6eef8}a{color:#7cb7ff}}
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>404 · 页面已迁移</h1>
+    <p>旧地址 <code>/md/…</code> 已停用，文章已迁入加密保险箱 <code>/report/</code>。</p>
+    <p><a href="/report/">前往 /report/</a> · <a href="/">回到首页</a></p>
+  </main>
+</body>
+</html>
