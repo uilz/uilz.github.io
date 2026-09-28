@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.58</title>
+<title>工作日志 · v5.9.59</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -320,12 +320,36 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 .swipe-hint.left{left:8px}
 .swipe-hint.right{right:8px}
 @media(prefers-reduced-motion:reduce){.reading-dock{transition:none}}
+
+/* v5.9.59 space cleanup modal + two-level command palette */
+.cleanup-stats{padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);font-size:calc(11px * var(--font-scale));color:var(--muted);line-height:1.7;margin-bottom:13px}
+.cleanup-stats strong{color:var(--text)}
+.cleanup-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.cleanup-presets .btn{padding:6px 9px;font-size:calc(11px * var(--font-scale))}
+.cleanup-presets .btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.cleanup-mode{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-bottom:7px;cursor:pointer}
+.cleanup-mode:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.cleanup-mode input{margin-top:3px;accent-color:var(--accent)}
+.cleanup-mode-text{font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.5}
+.cleanup-mode-text strong{display:block;font-size:calc(11.5px * var(--font-scale));color:var(--text);margin-bottom:2px}
+.cleanup-preview{padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);font-size:calc(11px * var(--font-scale));color:var(--text);line-height:1.65;margin-top:12px}
+.cleanup-preview.muted{color:var(--faint)}
+.cleanup-confirm{display:flex;gap:7px;align-items:center;margin-top:11px;font-size:calc(10.5px * var(--font-scale));color:var(--muted);cursor:pointer}
+.cleanup-confirm input{accent-color:var(--danger)}
+.cleanup-warn{color:var(--warning);font-size:calc(10px * var(--font-scale));margin-top:7px;line-height:1.5}
+.cleanup-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.command-arrow{color:var(--faint);font-size:15px;flex:0 0 auto;margin-left:8px}
+.command.danger .command-main{color:var(--danger)}
+.command-back{width:100%;display:flex;align-items:center;gap:7px;border:0;background:transparent;padding:9px 12px;border-radius:10px;color:var(--muted);font-size:calc(11px * var(--font-scale));font-weight:650;margin-bottom:3px}
+.command-back:hover{background:var(--hover);color:var(--text)}
+.command-back-arrow{display:inline-block;width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(135deg);margin-left:3px}
+.command-subtitle{padding:2px 12px 8px;font-size:calc(10px * var(--font-scale));color:var(--faint);font-weight:700}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.58</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.59</span></div>
     <div class="workspace">
       <span style="font-size:calc(11px * var(--font-scale));color:var(--faint)">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -431,9 +455,50 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
       </div>
       <div class="workspace-settings"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">工作区显示参数</div><div style="font-size:calc(10px * var(--font-scale));color:var(--muted);margin:-2px 0 10px">仅决定时间轴的显示刻度，不限制工作块的实际开始/结束时间。</div><div class="meta-grid"><div class="field"><label class="field-label">显示粒度</label><select id="wsGran"><option value="60">60 分钟</option><option value="30">30 分钟</option><option value="15">15 分钟</option></select></div><div class="field"><label class="field-label">开始小时</label><input id="wsSh" type="number" min="0" max="23"></div><div class="field"><label class="field-label">结束小时</label><input id="wsEh" type="number" min="1" max="24"></div></div></div>
       <div class="workspace-settings" style="margin-top:12px"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">界面显示</div><div class="field"><label class="field-label">字体大小</label><select id="appFontSize"><option value="small">小</option><option value="smallMedium">中小</option><option value="medium">标准</option><option value="largeMedium">中大</option><option value="large">大</option></select><div style="font-size:calc(10px * var(--font-scale));color:var(--faint);margin-top:6px">全局生效，刷新后保留。</div></div></div>
-      <div class="workspace-settings"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">数据存储</div><div id="storageInfo" style="font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.55">检测中…</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="migrateOpfsBtn">升级附件存储</button><button class="btn" id="cleanupIdbCopiesBtn">清理旧副本</button><button class="btn danger" id="cleanupOrphansBtn">清理孤立存储</button></div></div><div class="workspace-actions"><button class="btn" id="wsNew">＋ 新工作区</button><button class="btn danger" id="wsClear">清空当前数据</button><button class="btn danger" id="wsDelete">删除当前工作区</button></div>
+      <div class="workspace-settings"><div style="font-size:calc(11px * var(--font-scale));font-weight:700;margin-bottom:8px">数据存储</div><div id="storageInfo" style="font-size:calc(10px * var(--font-scale));color:var(--muted);line-height:1.55">检测中…</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="openCleanupBtn">空间清理…</button><button class="btn" id="migrateOpfsBtn">升级附件存储</button><button class="btn" id="cleanupIdbCopiesBtn">清理旧副本</button><button class="btn danger" id="cleanupOrphansBtn">清理孤立存储</button></div></div><div class="workspace-actions"><button class="btn" id="wsNew">＋ 新工作区</button><button class="btn danger" id="wsClear">清空当前数据</button><button class="btn danger" id="wsDelete">删除当前工作区</button></div>
     </div>
     <div class="modal-foot"><div class="spacer"></div><button class="btn" id="wsCancel">取消</button><button class="btn primary" id="wsSave">保存设置</button></div>
+  </section>
+</div>
+
+<div class="overlay" id="cleanupOverlay">
+  <section class="modal small">
+    <div class="modal-head"><span class="modal-title">空间清理</span><button class="icon-btn" id="cleanupClose">×</button></div>
+    <div class="modal-body">
+      <div class="cleanup-stats" id="cleanupStats">正在分析存储…</div>
+      <div class="field">
+        <label class="field-label">清理此日期之前的数据</label>
+        <div class="cleanup-presets" id="cleanupPresets">
+          <button type="button" class="btn" data-cleanup-preset="lastExport">上次备份之前</button>
+          <button type="button" class="btn" data-cleanup-preset="1m">1个月前</button>
+          <button type="button" class="btn" data-cleanup-preset="3m">3个月前</button>
+          <button type="button" class="btn" data-cleanup-preset="6m">6个月前</button>
+          <button type="button" class="btn" data-cleanup-preset="1y">1年前</button>
+        </div>
+        <input id="cleanupDate" type="date">
+      </div>
+      <div class="field">
+        <label class="field-label">清理方式</label>
+        <label class="cleanup-mode"><input type="radio" name="cleanupMode" value="files" checked><span class="cleanup-mode-text"><strong>仅附件（推荐）</strong>删除附件文件，保留文字记录，记录显示「已归档」</span></label>
+        <label class="cleanup-mode"><input type="radio" name="cleanupMode" value="full"><span class="cleanup-mode-text"><strong>附件 + 记录</strong>整条记录连同附件删除，历史只保留在电脑备份中</span></label>
+      </div>
+      <div class="field">
+        <label class="field-label">作用域</label>
+        <select id="cleanupScope"><option value="current">当前工作区</option><option value="all">全部工作区</option></select>
+      </div>
+      <div class="cleanup-preview muted" id="cleanupPreview">选择截止日期后预览可释放空间</div>
+      <div class="cleanup-warn" id="cleanupWarn" hidden></div>
+      <label class="cleanup-confirm"><input type="checkbox" id="cleanupConfirmCheck"><span>我已完成备份，了解清理不可撤销</span></label>
+    </div>
+    <div class="modal-foot cleanup-foot">
+      <button class="btn" id="cleanupExportBtn">① 导出 ZIP 备份</button>
+      <div class="spacer"></div>
+      <button class="btn" id="cleanupCancel">取消</button>
+      <button class="btn danger" id="cleanupRunBtn" disabled>② 确认清理</button>
+    </div>
+    <div class="modal-foot" style="border-top:0;padding-top:0">
+      <button class="btn primary" id="cleanupComboBtn" style="width:100%">导出并清理（推荐）</button>
+    </div>
   </section>
 </div>
 
@@ -454,17 +519,9 @@ td.cell{height:72px;min-height:72px;padding:7px 8px;cursor:pointer;transition:.1
 
 <div class="overlay" id="commandOverlay">
   <section class="modal small">
-    <div class="modal-head"><span class="modal-title">命令</span><button class="icon-btn" id="commandClose">×</button></div>
-    <div class="modal-body command-list">
-      <button class="command" data-command="new"><span><span class="command-main">新建记录</span><br><span class="command-desc">在当前周第一个时间槽创建</span></span><kbd>N</kbd></button>
-      <button class="command" data-command="workspace"><span><span class="command-main">工作区设置</span><br><span class="command-desc">切换、创建或设置独立工作区</span></span><kbd>W</kbd></button>
-      <button class="command" data-command="today"><span><span class="command-main">回到今天</span><br><span class="command-desc">定位到当前工作区的本周</span></span><kbd>T</kbd></button>
-      <button class="command" data-command="search"><span><span class="command-main">搜索</span><br><span class="command-desc">定位并聚焦搜索框</span></span><kbd>/</kbd></button>
-      <button class="command" data-command="ics"><span><span class="command-main">导入 ICS</span><br><span class="command-desc">将日历事件导入当前工作区</span></span></button>
-      <button class="command" data-command="backupImport"><span><span class="command-main">导入完整备份</span><br><span class="command-desc">从 ZIP 备份恢复全部本地数据</span></span></button>
-      <button class="command" data-command="export"><span><span class="command-main">导出完整备份</span><br><span class="command-desc">普通数据 ZIP；大数据 ZIP64 流式备份</span></span></button>
-      <button class="command" data-command="clear"><span><span class="command-main">清空当前工作区</span><br><span class="command-desc">删除当前工作区全部记录和附件</span></span></button>
-      <button class="command" data-command="help"><span><span class="command-main">快捷键帮助</span></span><kbd>?</kbd></button>
+    <div class="modal-head"><span class="modal-title" id="commandTitle">命令</span><button class="icon-btn" id="commandClose">×</button></div>
+    <div class="modal-body">
+      <div class="command-list" id="commandList"></div>
       <div class="diag-panel" id="diagPanel">
         <div class="diag-head"><span class="command-main">临时诊断日志</span><span class="command-desc" id="diagMeta">仅本次页面会话</span></div>
         <pre class="diag-log" id="diagLog">暂无日志</pre>
@@ -487,7 +544,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.58',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.59',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -1165,7 +1222,7 @@ function renderDayView(w){
     const totalLanes=x.totalLanes||laneInfo.totalLanes||1,leftPct=(lane/totalLanes)*100,widthPct=(1/totalLanes)*100;
     const short=duration<rowH*.85?' short':'',selected=state.selected.has(b.key)?' selected':'',hit=hitKeys.has(b.key)?' search-hit':'',statusIcon=b.status==='已完成'?'✓':b.status==='进行中'?'↻':'';
     const bodyText=b.body?`<span class="day-schedule-event-body">${escapeHTML(b.body)}</span>`:'';
-    const meta=`${b.startTime?`◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}`:''}${b.loc?` · ${escapeHTML(b.loc)}`:''}${statusIcon?` · ${statusIcon}`:''}${b.fileIds?.length?` · 📎 ${b.fileIds.length}`:''}`;
+    const meta=`${b.startTime?`◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}`:''}${b.loc?` · ${escapeHTML(b.loc)}`:''}${statusIcon?` · ${statusIcon}`:''}${b.fileIds?.length?` · 📎 ${b.fileIds.length}`:(b.filesPurgedAt?' · 📎已归档':'')}`;
     html+=`<button class="day-schedule-event${short}${selected}${hit}${x.start<w.sh*60?' continues-before':''}${x.end>w.eh*60?' continues-after':''}" data-day-key="${escapeHTML(b.key)}" style="top:${startOffset}px;height:${duration}px;left:calc(${leftPct}% + 4px);width:calc(${widthPct}% - 8px)" title="${escapeHTML(b.title||'未命名')}"><span class="day-schedule-event-title">${escapeHTML(b.title||'未命名')}</span>${bodyText}<span class="day-schedule-event-meta">${meta}</span></button>`;
   }
   html+='</div></div>'; $('#dayView').innerHTML=html;
@@ -1195,7 +1252,7 @@ function renderWeekGrid(w){
     visibleIndices.forEach((slotIndex,pos)=>{const time=slots[slotIndex],dbKey=blockDbKey(w,keyFor(d,time));html+=`<button class="schedule-slot-hit" data-slot-key="${escapeHTML(dbKey)}" style="top:${pos*rowH}px;height:${rowH}px" aria-label="${escapeHTML(dateKey+' '+time)}"></button>`});
     for(const {b,x,lane} of laneInfo.items){
       const startGrid=visualOffset(x.start,w,visibleIndices,slots),endGrid=visualOffset(x.end,w,visibleIndices,slots),startOffset=startGrid*rowH,duration=Math.max(8,(endGrid-startGrid)*rowH),leftPct=(lane/max)*100,widthPct=(1/max)*100,short=duration<rowH*.85?' short':'',selected=state.selected.has(b.key)?' selected':'',hit=hitKeys.has(b.key)?' search-hit':'',statusIcon=b.status==='已完成'?'✓':b.status==='进行中'?'↻':'';
-      const bodyText=b.body?`<span class="schedule-event-body">${escapeHTML(b.body)}</span>`:'';const meta=`${b.startTime?`◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}`:''}${b.loc?` · ${escapeHTML(b.loc)}`:''}${statusIcon?` · ${statusIcon}`:''}${b.fileIds?.length?` · 📎 ${b.fileIds.length}`:''}`;
+      const bodyText=b.body?`<span class="schedule-event-body">${escapeHTML(b.body)}</span>`:'';const meta=`${b.startTime?`◷ ${escapeHTML(b.startTime)}${b.endTime?'–'+escapeHTML(b.endTime):''}`:''}${b.loc?` · ${escapeHTML(b.loc)}`:''}${statusIcon?` · ${statusIcon}`:''}${b.fileIds?.length?` · 📎 ${b.fileIds.length}`:(b.filesPurgedAt?' · 📎已归档':'')}`;
       html+=`<button class="schedule-event${short}${selected}${hit}${x.start<w.sh*60?' continues-before':''}${x.end>w.eh*60?' continues-after':''}" data-key="${escapeHTML(b.key)}" style="top:${startOffset}px;height:${duration}px;left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px)" title="${escapeHTML(b.title||'未命名')}"><span class="schedule-event-title">${escapeHTML(b.title||'未命名')}</span>${bodyText}<span class="schedule-event-meta">${meta}</span></button>`;
     }
     html+='</div>';
@@ -1229,7 +1286,7 @@ function renderReadingEntry(b,w){
       <div class="reading-entry-head" data-reading-toggle="${escapeHTML(b.key)}" role="button" tabindex="0" aria-expanded="${collapsed?'false':'true'}" title="点击展开/收起"><span class="reading-caret" aria-hidden="true"></span><div class="reading-entry-title">${escapeHTML(b.title||'未命名')}</div><button class="reading-entry-menu" type="button" title="编辑记录" aria-label="编辑记录" data-reading-edit="${escapeHTML(b.key)}">···</button></div>
       ${b.body?`<div class="reading-entry-body">${escapeHTML(b.body)}</div>`:`<div class="reading-entry-body empty">暂无正文</div>`}
       ${meta.length?`<div class="reading-meta">${meta.map(x=>`<span class="reading-chip">${escapeHTML(x)}</span>`).join('')}</div>`:''}
-      ${files?`<div class="reading-files" aria-label="附件"><span class="reading-chip">附件 · ${files}</span>${readingFileChips(b.fileIds)}</div>`:''}
+      ${files?`<div class="reading-files" aria-label="附件"><span class="reading-chip">附件 · ${files}</span>${readingFileChips(b.fileIds)}</div>`:(b.filesPurgedAt?`<div class="reading-files"><span class="reading-chip">📎 附件已归档至电脑备份</span></div>`:'')}
     </div>
   </article>`;
 }
@@ -1446,7 +1503,7 @@ function initSwipeNav(){
 /* ---------- 编辑器 ---------- */
 function fileRecord(id){return fileCache.get(id)||null}
 function updateEditMeta(dbKey){const raw=slotKeyFromBlock({key:dbKey});const [date,time]=partsKey(raw);const d=parseDate(date);$('#editMeta').textContent=`${date} · ${dayName(d.getDay())} · ${time} · ${currentWs().name}`}
-function renderFileList(){const list=$('#fileList');list.innerHTML=state.editFiles.length?state.editFiles.map((f,i)=>`<span class="file-pill"><span>📎</span><span title="${escapeHTML(f.name)}">${escapeHTML(f.name.length>24?f.name.slice(0,21)+'…':f.name)}</span><span style="color:var(--faint)">${formatBytes(f.size)}</span><button data-file-index="${i}" title="移除">×</button></span>`).join(''):'<span style="font-size:calc(10px * var(--font-scale));color:var(--faint)">暂无附件</span>';list.querySelectorAll('[data-file-index]').forEach(b=>b.onclick=e=>{e.stopPropagation();const idx=Number(b.dataset.fileIndex);const removed=state.editFiles[idx];state.editFiles.splice(idx,1);if(removed?.id)state.editNewFiles=state.editNewFiles.filter(f=>f.id!==removed.id);renderFileList();state.modalDirty=true})}
+function renderFileList(){const list=$('#fileList');list.innerHTML=state.editFiles.length?state.editFiles.map((f,i)=>`<span class="file-pill"><span>📎</span><span title="${escapeHTML(f.name)}">${escapeHTML(f.name.length>24?f.name.slice(0,21)+'…':f.name)}</span><span style="color:var(--faint)">${formatBytes(f.size)}</span><button data-file-index="${i}" title="移除">×</button></span>`).join(''):(currentBlocks.find(x=>x.key===state.editingKey)?.filesPurgedAt?'<span style="font-size:calc(10px * var(--font-scale));color:var(--faint)">附件已清理归档（见电脑备份）</span>':'<span style="font-size:calc(10px * var(--font-scale));color:var(--faint)">暂无附件</span>');list.querySelectorAll('[data-file-index]').forEach(b=>b.onclick=e=>{e.stopPropagation();const idx=Number(b.dataset.fileIndex);const removed=state.editFiles[idx];state.editFiles.splice(idx,1);if(removed?.id)state.editNewFiles=state.editNewFiles.filter(f=>f.id!==removed.id);renderFileList();state.modalDirty=true})}
 async function openEditor(dbKey){
   state.editingKey=dbKey;const b=currentBlocks.find(x=>x.key===dbKey)||{};const raw=slotKeyFromBlock({key:dbKey});const [date,time]=partsKey(raw);
   const w=currentWs();const start=b.startTime||time||slots[0]||'08:00';const end=b.endTime||minutesToTime(Math.min((timeToMinutes(start)||480)+60,(w?.eh||20)*60));
@@ -1492,7 +1549,7 @@ async function saveEditor(){
       if(stored.storage==='opfs')appSettings.dataVersion=2;
     }
     saveAppSettings();setSaveBusy(true,'正在保存工作块记录…');
-    const next={key:targetKey,slotKey:newSlot,workspaceId:w.id,title:v.title,body:v.body,tags:v.tags,loc:v.loc,prio:v.prio,status:v.status,fileIds:v.fileIds,startTime:v.startTime,endTime:v.endTime,allDay:!!old?.allDay,source:old?.source||'manual',externalId:old?.externalId||'',updatedAt:Date.now(),version:6};
+    const next={key:targetKey,slotKey:newSlot,workspaceId:w.id,title:v.title,body:v.body,tags:v.tags,loc:v.loc,prio:v.prio,status:v.status,fileIds:v.fileIds,startTime:v.startTime,endTime:v.endTime,allDay:!!old?.allDay,source:old?.source||'manual',externalId:old?.externalId||'',...(old?.filesPurgedAt?{filesPurgedAt:old.filesPurgedAt}:{}),updatedAt:Date.now(),version:6};
     await put('blocks',next);
     if(targetKey!==dbKey)await remove('blocks',dbKey);
     let cleanupFailed=0;for(const id of removedOldIds){const rec=await getFileMeta(id);if(!rec)continue;try{await fileStorage.remove(rec);await remove('files',id);fileCache.delete(id)}catch(e){cleanupFailed++;try{await put('files',{...rec,cleanupPending:true,updatedAt:Date.now()})}catch{}}}
@@ -1609,10 +1666,10 @@ async function buildExportSnapshot(){
     totalBytes+=size;
   }
   const fileIds=new Set(files.map(f=>f.id));
-  const blocks=allB.map(({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds:startFileIds,startTime,endTime,allDay,source,externalId,updatedAt,version})=>{
+  const blocks=allB.map(({key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds:startFileIds,startTime,endTime,allDay,source,externalId,filesPurgedAt,updatedAt,version})=>{
     if(workspaceId&&!wsIds.has(String(workspaceId)))throw new Error(`工作块「${key}」引用了不存在的工作区`);
     for(const id of (startFileIds||[]))if(!fileIds.has(String(id)))throw new Error(`工作块「${key}」引用了不存在的附件：${id}`);
-    return {key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds:startFileIds,startTime,endTime,allDay,source,externalId,updatedAt,version};
+    return {key,slotKey,workspaceId,title,body,tags,prio,status,loc,fileIds:startFileIds,startTime,endTime,allDay,source,externalId,...(filesPurgedAt?{filesPurgedAt}:{}),updatedAt,version};
   });
   const manifest={
     app:APP,schema:6,dataVersion:2,exportedAt:new Date().toISOString(),exportId:uid(),appSettings,
@@ -1621,6 +1678,9 @@ async function buildExportSnapshot(){
   validateManifestStructure(manifest);
   return {manifest,files,totalBytes};
 }
+const LAST_EXPORT_KEY='worklog:v5:lastExport';
+function readLastExport(){try{const p=JSON.parse(localStorage.getItem(LAST_EXPORT_KEY)||'null');return p&&typeof p==='object'&&p.maxDate?p:null}catch{return null}}
+function recordLastExport(manifest){try{let maxDate='';for(const b of manifest?.blocks||[]){const d=partsKey(b.key)[0];if(d>maxDate)maxDate=d}localStorage.setItem(LAST_EXPORT_KEY,JSON.stringify({at:Date.now(),maxDate:maxDate||todayKey(),workspaces:(manifest?.workspaces||[]).length,blocks:(manifest?.blocks||[]).length,files:(manifest?.files||[]).length}));diagLog('lastExport:recorded',{maxDate:maxDate||todayKey()})}catch{}}
 async function exportZip(){
   diagLog('exportZip:start');
   try{
@@ -1636,6 +1696,7 @@ async function exportZip(){
     const blob=new Blob([zip],{type:'application/zip'});
     const verifiedEntries=await parseZipDirectory(blob);validateZipEntries(verifiedEntries);const expectedNames=new Set(['manifest.json',...files.map(file=>attachmentZipPath(file.id))]);if(verifiedEntries.length!==expectedNames.size)throw new Error(`导出 ZIP 目录数量异常：应有 ${expectedNames.size} 项，实际 ${verifiedEntries.length} 项`);for(const name of expectedNames)if(!verifiedEntries.find(e=>e.name===name))throw new Error(`导出 ZIP 缺少条目：${name}`);for(const file of files){const e=verifiedEntries.find(x=>x.name===attachmentZipPath(file.id));if(!e||Number(e.size)!==file.size)throw new Error(`导出 ZIP 附件大小校验失败：${file.name}`)}
     downloadBlob(blob,`worklog-backup-${todayKey()}.zip`);
+    recordLastExport(manifest);
     notify(`已导出 ${manifest.workspaces.length} 个工作区、${manifest.blocks.length} 条记录、${files.length} 个附件（含 ${files.filter(f=>f.size===0).length} 个 0 字节附件）`)
   }catch(e){diagLog('exportZip:error',{name:e?.name,message:e?.message,stack:e?.stack});console.error(e);notify('导出失败：'+(e.message||'未知错误'),'err')}
 }
@@ -1680,7 +1741,7 @@ function refreshSplitExportQueueUi(){
 function startSplitExportAuto(){const q=activeSplitExportQueue;if(!q||q.busy||q.closed)return;q.autoStarted=true;downloadNextSplitExportPart().catch(e=>console.error(e))}
 async function downloadNextSplitExportPart(){
   const q=activeSplitExportQueue;if(!q||q.busy||q.closed)return;
-  if(q.index>=q.partCount){q.closed=true;finishProgressToast(`大数据备份完成：${q.partCount} 个 ZIP 分卷，${q.filesCount} 个附件全部包含`,'ok');refreshSplitExportQueueUi();return;}
+  if(q.index>=q.partCount){q.closed=true;recordLastExport(q.manifest);finishProgressToast(`大数据备份完成：${q.partCount} 个 ZIP 分卷，${q.filesCount} 个附件全部包含`,'ok');refreshSplitExportQueueUi();return;}
   q.busy=true;const idx=q.index;const btn=$('#splitExportNext');if(btn){btn.disabled=true;btn.classList.add('busy');btn.textContent='正在生成…'}
   try{
     const chunks=q.buckets[idx],partIndex=idx+1,payloads=chunks.map(c=>({id:String(c.file.id),path:c.path,index:c.index,count:c.count,start:c.start,end:c.end,size:c.size}));
@@ -1879,7 +1940,7 @@ async function exportLargeOneShotBlob(manifest,files,totalBytes){
   const verified=await parseZipDirectory(blob);validateZipEntries(verified);
   const expected=new Set(entries.map(e=>e.name));if(verified.length!==expected.size||verified.some(e=>!expected.has(e.name)))throw new Error('单文件 ZIP 目录校验失败');
   const byName=new Map(verified.map(e=>[e.name,e]));for(const f of files){const e=byName.get(attachmentZipPath(f.id));if(!e||Number(e.size)!==Number(f.size))throw new Error(`导出 ZIP 附件大小校验失败：${f.name}`)}
-  const name=`worklog-backup-${todayKey()}.zip`;downloadBlob(blob,name);finishProgressToast(`单文件 ZIP 已提交下载：${formatBytes(blob.size)}`,'ok');diagLog('largeExport:single:success',{bytes:blob.size});
+  const name=`worklog-backup-${todayKey()}.zip`;downloadBlob(blob,name);recordLastExport(manifest);finishProgressToast(`单文件 ZIP 已提交下载：${formatBytes(blob.size)}`,'ok');diagLog('largeExport:single:success',{bytes:blob.size});
 }
 
 async function exportLargeBackupZip64(manifest,files,totalBytes,options={}){
@@ -1914,6 +1975,7 @@ async function exportLargeBackupZip64(manifest,files,totalBytes,options={}){
       const byName=new Map(verified.map(e=>[e.name,e]));
       for(const f of files){const e=byName.get(attachmentZipPath(f.id));if(!e||Number(e.size)!==Number(f.size))throw new Error(`导出 ZIP 附件大小校验失败：${f.name}`)}
       diagLog('largeExport:FSA:success',{bytes:Number(saved.size)});
+      recordLastExport(manifest);
       finishProgressToast(`ZIP64 大数据备份完成：${formatBytes(Number(saved.size))}`,'ok');
       return;
     }catch(e){
@@ -1938,6 +2000,7 @@ async function exportLargeBackupZip64(manifest,files,totalBytes,options={}){
         const sent=await sink.close();
         if(Number(sent)!==result.bytes)throw new Error(`浏览器下载通道写入大小异常：应为 ${formatBytes(result.bytes)}，实际 ${formatBytes(Number(sent))}`);
         diagLog('largeExport:SW:success',{bytes:result.bytes,sent:Number(sent)});
+        recordLastExport(manifest);
         finishProgressToast(`ZIP64 大数据备份已发送至浏览器下载：${formatBytes(result.bytes)}`,'ok');
         return;
       }
@@ -2234,6 +2297,205 @@ async function migrateLegacyFilesToOPFS(){
   showDialog('升级附件存储',`检测到 ${targets.length} 个旧附件（${formatBytes(totalBytes)}）仍保存在 IndexedDB。升级后附件改存到 OPFS，适合大数据和大文件场景。原数据在全部迁移成功前不会删除。`,[{text:'稍后再说',action:()=>localStorage.setItem('worklog:v5:opfsPromptDismissed',String(Date.now()+7*86400000))},{text:'开始升级',primary:true,action:async()=>{let done=0,doneBytes=0;startProgressToast('正在升级附件存储',totalBytes,'准备迁移到 OPFS…');try{for(const f of targets){const ok=await fileStorage.migrateRecord(f,bytes=>{doneBytes=Math.min(totalBytes,doneBytes+(Number(bytes)||0));updateProgressToast(doneBytes,totalBytes,`正在迁移：${f.name||f.id}`,`${formatBytes(doneBytes)} / ${formatBytes(totalBytes)}`)});if(!ok)throw new Error(`无法迁移附件：${f.name||f.id}`);done++}appSettings.dataVersion=2;saveAppSettings();await loadCurrentWorkspace();render();renderStorageInfo();finishProgressToast(`附件存储升级完成：${done} 个`,'ok');notify(`附件存储升级完成：${done} 个`,'ok')}catch(e){console.error(e);finishProgressToast(`附件升级中断：${done} / ${targets.length}`,'err');notify(`附件升级中断：${done} / ${targets.length}，可再次重试`,'err')}}}])
 }
 
+/* ---------- 空间清理 ---------- */
+function cleanupCutoffFromPreset(preset){
+  const now=new Date();
+  if(preset==='1m')return formatDate(new Date(now.getFullYear(),now.getMonth()-1,now.getDate()));
+  if(preset==='3m')return formatDate(new Date(now.getFullYear(),now.getMonth()-3,now.getDate()));
+  if(preset==='6m')return formatDate(new Date(now.getFullYear(),now.getMonth()-6,now.getDate()));
+  if(preset==='1y')return formatDate(new Date(now.getFullYear()-1,now.getMonth(),now.getDate()));
+  if(preset==='lastExport'){const le=readLastExport();return le?.maxDate||''}
+  return '';
+}
+async function computeCleanupPlan(cutoff,mode,scope){
+  const d=await openDB();
+  const allB=await reqP(d.transaction('blocks','readonly').objectStore('blocks').getAll());
+  const allF=await allFileMeta();
+  const inScope=b=>scope==='all'||b.workspaceId===state.workspaceId;
+  const hitBlocks=allB.filter(b=>inScope(b)&&partsKey(b.key)[0]<cutoff);
+  const hitKeySet=new Set(hitBlocks.map(b=>b.key));
+  const survivorFileIds=new Set();
+  for(const b of allB)if(!hitKeySet.has(b.key))for(const id of b.fileIds||[])survivorFileIds.add(String(id));
+  const candidateFileIds=new Set();
+  for(const b of hitBlocks)for(const id of b.fileIds||[])candidateFileIds.add(String(id));
+  const hitFiles=allF.filter(f=>candidateFileIds.has(String(f.id))&&!survivorFileIds.has(String(f.id)));
+  const bytes=hitFiles.reduce((n,f)=>n+(Number(f.size)||0),0);
+  const purgedBlocks=hitBlocks.filter(b=>b.fileIds?.length);
+  return {hitBlocks,hitFiles,bytes,purgedBlocks,mode,scope,cutoff};
+}
+async function performCleanup(plan){
+  const {hitBlocks,hitFiles,mode}=plan;
+  const totalBytes=plan.bytes;
+  let doneBytes=0,removedFiles=0,failedFiles=0;
+  if(hitFiles.length)startProgressToast('正在清理附件',totalBytes||1,'正在删除附件文件…');
+  for(const f of hitFiles){
+    try{const rec=await getFileMeta(f.id);if(rec)await fileStorage.remove(rec);await remove('files',f.id);fileCache.delete(f.id);removedFiles++;doneBytes+=Number(f.size)||0}
+    catch(e){failedFiles++;diagLog('cleanup:file:error',{id:f.id,message:e?.message})}
+    if(removedFiles%5===0||removedFiles===hitFiles.length)updateProgressToast(doneBytes,totalBytes||1,'正在清理附件',`${removedFiles} / ${hitFiles.length} 个附件`);
+  }
+  let removedBlocks=0,purgedCount=0;
+  if(mode==='full'){
+    for(const b of hitBlocks){await remove('blocks',b.key);removedBlocks++}
+  }else{
+    for(const b of plan.purgedBlocks){await put('blocks',{...b,fileIds:[],filesPurgedAt:Date.now(),updatedAt:Date.now()});purgedCount++}
+  }
+  if(hitFiles.length)finishProgressToast(`清理完成：释放 ${formatBytes(doneBytes)}`,'ok');
+  diagLog('cleanup:done',{mode,scope:plan.scope,cutoff:plan.cutoff,removedFiles,failedFiles,removedBlocks,purgedCount,freedBytes:doneBytes});
+  return {removedFiles,failedFiles,removedBlocks,purgedCount,freedBytes:doneBytes};
+}
+async function refreshCleanupPreview(){
+  const cutoff=$('#cleanupDate').value;
+  const preview=$('#cleanupPreview');
+  const runBtn=$('#cleanupRunBtn');
+  const comboBtn=$('#cleanupComboBtn');
+  if(!cutoff){if(preview){preview.textContent='选择截止日期后预览可释放空间';preview.classList.add('muted')}if(runBtn)runBtn.disabled=true;if(comboBtn)comboBtn.disabled=true;return}
+  const mode=document.querySelector('input[name="cleanupMode"]:checked')?.value||'files';
+  const scope=$('#cleanupScope').value||'current';
+  if(preview){preview.textContent='正在分析…';preview.classList.remove('muted')}
+  if(runBtn)runBtn.disabled=true;if(comboBtn)comboBtn.disabled=true;
+  try{
+    const plan=await computeCleanupPlan(cutoff,mode,scope);
+    if(!plan.hitBlocks.length&&!plan.hitFiles.length){
+      if(preview){preview.textContent=`${cutoff} 之前没有数据`;preview.classList.add('muted')}
+      return;
+    }
+    const parts=[];
+    if(mode==='full')parts.push(`${plan.hitBlocks.length} 条记录`);
+    else parts.push(`${plan.purgedBlocks.length} 条记录涉及（文字保留）`);
+    parts.push(`${plan.hitFiles.length} 个附件`);
+    if(preview){preview.innerHTML=`将清理 <strong>${escapeHTML(cutoff)}</strong> 之前：${parts.join(' · ')}<br>可释放约 <strong>${formatBytes(plan.bytes)}</strong>`;preview.classList.remove('muted')}
+    const ok=$('#cleanupConfirmCheck')?.checked;
+    if(runBtn)runBtn.disabled=!ok;
+    if(comboBtn)comboBtn.disabled=false;
+  }catch(e){if(preview){preview.textContent='分析失败：'+(e.message||'未知错误');preview.classList.add('muted')}}
+}
+async function refreshCleanupStats(){
+  const el=$('#cleanupStats');if(!el)return;
+  el.textContent='正在分析存储…';
+  try{
+    const files=await allFileMeta();
+    const filesBytes=files.reduce((n,f)=>n+(Number(f.size)||0),0);
+    const d=await openDB();
+    const blocks=await reqP(d.transaction('blocks','readonly').objectStore('blocks').getAll());
+    const est=await navigator.storage?.estimate?.();
+    const le=readLastExport();
+    el.innerHTML=`总占用 ${est?.usage?`≈ <strong>${formatBytes(est.usage)}</strong>`:'未知'} · 附件 <strong>${files.length}</strong> 个 / <strong>${formatBytes(filesBytes)}</strong> · 记录 <strong>${blocks.length}</strong> 条<br>上次备份：${le?`${new Date(le.at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}（覆盖至 ${escapeHTML(le.maxDate)}，${le.blocks} 条 / ${le.files} 附件）`:'<span style="color:var(--warning)">尚未导出过备份</span>'}`;
+  }catch{el.textContent='暂时无法读取存储信息'}
+}
+function setCleanupBusy(busy){
+  ['#cleanupExportBtn','#cleanupRunBtn','#cleanupComboBtn','#cleanupCancel'].forEach(s=>{const b=$(s);if(b){b.disabled=busy;b.classList.toggle('busy',busy)}});
+}
+async function runCleanupNow(plan){
+  setCleanupBusy(true);
+  try{
+    const r=await performCleanup(plan);
+    await loadCurrentWorkspace();
+    render();renderStorageInfo();refreshCleanupStats();
+    const chk=$('#cleanupConfirmCheck');if(chk)chk.checked=false;
+    const runBtn=$('#cleanupRunBtn');if(runBtn)runBtn.disabled=true;
+    await refreshCleanupPreview();
+    notify(`已释放 ${formatBytes(r.freedBytes)} · ${r.removedFiles} 个附件${r.removedBlocks?` · ${r.removedBlocks} 条记录`:''}${r.purgedCount?` · ${r.purgedCount} 条已标记归档`:''}${r.failedFiles?` · ${r.failedFiles} 个失败`:''}`,r.failedFiles?'warn':'ok',4200);
+  }catch(e){console.error(e);notify('清理失败：'+(e.message||'未知错误'),'err')}
+  finally{setCleanupBusy(false)}
+}
+function confirmAndCleanup(plan,afterExport){
+  const modeLabel=plan.mode==='full'?'附件 + 记录':'仅附件';
+  showDialog('确认清理',`将清理 ${plan.cutoff} 之前的数据（${modeLabel} · ${plan.scope==='all'?'全部工作区':'当前工作区'}）：${plan.hitFiles.length} 个附件${plan.mode==='full'?`、${plan.hitBlocks.length} 条记录`:''}，释放约 ${formatBytes(plan.bytes)}。${afterExport?'备份已导出成功。':'请确认已导出备份。'}此操作不可撤销。`,[
+    {text:'取消'},
+    {text:'确认清理',danger:true,action:()=>runCleanupNow(plan)}
+  ]);
+}
+async function cleanupExportThenRun(){
+  const cutoff=$('#cleanupDate').value;
+  if(!cutoff){notify('请先选择截止日期','warn');return}
+  const mode=document.querySelector('input[name="cleanupMode"]:checked')?.value||'files';
+  const scope=$('#cleanupScope').value||'current';
+  setCleanupBusy(true);
+  let plan,large=false;
+  try{
+    plan=await computeCleanupPlan(cutoff,mode,scope);
+    const allF=await allFileMeta();
+    const totalBytes=allF.reduce((n,f)=>n+(Number(f.size)||0),0);
+    large=totalBytes>=512*1024*1024||allF.some(f=>f.storage==='idb-chunks');
+  }catch(e){setCleanupBusy(false);notify('分析失败：'+(e.message||'未知错误'),'err');return}
+  setCleanupBusy(false);
+  if(!plan.hitBlocks.length&&!plan.hitFiles.length){notify(`没有 ${cutoff} 之前的数据`,'warn');return}
+  if(large){
+    notify('数据量较大，将进入大数据备份流程；备份完成后请勾选确认再点击「② 确认清理」','warn',5200);
+    exportZip();
+    return;
+  }
+  showDialog('导出并清理',`将先导出完整 ZIP 备份，导出成功后清理 ${cutoff} 之前的数据（${mode==='full'?'附件 + 记录':'仅附件'}）。导出失败则中止，不会删除任何数据。`,[
+    {text:'取消'},
+    {text:'开始',primary:true,action:async()=>{
+      const before=Date.now();
+      setCleanupBusy(true);
+      try{
+        await exportZip();
+        const le=readLastExport();
+        if(!le||le.at<before){notify('导出未成功，已中止清理','err');return}
+        const chk=$('#cleanupConfirmCheck');if(chk)chk.checked=true;
+        confirmAndCleanup(plan,true);
+      }catch(e){notify('导出失败，已中止清理：'+(e.message||'未知错误'),'err')}
+      finally{setCleanupBusy(false)}
+    }}
+  ]);
+}
+function openCleanupModal(){
+  $('#cleanupOverlay').classList.add('open');
+  refreshCleanupStats();
+  const le=readLastExport();
+  const presetBtns=$$('#cleanupPresets [data-cleanup-preset]');
+  presetBtns.forEach(b=>b.classList.remove('active'));
+  const dateInput=$('#cleanupDate');
+  if(dateInput)dateInput.max=todayKey();
+  if(le?.maxDate&&dateInput){dateInput.value=le.maxDate;presetBtns.find(b=>b.dataset.cleanupPreset==='lastExport')?.classList.add('active')}
+  else if(dateInput)dateInput.value='';
+  const warn=$('#cleanupWarn');
+  if(warn){warn.hidden=!!le;warn.textContent=le?'':'尚未导出过备份。强烈建议先导出 ZIP 备份再清理，避免数据丢失。'}
+  const chk=$('#cleanupConfirmCheck');if(chk)chk.checked=false;
+  refreshCleanupPreview();
+}
+$$('#cleanupPresets [data-cleanup-preset]').forEach(b=>b.onclick=()=>{
+  const v=cleanupCutoffFromPreset(b.dataset.cleanupPreset);
+  if(!v){notify(b.dataset.cleanupPreset==='lastExport'?'还没有备份记录':'无效预设','warn');return}
+  $$('#cleanupPresets [data-cleanup-preset]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  $('#cleanupDate').value=v;
+  refreshCleanupPreview();
+});
+$('#cleanupDate').onchange=()=>{$$('#cleanupPresets [data-cleanup-preset]').forEach(x=>x.classList.remove('active'));refreshCleanupPreview()};
+document.querySelectorAll('input[name="cleanupMode"]').forEach(r=>r.onchange=refreshCleanupPreview);
+$('#cleanupScope').onchange=refreshCleanupPreview;
+$('#cleanupConfirmCheck').onchange=()=>refreshCleanupPreview();
+$('#cleanupExportBtn').onclick=async()=>{
+  const before=Date.now();
+  setCleanupBusy(true);
+  try{
+    await exportZip();
+    await refreshCleanupStats();
+    const le=readLastExport();
+    if(le&&le.at>=before){const chk=$('#cleanupConfirmCheck');if(chk)chk.checked=true;await refreshCleanupPreview();notify('备份完成，确认后点击「② 确认清理」')}
+  }finally{setCleanupBusy(false)}
+};
+$('#cleanupRunBtn').onclick=async()=>{
+  const cutoff=$('#cleanupDate').value;
+  if(!cutoff||!$('#cleanupConfirmCheck').checked)return;
+  const mode=document.querySelector('input[name="cleanupMode"]:checked')?.value||'files';
+  const scope=$('#cleanupScope').value||'current';
+  setCleanupBusy(true);
+  let plan;
+  try{plan=await computeCleanupPlan(cutoff,mode,scope)}catch(e){setCleanupBusy(false);notify('分析失败：'+(e.message||'未知错误'),'err');return}
+  setCleanupBusy(false);
+  if(!plan.hitBlocks.length&&!plan.hitFiles.length){notify('没有可清理的数据','warn');return}
+  confirmAndCleanup(plan,false);
+};
+$('#cleanupComboBtn').onclick=cleanupExportThenRun;
+$('#cleanupClose').onclick=()=>hideOverlay('#cleanupOverlay');
+$('#cleanupCancel').onclick=()=>hideOverlay('#cleanupOverlay');
+$('#cleanupOverlay').onclick=e=>{if(e.target.id==='cleanupOverlay')hideOverlay('#cleanupOverlay')};
+$('#openCleanupBtn').onclick=()=>{hideOverlay('#workspaceOverlay');openCleanupModal()};
+
 /* ---------- ICS ---------- */
 function unfoldICS(text){return text.replace(/\r?\n[ \t]/g,'').split(/\r?\n/)}
 function unescapeICS(v){return String(v||'').replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\')}
@@ -2300,11 +2562,72 @@ $('#weekViewBtn').onclick=()=>setViewMode(VIEW_MODES.WEEK);$('#dayViewBtn').oncl
 $('#prevBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){const n=addDays(state.timelineDayDate||new Date(),-1);if(!isBeforeWorkspaceStart(n))state.timelineDayDate=n}else{state.timelineWeek=clampToWorkspaceStart(addDays(currentWeekStart(),-7));state.selected.clear()}persistUiPrefs();render()};$('#nextBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.timelineDayDate=addDays(state.timelineDayDate||new Date(),1)}else{state.timelineWeek=addDays(currentWeekStart(),7);state.selected.clear()}persistUiPrefs();render()};$('#todayBtn').onclick=()=>{const today=clampToWorkspaceStart(new Date());state.selected.clear();if(state.viewMode===VIEW_MODES.DAY){state.timelineDayDate=today}else{state.timelineWeek=today}persistUiPrefs();render()};
 
 $('#themeBtn').onclick=()=>{appSettings.theme=appSettings.theme==='dark'?'light':'dark';applyTheme();saveAppSettings()};$('#searchClose').onclick=()=>$('#searchOverlay').classList.remove('open');$('#searchOverlay').onclick=e=>{if(e.target.id==='searchOverlay')$('#searchOverlay').classList.remove('open')};$('#advancedSearchInput').oninput=renderAdvancedSearch;$('#searchWorkspace').onchange=renderAdvancedSearch;$('#searchDateScope').onchange=renderAdvancedSearch;$('#advancedSearchClear').onclick=()=>{$('#advancedSearchInput').value='';renderAdvancedSearch();$('#advancedSearchInput').focus()};document.addEventListener('click',e=>{if(!e.target.closest('.searchbox')&&!e.target.closest('#searchPreview')){const r=$('#searchPreview');r.hidden=true;r.classList.remove('open')}});
-$('#commandBtn').onclick=()=>$('#commandOverlay').classList.add('open');const diagCopy=$('#diagCopy');if(diagCopy)diagCopy.onclick=async()=>{try{await navigator.clipboard?.writeText(diagBuffer.join('\n'));notify('诊断日志已复制')}catch{notify('无法复制诊断日志，请手动选择','warn')}};const diagClear=$('#diagClear');if(diagClear)diagClear.onclick=()=>{diagBuffer.length=0;const el=$('#diagLog');if(el)el.textContent='暂无日志';diagLog('日志已清空')};$('#commandClose').onclick=()=>hideOverlay('#commandOverlay');$('#commandOverlay').onclick=e=>{if(e.target.id==='commandOverlay')hideOverlay('#commandOverlay')};
-$$('[data-command]').forEach(b=>b.onclick=()=>{const c=b.dataset.command;hideOverlay('#commandOverlay');if(c==='new')newRecord();if(c==='workspace')$('#workspaceManage').click();if(c==='today'){$('#todayBtn').click()}if(c==='search')$('#searchInput').focus();if(c==='ics')triggerICSImport();if(c==='backupImport')triggerBackupImport();if(c==='export')exportZip();if(c==='clear')clearCurrentWorkspace();if(c==='help')$('#help').hidden=false});
+$('#commandBtn').onclick=()=>{commandSubmenu=null;renderCommandMenu();$('#commandOverlay').classList.add('open')};const diagCopy=$('#diagCopy');if(diagCopy)diagCopy.onclick=async()=>{try{await navigator.clipboard?.writeText(diagBuffer.join('\n'));notify('诊断日志已复制')}catch{notify('无法复制诊断日志，请手动选择','warn')}};const diagClear=$('#diagClear');if(diagClear)diagClear.onclick=()=>{diagBuffer.length=0;const el=$('#diagLog');if(el)el.textContent='暂无日志';diagLog('日志已清空')};$('#commandClose').onclick=()=>hideOverlay('#commandOverlay');$('#commandOverlay').onclick=e=>{if(e.target.id==='commandOverlay')hideOverlay('#commandOverlay')};
+const COMMAND_MAIN=[
+  {command:'new',main:'新建记录',desc:'在当前周第一个时间槽创建',kbd:'N'},
+  {command:'today',main:'回到今天',desc:'定位到当前工作区的本周',kbd:'T'},
+  {command:'search',main:'搜索',desc:'定位并聚焦搜索框',kbd:'/'},
+  {command:'workspace',main:'工作区设置…',desc:'切换/创建工作区 · 字体 · 存储',kbd:'W'},
+  {submenu:'backup',main:'备份与清理',desc:'导出/导入备份 · 空间清理 · 清空工作区'},
+  {submenu:'view',main:'视图',desc:'周/日视图 · 阅读模式 · 隐藏空白行'},
+  {command:'help',main:'快捷键帮助',kbd:'?'},
+];
+const COMMAND_SUBMENUS={
+  backup:{title:'备份与清理',items:[
+    {command:'export',main:'导出完整备份',desc:'普通数据 ZIP；大数据 ZIP64 流式/分卷'},
+    {command:'backupImport',main:'导入完整备份',desc:'从 ZIP 备份恢复全部本地数据'},
+    {command:'ics',main:'导入 ICS',desc:'将日历事件导入当前工作区'},
+    {command:'cleanup',main:'空间清理…',desc:'按日期清理附件/记录，释放手机空间'},
+    {command:'clear',main:'清空当前工作区…',desc:'删除当前工作区全部记录和附件',danger:true},
+  ]},
+  view:{title:'视图',items:[
+    {command:'viewWeek',main:'周视图',desc:'7 天时间轴看板',check:()=>state.viewMode===VIEW_MODES.WEEK},
+    {command:'viewDay',main:'日视图',desc:'单日时间轴',check:()=>state.viewMode===VIEW_MODES.DAY},
+    {command:'toggleReading',main:'阅读模式',desc:'长文阅读排版',dynamic:()=>state.readingMode?'开 · 点击关闭':'关 · 点击开启',check:()=>state.readingMode},
+    {command:'toggleEmptyRows',main:'隐藏空白行',desc:'隐藏无工作块覆盖的时间行',dynamic:()=>state.hideEmptyRows?'开 · 点击关闭':'关 · 点击开启',check:()=>state.hideEmptyRows},
+  ]},
+};
+let commandSubmenu=null;
+function commandItemHTML(item){
+  const kbd=item.kbd?`<kbd>${item.kbd}</kbd>`:'';
+  const arrow=item.submenu?'<span class="command-arrow">›</span>':'';
+  const desc=item.dynamic?`${item.desc}（${item.dynamic()}）`:item.desc;
+  const check=item.check?.()?' ✓':'';
+  const attr=item.submenu?`data-submenu="${item.submenu}"`:`data-command="${item.command}"`;
+  return `<button class="command${item.danger?' danger':''}" ${attr} type="button"><span><span class="command-main">${item.main}${check}</span><br><span class="command-desc">${desc}</span></span>${kbd}${arrow}</button>`;
+}
+function renderCommandMenu(){
+  const list=$('#commandList');if(!list)return;
+  const sub=commandSubmenu?COMMAND_SUBMENUS[commandSubmenu]:null;
+  const title=$('#commandTitle');if(title)title.textContent=sub?sub.title:'命令';
+  const diag=$('#diagPanel');if(diag)diag.style.display=sub?'none':'';
+  list.innerHTML=sub
+    ?`<button class="command-back" data-command-back type="button"><span class="command-back-arrow"></span>返回</button>`+sub.items.map(commandItemHTML).join('')
+    :COMMAND_MAIN.map(commandItemHTML).join('');
+  list.querySelectorAll('[data-command]').forEach(b=>b.onclick=()=>runCommand(b.dataset.command));
+  list.querySelectorAll('[data-submenu]').forEach(b=>b.onclick=()=>{commandSubmenu=b.dataset.submenu;renderCommandMenu()});
+  const back=list.querySelector('[data-command-back]');if(back)back.onclick=()=>{commandSubmenu=null;renderCommandMenu()};
+}
+function runCommand(c){
+  hideOverlay('#commandOverlay');commandSubmenu=null;
+  if(c==='new')newRecord();
+  else if(c==='workspace')$('#workspaceManage').click();
+  else if(c==='today')$('#todayBtn').click();
+  else if(c==='search')$('#searchInput').focus();
+  else if(c==='ics')triggerICSImport();
+  else if(c==='backupImport')triggerBackupImport();
+  else if(c==='export')exportZip();
+  else if(c==='cleanup')openCleanupModal();
+  else if(c==='clear')clearCurrentWorkspace();
+  else if(c==='viewWeek')setViewMode(VIEW_MODES.WEEK);
+  else if(c==='viewDay')setViewMode(VIEW_MODES.DAY);
+  else if(c==='toggleReading'){state.readingMode=!state.readingMode;$('#readingModeBtn').checked=state.readingMode;persistUiPrefs();render()}
+  else if(c==='toggleEmptyRows'){state.hideEmptyRows=!state.hideEmptyRows;$('#hideEmptyRows').checked=state.hideEmptyRows;persistUiPrefs();render()}
+  else if(c==='help')$('#help').hidden=false;
+}
 $('#dialogOverlay').onclick=e=>{if(e.target.id==='dialogOverlay')hideOverlay('#dialogOverlay')};$('#workspaceOverlay').onclick=e=>{if(e.target.id==='workspaceOverlay')hideOverlay('#workspaceOverlay')};
 
-document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){hideOverlay('#commandOverlay');return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}if(state.readingMode){state.readingMode=false;persistUiPrefs();render();return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#gotoDateInput')?.value;if(v){const d=clampToWorkspaceStart(parseDate(v));if(state.viewMode===VIEW_MODES.DAY)state.timelineDayDate=d;else state.timelineWeek=d;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="gotoDateInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#gotoDateInput')?.focus(),20)}});
+document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){if(commandSubmenu){commandSubmenu=null;renderCommandMenu()}else hideOverlay('#commandOverlay');return}if($('#cleanupOverlay').classList.contains('open')){hideOverlay('#cleanupOverlay');return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}if(state.readingMode){state.readingMode=false;persistUiPrefs();render();return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#gotoDateInput')?.value;if(v){const d=clampToWorkspaceStart(parseDate(v));if(state.viewMode===VIEW_MODES.DAY)state.timelineDayDate=d;else state.timelineWeek=d;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="gotoDateInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#gotoDateInput')?.focus(),20)}});
 
 loadHeaderPrefs();applyHeaderState();loadReadingDockPrefs();applyReadingDockPosition();initReadingDock();initSwipeNav();
 registerDownloadServiceWorker();
