@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.61</title>
+<title>工作日志 · v5.9.63</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -287,7 +287,7 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
 .reading-day{scroll-margin-top:110px}
 .reading-dock{position:fixed;z-index:800;display:none;flex-direction:column;width:138px;max-height:min(64vh,520px);background:color-mix(in srgb,var(--surface) 93%,transparent);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;transition:left .22s cubic-bezier(.22,.7,.25,1),right .22s cubic-bezier(.22,.7,.25,1),top .22s cubic-bezier(.22,.7,.25,1)}
 .reading-dock.open{display:flex}
-.reading-dock.dragging{transition:none;opacity:.94;box-shadow:0 16px 44px rgba(2,6,23,.28)}
+.reading-dock.dragging{transition:none;opacity:.94;box-shadow:0 16px 44px rgba(2,6,23,.28);backdrop-filter:none;background:var(--surface)}
 .reading-dock-bar{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:5px 7px;border-bottom:1px solid var(--border);background:var(--surface-2);cursor:grab;touch-action:none}
 .reading-dock-bar:active{cursor:grabbing}
 .reading-dock-grip{border:0;background:transparent;color:var(--faint);font-size:12px;padding:2px 3px;cursor:grab;letter-spacing:1px;line-height:1}
@@ -302,6 +302,12 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
 .reading-dock.collapsed .reading-dock-list{display:none}
 .reading-dock.collapsed .reading-dock-bar{border-bottom:0}
 .reading-dock.collapsed{width:auto;max-height:none}
+/* v5.9.63 docked (edge-snapped) state: flush to edge, toggle hidden */
+.reading-dock.docked[data-side="left"]{border-left:0;border-radius:0 14px 14px 0}
+.reading-dock.docked[data-side="right"]{border-right:0;border-radius:14px 0 0 14px}
+.reading-dock.docked .reading-dock-bar{border-radius:inherit}
+.reading-dock.docked .reading-dock-grip{cursor:pointer}
+.reading-dock.docked .reading-dock-toggle{display:none}
 .dock-day{display:flex;align-items:baseline;justify-content:space-between;gap:6px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:8px;padding:6px 8px;font-size:calc(11px * var(--font-scale));text-align:left;width:100%}
 .dock-day:hover{background:var(--hover);border-color:var(--border)}
 .dock-day.active{background:var(--accent-soft);color:var(--accent);font-weight:750;border-color:color-mix(in srgb,var(--accent) 25%,transparent)}
@@ -420,12 +426,56 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
 @media(max-width:700px){
   .stats .stat:nth-child(5){grid-column:1/-1;align-items:center}
 }
+/* v5.9.62 clickable stats + detail panel */
+.stat{cursor:pointer;transition:background .14s ease}
+.stat:hover strong{color:var(--accent)}
+.stat:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.stat-modal{width:min(960px,100%)}
+.sort-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding-bottom:11px;margin-bottom:13px;border-bottom:1px solid var(--bar-divider)}
+.sort-label{font-size:calc(10px*var(--font-scale));color:var(--faint);font-weight:700}
+.sort-seg{display:flex;gap:2px;padding:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;flex-wrap:wrap}
+.sort-seg button{border:0;background:transparent;color:var(--muted);padding:5px 9px;border-radius:7px;font-size:calc(11px*var(--font-scale));font-weight:650;white-space:nowrap}
+.sort-seg button:hover{color:var(--text)}
+.sort-seg button.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px color-mix(in srgb,var(--text) 8%,transparent)}
+.sort-dir{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:9px;padding:5px 9px;font-size:calc(11px*var(--font-scale));font-weight:650;white-space:nowrap}
+.sort-dir:hover{background:var(--hover);color:var(--text)}
+.sort-count{margin-left:auto;font-size:calc(10px*var(--font-scale));color:var(--faint);font-variant-numeric:tabular-nums}
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:8px;align-items:stretch}
+.tile{display:flex;flex-direction:column;width:100%;height:100%;text-align:left;border:1px solid var(--border);background:var(--surface-2);border-radius:10px;padding:9px 10px;color:var(--text);cursor:pointer;transition:border-color .14s ease,background .14s ease,transform .14s ease}
+.tile:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));background:var(--hover);transform:translateY(-1px)}
+.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tile-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.tile-time{font-size:calc(10px*var(--font-scale));color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile-ext{font-size:calc(9px*var(--font-scale));font-weight:800;color:var(--accent);letter-spacing:.04em}
+.tile-title{font-size:calc(12px*var(--font-scale));font-weight:700;line-height:1.35;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.tile-sub{font-size:calc(10px*var(--font-scale));color:var(--muted);line-height:1.45;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:7px}
+.tile-chips:empty{display:none}
+.tile-chip{font-size:calc(10px*var(--font-scale));padding:2px 7px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);white-space:nowrap}
+.tile-chip.st-done{color:var(--success);border-color:color-mix(in srgb,var(--success) 35%,var(--border))}
+.tile-chip.st-doing{color:var(--warning);border-color:color-mix(in srgb,var(--warning) 35%,var(--border))}
+.tile-chip.prio-high{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,var(--border))}
+.tag-tile .tag-name{font-size:calc(13px*var(--font-scale));font-weight:800}
+.tag-tile .tag-count{margin-left:auto;font-size:calc(15px*var(--font-scale));font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.stat-empty{grid-column:1/-1;text-align:center;color:var(--faint);padding:44px 12px;font-size:calc(11px*var(--font-scale))}
+@media(max-width:700px){
+  .tile-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+  .sort-bar{flex-wrap:nowrap;gap:6px}
+  .sort-label{display:none}
+  .sort-seg{flex:1 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .sort-seg::-webkit-scrollbar{display:none}
+  .sort-dir{flex:0 0 auto}
+  .sort-count{flex:0 0 auto;margin-left:0}
+  .stat-modal .modal-head>div{min-width:0;flex:1}
+  .stat-modal .modal-title{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stat-modal .modal-meta{display:block;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.61</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.63</span></div>
     <div class="workspace">
       <span class="workspace-label">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -453,11 +503,11 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
   </header>
 
   <section class="stats">
-    <div class="stat"><span>当前周记录</span><strong id="sWeek">0</strong></div>
-    <div class="stat"><span>当前工作区</span><strong id="sAll">0</strong></div>
-    <div class="stat"><span>标签</span><strong id="sTags">0</strong></div>
-    <div class="stat"><span>附件</span><strong id="sFiles">0</strong></div>
-    <div class="stat"><span>已完成</span><strong id="sDone">0</strong></div>
+    <div class="stat" data-stat="week" role="button" tabindex="0" title="查看本周全部记录"><span>当前周记录</span><strong id="sWeek">0</strong></div>
+    <div class="stat" data-stat="all" role="button" tabindex="0" title="查看工作区全部记录"><span>当前工作区</span><strong id="sAll">0</strong></div>
+    <div class="stat" data-stat="tags" role="button" tabindex="0" title="查看全部标签"><span>标签</span><strong id="sTags">0</strong></div>
+    <div class="stat" data-stat="files" role="button" tabindex="0" title="查看全部附件"><span>附件</span><strong id="sFiles">0</strong></div>
+    <div class="stat" data-stat="done" role="button" tabindex="0" title="查看已完成记录"><span>已完成</span><strong id="sDone">0</strong></div>
   </section>
 
   <div class="searchbar">
@@ -580,6 +630,16 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
   </section>
 </div>
 
+<div class="overlay" id="statOverlay">
+  <section class="modal stat-modal">
+    <div class="modal-head"><div><span class="modal-title" id="statTitle">统计明细</span><span class="modal-meta" id="statMeta"></span></div><button class="icon-btn" id="statClose">×</button></div>
+    <div class="modal-body">
+      <div class="sort-bar" id="statSortBar"></div>
+      <div class="tile-grid" id="statGrid"></div>
+    </div>
+  </section>
+</div>
+
 <div class="overlay" id="searchOverlay">
   <section class="modal search-modal">
     <div class="modal-head"><span class="modal-title">更多搜索</span><button class="icon-btn" id="searchClose">×</button></div>
@@ -622,7 +682,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.61',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.63',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -638,7 +698,7 @@ const state={timelineWeek:new Date(),timelineDayDate:new Date(),workspaceId:null
 let db=null,workspaces=[],currentBlocks=[],fileCache=new Map(),searchIndex=[],slots=[],weekDays=[],hitKeys=new Set();
 const readingCollapsedOverride=new Map();
 const DOCK_PREF='worklog:v5:readingDock';
-let readingDockPrefs={side:'right',yPct:26,collapsed:false};
+let readingDockPrefs={docked:false,side:'right',freeX:null,yPct:26,collapsed:false};
 let appSettings={theme:'light',fontSize:'medium',dataVersion:1};
 const FONT_SIZE_PRESETS={small:0.94,smallMedium:1.04,medium:1.12,largeMedium:1.20,large:1.30};
 const MAX_ATTACHMENT_BYTES=5*1024*1024*1024;
@@ -1470,18 +1530,32 @@ function renderMobileSummary(w,days,slots,blockMap){const root=$('#mobileSummary
 /* ---------- 阅读模式悬浮导航 dock ---------- */
 function loadReadingDockPrefs(){
   let raw=null;try{raw=localStorage.getItem(DOCK_PREF)}catch{}
-  try{const p=raw?JSON.parse(raw):null;if(p&&typeof p==='object'){if(p.side==='left'||p.side==='right')readingDockPrefs.side=p.side;const y=Number(p.yPct);if(Number.isFinite(y))readingDockPrefs.yPct=Math.min(78,Math.max(2,y));readingDockPrefs.collapsed=!!p.collapsed}}catch{}
+  try{const p=raw?JSON.parse(raw):null;if(p&&typeof p==='object'){
+    if(p.side==='left'||p.side==='right')readingDockPrefs.side=p.side;
+    const y=Number(p.yPct);if(Number.isFinite(y))readingDockPrefs.yPct=Math.min(78,Math.max(2,y));
+    const fx=Number(p.freeX);if(Number.isFinite(fx))readingDockPrefs.freeX=fx;
+    readingDockPrefs.collapsed=!!p.collapsed;
+    readingDockPrefs.docked=p.docked===true;
+  }}catch{}
   if(!raw&&window.innerWidth<=700)readingDockPrefs.collapsed=true;
 }
 function persistReadingDockPrefs(){try{localStorage.setItem(DOCK_PREF,JSON.stringify(readingDockPrefs))}catch{}}
 function applyReadingDockPosition(){
   const dock=$('#readingDock');if(!dock)return;
-  const p=readingDockPrefs;
+  const p=readingDockPrefs,docked=!!p.docked;
   dock.dataset.side=p.side;
-  dock.style.left=p.side==='left'?'10px':'auto';
-  dock.style.right=p.side==='right'?'10px':'auto';
-  dock.style.top=`${p.yPct}vh`;
+  dock.classList.toggle('docked',docked);
   dock.classList.toggle('collapsed',!!p.collapsed);
+  const w=dock.offsetWidth||138;
+  if(docked){
+    dock.style.left=p.side==='left'?'0px':'auto';
+    dock.style.right=p.side==='right'?'0px':'auto';
+  }else{
+    const x=Number.isFinite(p.freeX)?p.freeX:(p.side==='left'?10:window.innerWidth-w-10);
+    dock.style.left=`${Math.min(window.innerWidth-w-4,Math.max(4,x))}px`;
+    dock.style.right='auto';
+  }
+  dock.style.top=`${p.yPct}vh`;
   const t=$('#readingDockToggle');if(t){t.title=p.collapsed?'展开导航':'收起导航';t.setAttribute('aria-label',t.title)}
 }
 function renderReadingDock(w){
@@ -1506,18 +1580,14 @@ function renderReadingDock(w){
   list.querySelectorAll('[data-dock-date]').forEach(b=>b.onclick=()=>{const el=$('#readingView').querySelector(`.reading-day[data-reading-date="${b.dataset.dockDate}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})});
   list.querySelectorAll('[data-dock-nav]').forEach(b=>b.onclick=()=>(b.dataset.dockNav==='prev'?$('#prevBtn'):$('#nextBtn')).click());
   list.querySelectorAll('[data-dock-act]').forEach(b=>b.onclick=()=>{const a=b.dataset.dockAct;if(a==='expand')setAllReadingExpand(true);else if(a==='collapse')setAllReadingExpand(false);else window.scrollTo({top:0,behavior:'smooth'})});
+  applyReadingDockPosition();
 }
 function initReadingDock(){
   const dock=$('#readingDock'),bar=$('#readingDockBar'),toggle=$('#readingDockToggle');
   if(!dock||!bar||!toggle)return;
   toggle.onclick=()=>{readingDockPrefs.collapsed=!readingDockPrefs.collapsed;persistReadingDockPrefs();applyReadingDockPosition()};
   let drag=null;
-  bar.addEventListener('pointerdown',e=>{
-    if(e.target.closest('.reading-dock-toggle'))return;
-    drag={id:e.pointerId,startX:e.clientX,startY:e.clientY,rect:dock.getBoundingClientRect(),moved:false};
-    try{bar.setPointerCapture(e.pointerId)}catch{}
-  });
-  bar.addEventListener('pointermove',e=>{
+  const onMove=e=>{
     if(!drag||e.pointerId!==drag.id)return;
     const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
     if(!drag.moved){if(Math.hypot(dx,dy)<6)return;drag.moved=true;dock.classList.add('dragging')}
@@ -1525,19 +1595,31 @@ function initReadingDock(){
     dock.style.left=`${Math.min(window.innerWidth-w-4,Math.max(4,drag.rect.left+dx))}px`;
     dock.style.right='auto';
     dock.style.top=`${Math.min(window.innerHeight-44,Math.max(4,drag.rect.top+dy))}px`;
-  });
-  const end=e=>{
+  };
+  const onUp=e=>{
     if(!drag||(e&&e.pointerId!==drag.id))return;
+    window.removeEventListener('pointermove',onMove,true);
+    window.removeEventListener('pointerup',onUp,true);
+    window.removeEventListener('pointercancel',onUp,true);
     const moved=drag.moved;drag=null;dock.classList.remove('dragging');
-    if(!moved)return;
+    if(!moved){readingDockPrefs.collapsed=!readingDockPrefs.collapsed;persistReadingDockPrefs();applyReadingDockPosition();return}
     const r=dock.getBoundingClientRect();
-    const side=(r.left+r.width/2)<window.innerWidth/2?'left':'right';
     const yPct=Math.round(Math.min(78,Math.max(2,(r.top/window.innerHeight)*100))*10)/10;
-    readingDockPrefs={...readingDockPrefs,side,yPct};
+    const distL=r.left,distR=window.innerWidth-r.right;
+    if(Math.min(distL,distR)<=72){
+      readingDockPrefs={...readingDockPrefs,docked:true,side:distL<=distR?'left':'right',yPct};
+    }else{
+      readingDockPrefs={...readingDockPrefs,docked:false,freeX:Math.round(r.left),yPct};
+    }
     persistReadingDockPrefs();applyReadingDockPosition();
   };
-  bar.addEventListener('pointerup',end);
-  bar.addEventListener('pointercancel',end);
+  bar.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.reading-dock-toggle'))return;
+    drag={id:e.pointerId,startX:e.clientX,startY:e.clientY,rect:dock.getBoundingClientRect(),moved:false};
+    window.addEventListener('pointermove',onMove,true);
+    window.addEventListener('pointerup',onUp,true);
+    window.addEventListener('pointercancel',onUp,true);
+  });
   window.addEventListener('resize',()=>applyReadingDockPosition());
 }
 /* ---------- 移动端横向滑动切换周/日 ---------- */
@@ -2574,6 +2656,123 @@ $('#cleanupCancel').onclick=()=>hideOverlay('#cleanupOverlay');
 $('#cleanupOverlay').onclick=e=>{if(e.target.id==='cleanupOverlay')hideOverlay('#cleanupOverlay')};
 $('#openCleanupBtn').onclick=()=>{hideOverlay('#workspaceOverlay');openCleanupModal()};
 
+/* ---------- 统计明细面板 ---------- */
+const STAT_PREF='worklog:v5:statSort';
+const STAT_SORTS={
+  week:[['time','时间'],['title','标题'],['status','状态'],['prio','优先级'],['updated','更新']],
+  all:[['time','时间'],['title','标题'],['status','状态'],['prio','优先级'],['tags','标签'],['updated','更新']],
+  tagdrill:[['time','时间'],['title','标题'],['status','状态'],['prio','优先级'],['updated','更新']],
+  done:[['time','时间'],['title','标题'],['updated','更新']],
+  tags:[['count','记录数'],['name','名称']],
+  files:[['time','时间'],['name','名称'],['type','类型'],['size','大小']],
+};
+const STAT_TITLES={week:'本周记录',all:'工作区记录',tags:'全部标签',files:'全部附件',done:'已完成记录',tagdrill:'标签记录'};
+let statSort={week:{f:'time',d:-1},all:{f:'time',d:-1},tagdrill:{f:'time',d:-1},done:{f:'time',d:-1},tags:{f:'count',d:-1},files:{f:'time',d:-1}};
+let statCurrent=null,statTagFilter=null;
+function loadStatSortPref(){try{const p=JSON.parse(localStorage.getItem(STAT_PREF)||'null');if(p&&typeof p==='object')for(const k in statSort){const v=p[k];if(v&&typeof v.f==='string'&&(v.d===1||v.d===-1)&&STAT_SORTS[k].some(x=>x[0]===v.f))statSort[k]=v}}catch{}}
+function persistStatSortPref(){try{localStorage.setItem(STAT_PREF,JSON.stringify(statSort))}catch{}}
+function statDateOf(b){return partsKey(b.key)[0]}
+function statTimeOf(b){return b.startTime||partsKey(b.key)[1]||''}
+function statusRank(s){return s==='已完成'?3:s==='进行中'?2:1}
+function prioRank(p){return p==='高'?3:p==='中'?2:p==='低'?1:0}
+function fileKindLabel(f){
+  const t=String(f&&f.type||''),ext=(String(f&&f.name||'').match(/\.([A-Za-z0-9]{1,10})$/)||[])[1]||'';
+  if(t.startsWith('image/'))return '图片';
+  if(t.startsWith('video/'))return '视频';
+  if(t.startsWith('audio/'))return '音频';
+  if(t==='application/pdf')return 'PDF';
+  if(/zip|compressed|tar|rar|7z/.test(t)||/^(zip|rar|7z|tar|gz)$/i.test(ext))return '压缩包';
+  if(t.startsWith('text/'))return '文本';
+  return ext?ext.toUpperCase():'文件';
+}
+function buildStatItems(kind){
+  if(kind==='tags'){
+    const m=new Map();
+    for(const b of currentBlocks.filter(recordHasContent))for(const t of b.tags||[])m.set(t,(m.get(t)||0)+1);
+    return [...m.entries()].map(([name,count])=>({kind:'tag',name,count}));
+  }
+  if(kind==='files'){
+    const out=[];
+    for(const f of fileCache.values())out.push({kind:'file',...f,owner:currentBlocks.find(b=>(b.fileIds||[]).includes(f.id))||null});
+    return out;
+  }
+  let list=currentBlocks.filter(recordHasContent);
+  if(kind==='week'){const a=currentWeekStart(),z=addDays(a,6);list=list.filter(b=>{const d=parseDate(statDateOf(b));return d>=a&&d<=z})}
+  else if(kind==='done')list=list.filter(b=>b.status==='已完成');
+  else if(kind==='tagdrill')list=list.filter(b=>(b.tags||[]).includes(statTagFilter));
+  return list.map(b=>({kind:'record',block:b}));
+}
+function statCmp(a,b,d){if(a<b)return -d;if(a>b)return d;return 0}
+function statDefaultDir(f){return ['time','updated','size','count','prio','status'].includes(f)?-1:1}
+function statSortList(kind,items){
+  const s=statSort[kind]||{f:'time',d:-1},d=s.d;
+  if(kind==='tags')return [...items].sort((x,y)=>{const A=s.f==='count'?x.count:x.name.toLocaleLowerCase(),B=s.f==='count'?y.count:y.name.toLocaleLowerCase();return statCmp(A,B,d)||x.name.localeCompare(y.name)});
+  if(kind==='files')return [...items].sort((x,y)=>{
+    let A,B;
+    if(s.f==='time'){A=Number(x.updatedAt||x.createdAt)||0;B=Number(y.updatedAt||y.createdAt)||0}
+    else if(s.f==='name'){A=String(x.name||'').toLocaleLowerCase();B=String(y.name||'').toLocaleLowerCase()}
+    else if(s.f==='type'){A=fileKindLabel(x);B=fileKindLabel(y)}
+    else{A=Number(x.size)||0;B=Number(y.size)||0}
+    return statCmp(A,B,d)||String(x.name||'').localeCompare(String(y.name||''))
+  });
+  return [...items].sort((x,y)=>{
+    const bx=x.block,by=y.block,A=[],B=[];
+    if(s.f==='time'){A.push(statDateOf(bx),timeToMinutes(statTimeOf(bx))??-1);B.push(statDateOf(by),timeToMinutes(statTimeOf(by))??-1)}
+    else if(s.f==='title'){A.push((bx.title||'未命名').toLocaleLowerCase());B.push((by.title||'未命名').toLocaleLowerCase())}
+    else if(s.f==='status'){A.push(statusRank(bx.status));B.push(statusRank(by.status))}
+    else if(s.f==='prio'){A.push(prioRank(bx.prio));B.push(prioRank(by.prio))}
+    else if(s.f==='tags'){A.push((bx.tags||[]).join(',').toLocaleLowerCase());B.push((by.tags||[]).join(',').toLocaleLowerCase())}
+    else{A.push(Number(bx.updatedAt)||0);B.push(Number(by.updatedAt)||0)}
+    for(let i=0;i<A.length;i++){const c=statCmp(A[i],B[i],d);if(c)return c}
+    return 0;
+  });
+}
+function statRecordTile(b){
+  const date=statDateOf(b),time=statTimeOf(b);
+  const st=b.status?`<span class="tile-chip ${b.status==='已完成'?'st-done':'st-doing'}">${escapeHTML(b.status)}</span>`:'';
+  const prio=b.prio?`<span class="tile-chip ${b.prio==='高'?'prio-high':''}">${escapeHTML(b.prio)}</span>`:'';
+  const tags=(b.tags||[]).slice(0,3).map(t=>`<span class="tile-chip">#${escapeHTML(t)}</span>`).join('');
+  const files=b.fileIds?.length?`<span class="tile-chip">📎 ${b.fileIds.length}</span>`:(b.filesPurgedAt?`<span class="tile-chip">📎已归档</span>`:'');
+  return `<button class="tile" type="button" data-stat-record="${escapeHTML(b.key)}"><div class="tile-top"><span class="tile-time">${escapeHTML(date)} ${escapeHTML(time)}</span></div><div class="tile-title">${escapeHTML(b.title||'未命名')}</div>${b.body?`<div class="tile-sub">${escapeHTML(b.body)}</div>`:''}<div class="tile-chips">${st}${prio}${tags}${files}</div></button>`;
+}
+function statTagTile(it){return `<button class="tile tag-tile" type="button" data-stat-tag="${escapeHTML(it.name)}"><div class="tile-top"><span class="tag-name">#${escapeHTML(it.name)}</span><span class="tag-count">${it.count}</span></div><div class="tile-sub">${it.count} 条记录 · 点击查看</div></button>`}
+function statFileTile(it){
+  const kind=fileKindLabel(it),date=formatDate(new Date(Number(it.updatedAt||it.createdAt)||Date.now()));
+  return `<button class="tile file-tile" type="button" data-stat-file="${escapeHTML(it.id)}"><div class="tile-top"><span class="tile-ext">${escapeHTML(kind)}</span><span class="tile-time">${escapeHTML(date)}</span></div><div class="tile-title">${escapeHTML(it.name||'附件')}</div><div class="tile-sub">${escapeHTML(formatBytes(Number(it.size)||0))}${it.owner?` · ${escapeHTML(it.owner.title||'未命名')}`:''}</div></button>`;
+}
+function renderStatSortBar(kind,count){
+  const bar=$('#statSortBar');if(!bar)return;
+  const fields=STAT_SORTS[kind]||STAT_SORTS.all,s=statSort[kind]||{f:'time',d:-1};
+  bar.innerHTML=`<span class="sort-label">排序</span><div class="sort-seg">${fields.map(([f,label])=>`<button type="button" data-sort-field="${f}" class="${s.f===f?'active':''}">${label}</button>`).join('')}</div><button type="button" class="sort-dir" data-sort-dir title="切换升/降序">${s.d===-1?'↓ 降序':'↑ 升序'}</button><span class="sort-count">${count} 项</span>`;
+  bar.querySelectorAll('[data-sort-field]').forEach(b=>b.onclick=()=>{const f=b.dataset.sortField,cur=statSort[kind];statSort[kind]=cur.f===f?{f,d:-cur.d}:{f,d:statDefaultDir(f)};persistStatSortPref();renderStatView()});
+  const dir=bar.querySelector('[data-sort-dir]');if(dir)dir.onclick=()=>{statSort[kind]={f:statSort[kind].f,d:-statSort[kind].d};persistStatSortPref();renderStatView()};
+}
+function renderStatView(){
+  const kind=statCurrent;if(!kind)return;
+  const view=statTagFilter?'tagdrill':kind;
+  $('#statTitle').textContent=statTagFilter?`#${statTagFilter}`:STAT_TITLES[kind];
+  const wsName=currentWs()?.name||'';
+  if(kind==='week'){const a=currentWeekStart();$('#statMeta').textContent=`${formatDate(a)} — ${formatDate(addDays(a,6))} · ${wsName}`}
+  else $('#statMeta').textContent=statTagFilter?`标签筛选 · ${wsName}`:wsName;
+  const items=buildStatItems(view),sorted=statSortList(view,items),grid=$('#statGrid');
+  renderStatSortBar(view,sorted.length);
+  if(!sorted.length){
+    grid.innerHTML=`<div class="stat-empty">${kind==='tags'?'还没有标签':kind==='files'?'还没有附件':kind==='done'?'还没有已完成的记录':statTagFilter?'该标签下暂无记录':'还没有记录'}</div>`;
+    return;
+  }
+  grid.innerHTML=sorted.map(it=>it.kind==='tag'?statTagTile(it):it.kind==='file'?statFileTile(it):statRecordTile(it.block)).join('');
+  grid.querySelectorAll('[data-stat-record]').forEach(el=>el.onclick=()=>{closeStatView();openEditor(el.dataset.statRecord)});
+  grid.querySelectorAll('[data-stat-tag]').forEach(el=>el.onclick=()=>{statTagFilter=el.dataset.statTag;renderStatView()});
+  grid.querySelectorAll('[data-stat-file]').forEach(el=>el.onclick=()=>{const it=sorted.find(x=>x.kind==='file'&&x.id===el.dataset.statFile);if(it&&it.owner){closeStatView();openEditor(it.owner.key)}else notify('该附件暂无关联记录','warn')});
+  $('#statGrid').scrollTop=0;
+}
+function openStatView(kind){if(!STAT_TITLES[kind])return;statCurrent=kind;statTagFilter=null;$('#statOverlay').classList.add('open');renderStatView()}
+function closeStatView(){$('#statOverlay').classList.remove('open');statCurrent=null;statTagFilter=null}
+$$('.stat[data-stat]').forEach(el=>{const go=()=>openStatView(el.dataset.stat);el.onclick=go;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}});
+$('#statClose').onclick=closeStatView;
+$('#statOverlay').onclick=e=>{if(e.target.id==='statOverlay')closeStatView()};
+loadStatSortPref();
+
 /* ---------- ICS ---------- */
 function unfoldICS(text){return text.replace(/\r?\n[ \t]/g,'').split(/\r?\n/)}
 function unescapeICS(v){return String(v||'').replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\')}
@@ -2708,7 +2907,7 @@ function runCommand(c){
 }
 $('#dialogOverlay').onclick=e=>{if(e.target.id==='dialogOverlay')hideOverlay('#dialogOverlay')};$('#workspaceOverlay').onclick=e=>{if(e.target.id==='workspaceOverlay')hideOverlay('#workspaceOverlay')};
 
-document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){if(commandSubmenu){commandSubmenu=null;renderCommandMenu()}else hideOverlay('#commandOverlay');return}if($('#cleanupOverlay').classList.contains('open')){hideOverlay('#cleanupOverlay');return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}if(state.readingMode){state.readingMode=false;persistUiPrefs();render();return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#gotoDateInput')?.value;if(v){const d=clampToWorkspaceStart(parseDate(v));if(state.viewMode===VIEW_MODES.DAY)state.timelineDayDate=d;else state.timelineWeek=d;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="gotoDateInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#gotoDateInput')?.focus(),20)}});
+document.addEventListener('keydown',e=>{const tag=e.target?.tagName;const editing=['INPUT','TEXTAREA','SELECT'].includes(tag);if(e.key==='Escape'){if($('#dialogOverlay').classList.contains('open')){hideOverlay('#dialogOverlay');return}if($('#editOverlay').classList.contains('open')){closeEditor();return}if($('#commandOverlay').classList.contains('open')){if(commandSubmenu){commandSubmenu=null;renderCommandMenu()}else hideOverlay('#commandOverlay');return}if($('#cleanupOverlay').classList.contains('open')){hideOverlay('#cleanupOverlay');return}if($('#statOverlay').classList.contains('open')){closeStatView();return}if($('#searchOverlay').classList.contains('open')){$('#searchOverlay').classList.remove('open');return}if($('#workspaceOverlay').classList.contains('open')){hideOverlay('#workspaceOverlay');return}if(state.readingMode){state.readingMode=false;persistUiPrefs();render();return}}if(editing)return;if(e.key==='ArrowLeft'){e.preventDefault();$('#prevBtn').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('#nextBtn').click()}else if(e.key.toLowerCase()==='t')$('#todayBtn').click();else if(e.key.toLowerCase()==='n')newRecord();else if(e.key==='/'){e.preventDefault();$('#searchInput').focus()}else if(e.key.toLowerCase()==='w')$('#workspaceManage').click();else if(e.key==='?')$('#help').hidden=!$('#help').hidden;if(e.key.toLowerCase()==='g'){showDialog('跳转到指定日期','输入 YYYY-MM-DD 以定位这一周。',[{text:'取消'},{text:'跳转',primary:true,action:()=>{const v=$('#gotoDateInput')?.value;if(v){const d=clampToWorkspaceStart(parseDate(v));if(state.viewMode===VIEW_MODES.DAY)state.timelineDayDate=d;else state.timelineWeek=d;persistUiPrefs();render()}}}]);const body=$('#dialogBox .modal-body');body.innerHTML='<div class="dialog-text">日期</div><input id="gotoDateInput" type="date" style="width:100%;margin-top:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:9px;padding:9px 10px">';setTimeout(()=>$('#gotoDateInput')?.focus(),20)}});
 
 loadHeaderPrefs();applyHeaderState();loadReadingDockPrefs();applyReadingDockPosition();initReadingDock();initSwipeNav();
 registerDownloadServiceWorker();
