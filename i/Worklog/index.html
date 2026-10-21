@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.63</title>
+<title>工作日志 · v5.9.64</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -302,6 +302,10 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
 .reading-dock.collapsed .reading-dock-list{display:none}
 .reading-dock.collapsed .reading-dock-bar{border-bottom:0}
 .reading-dock.collapsed{width:auto;max-height:none}
+/* v5.9.64 scroll chrome: reading head hides on scroll-down / returns on scroll-up */
+.reading-head{transition:transform .22s cubic-bezier(.22,.7,.25,1)}
+.reading-head.hide{transform:translateY(calc(-100% - 64px))}
+.header-spacer{height:0;flex:0 0 auto}
 /* v5.9.63 docked (edge-snapped) state: flush to edge, toggle hidden */
 .reading-dock.docked[data-side="left"]{border-left:0;border-radius:0 14px 14px 0}
 .reading-dock.docked[data-side="right"]{border-right:0;border-radius:14px 0 0 14px}
@@ -475,7 +479,7 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.63</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.64</span></div>
     <div class="workspace">
       <span class="workspace-label">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -501,6 +505,7 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
     </div>
     <button class="header-toggle nav-chevron" id="headerToggle" type="button" title="收起/展开顶栏" aria-expanded="true" aria-label="收起/展开顶栏"></button>
   </header>
+  <div class="header-spacer" id="headerSpacer" aria-hidden="true"></div>
 
   <section class="stats">
     <div class="stat" data-stat="week" role="button" tabindex="0" title="查看本周全部记录"><span>当前周记录</span><strong id="sWeek">0</strong></div>
@@ -682,7 +687,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.63',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.64',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -1304,9 +1309,10 @@ function persistUiPrefs(){try{const w=currentWs();localStorage.setItem(UI_PREF,J
 const HEADER_PREF='worklog:v5:header';
 function loadHeaderPrefs(){try{const p=JSON.parse(localStorage.getItem(HEADER_PREF)||'null');if(p&&typeof p==='object'){state.headerCollapsed=!!p.collapsed;state.headerManualUntil=Number(p.manualUntil)||0;state.headerMode=Number(p.manualUntil)>Date.now()?'manual':'auto';}}catch{}}
 function persistHeaderPrefs(){try{localStorage.setItem(HEADER_PREF,JSON.stringify({collapsed:state.headerCollapsed,manualUntil:state.headerManualUntil||0,mode:state.headerMode||'auto'}))}catch{}}
-function applyHeaderState(){const h=$('.header'),b=$('#headerToggle');if(!h||!b)return;h.classList.toggle('collapsed',state.headerCollapsed);b.setAttribute('aria-expanded',String(!state.headerCollapsed));b.innerHTML='';b.classList.toggle('is-expanded',!state.headerCollapsed);b.title=state.headerCollapsed?'展开顶栏':'收起顶栏'}
+function applyHeaderState(){const h=$('.header'),b=$('#headerToggle');if(!h||!b)return;h.classList.toggle('collapsed',state.headerCollapsed);b.setAttribute('aria-expanded',String(!state.headerCollapsed));b.innerHTML='';b.classList.toggle('is-expanded',!state.headerCollapsed);b.title=state.headerCollapsed?'展开顶栏':'收起顶栏';syncHeaderCollapseSpace()}
+function syncHeaderCollapseSpace(){const h=$('.header'),sp=$('#headerSpacer');if(!h)return;const had=h.classList.contains('collapsed');if(had)h.classList.remove('collapsed');const expanded=h.offsetHeight;if(had)h.classList.add('collapsed');const collapsed=h.offsetHeight;if(sp)sp.style.height=state.headerCollapsed?`${Math.max(0,expanded-collapsed)}px`:'0px'}
 function setHeaderState(next,source='auto'){const collapsed=!!next;if(source==='manual'){state.headerMode='manual';state.headerManualUntil=Date.now()+60000}else if(state.headerMode==='manual'){if(Date.now()<state.headerManualUntil)return;state.headerMode='auto';state.headerManualUntil=0}if(state.headerCollapsed===collapsed){persistHeaderPrefs();return}state.headerCollapsed=collapsed;applyHeaderState();persistHeaderPrefs()}
-function handleHeaderScroll(){positionSearchPreview();const y=window.scrollY||0,delta=y-state.lastScrollY;state.lastScrollY=y;if(state.headerMode==='manual'&&Date.now()<state.headerManualUntil)return;if(state.headerMode==='manual'&&Date.now()>=state.headerManualUntil){state.headerMode='auto';state.headerManualUntil=0;persistHeaderPrefs()}if(y<=4){setHeaderState(false,'auto');return}if(delta>10)setHeaderState(true,'auto')}
+function handleHeaderScroll(){positionSearchPreview();const y=window.scrollY||0,delta=y-state.lastScrollY;state.lastScrollY=y;const rh=document.querySelector('.reading-head');if(rh){if(!state.readingMode||y<=8)rh.classList.remove('hide');else if(delta>4)rh.classList.add('hide');else if(delta<-4)rh.classList.remove('hide')}if(state.headerMode==='manual'&&Date.now()<state.headerManualUntil)return;if(state.headerMode==='manual'&&Date.now()>=state.headerManualUntil){state.headerMode='auto';state.headerManualUntil=0;persistHeaderPrefs()}if(y<=4){setHeaderState(false,'auto');return}if(delta>10)setHeaderState(true,'auto')}
 
 function getBlockInterval(b,w){
   const raw=slotKeyFromBlock(b),[date,slotTime]=partsKey(raw);
@@ -2835,7 +2841,7 @@ async function renderAdvancedSearch(){const q=$('#advancedSearchInput').value.tr
   root.querySelectorAll('[data-advanced-key]').forEach(el=>el.onclick=async()=>{const key=el.dataset.advancedKey;$('#searchOverlay').classList.remove('open');const found=currentBlocks.find(b=>b.key===key);if(found){openEditor(found.key);return}const [date]=partsKey(key),wid=key.split('::')[0];if(workspaces.some(w=>w.id===wid)){state.workspaceId=wid;state.timelineWeek=parseDate(date);state.timelineDayDate=parseDate(date);persistUiPrefs();await loadCurrentWorkspace();renderWorkspaceSelect();renderWorkspaceForm();render();notify(`已切换到「${currentWs().name}」`)}else notify('找不到该工作区','warn')})}
 
 function newRecord(){const d=state.viewMode===VIEW_MODES.DAY?currentDayDate():currentWeekStart();openEditor(blockDbKey(state.workspaceId,keyFor(d,slots[0]||'08:00')))}
-$('#weekViewBtn').onclick=()=>setViewMode(VIEW_MODES.WEEK);$('#dayViewBtn').onclick=()=>setViewMode(VIEW_MODES.DAY);$('#readingModeBtn').onchange=e=>{state.readingMode=!!e.target.checked;persistUiPrefs();render()};$('#hideEmptyRows').onchange=e=>{state.hideEmptyRows=!!e.target.checked;persistUiPrefs();render()};$('#headerToggle').onclick=()=>setHeaderState(!state.headerCollapsed,'manual');window.addEventListener('scroll',handleHeaderScroll,{passive:true});
+$('#weekViewBtn').onclick=()=>setViewMode(VIEW_MODES.WEEK);$('#dayViewBtn').onclick=()=>setViewMode(VIEW_MODES.DAY);$('#readingModeBtn').onchange=e=>{state.readingMode=!!e.target.checked;persistUiPrefs();render()};$('#hideEmptyRows').onchange=e=>{state.hideEmptyRows=!!e.target.checked;persistUiPrefs();render()};$('#headerToggle').onclick=()=>setHeaderState(!state.headerCollapsed,'manual');window.addEventListener('scroll',handleHeaderScroll,{passive:true});window.addEventListener('resize',()=>syncHeaderCollapseSpace());
 $('#prevBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){const n=addDays(state.timelineDayDate||new Date(),-1);if(!isBeforeWorkspaceStart(n))state.timelineDayDate=n}else{state.timelineWeek=clampToWorkspaceStart(addDays(currentWeekStart(),-7));state.selected.clear()}persistUiPrefs();render()};$('#nextBtn').onclick=()=>{if(state.viewMode===VIEW_MODES.DAY){state.timelineDayDate=addDays(state.timelineDayDate||new Date(),1)}else{state.timelineWeek=addDays(currentWeekStart(),7);state.selected.clear()}persistUiPrefs();render()};$('#todayBtn').onclick=()=>{const today=clampToWorkspaceStart(new Date());state.selected.clear();if(state.viewMode===VIEW_MODES.DAY){state.timelineDayDate=today}else{state.timelineWeek=today}persistUiPrefs();render()};
 
 $('#searchInput').oninput=e=>{state.search=e.target.value.trim();$('#clearSearch').style.visibility=state.search?'visible':'hidden';render();renderSearchPreview()};$('#clearSearch').onclick=()=>{$('#searchInput').value='';state.search='';$('#clearSearch').style.visibility='hidden';render();renderSearchPreview();$('#searchInput').focus()};$('#clearSearch').style.visibility='hidden';
