@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f6fb">
-<title>工作日志 · v5.9.64</title>
+<title>工作日志 · v5.9.65</title>
 <style>
 :root{
   --bg:#f4f6fb;--surface:#fff;--surface-2:#f8fafc;--hover:#eef3fb;--text:#0f172a;--muted:#64748b;--faint:#94a3b8;
@@ -306,6 +306,7 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
 .reading-head{transition:transform .22s cubic-bezier(.22,.7,.25,1)}
 .reading-head.hide{transform:translateY(calc(-100% - 64px))}
 .header-spacer{height:0;flex:0 0 auto}
+.rh-sentinel{height:0;margin:0;padding:0;overflow:hidden}
 /* v5.9.63 docked (edge-snapped) state: flush to edge, toggle hidden */
 .reading-dock.docked[data-side="left"]{border-left:0;border-radius:0 14px 14px 0}
 .reading-dock.docked[data-side="right"]{border-right:0;border-radius:14px 0 0 14px}
@@ -479,7 +480,7 @@ kbd{border:1px solid var(--bar-edge);background:var(--surface-2);border-radius:5
 <body>
 <div class="app">
   <header class="header">
-    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.64</span></div>
+    <div class="brand"><span class="brand-mark">✓</span><span>工作日志</span><span class="badge">v5.9.65</span></div>
     <div class="workspace">
       <span class="workspace-label">工作区</span>
       <select id="workspaceSelect" class="workspace-select" title="切换工作区"></select>
@@ -687,7 +688,7 @@ const DIAG_MAX=400;
 const diagBuffer=[];
 function diagLog(message,data){try{const ts=new Date().toLocaleTimeString('zh-CN',{hour12:false});let line=`[${ts}] ${String(message||'')}`;if(data!==undefined){let extra;try{extra=typeof data==='string'?data:JSON.stringify(data)}catch{extra=String(data)}line+=` | ${extra}`}diagBuffer.push(line);if(diagBuffer.length>DIAG_MAX)diagBuffer.splice(0,diagBuffer.length-DIAG_MAX);const el=document.querySelector('#diagLog');if(el){el.textContent=diagBuffer.join('\n')||'暂无日志';el.scrollTop=el.scrollHeight}}catch{}}
 window.__worklogDiag=diagLog;
-diagLog('诊断日志已启动',{version:'v5.9.64',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
+diagLog('诊断日志已启动',{version:'v5.9.65',protocol:location.protocol,secure:!!window.isSecureContext,ua:navigator.userAgent});
 window.addEventListener('error',e=>diagLog('window.error',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagLog('unhandledrejection',{message:e.reason?.message||String(e.reason||'unknown')}));
 
@@ -1310,9 +1311,10 @@ const HEADER_PREF='worklog:v5:header';
 function loadHeaderPrefs(){try{const p=JSON.parse(localStorage.getItem(HEADER_PREF)||'null');if(p&&typeof p==='object'){state.headerCollapsed=!!p.collapsed;state.headerManualUntil=Number(p.manualUntil)||0;state.headerMode=Number(p.manualUntil)>Date.now()?'manual':'auto';}}catch{}}
 function persistHeaderPrefs(){try{localStorage.setItem(HEADER_PREF,JSON.stringify({collapsed:state.headerCollapsed,manualUntil:state.headerManualUntil||0,mode:state.headerMode||'auto'}))}catch{}}
 function applyHeaderState(){const h=$('.header'),b=$('#headerToggle');if(!h||!b)return;h.classList.toggle('collapsed',state.headerCollapsed);b.setAttribute('aria-expanded',String(!state.headerCollapsed));b.innerHTML='';b.classList.toggle('is-expanded',!state.headerCollapsed);b.title=state.headerCollapsed?'展开顶栏':'收起顶栏';syncHeaderCollapseSpace()}
-function syncHeaderCollapseSpace(){const h=$('.header'),sp=$('#headerSpacer');if(!h)return;const had=h.classList.contains('collapsed');if(had)h.classList.remove('collapsed');const expanded=h.offsetHeight;if(had)h.classList.add('collapsed');const collapsed=h.offsetHeight;if(sp)sp.style.height=state.headerCollapsed?`${Math.max(0,expanded-collapsed)}px`:'0px'}
+let headerMetrics={expanded:0,collapsed:0};
+function syncHeaderCollapseSpace(){const h=$('.header'),sp=$('#headerSpacer');if(!h)return;const had=h.classList.contains('collapsed');if(had)h.classList.remove('collapsed');const expanded=h.offsetHeight;if(had)h.classList.add('collapsed');const collapsed=h.offsetHeight;headerMetrics={expanded,collapsed};if(sp)sp.style.height=state.headerCollapsed?`${Math.max(0,expanded-collapsed)}px`:'0px'}
 function setHeaderState(next,source='auto'){const collapsed=!!next;if(source==='manual'){state.headerMode='manual';state.headerManualUntil=Date.now()+60000}else if(state.headerMode==='manual'){if(Date.now()<state.headerManualUntil)return;state.headerMode='auto';state.headerManualUntil=0}if(state.headerCollapsed===collapsed){persistHeaderPrefs();return}state.headerCollapsed=collapsed;applyHeaderState();persistHeaderPrefs()}
-function handleHeaderScroll(){positionSearchPreview();const y=window.scrollY||0,delta=y-state.lastScrollY;state.lastScrollY=y;const rh=document.querySelector('.reading-head');if(rh){if(!state.readingMode||y<=8)rh.classList.remove('hide');else if(delta>4)rh.classList.add('hide');else if(delta<-4)rh.classList.remove('hide')}if(state.headerMode==='manual'&&Date.now()<state.headerManualUntil)return;if(state.headerMode==='manual'&&Date.now()>=state.headerManualUntil){state.headerMode='auto';state.headerManualUntil=0;persistHeaderPrefs()}if(y<=4){setHeaderState(false,'auto');return}if(delta>10)setHeaderState(true,'auto')}
+function handleHeaderScroll(){positionSearchPreview();const y=window.scrollY||0,delta=y-state.lastScrollY;state.lastScrollY=y;const rh=document.querySelector('.reading-head');if(rh){if(!state.readingMode||y<=8)rh.classList.remove('hide');else{const sen=document.querySelector('.rh-sentinel');const flowBottom=sen?sen.getBoundingClientRect().top+y+rh.offsetHeight:0;if(delta>4&&flowBottom>0&&y>=flowBottom)rh.classList.add('hide');else if(delta<-4)rh.classList.remove('hide')}}if(state.headerMode==='manual'&&Date.now()<state.headerManualUntil)return;if(state.headerMode==='manual'&&Date.now()>=state.headerManualUntil){state.headerMode='auto';state.headerManualUntil=0;persistHeaderPrefs()}const hLimit=(headerMetrics.expanded||64)+8;if(y<=hLimit){setHeaderState(false,'auto');return}if(delta>10)setHeaderState(true,'auto')}
 
 function getBlockInterval(b,w){
   const raw=slotKeyFromBlock(b),[date,slotTime]=partsKey(raw);
@@ -1452,14 +1454,14 @@ function renderReading(w){
     const content=records.length
       ? records.map(b=>renderReadingEntry(b,w)).join('')
       : `<div class="reading-empty"><strong>这一天还没有记录</strong><span>把发生的事情、结论或下一步写下来。</span><button class="reading-add" type="button" data-reading-new-date="${formatDate(d)}">＋ 开始记录</button></div>`;
-    root.innerHTML=`${head}<div class="reading-body reading-body-day">${content}</div>`;
+    root.innerHTML=`<div class="rh-sentinel" aria-hidden="true"></div>${head}<div class="reading-body reading-body-day">${content}</div>`;
     $('#readingHeadTitle').textContent=`${formatDate(d)} · ${dayName(d.getDay())}`;
     $('#readingHeadSub').textContent=`${records.length} 条记录 · 点击标题展开/收起`;
   }else{
     const start=currentWeekStart();
     const days=Array.from({length:7},(_,i)=>addDays(start,i));
     const content=days.map(x=>renderReadingDay(w,x)).join('');
-    root.innerHTML=`${head}<div class="reading-body reading-body-week">${content}</div>`;
+    root.innerHTML=`<div class="rh-sentinel" aria-hidden="true"></div>${head}<div class="reading-body reading-body-week">${content}</div>`;
     $('#readingHeadTitle').textContent=weekLabel(start);
     $('#readingHeadSub').textContent=`${weekSpan(start)} · 点击标题展开/收起`;
   }
@@ -1610,12 +1612,15 @@ function initReadingDock(){
     const moved=drag.moved;drag=null;dock.classList.remove('dragging');
     if(!moved){readingDockPrefs.collapsed=!readingDockPrefs.collapsed;persistReadingDockPrefs();applyReadingDockPosition();return}
     const r=dock.getBoundingClientRect();
-    const yPct=Math.round(Math.min(78,Math.max(2,(r.top/window.innerHeight)*100))*10)/10;
-    const distL=r.left,distR=window.innerWidth-r.right;
+    const il=parseFloat(dock.style.left),it=parseFloat(dock.style.top);
+    const left=Number.isFinite(il)?il:r.left,top=Number.isFinite(it)?it:r.top;
+    const w=dock.offsetWidth||r.width;
+    const yPct=Math.round(Math.min(78,Math.max(2,(top/window.innerHeight)*100))*10)/10;
+    const distL=left,distR=window.innerWidth-(left+w);
     if(Math.min(distL,distR)<=72){
       readingDockPrefs={...readingDockPrefs,docked:true,side:distL<=distR?'left':'right',yPct};
     }else{
-      readingDockPrefs={...readingDockPrefs,docked:false,freeX:Math.round(r.left),yPct};
+      readingDockPrefs={...readingDockPrefs,docked:false,freeX:Math.round(left),yPct};
     }
     persistReadingDockPrefs();applyReadingDockPosition();
   };
